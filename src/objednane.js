@@ -448,6 +448,11 @@ function prodNastav(zak, v, datum, ctx) {
   /* Výjimka z dolní meze (K40-S1): důvod jde serveru, ten ho zapíše do historie. */
   const od = prodDatumOd(v, c.ted);
   if (od && d < od) v.prodano.vyjimka = prodVyjimkaText(c.duvod);
+  /* D8 (J. V. 19. 11. 2026): lhůty PROJ z Firmy se při prodeji zamrazí do
+   * varianty — termíny krycího listu PROJ se počítají z nich, změna tabulky
+   * v Nastavení prodanou zakázku nemění. */
+  if (typeof lhutyProjZmraz === 'function')
+    lhutyProjZmraz(v, c.firma || ((typeof firmaAktualni === 'function') ? firmaAktualni() : null));
   return '';
 }
 /* PRODANÁ VARIANTA JE VŽDY ŘÍDÍCÍ (PR #563, J. V. 4. 11. 2026: „Ve chvíli,
@@ -537,6 +542,12 @@ function prodJedinaZmena(ted, ulozeno) {
   const bp = p && Array.isArray(b.varianty) ? b.varianty.find(x => x && x.id === p.v.id) : null;
   if (bp && bp.zamek && bp.zamek.zamceno) {
     if (bp.prodano == null) bp.prodano = p.prodano;
+    /* D8: snímek lhůt PROJ, který Prodáno zapíše do varianty, patří k prodeji. */
+    const pd = p.v.data && p.v.data.kryciProj;
+    if (pd && pd.lhutyProj !== undefined && bp.data && typeof bp.data === 'object') {
+      if (!bp.data.kryciProj || typeof bp.data.kryciProj !== 'object') bp.data.kryciProj = { hodnoty: {} };
+      bp.data.kryciProj.lhutyProj = pd.lhutyProj;
+    }
     /* VZ-E4 (#603): prodej u zákazníka vymění řídícího zákazníka — uložená
      * verze se srovná stejně (vzVymenRidiciho), jinak by zámek čtení prodej
      * jinému zákazníkovi zastavil. */

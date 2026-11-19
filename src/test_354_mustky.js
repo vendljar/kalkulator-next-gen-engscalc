@@ -163,7 +163,7 @@ const PRED = { zaklad: null };
     zakS.varianty.forEach((vs, i) => {
       for (const fixes of [true, false]) {
         const a = stary.vypocet(kop(vs.data.ock.zadani), kop(vs.data.cenik), J, fixes);
-        const b = E.vypocet(kop(vs.data.ock.zadani), kop(vs.data.cenik), J, fixes);
+        const b = require('../nastroje/zlata_ocista_d4.js').predD4Kopie(E.vypocet(kop(vs.data.ock.zadani), kop(vs.data.cenik), J, fixes));
         const ca = JSON.stringify([a.souhrn, a.sekce, a.priplatky]);
         const cb = JSON.stringify([b.souhrn, b.sekce, b.priplatky]);
         if (ca !== cb) { shoda = false; info = info || { varianta: i, fixes, a: a.souhrn.zakladCena, b: b.souhrn.zakladCena }; }
@@ -171,7 +171,11 @@ const PRED = { zaklad: null };
     });
     test('starý ceník: souhrn, sekce i příplatky bajt po bajtu jako jádro před #354 (obě varianty, oba modely)', shoda, info);
     const a = stary.vypocet(zadani({ mustkyKs: 2, mustekHloubkaMm: 700, mustekSirkaMm: 1500, nastupiste: 3 }), kop(STARY), J, true);
-    const b = E.vypocet(zadani({ mustkyKs: 2, mustekHloubkaMm: 700, mustekSirkaMm: 1500, nastupiste: 3 }), kop(STARY), J, true);
+    /* D4 (DO, 19. 11. 2026): popisek materiálu přechodových plechů ve Volitelných
+     * je nově „… (MATERIÁL)" (jen zobrazení, klíč i cena beze změny) — před
+     * srovnáním se starým jádrem se vrátí přes nastroje/zlata_ocista_d4.js. */
+    const b = require('../nastroje/zlata_ocista_d4.js').predD4Kopie(
+      E.vypocet(zadani({ mustkyKs: 2, mustekHloubkaMm: 700, mustekSirkaMm: 1500, nastupiste: 3 }), kop(STARY), J, true));
     test('starý ceník: nová zakázka do zveřejnění ceníku = jako dřív (střecha i cena)',
       JSON.stringify([a.souhrn, a.sekce]) === JSON.stringify([b.souhrn, b.sekce]) && blizko(a.strecha.mustekM2, b.strecha.mustekM2));
   } else console.log('INFO jádro před #354 (git 9484ef4) není po ruce — srovnání bajt po bajtu přeskočeno');

@@ -33,6 +33,142 @@ Nad integrací `042fcbc` (v19.11.5). Cenu nemění. Čísla roadmapy a verzi př
 - **Testy:** `test_pg_neni_radky.js` 21/0 (před 15 FAIL), `test_pg_proj_dalsi.js` 33/0 (před 3 FAIL na exportech),
   `test_pg_tlacitka.js` 15/0 (před 7 FAIL), `test_pg_pole_page.js` 46/0 (podvržené rozbití pole 15 resp. 12 FAIL), `test_pg_cislo_stranky.js` 24/0 (před 2 FAIL na exportech).
   Mutace jádra [PG].
+## v19.11.9 — NP: Kompletní náhled podkladů OCK ve vzhledu Wordu CN v17, větev claude/np-nahled
+
+Nad integrací `6092af3` (v19.11.6). Zadání J. V. 19. 11. 2026. **Cenu ani Word nemění** — nový je jen náhled
+(okno „Kompletní náhled podkladů"). Verzi a čísla roadmapy (pracovní #681, #682) přidělí koordinace.
+
+- **Náhled = Word:** „Kompletní náhled podkladů" (`nabidkaNahled`) už není tabulka hodnot, ale dokument v pořadí
+  a členění šablony CN v17: hlavička (objednatel s kontaktem, datum, název akce, číslo, adresa) → Popis záměru
+  (šedý blok, věty šablony, věta o opláštění) a Pohled na objekt z ulice s úvodní fotkou → zlom stránky →
+  A. TECHNICKÁ ČÁST / I. TECHNICKÁ SPECIFIKACE (sekce s pruhy, počet stanic a kabina ve dvou buňkách, svislá
+  rozteč jako podřádek, poznámky * a **, SOUČÁSTÍ DODÁVKY NENÍ, DALŠÍ UJEDNÁNÍ) → B. OBCHODNÍ ČÁST / I. CENOVÁ
+  NABÍDKA → **II. PŘÍPLATKY hned za cenou** → III. platební podmínky (věty kalendáře a), b), c) / měsíční
+  fakturace, splatnost a platnost) → IV.–VI. (termíny a předání číslovaně) → DOLOŽKY → Vypracoval / Kancelář.
+  Tabulka DODAVATEL a věta „Přesně tyto hodnoty se vyplní…" odpadly.
+- **Oprava nálezu: sleva v náhledu.** Starý náhled řádek slevy vynechával (porovnání náhled × Word na TEST zakázce,
+  `podklady/kola/nahled_vs_word_2026-11-19/ROZDILY.md`). Teď „Cena před slevou" a „Sleva − … (N %)" jako Word —
+  jen se schválenou slevou (rozhoduje `SLEVA_KC`).
+- **Vzhled:** stránky A4 pod sebou; na každé záhlaví („Cenová nabídka" šedě, logo firmy z Nastavení → Firma,
+  jinak název textem, linka, číslo stránky) a zápatí (čárkovaná linka, `FIRMA_PATICKA` kurzívou modře). Písmo
+  Calibri, náhradou metricky shodné Carlito (systémové, bez externích serverů). Modré podtržené nadpisy
+  s dvojtečkou a číslováním, tabulky s rámečkem po sekcích, popisek verzálkami vlevo. Stránkuje se podle výšky
+  bloků (technická tabulka se dělí po řádcích, nadpis nezůstane sám dole).
+- **Pruh nad stránkami (netiskne se):** jazyk podle volby „Jazyk tisku" (dřív jazyk aplikace), upozornění na prázdná
+  místa (fotka, popis záměru, hlavička, prázdná kapitola, chybějící překlad kapitoly, termín, zpracovatel, žádné
+  příplatky), počet stran, tlačítko **„Vytvořit nabídku (Word)"** (volá `nabidkaWord()`; se zábranou
+  `dokumentZabrana` vypnuté s důvodem) a Tisk (`@media print` bez pruhu, stránka = list A4).
+- **Data jako Word, žádný druhý výpočet:** `nabidkaData` (pohled zákazníka přes `vzTiskVstup`), řádky technické části
+  z `nabidkaNahledSekce`, pravidla mizení řádků a bloků jako docxgen (prázdný řádek a sekce, řádky slevy a ceny
+  šachty/můstků/CENA CELKEM, prázdná kapitola i s nadpisem, vlastní řádky). Víc šachet (VS-E4): technická část
+  za každou šachtu s nadpisem „VARIANTA ŠACHTY: …", řádky šachet v ceně. Pevný text šablony se do EN/DE/FR
+  překládá týmž slovníkem a stejně po úsecích jako `docxPrelozSablonu`. Zámek a zábrany beze změny.
+  `nabidkaNahledSekce` ani `nabidkaData` se neměnily (porovnání sestavení SHODA).
+- **Kód:** nový `src/nahled_word.js` (bloky dokumentu, HTML toku, text pro porovnání, upozornění) a
+  `src/ui/nahled_word_ui.js` (okno, CSS, stránkování); z `src/ui/zakazka_ui.js` jen odebraný starý `nabidkaNahled`
+  (karta a tlačítka beze změny — souběh s dávkou PG). „Kompletní náhled a tisk nabídky" (`nabidkaOckDokument`)
+  beze změny, PROJ beze změny.
+- **Nález (neopraveno, mimo zadání) #682:** Word v EN/DE/FR nechává prázdný pruh sekce technické části
+  (např. „BRIDGES BETWEEN THE BUILDING AND THE STEEL STRUCTURE" bez řádků u šachty bez skladebných můstků):
+  `odstranPrazdneTsRadky` pozná pruh jen podle českého názvu. Náhled pruh vynechá. Návrh: rychlá cesta (dokument).
+- **Testy:** `src/test_np_nahled_word.js` (pojistka shody: text náhledu = text Wordu ze syntetické šablony CN v17
+  řádek po řádku — fixtury, scénáře #560, 120 fuzz zakázek (část se slevou), víc šachet, víc zákazníků, sleva,
+  DALŠÍ UJEDNÁNÍ, měsíční fakturace, prázdná kapitola i sekce, EN hodnoty; pevný text šablony doslova z CN v17; starý náhled se s Wordem neshoduje — 174 OK;
+  proti 6092af3 FAIL, modul neexistuje), `src/test_np_okno.js` (okno ve vm: Jazyk tisku, zábrany tlačítka Word,
+  pohled zákazníka, stránky, tisk — 14 OK), `overit_np_nahled.mjs` (prohlížeč: stránkování neztratí text, záhlaví
+  a zápatí na každé stránce, nic nepřetéká, pořadí, sleva, EN, zábrana, VS, tisk — 19 OK, snímky
+  `podklady/kola/np_nahled_2026-11-19/`). Upravené: `test_k13_preklad.js` (pevné texty NW_TEXT mají překlad),
+  `test_vz_tisk_vstupy.js` a `test_platby_ock.js` (nabidkaNahled v novém souboru), `test_escape.js` (logo).
+  Mutace [NP] v `mutace_jadro.mjs` 16/16 chycených (+ VZ-E2 náhled podkladů přesunutá na nový soubor).
+- **Kolo** `--bez-mutaci --proti origin/claude/integrace-16-10`: VŠE ZELENÉ — sady 483/0/7, hodiny +400 dní 391/0/1,
+  statické 9/9, porovnání sestavení SHODA 359/359. Harnessy `overit_560_mustky.mjs` a `overit_vs_dokumenty.mjs`
+  upravené na tvar Wordu (záměrná změna náhledu).
+
+## v19.11.8 — #ON kdo je online (Nastavení → Uživatelé), větev claude/on-online
+
+Nad integrací `042fcbc` (v19.11.5). Zadání J. V. 19. 11. 2026. Cenu ani dokumenty nemění (porovnání SHODA).
+Verzi přečísluje koordinace, číslo roadmapy a meze B přidělí koordinace.
+
+- **Server:** přihlášený uživatel při běžném volání API (`vyzadujRoli`) a při přihlášení zapíše **čas** poslední
+  aktivity — nic víc (žádná IP ani prohlížeč). Nejvýš 1 zápis za minutu na účet (rozestup v paměti instance),
+  best-effort: na zápis se nečeká a chyba úložiště se spolkne. Odhlášení zapíše čas odhlášení. Oddělené úložiště
+  `aktivita` (klíče `a/<e-mail>`, `o/<e-mail>`), do účtu se nezapisuje (souběh se zásahem správce). Smazání účtu
+  aktivitu smaže. Ven jen ve výpisu `GET /api/uzivatele` pro Administrátora: `posledniAktivita`, `odhlaseni`,
+  `online` (aktivita v posledních 5 min bez pozdějšího odhlášení). Žádné nové API. Záloha: `aktivita` je výjimka
+  (provozní údaj, po obnově se zapíše prvním voláním) — k vědomí J. V.
+- **UI:** tabulka uživatelů má sloupec **Naposledy aktivní** — zelená tečka + „online“, relativně („právě teď“,
+  „před 3 min“, „dnes 9:12“, „včera“, datum), přesný čas a čas odhlášení v `title` (`formatNaposledy`,
+  `formatCasPresny` v `src/format.js`). Seznam se načte znovu při každém přepnutí na záložku Uživatelé (dřív jen jednou za přihlášení); živě se nepřepočítává.
+- **Testy:** `netlify/test_on_aktivita.mjs` (38 OK; proti 042fcbc padá), `netlify/test_prava.mjs` blok #ON
+  (Obchodník a Vedoucí 403 bez údaje, /api/ja bez údaje), `src/test_on_naposledy.js` (14 OK, i v TZ New York/Tokio;
+  proti 042fcbc padá), harness `overit_on_online.mjs` (18 OK; proti starému UI 8 FAIL). `test_zalohy.mjs` N4:
+  výjimka `aktivita`. Mutace [ON] server 11/11.
+- **Kolo** `--bez-mutaci --proti origin/claude/integrace-16-10`: sady 480/0/7, statické 9/9, porovnání **SHODA**
+  359/359; hodiny +400 dní napoprvé 388/1/1 (občasné selhání `test_vz_unik.js`, PROJ en/de/fr „cena varianty D“ —
+  #ON se ho netýká, samostatně 6× zelené), opakovaný krok `--jen hodiny` 389/0/1. Manuál P5 doplněn o úložiště
+  `aktivita`. Přepnutí na Uživatele obnoví seznam na pozadí (bez „Načítám…“, `overit_xss` B150+UE 400/0).
+## v19.11.7 — D8 #677: termíny krycího listu PROJ ze lhůt v týdnech, větev claude/d8-lhuty
+
+Nad integrací `042fcbc` (v19.11.5). Rozhodnutí J. V. 19. 11. 2026 (dotaz obchodu D8). Cenu nemění; text nabídky
+s výchozí tabulkou beze změny (porovnání sestavení SHODA). Verzi a číslo roadmapy přečísluje koordinace.
+
+- **Lhůty PROJ v Nastavení → Firma** (jen administrátor): tabulka zaměření 4 t, výstupy 4–6 t, studie 10–12 t,
+  hrubopis DPZ 10–12 t, stanoviska 4 t, povolení záměru 2 měs. + právní moc 1 měs. (měsíc = 4,3 týdne), DPS 6 t,
+  s datem platnosti. Zveřejňuje se s firemními údaji (server kontroluje tvar, záloha a obnova jdou s firmou);
+  `src/lhuty_proj.js`, `src/ui/lhuty_proj_ui.js`.
+- **Text nabídky PROJ z tabulky** (online i Word `{{PROJ_TERMINY_TERMIN}}` / `{{PROJ_TERMINY}}`, CZ/EN/DE/FR):
+  výchozí znění termínů dostane čísla z tabulky, znění se nemění. Vlastní znění (Smlouvy / Šablony) nebo vlastní
+  překlad zůstane pevné a karta lhůt na něj upozorní. Šablona v8 pevné týdny nemá — nová šablona není potřeba.
+- **Krycí list PROJ:** po Prodáno se termíny (zahájení = datum podpisu, výstupy ze zaměření, studie, DPZ, povolení,
+  DPS) dopočítají řetězem jen přes nabízené činnosti, u rozpětí horní mez. U data je vidět zdroj („podpis + 10 týdnů
+  (zaměření 4 + výstupy 6)“), ruční datum zůstane a řetěz jde od něj, ↺ vrátí dopočet. Do prodeje se nedopočítává.
+- **Zámek:** Prodáno zamrazí lhůty do varianty (`data.kryciProj.lhutyProj`); odeslaná nabídka drží lhůty ve snímku
+  podmínek (starší bez snímku výchozí čísla). Termíny prodané varianty jsou editovatelné do tisku SoD (klient
+  i server), snímek lhůt prodané varianty server nepustí změnit.
+- **Testy:** `src/test_d8_lhuty.js` (114 OK; proti 042fcbc padá), `netlify/test_d8_lhuty.mjs` (15 OK; proti 042fcbc
+  padá). Mutace [D8] jádro 19/19 (jedna ekvivalentní vynechána), server 6/6; upravené #540, O7, #547 K37-N2 chycené.
+- **Kolo** `--bez-mutaci --proti origin/claude/integrace-16-10`: VŠE ZELENÉ — sady 427/0/59, hodiny 389/0/1, statické 9/9,
+  porovnání 359/359 SHODA.
+## v19.11.6 — DO: dotazy obchodníků z 16. 11. (D1, D2, D4–D7), větev claude/do-dotazy
+
+Nad integrací `042fcbc` (v19.11.5). Rozhodnutí J. V. 19. 11. 2026. **Cenu nemění** (výsledek jádra bajt po bajtu
+stejný mimo popisek a pořadí zobrazení, viz níž). Mění se text dokumentů (přejmenování D2 a D4). Verzi a čísla
+roadmapy přidělí koordinace.
+
+- **D1 „po celé výšce" = jediný pás:** zaškrtnutí už nezávisí na začátku opláštění — po „Opláštit i prohlubeň"
+  zůstane zaškrtnuté, ruční zaškrtnutí nevrací začátek na 0 a neruší opláštění prohlubně. „Opláštění začíná" je vidět
+  i u stěny po celé výšce a začátek mimo šachtu se ohlásí i u ní.
+- **D2 pás „bez opláštění":** volba „bez — dodá stavba" se jmenuje „bez opláštění" (výběr, nákres, specifikace,
+  nabídka, smlouva; EN „Without cladding", DE „Ohne Verkleidung", FR „Sans bardage"; manuál). Klíč `bez` se nemění
+  — uložená data fungují dál. Nově zvolený nižší pás „bez opláštění" dostane „do (m)" = 0 (úroveň nástupu), přepsat
+  jde; žluté „nemá dělicí výšku" u něj nevznikne. Cena stejná (jádro prázdnou výšku nižšího pásu bralo jako 0).
+- **D4 přechodové plechy ve Volitelných:** montáž hned pod materiálem (jako v příplatcích), ruční pořadí z přetažení
+  zůstává. Materiál se zobrazuje jako „PŘECHODOVÉ PLECHY - NEREZ (MATERIÁL)" (shodně s příplatkem, i v překladech
+  a controlling CSV). **Klíč ruční úpravy zůstává „PŘECHODOVÉ PLECHY - NEREZ"** (`mkItem` volba `zobrazit`): uložené
+  přepisy množství, vyřazení a dodatkový text platí dál a přepis příplatku do základní ceny nevteče. Sčítá se
+  v původním pořadí (jinak by se lišil poslední bit součtu).
+- **D5 materiál a montáž jedním stiskem (příplatky):** zaškrtnutí i odškrtnutí materiálu nese montáž; montáž jde pak
+  sama odškrtnout i zaškrtnout bez materiálu. Jen obrazovka, zámek varianty beze změny. Jiný pár materiál + montáž
+  v příplatcích není.
+- **D6 dodatkový text viditelně:** správce po uložení do číselníku vidí u pole „uloženo pro všechny nové zakázky"
+  (po 4 s zmizí; neukáže se, když server neuloží). Obchodník vidí „jen pro tuto zakázku" a — liší-li se text od
+  číselníku a je přihlášený — „navrhnout do číselníku": návrh se uloží do varianty (`popisyNavrhy`) a správce ho
+  v Ceník → číselník po „Najít texty v uložených zakázkách" vidí se štítkem **návrh** (napřed) a převezme
+  tlačítkem „převzít" (minimální varianta přes stávající sběr).
+- **D7 seznam nabídek:** ve sloupci Akce tučně adresa stavby, pod ní šedě název akce (online seznam, Přehled
+  cenových nabídek i seznam ve složce). Bez adresy jen název akce. Hledání a řazení beze změny.
+- **Testy:** nové `src/test_do_dotazy.js` (21; proti 042fcbc 5 FAIL), `src/test_do_obrazovka.js` (35; proti 042fcbc
+  padá i hledání funkcí), `overit_do_dotazy.mjs` (47; proti 042fcbc 30 FAIL), `test_prava.mjs` D6 (proti 042fcbc
+  1 FAIL). Upravené: `test_k18_nalezy`, `test_oplasteni_zapnuti`, `overit_oplasteni`, `overit_svetliky_stavba`
+  (nový popisek), `test_profil_neznamy` + `nastroje/zlata_ocista_d4.js` (zlatá pojistka #560 a VS očistí popisek
+  a pořadí zobrazení D4 — `vyp`, `vypZ`, `zamek` zůstávají bajt po bajtu), `test_vs_zlata.json` přegenerován
+  (změny jen `ph-*`, `nahled-*`, `docx`, `spec`, `sod`, `ctrl`; surové výstupy proti 042fcbc se liší výhradně
+  přejmenováním D2/D4), `cisla_vydani.json` (`ps2.bezNazev`), `test_vz_rejstrik.mjs` (buňka Akce).
+- **Mutace [DO]:** jádro 20/20, server 2/2 chycené. `test_prava.mjs` 1001/0 (zakázky D6 0661–0663).
+- **Kolo** `--bez-mutaci --proti origin/claude/integrace-16-10`: sady 480/0/7, hodiny 389/0/1, statické 9/9;
+  porovnání 359 kalkulací, 164 shodných, 195 jen očekávaných (`podklady/porovnani/ocekavane_do-dotazy_2026-11-19.txt`:
+  fuzz, jen text dokumentů a controlling — přejmenování D2/D4; cena, výsledek a zámek SHODA). `porovnani_sada.js`
+  očistí popisek a pořadí zobrazení D4 stejně jako zlaté sady.
 
 ## v19.11.5 — #671 navazující drobnosti K50-N1 (editor a zveřejnění ceníku), větev claude/r-k50n1
 

@@ -622,9 +622,92 @@ export async function vyzadujRoli(req, ...role) {
    * tak jako tak. Podpis ne — ten je stranou a dotahuje se jen tam, kde je
    * opravdu potřeba (přihlášení a /api/ja), ne při každém uložení zakázky. */
   const relace = { ...r, ...profilZUctu(ucet), email: r.email, role: ucet.role };
+  aktivitaZaznamenej(r.email);   // #ON: čas poslední aktivity, best-effort, nejvýš 1× za minutu
   if (role.length && !role.includes(relace.role))
     return { chyba: json({ ok: false, chyba: 'K této akci je potřeba role: ' + role.join(' / ') + '.' }, 403) };
   return { relace, ucet };
+}
+
+/* ---------- čas poslední aktivity uživatele (#ON, J. V. 19. 11. 2026) ----------
+ *
+ * Správce chce v Nastavení → Uživatelé vidět, kdo je právě online. Server
+ * proto u přihlášeného uživatele zapisuje ČAS poslední aktivity — nic víc:
+ * žádnou IP adresu, prohlížeč ani cestu požadavku.
+ *
+ *  · Zapisuje vyzadujRoli (tudy jde každé běžné volání API) a přihlášení.
+ *  · ROZESTUP: nejvýš jeden zápis za AKTIVITA_ROZESTUP_MS (1 min) na účet
+ *    a instanci funkce. Online okno je 5 min, takže minuta zpoždění nic
+ *    nezkreslí a úložiště nedostane zápis při každém kliknutí. Dvě instance
+ *    funkce se nevidí — v nejhorším zapíšou obě (mez v BEZPECNOST_MEZE.md).
+ *  · BEST-EFFORT: zápis se spustí a NEČEKÁ se na něj; selhání úložiště se
+ *    spolkne. Odpověď se tím nezpomalí a požadavek kvůli aktivitě nespadne.
+ *    Cena: když běhové prostředí funkci zmrazí hned po odpovědi, zápis se
+ *    může ztratit — dožene ho další volání.
+ *  · Oddělené úložiště AKTIVITA_ULOZISTE, klíče `a/<e-mail>` (poslední
+ *    aktivita) a `o/<e-mail>` (odhlášení). Do účtu se NEZAPISUJE: zápis účtu
+ *    je čtení–změna–zápis a souběh s úpravou správcem (role, vypnutí) by
+ *    mohl změnu správce přepsat. Dva klíče místo jednoho ze stejného důvodu.
+ *  · Ven jde údaj JEN ve výpisu účtů pro Administrátora (GET /api/uzivatele).
+ *
+ * `__TEST_TED` je hodiny pro testy rozestupu (jinak Date.now()). */
+export const AKTIVITA_ULOZISTE = 'aktivita';
+export const AKTIVITA_ROZESTUP_MS = 60 * 1000;
+export const ONLINE_OKNO_MS = 5 * 60 * 1000;
+const AKTIVITA_POSLEDNI = new Map();
+const AKTIVITA_BEZI = new Set();
+function aktivitaTed() { return globalThis.__TEST_TED ? +globalThis.__TEST_TED() : Date.now(); }
+function aktivitaZapisNaPozadi(klic, kdy) {
+  const p = (async () => {
+    const s = await uloziste(AKTIVITA_ULOZISTE);
+    await s.zapis(klic, { kdy });
+  })().catch(() => { /* best-effort: aktivita nesmí shodit požadavek */ });
+  AKTIVITA_BEZI.add(p);
+  p.finally(() => AKTIVITA_BEZI.delete(p));
+  return p;
+}
+/* Vrací true, když se zápis spustil (pro testy); na zápis se nečeká. */
+export function aktivitaZaznamenej(email, vynutit) {
+  const e = String(email || '').toLowerCase();
+  if (!e) return false;
+  const t = aktivitaTed();
+  const pred = AKTIVITA_POSLEDNI.get(e);
+  if (!vynutit && pred != null && t - pred >= 0 && t - pred < AKTIVITA_ROZESTUP_MS) return false;
+  AKTIVITA_POSLEDNI.set(e, t);
+  aktivitaZapisNaPozadi('a/' + e, new Date(t).toISOString());
+  return true;
+}
+/* Odhlášení: čas odhlášení. Nové přihlášení do minuty se zapíše hned
+ * (přihlášení zapisuje bez rozestupu), takže účet nezůstane offline. */
+export function aktivitaOdhlaseni(email) {
+  const e = String(email || '').toLowerCase();
+  if (!e) return false;
+  aktivitaZapisNaPozadi('o/' + e, new Date(aktivitaTed()).toISOString());
+  return true;
+}
+/* Pro testy: počká na rozběhnuté zápisy aktivity. */
+export async function aktivitaDobehni() {
+  while (AKTIVITA_BEZI.size) await Promise.allSettled([...AKTIVITA_BEZI]);
+}
+/* Údaje pro výpis správci. Selhání čtení = prázdno (výpis účtů nespadne). */
+export async function aktivitaCti(email) {
+  const e = String(email || '').toLowerCase();
+  let posledni = '', odhlaseni = '';
+  try {
+    const s = await uloziste(AKTIVITA_ULOZISTE);
+    const [a, o] = await Promise.all([s.cti('a/' + e), s.cti('o/' + e)]);
+    posledni = a && typeof a.kdy === 'string' ? a.kdy : '';
+    odhlaseni = o && typeof o.kdy === 'string' ? o.kdy : '';
+  } catch (err) { /* bez údaje */ }
+  return { posledniAktivita: posledni, odhlaseni, online: aktivitaOnline(posledni, odhlaseni, aktivitaTed()) };
+}
+/* Online = aktivita v posledních 5 minutách a po ní žádné odhlášení.
+ * Vypršelá relace žádné volání neudělá, takže do 5 minut zhasne sama. */
+export function aktivitaOnline(posledni, odhlaseni, ted) {
+  const p = Date.parse(posledni || '');
+  if (!Number.isFinite(p)) return false;
+  const o = Date.parse(odhlaseni || '');
+  if (Number.isFinite(o) && o >= p) return false;
+  return ted - p < ONLINE_OKNO_MS && ted - p > -ONLINE_OKNO_MS;
 }
 
 /* ---------- potvrzení citlivé akce vlastním heslem správce (B77, 13. 10. 2026) ----------

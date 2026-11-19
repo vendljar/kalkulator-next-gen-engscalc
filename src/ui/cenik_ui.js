@@ -397,8 +397,10 @@ const POPISY_CIS = { sber: null, hleda: false, chyba: '' };
 /* Kandidáti z uložených zakázek pod řádkem číselníku (hledání `?sber=1`). */
 function cenikPopisyKandidati(klic, admin) {
   const sez = (POPISY_CIS.sber && POPISY_CIS.sber[klic]) || [];
+  /* Štítek „návrh" (D6, 19. 11. 2026): obchodník text navrhl do číselníku
+   * tlačítkem u položky v kalkulaci; server návrhy řadí napřed. */
   return sez.slice(0, 3).map((x, i) => `<div class="note" style="margin:2px 0">
-      <b>${esc(x.cislo)}</b>${x.pocet > 1 ? ` (+${esc(x.pocet - 1)})` : ''}: „${esc(x.text)}"
+      ${x.navrh ? '<span class="pill warn popis-navrh-stitek" title="obchodník text navrhl do číselníku">návrh</span> ' : ''}<b>${esc(x.cislo)}</b>${x.pocet > 1 ? ` (+${esc(x.pocet - 1)})` : ''}: „${esc(x.text)}"
       ${admin ? `<button class="mini" onclick="cenikPopisPrevzit('${keyAttr(klic)}', ${escJs(i)})">převzít</button>` : ''}
     </div>`).join('');
 }
@@ -497,7 +499,8 @@ function cenikPopisyKarta() {
         <button onclick="cenikPopisySber()" ${POPISY_CIS.hleda ? 'disabled' : ''}>${POPISY_CIS.hleda
           ? 'Hledám v uložených zakázkách…' : 'Najít texty v uložených zakázkách'}</button>
         ${sber ? `<span class="note">Nalezeno u ${Object.keys(sber).length} položek (jen texty,
-          které se od číselníku liší).</span>` : ''}
+          které se od číselníku liší; štítek <b>návrh</b> = obchodník text navrhl do číselníku).</span>`
+          : '<span class="note">Najde i texty, které obchodníci <b>navrhli do číselníku</b> (štítek návrh).</span>'}
         ${POPISY_CIS.chyba ? `<span class="note" style="color:#b00">${esc(POPISY_CIS.chyba)}</span>` : ''}
       </div>` : ''}
       <div class="cenik-scroll"><table class="ceniktbl">

@@ -251,7 +251,10 @@ const kapIII = (sek) => (Array.isArray(sek) ? sek.find(x => /^III\./.test(x.sekc
   test('obě online cesty (podklady i tiskový náhled) předávají kalendář náhledu',
     /* od v16.10.2 i vlastní řádky specifikace jako 4. parametr (obchodník 15. 10., bod 3) */
     /* od VS-E4 #570 i šachty jako 5. parametr (víc šachet v nabídce) */
-    (ui.match(/nabidkaNahledSekce\(p, L, data\.platbyOck(, data\.tsExtra(, data\.sachty)?)?\)/g) || []).length === 2);
+    /* od NP (19. 11. 2026) skládá náhled podkladů nahled_word.js (nwBloky) — volá
+     * nabidkaNahledSekce s týmž kalendářem a vlastními řádky; šachty zvlášť po šachtách */
+    (ui.match(/nabidkaNahledSekce\(p, L, data\.platbyOck(, data\.tsExtra(, data\.sachty)?)?\)/g) || []).length === 1
+    && /\(\s*ph, L, data\.platbyOck, data\.tsExtra, null\)/.test(fs.readFileSync(path.join(__dirname, 'nahled_word.js'), 'utf8')));
 }
 
 /* ---------------- 8) smlouva o dílo realizace ---------------- */

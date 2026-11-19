@@ -405,6 +405,10 @@ const PROVERENO = {
     'duvod': 'hotový úsek HTML poskládaný o pár řádků výš – hodnota v něm '
       + 'prochází esc(SCHV_DUVODY[z.id]) a id přes escJs()',
   },
+  'nahled_word_ui.js': {
+    'nwLogoHtml(chrome.firma)': 'hotové HTML loga záhlaví (NP, 19. 11. 2026) z nwLogoHtml() — '
+      + 'logo jen jako datový obrázek PNG/JPEG (regulár), src i alt přes esc(), jinak název firmy přes esc().',
+  },
   'zakazka_ui.js': {
     'vsPorovnaniStitek(v.id)': 'hotové HTML štítku víc šachet (VS #570 E3) z vsStitekVarianty() — '
       + 'počty i názvy šachet jdou uvnitř přes esc(), ostatní literál.',

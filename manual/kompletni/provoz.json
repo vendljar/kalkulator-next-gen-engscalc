@@ -649,6 +649,12 @@
        "okno 15 minut"
       ],
       [
+       "aktivita",
+       "čas poslední aktivity a odhlášení uživatele (jen čas, kdo je online; mimo zálohu)",
+       "e-mail (klíč), čas",
+       "do smazání účtu"
+      ],
+      [
        "pd_cache",
        "krátkodobá kopie odpovědí Pipedrive (detail a seznam dealů, strop dotazů)",
        "kontakty z CRM",

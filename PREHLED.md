@@ -8,18 +8,22 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | prostředí | verze |
 |---|---|
 | ostrý web (`main`) | **v11.11.1** (`6c4bc80e`, 11. 11. 2026) |
-| testovací web (`test`) | **v19.11.4** (`8245512b`, 19. 11. 2026) |
+| testovací web (`test`) | **v19.11.9** (`0925de8b`, 19. 11. 2026) |
 
-Test je proti main napřed o 315 commitů.
+Test je proti main napřed o 343 commitů.
 
 ## V testu, ještě ne v main
 
 | # | typ | co | verze |
 |---|---|---|---|
+| #681 (dřív NP) | úkol | Kompletní náhled podkladů OCK ve vzhledu Wordu CN v17 (stránky A4, pořadí, sleva, příplatky za cenou, pruh s Wordem) | v19.11.9 |
+| #678 (dřív D8-Q) | otázka | D8 doladění: co počítat do povolení záměru a termíny po tisku SoD | v19.11.9 |
+| #677 (dřív D8) | úkol | D8: termíny krycího listu PROJ ze lhůt v týdnech (tabulka lhůt v Nastavení → Firma) | v19.11.7 |
+| #675 (dřív DO) | úkol | Dotazy obchodu D1, D2, D4–D7: opláštění po celé výšce, „bez opláštění“, přechodové plechy (MATERIÁL), materiál+montáž, ukládání dodatkového… | v19.11.6 |
 | #672 (dřív VZF1-I1) | nález | VZF1-I1: soubor plné moci u OPR zakázek bez čísla zakázky (PLNA-MOC_2026-OPR-CN-PROJ-CZ) | v19.11.4 |
+| #671 (dřív K50-N1-R) | úkol | Ceník: buňka Zahraničí u statiky opláštění a dialog zveřejnění po K50-N1 | v19.11.5 |
+| #670 (dřív K50-N1) | nález | K50-N1: statika opláštění u zahraniční řady ceníku počítána českou sazbou (od v19.11.1) | v19.11.3 |
 | #669 (dřív T1) | úkol | VZ T1: řídící varianta a řídící zákazník v hlavičce (2+ zákazníků), karta ★/☆, náhled poznámky dealu | v19.11.2 |
-| #668 | rozhodnutí | Audit #667: další položky se sdílenou cenou nebo bez ceny z nabídky — rozhodnout | v19.11.1 |
-| #667 | úkol | STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ jako zaškrtávací položka šachty s vlastní cenou C.statikaOplKc; cena z nabídky i nulová | v19.11.1 |
 | #664 | úkol | UE: úprava existujícího účtu v Nastavení → Uživatelé (titul, jméno, funkce, telefon; e-mail jen ke čtení) | v18.11.9 |
 | #663 | úkol | Zmrazit zástupce a DIČ dalšího zákazníka po odeslání jeho SoD (po zákaznících, klient i server) | v19.11.4 |
 | #662 (dřív VZ-F1-R4) | úkol | Test v prohlížeči: otevřený zákazník C, zápis zástupce v krycím listu, tisk SoD A bez údajů C | v19.11.4 |
@@ -32,7 +36,6 @@ Test je proti main napřed o 315 commitů.
 | #655 (dřív VZ-N2) | úkol | VZ-N2: výběr „Otevřená varianta“ v hlavičce nabízel při otevřeném A i vlastní variantu C | v18.11.8 |
 | #654 (dřív VZ-N1) | úkol | VZ-N1: „Přidat zákazníka“ se stejným IČO, jaké už v zakázce je, prošlo bez upozornění | v18.11.8 |
 | #653 (dřív VZ-N3) | úkol | VZ-N3: zástupci a kontakty v krycím listu u otevřeného dalšího zákazníka se zapisovali do hlavičky řídícího (SoD A nesla zástupce C) | v18.11.8 |
-| #652 (dřív K49-I5) | rozhodnutí | Při nasazení do main zadat do Nastavení → Firma 6. řádek termínů realizace (5 let záruka) ve 4 jazycích | v19.11.1 |
 | #651 (dřív K49-I7) | úkol | Ověřit SoD u víc šachet a slevy v EUR (L3) na testu | v18.11.7 |
 | #645 (dřív NS) | úkol | NS: v Nastavení → Smlouvy / Šablony stojí správa šablon hned pod přepínačem OCK / PROJ, nad platebními podmínkami | v18.11.7 |
 | #632 (dřív B0.7, B6, K37-N6, K38-I2) | úkol | Ceník a termíny firmy v testu srovnané podle main — ověřit v kole 49 | v18.11.7 |
@@ -68,7 +71,7 @@ Test je proti main napřed o 315 commitů.
 | # | co | kolo | stav | čeká na |
 |---|---|---|---|---|
 | #614 (dřív K40-N1) | Vada ceny v main: po přepnutí typu šachty se čelní sklo přejmenuje a zůstane vyřazené (opraveno v testu v12.11.1) | 40 | opraveno v testu (v12.11.1), v main ne | J. V.: pokyn ke sloučení do main (kolo 49 18. 11.: test_k40_celni_sklo nad test 75/0, nad main 47/28; ceny main × test jinak shodné) |
-| #670 (dřív K50-N1) | K50-N1: statika opláštění u zahraniční řady ceníku počítána českou sazbou (od v19.11.1) | 50 | oprava ve verzi v19.11.3, v testu ještě ne | — |
+| #670 (dřív K50-N1) | K50-N1: statika opláštění u zahraniční řady ceníku počítána českou sazbou (od v19.11.1) | 50 | opraveno v testu (v19.11.3), v main ne | — |
 
 ## Čeká na J. V.
 
@@ -102,9 +105,11 @@ Test je proti main napřed o 315 commitů.
 | #640 (dřív B221) | otázka | Role jen ke čtení: „kdo smí ukládat“ je dnes každý přihlášený | zavést roli jen ke čtení? (doporučeno až s kolegou s rolí administrátora) |
 | #642 | úkol | Zeštíhlení roadmap.json: hotové položky starší 60 dní do archivu (živý soubor kolem 60 položek) | souhlas (návrh režie S6 d; soubor má 1,2 MB) |
 | #643 | úkol | Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6) | nahrát upravený skill (mimo repo) |
+| #680 (dřív DO-N1) | nález | DO-N1: návrh obchodníka do číselníku u příplatku přechodových plechů (MATERIÁL) správce v Ceník → číselník nevidí | rozhodnout, zda vypsat návrhy i k položkám mimo řádky číselníku |
+| #682 (dřív NP-N1) | úkol | Word CN v EN/DE/FR nechává prázdný pruh sekce technické části (MŮSTKY bez řádků) | rozhodnout opravu (rychlá cesta, text dokumentu) |
 
 K tomu 12 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
 
 ## Nehotové položky evidence
 
-Celkem 61: J. V. 40, kolega 5, koordinace 11, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 64: J. V. 42, kolega 5, koordinace 12, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.

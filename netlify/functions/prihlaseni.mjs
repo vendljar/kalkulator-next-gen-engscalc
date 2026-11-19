@@ -10,7 +10,8 @@
 import { uloziste, otiskHesla, hesloSedi, relaceCookie, json, ADMIN_EMAIL,
          profilZUctu, podpisCti, FALESNY_OTISK, POKUSY_MAX,
          zpozdeniMs, pockej, pokusyZacatek, pokusyUspech, pokusyAdresaNadLimit, adresaKlienta,
-         EMAIL_MAX, HESLO_MAX, spravceNastaven, cizihoPuvodu, tajneShodne, hesloPlatne } from '../lib/sdilene.mjs';
+         EMAIL_MAX, HESLO_MAX, spravceNastaven, cizihoPuvodu, tajneShodne, hesloPlatne,
+         aktivitaZaznamenej } from '../lib/sdilene.mjs';
 
 export default async (req) => {
   if (req.method !== 'POST') return json({ ok: false, chyba: 'Použijte POST.' }, 405);
@@ -80,6 +81,7 @@ export default async (req) => {
   if (pustit) {
     await pokusyUspech(email, ip);
     const cookie = relaceCookie(ucet);                    // nese verzi hesla (B6)
+    aktivitaZaznamenej(ucet.email, true);                 // #ON: přihlášení = aktivita hned (best-effort)
     /* Profil se vrací rovnou při přihlášení (#145): aplikace jím vyplňuje blok
      * „Vypracoval" v cenové nabídce. Kdyby si ho musela dotahovat zvlášť, první
      * nabídka udělaná hned po přihlášení by odešla bez podpisu a bez telefonu. */

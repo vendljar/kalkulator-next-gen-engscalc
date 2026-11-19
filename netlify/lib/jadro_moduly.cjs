@@ -62,6 +62,8 @@ Object.assign(globalThis, require('../../src/kontroly.js'));
 Object.assign(globalThis, require('../../src/poznamky.js'));
 Object.assign(globalThis, require('../../src/protokol.js'));
 /* Platební podmínky firmy (#367): krycí listy a firmaLzeZverejnit je čtou. */
+/* Lhůty PROJ (D8): firmaLzeZverejnit a texty termínů je čtou. */
+Object.assign(globalThis, require('../../src/lhuty_proj.js'));
 Object.assign(globalThis, require('../../src/podminky.js'));
 Object.assign(globalThis, require('../../src/firma.js'));
 Object.assign(globalThis, require('../../src/kryci.js'));        // migrace krycího listu (A3 / N43)

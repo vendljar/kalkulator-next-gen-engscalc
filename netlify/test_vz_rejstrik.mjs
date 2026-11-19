@@ -198,7 +198,9 @@ let dva = null;
   const vm = await import('node:vm');
   const src = fs.readFileSync(R + 'src/ui/online_ui.js', 'utf8');
   const i = src.indexOf('function onlineRadekZakazky');
-  const telo = src.slice(i, src.indexOf('\n}\n', i) + 3);
+  /* D7 (19. 11. 2026): buňka Akce má vlastní funkci (adresa nahoře). */
+  const iA = src.indexOf('function rejstrikAkceBunka');
+  const telo = src.slice(iA, src.indexOf('\n}\n', iA) + 3) + src.slice(i, src.indexOf('\n}\n', i) + 3);
   let zap = false;
   const ctx = vm.createContext({ ONLINE_STAV: { soubor: '' }, esc: s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'),
     escJs: s => String(s), onlineVybrano: () => false, uloObchodnik: z => z.autor || '—', uloDruhZakazky: () => 'OCK',

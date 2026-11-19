@@ -216,6 +216,9 @@ const ULOZISTE = {
   pipedrive: 'výjimka: mapa polí Pipedrive, znovu se načte',
   pd_webhook: 'výjimka: rejstřík deal → kalkulace webhooku (#553) — vazbu nese sama zakázka (pdDealId) a ta se zálohuje; rejstřík se obnoví prvním doručením',
   pokusy: 'výjimka: krátkodobá počítadla pokusů přihlášení',
+  /* #ON (19. 11. 2026): čas poslední aktivity a odhlášení — provozní údaj, ne data.
+   * Po obnově začne od nuly (první volání ho zapíše znovu). Výjimka k vědomí J. V. */
+  aktivita: 'výjimka: čas poslední aktivity uživatele (#ON), po obnově se zapíše prvním voláním',
   zalohy: 'výjimka: otisky samy, tokeny obnovy',
   disk_kopie: 'výjimka: připravený soubor kopie pro skript Apps Script (#577, odvozený z nočního otisku) a počítadla četnosti',
 };
@@ -247,6 +250,8 @@ const KLICE = {
   'kopie-skript-stav': ['disk_kopie', false],      // #577: stav přípravy souboru pro skript, ne data
   'kopie-skript-cetnost': ['disk_kopie', false],   // #577: počítadlo četnosti tokenu, ne data
   'spatne:': ['disk_kopie', false],                // #577: počítadlo špatných tokenů na adresu, ne data
+  'a/': ['aktivita', false],                       // #ON: čas poslední aktivity, ne data
+  'o/': ['aktivita', false],                       // #ON: čas odhlášení, ne data
 };
 /* Dynamické výrazy v uloziste(…), které nejsou nové úložiště. */
 const DYNAMICKE = {

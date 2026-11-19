@@ -53,7 +53,15 @@ function nabidkaProjPodmEf(varianta) {
   const f = (typeof firmaAktualni === 'function') ? firmaAktualni() : {};
   const d = varianta && varianta.data;
   const snimek = varianta && varianta.zamek && varianta.zamek.zamceno && d && d.kryciProj && d.kryciProj.zmrazenoPodminky;
-  return snimek ? P.podminkyEfZmrazene(f, snimek) : P.podminkyEf(f);
+  if (snimek) return P.podminkyEfZmrazene(f, snimek);
+  const ef = P.podminkyEf(f);
+  /* D8 (J. V. 19. 11. 2026): čísla v textu termínů z tabulky lhůt PROJ
+   * (Firma). Zamčená varianta bez snímku (odeslaná před v20.10.2) tiskne
+   * výchozí tabulku — změna tabulky ji nemění. */
+  const LM = (typeof lhutyProjEf === 'function') ? { lhutyProjEf, lhutyProjVychozi }
+    : ((typeof require === 'function') ? require('./lhuty_proj.js') : null);
+  if (LM) ef.lhutyProj = (varianta && varianta.zamek && varianta.zamek.zamceno) ? LM.lhutyProjVychozi() : LM.lhutyProjEf(f && f.lhutyProj);
+  return ef;
 }
 
 /* AUTORSKÝ DOZOR JEN KDYŽ SE NABÍZÍ (připomínka obchodníka a obchodního technika,

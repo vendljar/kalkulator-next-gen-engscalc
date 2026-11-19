@@ -80,7 +80,7 @@ import zalohaDiskFn from './functions/zaloha_disk.mjs';
 import pdStavFn from './functions/pd_stav.mjs';
 import { config as configNocni } from './functions/zaloha_nocni.mjs';
 import { ADMIN_EMAIL, ROLE, POKUSY_MAX, POKUSY_IP_MAX, zpozdeniMs, pokusyReset,
-         uloziste, PODPIS_ULOZISTE } from './lib/sdilene.mjs';
+         uloziste, PODPIS_ULOZISTE, aktivitaDobehni } from './lib/sdilene.mjs';
 
 import { createHmac } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -864,6 +864,26 @@ test('B57: obchodník v /api/ja příznak nedostane', jaObch.spravceNastaven ===
 {
   const jaAdm = await (await get(ja, 'http://x/api/ja', cAdmin)).json();
   test('#278: administrátor v /api/ja příznak dostane (tady nastaveno)', jaAdm.spravceNastaven === true, JSON.stringify(jaAdm));
+}
+/* #ON (J. V. 19. 11. 2026): čas poslední aktivity a „online" vidí jen
+ * Administrátor ve výpisu účtů. Obchodník a Vedoucí ho nedostanou nikudy:
+ * výpis účtů 403, /api/ja bez údaje. Pojistka: správce ho ve výpisu má. */
+{
+  await aktivitaDobehni();
+  const POLE_ON = ['posledniAktivita', 'odhlaseni', 'online'];
+  const sAdm = await (await get(uzivatele, 'http://x/api/uzivatele', cAdmin)).json();
+  const rAdm = (sAdm.uzivatele || []).find(u => u.email === ADMIN_EMAIL);
+  test('#ON: Administrátor ve výpisu účtů vidí poslední aktivitu a online',
+    !!rAdm && POLE_ON.every(p => p in rAdm) && rAdm.online === true && !!rAdm.posledniAktivita, JSON.stringify(rAdm));
+  for (const role of ['Obchodník', 'Vedoucí']) {
+    const r = await get(uzivatele, 'http://x/api/uzivatele', cookieRole(role));
+    const t = await r.text();
+    test('#ON: ' + role + ' výpis účtů s aktivitou nedostane (403, bez údaje)',
+      r.status === 403 && !POLE_ON.some(p => t.includes('"' + p + '"')), r.status + ' ' + t.slice(0, 200));
+    const tJa = await (await get(ja, 'http://x/api/ja', cookieRole(role))).text();
+    test('#ON: ' + role + ' v /api/ja údaj o aktivitě nedostane',
+      !POLE_ON.some(p => tJa.includes('"' + p + '"')) && !tJa.includes(rAdm ? rAdm.posledniAktivita : 'x'), tJa.slice(0, 200));
+  }
 }
 test('/api/zdravi nenese data z databáze',
   !zdraviText.includes('Matice práv') && !zdraviText.includes(FIRMA.ico), zdraviText);
@@ -2522,6 +2542,35 @@ console.log('\n===== DODATKOVÉ TEXTY SE NEZTRÁCEJÍ (25. 9. 2026) =====\n');
   test('a nehlásí text, který číselník má stejný', !nalez['Text A'], nalez['Text A']);
   const sbO = await get(popisy, 'http://x/api/popisy?sber=1', cObch);
   test('hledání v zakázkách jen pro administrátora (403)', sbO.status === 403, sbO.status);
+
+  /* D6 (19. 11. 2026): obchodník text „navrhne do číselníku" (varianta
+   * nese `popisyNavrhy`); zakázka se jím uloží beze změny pravidel a sběr
+   * návrh označí a řadí napřed. Změněný text už návrhem není. */
+  const zn = zakazkaCislo('2026 - OPR - CN - 0661');
+  zn.varianty[0].data.cenik.popisy = { 'Ztracený text': 'Návrh obchodníka.', 'Jiný text': 'Jen v zakázce.' };
+  zn.varianty[0].popisyNavrhy = { 'Ztracený text': 'Návrh obchodníka.', 'Jiný text': 'Starší znění.' };
+  const uzn = await post(zakazky, 'http://x/api/zakazky', { zakazka: zn }, cObch);
+  test('D6: obchodník uloží zakázku s návrhem textu', uzn.status === 200, uzn.status);
+  const nz = (await (await get(popisy, 'http://x/api/popisy?sber=1', cAdmin)).json()).nalez || {};
+  const zt = nz['Ztracený text'] || [];
+  test('D6: sběr označí návrh obchodníka a řadí ho napřed',
+    zt.length === 2 && zt[0].text === 'Návrh obchodníka.' && zt[0].navrh === true && !zt[1].navrh, zt);
+  /* Návrh starší než jiný text téže položky jde pořád napřed (mutace
+   * „návrhy nejdou napřed" — bez toho by řazení dalo nejnovější). */
+  const zs = zakazkaCislo('2026 - OPR - CN - 0662');
+  zs.varianty[0].data.cenik.popisy = { 'Starý návrh': 'Navrženo dávno.' };
+  zs.varianty[0].popisyNavrhy = { 'Starý návrh': 'Navrženo dávno.' };
+  zs.varianty[0].upraveno = '2026-01-01T00:00:00.000Z';
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: zs }, cObch);
+  const zs2 = zakazkaCislo('2026 - OPR - CN - 0663');
+  zs2.varianty[0].data.cenik.popisy = { 'Starý návrh': 'Novější text bez návrhu.' };
+  zs2.varianty[0].upraveno = '2099-01-01T00:00:00.000Z';
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: zs2 }, cObch);
+  const ns = ((await (await get(popisy, 'http://x/api/popisy?sber=1', cAdmin)).json()).nalez || {})['Starý návrh'] || [];
+  test('D6: starší návrh jde napřed před novějším textem bez návrhu',
+    ns.length === 2 && ns[0].navrh === true && ns[0].text === 'Navrženo dávno.' && ns[1].kdy > ns[0].kdy, ns);
+  test('D6: text, který se od návrhu změnil, návrhem není',
+    Array.isArray(nz['Jiný text']) && nz['Jiný text'][0].navrh === undefined, nz['Jiný text']);
 }
 
 console.log('\n===== AUDIT B13: RAZÍTKA PŘI ZALOŽENÍ =====\n');
