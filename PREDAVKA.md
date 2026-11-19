@@ -54,7 +54,7 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 - **D8 #675** (`claude/d8-lhuty`, v19.11.6, nad 042fcbc): tabulka lhůt PROJ v Nastavení → Firma (zveřejní se s firmou),
   čísla v textu termínů nabídky PROJ z tabulky (online i Word, 4 jazyky; s výchozí tabulkou beze změny), po Prodáno
   dopočet termínů krycího listu PROJ (řetěz, horní mez, 4,3 t/měsíc, ruční přednost, ↺, zdroj u data), lhůty zamrzne
-  prodej. Šablona v8 pevné týdny nemá → nová šablona netřeba. Otázky J. V. #676 (pracovní). Výsledek kola v CHANGELOG.
+  prodej. Šablona v8 pevné týdny nemá → nová šablona netřeba. Otázky J. V. #676 (pracovní). Kolo VŠE ZELENÉ (427/0/59, 389/0/1, 9/9, SHODA 359/359), mutace [D8] 19/19 + 6/6. HOTOVO.
 
 ## Čeká na J. V.
 

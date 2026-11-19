@@ -26,8 +26,10 @@ s výchozí tabulkou beze změny (porovnání sestavení SHODA). Verzi a číslo
 - **Zámek:** Prodáno zamrazí lhůty do varianty (`data.kryciProj.lhutyProj`); odeslaná nabídka drží lhůty ve snímku
   podmínek (starší bez snímku výchozí čísla). Termíny prodané varianty jsou editovatelné do tisku SoD (klient
   i server), snímek lhůt prodané varianty server nepustí změnit.
-- **Testy:** `src/test_d8_lhuty.js` (113 OK; proti 042fcbc padá), `netlify/test_d8_lhuty.mjs` (15 OK; proti 042fcbc
-  padá). Mutace [D8] jádro 20, server 6.
+- **Testy:** `src/test_d8_lhuty.js` (114 OK; proti 042fcbc padá), `netlify/test_d8_lhuty.mjs` (15 OK; proti 042fcbc
+  padá). Mutace [D8] jádro 19/19 (jedna ekvivalentní vynechána), server 6/6; upravené #540, O7, #547 K37-N2 chycené.
+- **Kolo** `--bez-mutaci --proti origin/claude/integrace-16-10`: VŠE ZELENÉ — sady 427/0/59, hodiny 389/0/1, statické 9/9,
+  porovnání 359/359 SHODA.
 
 ## v19.11.5 — #671 navazující drobnosti K50-N1 (editor a zveřejnění ceníku), větev claude/r-k50n1
 
