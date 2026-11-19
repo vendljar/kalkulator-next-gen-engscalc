@@ -1387,6 +1387,26 @@ const KONTROLY = [
         + 'Nahrajte šablonu nabídky PROJ v8, nebo věty doplňte ve Wordu ručně.' };
     },
   },
+  {
+    /* DALŠÍ UJEDNÁNÍ VE WORDU PROJ (PG #3, J. V. 19. 11. 2026). Vlastní řádky
+     * DALŠÍ UJEDNÁNÍ online nabídka PROJ tiskne; šablona PROJ bez symbolů
+     * {{PROJ_DALSI_UJEDNANI_…}} (v8 a starší) je nemá kam dát. Varování, ne
+     * zábrana (viz cenaWordProj) — dokument vznikne, řádky chybí. Oprava je
+     * šablona PROJ v9 (nastroje/vyrob_sablony.js --proj-v9). */
+    kod: 'dalsiUjednaniWordProj', kde: 'Nabídka PROJ', nazev: 'Word nabídky PROJ neuvede DALŠÍ UJEDNÁNÍ',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const radky = typeof nabidkaProjDalsiUjednani === 'function' ? nabidkaProjDalsiUjednani(ctx.projZadani) : [];
+      if (!radky.length) return null;
+      const s = ctx.sablonaNabidkaProj;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      if (s.symboly.some(k => /^PROJ_DALSI_UJEDNANI_/.test(k))) return null;
+      return { text: 'Nabídka PROJ má ' + radky.length + ' ' + (radky.length === 1 ? 'vlastní řádek' : radky.length < 5 ? 'vlastní řádky' : 'vlastních řádků')
+        + ' DALŠÍ UJEDNÁNÍ, šablona nabídky PROJ' + (s.nazev ? ' „' + s.nazev + '"' : '') + (s.verze ? ' (verze ' + s.verze + ')' : '')
+        + ' pro ně nemá místo ({{PROJ_DALSI_UJEDNANI_NAZEV}}). Online náhled nabídky PROJ je uvede. '
+        + 'Nahrajte šablonu nabídky PROJ v9, nebo řádky doplňte ve Wordu ručně.' };
+    },
+  },
   /* ---- VS-E5 (#595): víc šachet v nabídce OCK ---- */
   {
     /* MODEL 1 A VÍC ŠACHET (návrh 3.5, R3): Model 1 je předloha Excel 1:1

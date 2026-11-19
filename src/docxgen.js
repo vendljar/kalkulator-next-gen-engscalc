@@ -431,7 +431,9 @@ function docxRozpisOdstavce(xml, ph) {
  * dostane i-tý řádek každé hodnoty (činnost vlevo, termín vpravo). Řádek
  * tabulky, který z dvojice nese jen jeden symbol, se rozvine sám. */
 const DOCX_RADKY_ZA_RADEK = ['PODM_PLATEBNI_KALENDAR', 'PROJ_CENA_NEZAHRNUJE', 'PROJ_POZADOVANO_OD_INVESTORA', 'PROJ_DOLOZKY',
-  ['PROJ_TERMINY_CINNOST', 'PROJ_TERMINY_TERMIN']];
+  ['PROJ_TERMINY_CINNOST', 'PROJ_TERMINY_TERMIN'],
+  /* DALŠÍ UJEDNÁNÍ nabídky PROJ (PG #3, šablona PROJ v9): popisek | text */
+  ['PROJ_DALSI_UJEDNANI_NAZEV', 'PROJ_DALSI_UJEDNANI_TEXT']];
 function rozvinRadkyZaRadek(xml, ph) {
   DOCX_RADKY_ZA_RADEK.forEach(skupina => {
     const klice = (Array.isArray(skupina) ? skupina : [skupina]).filter(k => ph && ph[k] != null);

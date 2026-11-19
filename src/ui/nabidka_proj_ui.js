@@ -27,6 +27,36 @@ function nabidkaProjUvodVychozi() {
   if (typeof PJ !== 'undefined' && PJ && !PJ.uvodNabidkyRucne) set('PJ.uvodNabidkyZaklad', null);
 }
 
+/* DALŠÍ UJEDNÁNÍ nabídky PROJ (PG #3, J. V. 19. 11. 2026): vlastní řádky
+ * bez ceny (popisek + text) jako „+ přidat vlastní řádek" v technické
+ * specifikaci OCK. Data `PJ.dalsiUjednani`; zápis jde přes set(), takže ho
+ * hlídá zámek odeslané varianty i náhled jen ke čtení. */
+function nabidkaProjDalsiSeznam() {
+  return (typeof PJ !== 'undefined' && PJ && Array.isArray(PJ.dalsiUjednani)) ? PJ.dalsiUjednani.map(e => Object.assign({}, e)) : [];
+}
+function nabidkaProjDalsiPridej() { set('PJ.dalsiUjednani', nabidkaProjDalsiSeznam().concat([{ label: 'NOVÁ POLOŽKA', hodnota: '' }])); }
+function nabidkaProjDalsiSmaz(i) { const a = nabidkaProjDalsiSeznam(); a.splice(i, 1); set('PJ.dalsiUjednani', a); }
+function nabidkaProjDalsiNastav(i, k, val) {
+  const a = nabidkaProjDalsiSeznam();
+  if (!a[i] || (k !== 'label' && k !== 'hodnota')) return;
+  a[i][k] = String(val == null ? '' : val);
+  set('PJ.dalsiUjednani', a);
+}
+function nabidkaProjDalsiBlok() {
+  const radky = nabidkaProjDalsiSeznam();
+  return `<div class="note" style="font-weight:600;margin-top:10px">DALŠÍ UJEDNÁNÍ (vlastní řádky nabídky, bez ceny):</div>
+    ${radky.length ? `<table id="projDalsiUjednani" style="max-width:820px">${radky.map((e, i) => `<tr>
+      <td style="width:40%"><input type="text" style="width:100%;font-weight:600" value="${esc(e.label || '')}"
+        onchange="nabidkaProjDalsiNastav(${i}, 'label', this.value)"></td>
+      <td><input type="text" style="width:100%" value="${esc(e.hodnota || '')}"
+        onchange="nabidkaProjDalsiNastav(${i}, 'hodnota', this.value)"></td>
+      <td style="width:1%"><button class="mini" title="odebrat řádek" onclick="nabidkaProjDalsiSmaz(${i})">✕</button></td></tr>`).join('')}</table>` : ''}
+    <div class="btns" style="margin-top:4px"><button id="projDalsiPridej" onclick="nabidkaProjDalsiPridej()">+ přidat vlastní řádek</button></div>
+    <div class="note">Řádky se vytisknou v sekci <b>DALŠÍ UJEDNÁNÍ</b> za termíny — v online náhledu i ve Wordu
+      (šablona nabídky PROJ v9). Text je bez ceny; cenu nese jen kalkulace („+ přidat položku"). V EN/DE/FR se přeloží
+      jen věty, které zná slovník aplikace; vlastní text zůstane, jak jste ho napsali.</div>`;
+}
+
 /* Karta pod souhrnem Kalkulace PROJ. */
 function nabidkaProjKarta() {
   const akt = (typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : (ZAK.varianty || [])[0];
@@ -102,6 +132,7 @@ function nabidkaProjKarta() {
     <div class="note">Předvyplní se podle nabízených činností (studie, projednání s památkáři, DPZ…). Ruční úprava platí
       pro tuto variantu a český dokument (online i Word se symbolem <code>{{UVOD_NABIDKY_PROJ}}</code>); EN/DE/FR tisknou
       výchozí přeložené znění. Odstavce oddělte novým řádkem. Odeslaná (zamčená) varianta drží svůj text.</div>
+    ${nabidkaProjDalsiBlok()}
     ${typeof nabidkaFotoKarta === 'function' ? nabidkaFotoKarta('proj') : ''}
     ${typeof kontrolyPanel === 'function' ? kontrolyPanel() : ''}
     ${typeof ukazkoveZabranaPanel === 'function' ? ukazkoveZabranaPanel() : ''}

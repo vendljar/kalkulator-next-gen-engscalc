@@ -503,6 +503,13 @@ const NABIDKA_PROJ_DEF = [
     { t: '*) Termíny pro vyjádření dotčených orgánů a stavebního úřadu nejsou závazné. Jedná se o termíny, které nemůže zhotovitel z velké části ovlivnit.', sekce: 'ic' },
     'Termíny zpracování mohou být upraveny dle volných kapacit zhotovitele v okamžiku objednání.',
   ] },
+  /* DALŠÍ UJEDNÁNÍ (PG #3, J. V. 19. 11. 2026): vlastní řádky obchodníka
+   * („+ přidat vlastní řádek" v kartě Cenová nabídka (PROJ)) — text bez ceny,
+   * popisek a hodnota jako DALŠÍ UJEDNÁNÍ v nabídce OCK. Data ve variantě:
+   * `proj.zadani.dalsiUjednani` = [{ label, hodnota }]; bez řádků (i starší
+   * zakázky bez pole) se sekce netiskne. Word: šablona PROJ v9 (blok
+   * {{BLOK_DALSI_UJEDNANI_ZAC}}…{{…_KON}} se symboly PROJ_DALSI_UJEDNANI_*). */
+  { typ: 'pary', nadpis: 'DALŠÍ UJEDNÁNÍ', klic: 'dalsiUjednani', radky: [] },
   /* Doložky nabídky PROJ (#367 fáze 2b, Q5): výchozí prázdné a VYPNUTÉ —
    * tisknou se, až je J. V. zapne (Nastavení → Smlouvy / Šablony → PROJ). */
   { typ: 'seznam', nadpis: 'DOLOŽKY', firma: 'dolozky', dolozky: true,
@@ -647,6 +654,16 @@ function nabidkaProjPlatby(zak, varianta, lang, spoctene) {
 /* Spojka ve výčtu „včetně A, B a C" u popisu ceny DPZ/DPS. Není ve slovníku:
  * heslo „a" by prekladNorm (malá písmena) použil i na samostatné „A". */
 const NABIDKA_PROJ_SPOJKA = { cz: 'a', en: 'and', de: 'und', fr: 'et' };
+
+/* DALŠÍ UJEDNÁNÍ nabídky PROJ (PG #3): vyplněné vlastní řádky zadání PROJ
+ * varianty. Úplně prázdný řádek se vynechá; konec řádku v textu = mezera
+ * (Word rozvíjí řádek tabulky po řádcích hodnoty). */
+function nabidkaProjDalsiUjednani(zadani) {
+  const jedenRadek = x => String(x == null ? '' : x).replace(/\s*[\r\n]+\s*/g, ' ').trim();
+  return ((zadani && Array.isArray(zadani.dalsiUjednani)) ? zadani.dalsiUjednani : [])
+    .filter(e => e && (jedenRadek(e.label) || jedenRadek(e.hodnota)))
+    .map(e => ({ label: jedenRadek(e.label), hodnota: jedenRadek(e.hodnota) }));
+}
 
 function nabidkaProjData(zak, varianta, lang, moznosti) {
   if (typeof vzTiskHlidej === 'function') vzTiskHlidej(zak);   // VZ-E2 (revize U3): jen z pohledu zákazníka
@@ -867,6 +884,7 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     /* K3-N16: náhrada funkcí — vzory „$&“, „$`“ v názvu firmy by vložily okolní text */
     return klic === 'dolozky' ? r.map(x => String(x).replace(/\{FIRMA\}/g, () => nazevFirmy || '{FIRMA}')) : r;
   };
+  const dalsiUjednani = nabidkaProjDalsiUjednani(pj.zadani);   // PG #3
   const bloky = NABIDKA_PROJ_DEF.filter(b => b.klic !== 'uvodNabidky' || uvodOdst.length)
     .filter(b => !b.ad || nabiziAD)
     .filter(b => !b.dolozky || podmEf.nabidkaProj.dolozkyTisk)
@@ -937,6 +955,12 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
             : (splatnost || P(NABIDKA_PROJ_SAZBY.splatnostDni + ' dní'))],
           [P('Platnost nabídky'), platnost || P(NABIDKA_PROJ_SAZBY.platnostMesicu + ' měsíce')],
         ] };
+      }
+      if (b.klic === 'dalsiUjednani') {
+        /* PG #3: popisek i text přes slovník jako v nabídce OCK (neznámý text
+         * zůstane, jak ho obchodník napsal). */
+        return { typ: 'pary', nadpis: P(b.nadpis), klic: b.klic,
+          radky: dalsiUjednani.map(e => [P(e.label), P(e.hodnota)]) };
       }
       if (b.firma === 'terminy') {
         /* #569: dotisk nabídky odeslané dřív (bez snímku podmínek) dá
@@ -1151,6 +1175,14 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     PROJ_TERMINY_CINNOST: textProj('terminy').filter(radekVRozsahu).map(x => x[0]).join('\n'),
     PROJ_TERMINY_TERMIN: textProj('terminy').filter(radekVRozsahu).map(x => terminStudie(x)).join('\n'),
     PROJ_DOLOZKY: podmEf.nabidkaProj.dolozkyTisk ? textProj('dolozky').join('\n') : '',
+    /* DALŠÍ UJEDNÁNÍ (PG #3) pro šablonu PROJ v9: dvousloupcový řádek
+     * {{PROJ_DALSI_UJEDNANI_NAZEV}} | {{PROJ_DALSI_UJEDNANI_TEXT}}, docxgen ho
+     * zopakuje za každý vlastní řádek (rozvinRadkyZaRadek). Bez řádků prázdné —
+     * blok {{BLOK_DALSI_UJEDNANI_ZAC}}…{{…_KON}} zmizí i s nadpisem. Šablona
+     * bez symbolů (v8 a starší) řádky nevytiskne — řekne to kontrola
+     * dalsiUjednaniWordProj. */
+    PROJ_DALSI_UJEDNANI_NAZEV: dalsiUjednani.map(e => P(e.label)).join('\n'),
+    PROJ_DALSI_UJEDNANI_TEXT: dalsiUjednani.map(e => P(e.hodnota)).join('\n'),
     /* Cestovné u akce mimo Prahu (D2) pro šablonu PROJ v8: věta (věty) pod
      * cenou činnosti, v bloku {{BLOK_CESTOVNE_<X>_ZAC}}…{{…_KON}} — prázdné
      * (akce v Praze, činnost se nenabízí) blok zmizí. */
@@ -1257,4 +1289,4 @@ if (typeof dokumentRegistruj === 'function')
   });
 
 if (typeof module !== 'undefined')
-  module.exports = { nabidkaProjStudieBezZamereni, nabidkaProjDpzBezZamereni, NABIDKA_PROJ_DPZ_STAVAJICI, NABIDKA_PROJ_STUDIE_CASTI, NABIDKA_PROJ_PUVODNI_STAV, nabidkaProjData, nabidkaProjNabiziAD, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, nabidkaProjUvodRucne, nabidkaProjUvodNesedi, NABIDKA_PROJ_CESTOVNE, NABIDKA_PROJ_CESTOVNE_KDE, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_UVOD_ZAVER, NABIDKA_PROJ_DPZ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };
+  module.exports = { nabidkaProjDalsiUjednani, nabidkaProjStudieBezZamereni, nabidkaProjDpzBezZamereni, NABIDKA_PROJ_DPZ_STAVAJICI, NABIDKA_PROJ_STUDIE_CASTI, NABIDKA_PROJ_PUVODNI_STAV, nabidkaProjData, nabidkaProjNabiziAD, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, nabidkaProjUvodRucne, nabidkaProjUvodNesedi, NABIDKA_PROJ_CESTOVNE, NABIDKA_PROJ_CESTOVNE_KDE, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_UVOD_ZAVER, NABIDKA_PROJ_DPZ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };

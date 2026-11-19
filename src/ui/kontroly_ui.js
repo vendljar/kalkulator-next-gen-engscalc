@@ -183,7 +183,9 @@ function kontrolySablonaNabidkaProj(slevaProj, projVysledek, jazyk) {
   const bezAD = typeof PJ !== 'undefined' && !!PJ && PJ.nabizetAD === false;
   /* Akce mimo Prahu (D2) — šablona bez symbolů cestovného (cestovneWordProj). */
   const mimoPrahu = typeof PJ !== 'undefined' && !!PJ && !!PJ.akceMimoPrahu;
-  if (!sleva && !navic && !plan && !geodet && !bezAD && !mimoPrahu) return null;
+  /* DALŠÍ UJEDNÁNÍ (PG #3) — šablona bez symbolů PROJ_DALSI_UJEDNANI_* (dalsiUjednaniWordProj). */
+  const dalsi = typeof PJ !== 'undefined' && !!PJ && typeof nabidkaProjDalsiUjednani === 'function' && nabidkaProjDalsiUjednani(PJ).length > 0;
+  if (!sleva && !navic && !plan && !geodet && !bezAD && !mimoPrahu && !dalsi) return null;
   return kontrolySablonaSymboly('nabidkaProj', jazyk);
 }
 /* Symboly šablony SoD (C2 #583 pravidlo vsSablonaSod, C3 #584 sodNevyplneno).
