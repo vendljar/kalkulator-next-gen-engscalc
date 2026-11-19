@@ -7,17 +7,23 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "82cbd72d",
-  "verze": "v18.11.9",
-  "datum": "18. 11. 2026"
+  "sha": "9a0a3868",
+  "verze": "v19.11.1",
+  "datum": "19. 11. 2026"
  },
- "test_navic_commitu": 266,
+ "test_navic_commitu": 282,
  "v_testu_ne_v_main": [
   {
-   "id": "664",
+   "id": "668",
+   "typ": "rozhodnuti",
+   "nazev": "Audit #667: další položky se sdílenou cenou nebo bez ceny z nabídky — rozhodnout",
+   "verze": "v19.11.1"
+  },
+  {
+   "id": "667",
    "typ": "ukol",
-   "nazev": "UE: úprava existujícího účtu v Nastavení → Uživatelé (titul, jméno, funkce, telefon; e-mail jen ke čtení)",
-   "verze": "v18.11.9"
+   "nazev": "STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ jako zaškrtávací položka šachty s vlastní cenou C.statikaOplKc; cena z nabídky i nulová",
+   "verze": "v19.11.1"
   },
   {
    "id": "659",
@@ -75,6 +81,69 @@
     "VZ-N3"
    ],
    "verze": "v18.11.8"
+  },
+  {
+   "id": "652",
+   "typ": "rozhodnuti",
+   "nazev": "Při nasazení do main zadat do Nastavení → Firma 6. řádek termínů realizace (5 let záruka) ve 4 jazycích",
+   "alias": [
+    "K49-I5"
+   ],
+   "verze": "v19.11.1"
+  },
+  {
+   "id": "651",
+   "typ": "ukol",
+   "nazev": "Ověřit SoD u víc šachet a slevy v EUR (L3) na testu",
+   "alias": [
+    "K49-I7"
+   ],
+   "verze": "v18.11.7"
+  },
+  {
+   "id": "645",
+   "typ": "ukol",
+   "nazev": "NS: v Nastavení → Smlouvy / Šablony stojí správa šablon hned pod přepínačem OCK / PROJ, nad platebními podmínkami",
+   "alias": [
+    "NS"
+   ],
+   "verze": "v18.11.7"
+  },
+  {
+   "id": "632",
+   "typ": "ukol",
+   "nazev": "Ceník a termíny firmy v testu srovnané podle main — ověřit v kole 49",
+   "alias": [
+    "B0.7",
+    "B6",
+    "K37-N6",
+    "K38-I2"
+   ],
+   "verze": "v18.11.7"
+  },
+  {
+   "id": "618",
+   "typ": "ukol",
+   "nazev": "Obnovit TEST sadu v databázi testu nástrojem test_sada_obnov.mjs",
+   "alias": [
+    "B4",
+    "C8",
+    "B0.9",
+    "K39-I1",
+    "K38-I1"
+   ],
+   "verze": "v18.11.7"
+  },
+  {
+   "id": "615",
+   "typ": "nalez",
+   "nazev": "Smlouva o dílo v5 DE/EN vychází převážně česky — pojistka jazyka SoD (C7: výroba jazykové verze z češtiny zrušena, kontrola podílu češtiny)",
+   "alias": [
+    "K48-N1",
+    "B1",
+    "C7"
+   ],
+   "verze": "v18.11.7"
   },
   {
    "id": "614",
@@ -482,24 +551,15 @@
    "typ": "ukol",
    "nazev": "Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6)",
    "cekaNa": "nahrát upravený skill (mimo repo)"
-  },
-  {
-   "id": "652",
-   "typ": "ukol",
-   "nazev": "Při nasazení do main zadat do Nastavení → Firma 6. řádek termínů realizace (5 let záruka) ve 4 jazycích",
-   "alias": [
-    "K49-I5"
-   ],
-   "cekaNa": "zadá při nasazení do main"
   }
  ],
  "ceka_na_jv_odlozene": 11,
  "nehotove_podle_kdo": {
-  "J. V.": 41,
+  "J. V.": 40,
   "kolega": 5,
   "koordinace": 13,
   "dávka": 3,
   "integrátor": 2
  },
- "nehotovych": 64
+ "nehotovych": 63
 }
