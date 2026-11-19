@@ -54,6 +54,8 @@ revize poradce. Výchozí stav = dnešní ceny (porovnání sestavení proti `or
   35/0 (proti ab6b29c 3 FAIL: klon bez záznamu, zámek klonu 403, věta o směsi).
 - **Mutace [SP]:** jádro [SP] 11/11 + P5 3/3 chycených, server [SP] 8/8 + #561 19/19 chycených.
 
+**Po dorevizi (R1, R2, R4) kolo `--bez-mutaci --proti origin/claude/integrace-16-10` nad 34f282f:** sady 467/0/7, hodiny +400 dní 379/0/1, porovnání SHODA 353/353; kontrola verze chtěla den commitu → v19.11.1, pak build + statické 9/9 zelené. Mutace jádro [SP] 13/13, server [SP] 23/23 + #561 19/19.
+
 **Po revizi (N1–N4) kolo `--bez-mutaci --proti origin/claude/integrace-16-10` nad f9a5551: VŠE ZELENÉ** — sady 467/0/7, hodiny +400 dní 379/0/1, statické 9/9, porovnání SHODA 353/353; mutace jádro [SP] 13/13, server [SP] 17/17 + #561 19/19.
 
 Původně: **Kolo `--bez-mutaci` nad 2a7f210 (po sloučení 41bbe99): VŠE ZELENÉ** — sady 466/0/7, hodiny +400 dní 378/0/1, statické 9/9 (36 min); porovnání sestavení proti `origin/test` **SHODA 353/353**.

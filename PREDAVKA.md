@@ -25,8 +25,9 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   (`Z.statikaOpl`, chybí = Ano u šachty s opláštěním), vlastní sazba `C.statikaOplKc` (migrace = `statikaKc`), cena
   z nabídky u obou statik zvlášť, nula z nabídky platí u každé položky. Mění cenovou logiku → **revize poradce**.
   Revize poradce N1/N2/N4 a N3 J. V. (cena z nabídky potvrdí obchodník jen se zdrojem, jinak schválení) zapracovány.
-  Po revizi kolo `--bez-mutaci --proti integrace` nad f9a5551 VŠE ZELENÉ (467/0/7, hodiny 379/0/1, statické 9/9,
-  porovnání SHODA 353/353); mutace jádro [SP] 13/13, server [SP] 17/17 + #561 19/19. Nad 910315b + 755062d. Audit
+  Dorevize R1/R2/R4 (19. 11.): kolo `--bez-mutaci --proti integrace` nad 34f282f sady 467/0/7, hodiny 379/0/1,
+  porovnání SHODA 353/353; po posunu verze na v19.11.1 build + statické 9/9 zelené; mutace jádro [SP] 13/13,
+  server [SP] 23/23 + #561 19/19. Nad 910315b + 755062d. Audit
   `podklady/AUDIT_CENY_POLOZEK_653.md`, otázka J. V. #654:
 
   | | cesta / položka | sdílí / chybí | stav |
