@@ -69,7 +69,13 @@ function nastPanelAktivni() {
   const p = NAST.panel || 'obecne';
   return nastPanelyViditelne().find(x => x.id === p) || NAST_PANELY[0];
 }
-function nastPanel(p) { NAST.panel = p; renderNastaveni(); }
+/* #ON (19. 11. 2026): přepnutí na Uživatele načte seznam účtů znovu — ať
+ * tečka „online“ a „Naposledy aktivní“ nejsou z doby přihlášení. */
+function nastPanel(p) {
+  if (p === 'uzivatele' && NAST.panel !== 'uzivatele' && typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.uzivateleNacteno)
+    ONLINE_STAV.uzivateleNacteno = false;
+  NAST.panel = p; renderNastaveni();
+}
 
 /* Přepínač rolí je z doby před přihlašováním – byl to náhled pro toho,
  * kdo si soubor otevřel na svém disku. Od chvíle, kdy role chodí ze

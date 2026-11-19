@@ -97,7 +97,7 @@ const prihlas = async (email, heslo) => {
   await page.waitForTimeout(300);
 };
 const otevriUzivatele = async () => {
-  await page.evaluate(() => { ONLINE_STAV.uzivateleNacteno = false; otevriNastaveni(); nastPanel('uzivatele'); });
+  await page.evaluate(() => { otevriNastaveni(); nastPanel('firma'); nastPanel('uzivatele'); });
   await page.waitForTimeout(500);
 };
 const radek = (email) => page.evaluate((e) => {
@@ -143,6 +143,16 @@ const odh = await radek('odhlaseny.on@priklad.cz');
 test('odhlášený účet: bez tečky, odhlášení v title', odh && !odh.tecka && /před 2 min/.test(odh.text) && /odhlášen/.test(odh.title), odh);
 test('řádky s tečkou a bez tečky v jedné tabulce (pojistka)',
   (await page.locator('#nastaveni-panel .uz-online').count()) === 2);
+
+/* přepnutí na jinou záložku a zpět načte seznam znovu */
+pamet.set('aktivita/a/vedouci.on@priklad.cz', JSON.stringify({ kdy: iso(Date.now() - 10 * 60000) }));
+await page.evaluate(() => nastPanel('firma'));
+await page.waitForTimeout(200);
+await page.evaluate(() => nastPanel('uzivatele'));
+await page.waitForTimeout(600);
+const ved2 = await radek('vedouci.on@priklad.cz');
+test('po návratu na záložku Uživatelé je stav čerstvý (vedoucí před 10 min bez tečky)',
+  ved2 && !ved2.tecka && /před 10 min/.test(ved2.text), ved2);
 
 /* obchodník nic nevidí */
 await page.evaluate(() => { document.getElementById('nastaveni-overlay').style.display = 'none'; });

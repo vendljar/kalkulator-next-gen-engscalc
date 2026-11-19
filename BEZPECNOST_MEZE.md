@@ -2115,3 +2115,18 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   číslo nabídky s písmenem a stav; normalizace zahodí jiné klíče (ceny, IČO)
   a drží strop 10 položek × 300 znaků. Názvy dalších zákazníků tak vidí každý
   přihlášený jako dnes `objednatel` (návrh § 6).
+
+## #ON — kdo je online (v19.11.6, 19. 11. 2026) — NÁVRH, číslo B přidělí koordinace
+
+- **B??? — čas poslední aktivity uživatele.** Server u přihlášeného uživatele ukládá jen ČAS poslední
+  aktivity (`vyzadujRoli` a přihlášení) a čas odhlášení — žádnou IP adresu, prohlížeč ani cestu
+  požadavku. Oddělené úložiště `aktivita` (`a/<e-mail>`, `o/<e-mail>`), mimo zálohu (provozní údaj);
+  smazání účtu ho smaže. Ven jde jen ve výpisu `GET /api/uzivatele`, který smí jen Administrátor
+  (Obchodník a Vedoucí 403, `/api/ja` údaj nenese — `test_prava.mjs`). Zápis je best-effort: nečeká
+  se na něj a chyba se spolkne, takže výpadek úložiště požadavek nezdrží ani neshodí.
+  *Co to nedělá:* rozestup (1 zápis za minutu na účet) drží paměť instance funkce — dvě instance se
+  nevidí a zapíšou obě, studený start rozestup zapomene. Zápis spuštěný těsně před koncem odpovědi
+  se může ztratit, když běhové prostředí funkci zmrazí; dožene ho další volání. „Online“ (aktivita
+  v posledních 5 min bez pozdějšího odhlášení) je odhad: otevřená karta bez volání API zhasne po
+  5 minutách, a relace ukončená změnou hesla nebo zásahem správce zhasne až po 5 minutách (bez
+  záznamu odhlášení). Údaj je pro přehled správce, ne doklad o docházce ani o přítomnosti.

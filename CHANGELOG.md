@@ -8,6 +8,26 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.11.6 — #ON kdo je online (Nastavení → Uživatelé), větev claude/on-online
+
+Nad integrací `042fcbc` (v19.11.5). Zadání J. V. 19. 11. 2026. Cenu ani dokumenty nemění (porovnání SHODA).
+Verzi přečísluje koordinace, číslo roadmapy a meze B přidělí koordinace.
+
+- **Server:** přihlášený uživatel při běžném volání API (`vyzadujRoli`) a při přihlášení zapíše **čas** poslední
+  aktivity — nic víc (žádná IP ani prohlížeč). Nejvýš 1 zápis za minutu na účet (rozestup v paměti instance),
+  best-effort: na zápis se nečeká a chyba úložiště se spolkne. Odhlášení zapíše čas odhlášení. Oddělené úložiště
+  `aktivita` (klíče `a/<e-mail>`, `o/<e-mail>`), do účtu se nezapisuje (souběh se zásahem správce). Smazání účtu
+  aktivitu smaže. Ven jen ve výpisu `GET /api/uzivatele` pro Administrátora: `posledniAktivita`, `odhlaseni`,
+  `online` (aktivita v posledních 5 min bez pozdějšího odhlášení). Žádné nové API. Záloha: `aktivita` je výjimka
+  (provozní údaj, po obnově se zapíše prvním voláním) — k vědomí J. V.
+- **UI:** tabulka uživatelů má sloupec **Naposledy aktivní** — zelená tečka + „online“, relativně („právě teď“,
+  „před 3 min“, „dnes 9:12“, „včera“, datum), přesný čas a čas odhlášení v `title` (`formatNaposledy`,
+  `formatCasPresny` v `src/format.js`). Seznam se načte znovu při každém přepnutí na záložku Uživatelé (dřív jen jednou za přihlášení); živě se nepřepočítává.
+- **Testy:** `netlify/test_on_aktivita.mjs` (38 OK; proti 042fcbc padá), `netlify/test_prava.mjs` blok #ON
+  (Obchodník a Vedoucí 403 bez údaje, /api/ja bez údaje), `src/test_on_naposledy.js` (14 OK, i v TZ New York/Tokio;
+  proti 042fcbc padá), harness `overit_on_online.mjs` (18 OK; proti starému UI 8 FAIL). `test_zalohy.mjs` N4:
+  výjimka `aktivita`. Mutace [ON] server 11/11.
+
 ## v19.11.5 — #671 navazující drobnosti K50-N1 (editor a zveřejnění ceníku), větev claude/r-k50n1
 
 Nad integrací `a018828` (v19.11.3). Cenu nemění (jen zahraniční statika zadaná textem). Verzi přečísluje koordinace.
