@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v19.11.1 — VZ-F2 #660–#663 + VZF1-I1: dorovnání víc zákazníků po revizi VZ-F1, větev claude/vz-f2
+## v19.11.4 — VZ-F2 #660–#663 + VZF1-I1: dorovnání víc zákazníků po revizi VZ-F1, větev claude/vz-f2
 
 Nad integrací `a3fad44` (test v19.11.2). Verzi přečísluje koordinace (podle dne commitu, pořadí 1). Na webech, Disku
 ani v Pipedrive nic. U jednoho zákazníka a s vypnutou funkcí beze změny (porovnání sestavení proti integraci SHODA).
