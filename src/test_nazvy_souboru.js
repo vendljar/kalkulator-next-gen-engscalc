@@ -40,7 +40,7 @@ const TABULKA = [
   ['sod', u({ cislo: '2026 - OPR - CN - 555', jazyk: 'cz' }), 'SOD_2026-OPR-CN-555-OCK-CZ'],
   ['sod', u({ cislo: '2026 - OVP - CN - 77', jazyk: 'en', oblast: 'proj' }), 'SOD_2026-OVP-CN-77-PROJ-EN'],
   ['plna-moc', u({ cislo: '2026 - OVP - CN - 77' }), 'PLNA-MOC_2026-OVP-CN-77-PROJ-CZ'],
-  ['objednavka', u({ cislo: '2026-OVP-OBJ-0376.2' }), 'OBJEDNAVKA_2026-OVP-OBJ-0376.2-PROJ'],   /* D3 #675 */
+  ['objednavka', u({ cislo: '2026-OVP-OBJ-0376.2' }), 'OBJEDNAVKA_2026-OVP-OBJ-0376.2-PROJ'],   /* D3 #688 */
   ['objednavka', u({ cislo: '' }), 'OBJEDNAVKA_OVP-OBJ-PROJ'],
   ['specifikace', u({ cislo: '2026 - OPR - CN - 555', jazyk: 'en' }), 'SPECIFIKACE_2026-OPR-CN-555-OCK-EN'],
   ['kryci-list', u({ cislo: '2026 - OPR - CN - 555', list: 'Backoffice' }), 'KRYCI-LIST_2026-OPR-CN-555-OCK-BACKOFFICE_27.10.1'],

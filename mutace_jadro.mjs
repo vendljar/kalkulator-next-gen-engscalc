@@ -102,7 +102,7 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   /* vyjimky.js (B183, 20. 10. 2026): obsah cenové výjimky — plocha pásu
    * a světlíku na 0,1 m², dřív schválené výjimky starým tvarem. */
   'vyjimky.js',
-  /* objednavka_proj.js (D3 #675, 19. 11. 2026): Objednávka / Smlouva PROJ —
+  /* objednavka_proj.js (D3 #688, 19. 11. 2026): Objednávka / Smlouva PROJ —
    * řádky, sleva a celkem jdou zákazníkovi k podpisu, číslo OBJ z CN.
    * Hlídá src/test_objednavka_proj.js. */
   'objednavka_proj.js',
@@ -5244,7 +5244,7 @@ const MUTACE = [
     hledej: "    if (out.cestina.zabrana) out.chyby.push(out.cestina.zabrana);",
     nahrad: "    if (false) out.chyby.push(out.cestina.zabrana);",
     proc: "administrátor by zveřejnil smlouvu z velké části česky (server by ji pak odmítl až po kliknutí)", sady: ["test_sablony_online.js"] },
-  /* D3 #675 (19. 11. 2026): Objednávka / Smlouva PROJ. Hlídá src/test_objednavka_proj.js. [D3] */
+  /* D3 #688 (19. 11. 2026): Objednávka / Smlouva PROJ. Hlídá src/test_objednavka_proj.js. [D3] */
   { nazev: "D3: číslo OBJ bez náhrady CN [D3]", soubor: "objednavka_proj.js",
     hledej: "  casti[i] = 'OBJ';", nahrad: "",
     proc: "objednávka by nesla číslo nabídky místo čísla objednávky", sady: ["test_objednavka_proj.js"] },

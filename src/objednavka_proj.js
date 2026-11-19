@@ -38,7 +38,7 @@ function objednavkaProjCislo(cisloNabidky) {
   return casti.join('-');
 }
 
-/* ZÁBRANA: JEN Z ODESLANÉ CENOVÉ NABÍDKY (J. V. 19. 11. 2026, #676 bod 3).
+/* ZÁBRANA: JEN Z ODESLANÉ CENOVÉ NABÍDKY (J. V. 19. 11. 2026, #689 bod 3).
  * Objednávka odkazuje na cenovou nabídku „ze dne …" jako na nedílnou součást —
  * ta tedy musí existovat: varianta musí být zamčená tiskem nabídky PROJ.
  * Vrací hlášku, nebo ''. Volá ji objednavkaProjData i brána tlačítka
@@ -166,7 +166,7 @@ function objednavkaProjData(zak, varianta, moznosti) {
     zastupce: [t(za.smluvniJmeno), t(za.smluvniPozice)].filter(Boolean).join(', ') };
 
   /* Číslo zakázky z účetnictví = pole „Číslo zakázky" krycího listu PROJ
-   * (J. V. 19. 11. 2026, #676 bod 2); prázdné = řádek se netiskne. */
+   * (J. V. 19. 11. 2026, #689 bod 2); prázdné = řádek se netiskne. */
   const kl = (varianta && varianta.data && varianta.data.kryciProj && varianta.data.kryciProj.hodnoty) || {};
   const cisloZakazky = t(kl.cisloZakazky);
   /* Vystavil = zpracovatel nabídky (přihlášený uživatel, Můj profil). */

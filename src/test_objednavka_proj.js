@@ -233,7 +233,7 @@ const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 768
   test('odeslaná varianta: bez zábrany', !po.chyba && O.objednavkaProjZabrana(v) === '');
 }
 
-/* ---------------- 6b) zábrana: jen z odeslané nabídky (J. V. 19. 11., #676 bod 3) ---------------- */
+/* ---------------- 6b) zábrana: jen z odeslané nabídky (J. V. 19. 11., #689 bod 3) ---------------- */
 {
   const { zak, v } = zakazka();
   const e = O.objednavkaProjData(zak, v, { dnes: DNES });
@@ -249,7 +249,7 @@ const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 768
 /* ---------------- 7) Word, brány, UI ---------------- */
 (async () => {
   const { zak, v } = zakazka();
-  /* Pole „Číslo zakázky" krycího listu PROJ (J. V. 19. 11., #676 bod 2). */
+  /* Pole „Číslo zakázky" krycího listu PROJ (J. V. 19. 11., #689 bod 2). */
   const pole = KRYCI_PROJ_SEKCE.find(x => x.sekce === 'Základní údaje').pole.find(x => x.id === 'cisloZakazky');
   test('KL PROJ: pole „Číslo zakázky" v Základních údajích (BO i Techdata)', !!pole && pole.label === 'Číslo zakázky'
     && pole.verze.join() === 'bo,techdata' && !pole.prefill && !pole.bind);

@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v19.11.6 — D3 #675: Objednávka / Smlouva PROJ z nabídky PROJ, větev claude/d3-objednavka-proj
+## v19.11.11 — D3 #688: Objednávka / Smlouva PROJ z nabídky PROJ, větev claude/d3-objednavka-proj
 
 Nad integrací `042fcbc` (v19.11.5). Nový dokument, cenu ani text nabídky a SoD nemění. Verzi přečísluje koordinace.
 
@@ -25,7 +25,7 @@ Nad integrací `042fcbc` (v19.11.5). Nový dokument, cenu ani text nabídky a So
 - **Kde:** karta „Objednávka / Smlouva (PROJ)“ na konci krycího listu PROJ, pod Smlouvou o dílo PROJ (smluvní
   dokument ke stejné nabídce; platební kalendář a zástupci se vyplňují v krycím listu). Tisk / PDF z náhledu, Word
   generovaný od nuly (bez nové šablony), se zápatím „Strana x / y“. Objednávka variantu nezamyká.
-- **Rozhodnutí J. V. k #676 (19. 11.):** objednávka **jen z odeslané (vytištěné) CN** — jinak zábrana s hláškou
+- **Rozhodnutí J. V. k #689 (19. 11.):** objednávka **jen z odeslané (vytištěné) CN** — jinak zábrana s hláškou
   a zhasnuté tlačítko (`objednavkaProjZabrana`, brána `dokumentZabrana`); nové pole krycího listu PROJ **„Číslo zakázky“**
   (z účetnictví; zámek jako ostatní pole — po CN volné, po SoD / Prodáno zmrazené) se tiskne v kolonce Zakázka,
   prázdné se vynechá; plný rozsah prací i za cenu 2 stran. Rozvržení podle vzoru: vlevo dodavatel a pod ním
