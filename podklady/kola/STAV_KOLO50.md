@@ -65,3 +65,23 @@ Návrh pro vývoj ke K50-N1: v `cenikSlozRadu` pro řadu `zahr` bez `C.statikaOp
 - ✅ kolo 50 celé (výpočet, tok, fuzz, VS, VZ, jednotkové sady, harnessy), protokol, STAV
 - ⬜ K50-N1: oprava vývojem (rychlá cesta, pokud J. V. rozhodne) a pak cílené kolo nad zahraniční řadou
 - ⬜ K40-N1 zmizí po sloučení testu do main
+
+## Dodatek 19. 11. odpoledne: cílené kolo po opravě K50-N1 (test v19.11.3, `a018828b`)
+
+Oprava `cd83ce1d` (R-K50N1): `cenikZahrSVychozimi` doplní nevyplněnou zahraniční `C.statikaOplKc` zahraniční `C.statikaKc`.
+Data: nový export TEST sady z testu v19.11.3 (216 zakázek, ceník v11 beze změny). Lokální sestavení, na test se nic nezapisovalo.
+
+| kontrola | výsledek |
+|---|---|
+| zahraniční úlohy plánu kola 50 (47, z toho 20 s novým ceníkem): v18.11.2 × v19.11.3 | ✅ **47/47 čísel shodných** (rozdíl 0) |
+| fuzz zahraniční řady (78, z toho 20 s novým ceníkem): v18.11.2 × v19.11.3 | ✅ **78/78** |
+| v19.11.3 × main (plán) | 40/47 shodných, 7 = K40-N1 (VSG), jinak nic |
+| v19.11.3 × main (fuzz) | ✅ 78/78 |
+| statika opláštění v zahraniční řadě | = zahraniční sazba statiky (bez vlastní `C.statikaOplKc` v zahraničním ceníku) |
+| **zamčená** zahraniční varianta z vadné verze (6 kalkulací K28-Z0x: v19.11.2 nový ceník → tisk se zámkem → otevřeno ve v19.11.3) | ✅ drží původní cenu 6/6, zůstává zamčená, `zamekOvereni` = **shoda/0** 6/6 |
+| **rozpracovaná** (nezamčená) varianta z vadné verze otevřená ve v19.11.3 | cena zůstane uložená, dokud uživatel nepřepočte. Přehled zastaralých cen hlásí rozdíl právě `C.statikaOplKc` (6/6). ✅ Po přepočtu (`cenikPrepocti` s dnešním ceníkem řady) = správná cena 6/6 |
+
+Pozn.: první pokus o křížovou zkoušku vadu nereprodukoval, protože globální ceník se do stránky nevložil (konstanty nejsou na `window`).
+Opraveno postupem z `h.mjs`. Tato chyba harnessu výsledek kola 50 neovlivnila.
+
+**K50-N1: na testu opraveno (v19.11.3).** Na main se nedostal (main = v11.11.1).
