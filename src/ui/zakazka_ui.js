@@ -598,16 +598,19 @@ function nabidkaDokumentyBlok() {
     ${typeof kontrolyPanel === 'function' ? kontrolyPanel() : ''}
     ${typeof ukazkoveZabranaPanel === 'function' ? ukazkoveZabranaPanel() : ''}
     <div class="btns" style="margin-top:10px">
-      <button class="primary"${zabTisk} onclick="nabidkaOckDokument()">Kompletní náhled a tisk nabídky</button>
-      <button${zab} onclick="nabidkaWord()">Vytvořit nabídku (Word)</button>
+      <!-- PG #1 (J. V. 19. 11. 2026): pořadí zleva náhled podkladů → Word (modrý,
+           hlavní cesta) → náhled a tisk (bez barvy). Zábrany zůstávají u svých tlačítek. -->
       <button onclick="nabidkaNahled()">Kompletní náhled podkladů</button>
+      <button class="primary"${zab} onclick="nabidkaWord()">Vytvořit nabídku (Word)</button>
+      <button${zabTisk} onclick="nabidkaOckDokument()">Kompletní náhled a tisk nabídky</button>
       ${typeof tiskJazykVyber === 'function' ? tiskJazykVyber() : ''}
     </div>
-    <div class="note" style="margin-top:6px">Tlačítko <b>Kompletní náhled a tisk nabídky</b> otevře celou cenovou nabídku
-      přímo v aplikaci – stejně jako u nabídky PROJ. V náhledu lze zaškrtnout <b>✏️ Upravit text před tiskem</b> a nabídku
-      ručně doladit ještě před uložením do PDF; <b>↺ Vrátit původní znění</b> vrátí text vygenerovaný z kalkulace.
-      Ruční úpravy platí <b>jen pro daný výtisk</b> – do zakázky ani do kalkulace se nepropisují. Cesta přes Word
-      i náhled podkladů zůstávají beze změny.</div>
+    <div class="note" style="margin-top:6px">Tlačítka jdou zleva v pořadí práce: <b>Kompletní náhled podkladů</b> ukáže,
+      co se do nabídky vyplní; modré <b>Vytvořit nabídku (Word)</b> vyrobí nabídku do šablony Word;
+      <b>Kompletní náhled a tisk nabídky</b> otevře celou cenovou nabídku přímo v aplikaci – stejně jako u nabídky PROJ.
+      V náhledu lze zaškrtnout <b>✏️ Upravit text před tiskem</b> a nabídku ručně doladit ještě před uložením do PDF;
+      <b>↺ Vrátit původní znění</b> vrátí text vygenerovaný z kalkulace. Ruční úpravy platí <b>jen pro daný výtisk</b> –
+      do zakázky ani do kalkulace se nepropisují.</div>
     <div class="note nabidkaStav">${SABLONA_DOCX ? 'Šablona načtena (' + esc(SABLONA_DOCX.nazev) + ').' : 'Při prvním použití budete vyzváni k výběru souboru šablony ze složky _CN.'}</div>
     <!-- Smlouva o dílo se 20. 8. 2026 přestěhovala na KONEC záložky Krycí list
          zakázky OCK (pokyn J. V.): platební podmínky, termíny a zástupci, které

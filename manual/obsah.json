@@ -734,7 +734,7 @@
             { "obsahuje": "Příplatky do nabídky", "cely": "tr", "text": "Kolik příplatků se propíše do sekce II. dokumentu — řídí to sloupec *Nabídka* v kalkulaci." }
           ]
         },
-        { "typ": "text", "text": "**Vlastní řádky technické specifikace** (tlačítko *+ přidat vlastní řádek*, sekce DALŠÍ UJEDNÁNÍ) se propisují i do nabídky OCK — v náhledu, tisku i ve Wordu jako sekce **DALŠÍ UJEDNÁNÍ** hned za tím, co součástí dodávky není. V anglické, německé a francouzské nabídce se přeloží jen věty, které zná slovník aplikace (třeba „zajistí objednatel v rámci SP“); vlastní text zůstane, jak jste ho napsali." },
+        { "typ": "text", "text": "**Vlastní řádky technické specifikace** (tlačítko *+ přidat vlastní řádek*, sekce DALŠÍ UJEDNÁNÍ) se propisují i do nabídky OCK — v náhledu, tisku i ve Wordu jako sekce **DALŠÍ UJEDNÁNÍ** hned za tím, co součástí dodávky není. V anglické, německé a francouzské nabídce se přeloží jen věty, které zná slovník aplikace (třeba „zajistí objednatel v rámci SP“); vlastní text zůstane, jak jste ho napsali. U každého vlastního řádku vyberete vpravo **sekci**: *DALŠÍ UJEDNÁNÍ* (výchozí), nebo *SOUČÁSTÍ DODÁVKY NENÍ* — pak řádek stojí na konci té sekce ve specifikaci, v náhledu i ve Wordu nabídky. Řádky ze starších zakázek zůstávají v DALŠÍ UJEDNÁNÍ." },
         { "typ": "text", "text": "**Název akce v technické specifikaci** se bere z hlavičky zakázky. Přepsat ho jde dál — pak u pole svítí štítek *ručně* a tlačítkem ↺ se vrátíte k názvu z hlavičky." },
         { "typ": "podnadpis", "text": "Kde se který dokument vytváří" },
         {
@@ -754,7 +754,7 @@
             {"text": "Na konci karty **Cenová nabídka** v Kalkulaci OCK klikněte na **Přejít na technickou specifikaci**.", "snimek": "k23-karta-nabidka", "klik": {"obsahuje": "Přejít na technickou specifikaci"}},
             {"text": "Projděte specifikaci shora dolů. Na jejím konci, v kartě **Cenová nabídka (OCK)**, si přečtěte panel **Než nabídku odešlete**: nález opravte, nebo klikněte na **Beru na vědomí, pokračovat**.", "snimek": "k23-spec-nabidka", "klik": {"obsahuje": "Beru na vědomí, pokračovat"}},
             {"text": "Vyberte **Jazyk tisku** (česky, anglicky, německy, francouzsky).", "snimek": "k23-spec-nabidka", "klik": {"sel": "select", "stitek": "jazyk"}},
-            {"text": "Klikněte na **Kompletní náhled a tisk nabídky**. Otevře se nové okno s náhledem.", "snimek": "k23-spec-nabidka", "klik": {"obsahuje": "Kompletní náhled a tisk nabídky"}},
+            {"text": "Tlačítka jdou zleva v pořadí práce: **Kompletní náhled podkladů** (co se do nabídky vyplní), modré **Vytvořit nabídku (Word)** (nabídka do šablony Word) a **Kompletní náhled a tisk nabídky**. Klikněte na **Kompletní náhled a tisk nabídky**. Otevře se nové okno s náhledem.", "snimek": "k23-spec-nabidka", "klik": {"obsahuje": "Kompletní náhled a tisk nabídky"}},
             {"text": "V liště náhledu můžete zaškrtnout **✏️ Upravit text před tiskem** a text doladit. Nakonec klikněte na **Tisk / Uložit jako PDF** — tiskem se nabídka uzamkne jako odeslaná.", "snimek": "k23-nahled-lista", "klik": {"obsahuje": "Tisk / Uložit jako PDF"}}
           ]
         },

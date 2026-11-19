@@ -566,14 +566,22 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
    * naklonovaným pruhem a řádky za {{TS_NENI_PRISTUP}}. Popisek i hodnota jdou
    * přes slovník jako v náhledu specifikace (neznámý text zůstane, jak ho
    * obchodník napsal). Úplně prázdný řádek se vynechá. */
+  /* PG #2 (J. V. 19. 11. 2026): řádek se sekcí 'neni' patří na KONEC sekce
+   * SOUČÁSTÍ DODÁVKY NENÍ — v datech nese `neni: true` (náhled ho podle toho
+   * zařadí), ve Wordu se naklonuje za {{TS_NENI_PRISTUP}} PŘED pruh DALŠÍ
+   * UJEDNÁNÍ. Řádek bez pole `sekce` (starší zakázky) zůstává v DALŠÍ
+   * UJEDNÁNÍ beze změny. */
+  const jeNeni = typeof tsExtraNeni === 'function' ? tsExtraNeni : (e => !!e && e.sekce === 'neni');
   const tsExtra = ((TSv && TSv.extra) || [])
     .filter(e => e && (String(e.label || '').trim() || String(e.hodnota || '').trim()))
-    .map(e => ({ nazev: P(String(e.label || '')), hodnota: P(String(e.hodnota || '')) }));
+    .map(e => Object.assign({ nazev: P(String(e.label || '')), hodnota: P(String(e.hodnota || '')) }, jeNeni(e) ? { neni: true } : {}));
+  const tsExtraDalsi = tsExtra.filter(e => !e.neni);
   const tsRadkyNavic = [
     { symbol: 'TS_NENI_LESENI_VNITRNI', kotva: 'TS_NENI_LESENI', pred: true,
       nazev: P('LEŠENÍ VNITŘNÍ PRO STAVBU OCK'), hodnota: placeholders.TS_NENI_LESENI_VNITRNI },
-    ...(tsExtra.length ? [{ kotva: 'TS_NENI_PRISTUP', pruh: true, nazev: P('DALŠÍ UJEDNÁNÍ') }] : []),
-    ...tsExtra.map(e => ({ kotva: 'TS_NENI_PRISTUP', vzdy: true, nazev: e.nazev, hodnota: e.hodnota })),
+    ...tsExtra.filter(e => e.neni).map(e => ({ kotva: 'TS_NENI_PRISTUP', vzdy: true, nazev: e.nazev, hodnota: e.hodnota })),
+    ...(tsExtraDalsi.length ? [{ kotva: 'TS_NENI_PRISTUP', pruh: true, nazev: P('DALŠÍ UJEDNÁNÍ') }] : []),
+    ...tsExtraDalsi.map(e => ({ kotva: 'TS_NENI_PRISTUP', vzdy: true, nazev: e.nazev, hodnota: e.hodnota })),
     ...nabidkaMustkyKlon(placeholders, P, sablona),
   ];
   return { placeholders, priplatky: priplatkyList, jazyk: L, platbyOck, tsRadkyNavic, tsExtra, mena,
@@ -830,10 +838,12 @@ function nabidkaNahledSekce(ph, lang, platby, extra, sachty) {
       ...(ph.TS_NENI_SOKL ? [['OPLECHOVÁNÍ SOKLU PROHLUBNĚ', ph.TS_NENI_SOKL]] : []),
       ['NAPÁJENÍ VÝTAHU VČET. REVIZNÍ ZPRÁVY', ph.TS_NENI_NAPAJENI],
       ['PROHLUBEŇ PRO ZALOŽENÍ OCK VE SPRÁVNÉ POZICI A ROZMĚRU', ph.TS_NENI_PROHLUBEN],
-      ['DOSTATEČNÉ PŘÍSTUPOVÉ A MANIPULAČNÍ PROSTORY', ph.TS_NENI_PRISTUP]] },
+      ['DOSTATEČNÉ PŘÍSTUPOVÉ A MANIPULAČNÍ PROSTORY', ph.TS_NENI_PRISTUP],
+      /* PG #2: vlastní řádky se sekcí 'neni' na konci sekce (popisek už přeložený) */
+      ...(extra || []).filter(e => e && e.neni).map(e => [{ hotovo: e.nazev }, e.hodnota])] },
     /* vlastní řádky specifikace (bod 3); popisek už je přeložený → { hotovo } */
-    ...((extra || []).length ? [{ sekce: 'DALŠÍ UJEDNÁNÍ',
-      radky: extra.map(e => [{ hotovo: e.nazev }, e.hodnota]) }] : []),
+    ...((extra || []).some(e => e && !e.neni) ? [{ sekce: 'DALŠÍ UJEDNÁNÍ',
+      radky: extra.filter(e => e && !e.neni).map(e => [{ hotovo: e.nazev }, e.hodnota]) }] : []),
     { sekce: 'B. OBCHODNÍ ČÁST – CENOVÁ NABÍDKA', radky: [
       /* VS-E4 (R4, R12, R14): u víc šachet řádek za každou variantu šachty
        * (cena všech kusů, můstky v ceně své šachty), sleva a součet s počtem
