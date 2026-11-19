@@ -50,7 +50,8 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   (`src/objednavka_proj.js`, `src/ui/objednavka_proj_ui.js`; karta v KL PROJ pod SoD PROJ; tisk/PDF + Word bez šablony;
   číslo CN → OBJ; ceny = nabídka PROJ). Sdílené soubory jen po řádku: `build.py`, `kryci_proj_ui.js` (karta),
   `vice_zakazniku.js` (vzTypProj), `kontroly.js` (strana), `plan_plateb_ui.js` (brána), `nazvy_souboru.js` (druh).
-  Otázky J. V. #676. Kolo a mutace: viz zpráva koordinaci.
+  Rozhodnutí J. V. #676 zapracována (pole KL PROJ „Číslo zakázky“, jen z odeslané CN, rozvržení podle vzoru).
+  Kolo a mutace: viz zpráva koordinaci.
 - **VZ-F2** (`claude/vz-f2`, v19.11.4): #660 IČO nového/změněného zákazníka proti všem (klient hned při úpravě),
   #663 zástupci+DIČ dalšího zákazníka zmrazení po JEHO SoD, hlavičku zmrazí jen SoD řídícímu, #661 KL PROJ v pohledu
   otevřeného zákazníka, #662 `overit_vz_f2.mjs`, VZF1-I1 název plné moci. Kolo VŠE ZELENÉ (475/0/7, 385/0/1, 9/9, SHODA 353/353),

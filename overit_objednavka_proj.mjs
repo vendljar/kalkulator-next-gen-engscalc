@@ -51,7 +51,21 @@ const poradi = await s.evaluate(() => {
 });
 ok('karta stojí pod smlouvou o dílo PROJ', poradi[0] >= 0 && poradi[1] > poradi[0], poradi);
 const tlacitko = karta.getByRole('button', { name: /Náhled a tisk objednávky/ });
-ok('tlačítko náhledu je aktivní', await tlacitko.count() === 1 && await tlacitko.isEnabled());
+/* J. V. 19. 11.: z neodeslané (nevytištěné) CN objednávka nevznikne — tlačítko zhasne s důvodem. */
+ok('neodeslaná CN: tlačítka zhasnutá s důvodem v bublině', await tlacitko.count() === 1 && await tlacitko.isDisabled()
+  && /jen z odeslané/.test(await tlacitko.getAttribute('title') || ''));
+/* „odeslání" nabídky jako po tisku: zmrazení podmínek a plánu, zámek se zmrazeným výsledkem */
+await s.evaluate(() => {
+  const v = aktivniVarianta(ZAK);
+  kryciProjZmrazPodminky(ZAK, v); kryciProjZmrazPlan(ZAK, v);
+  zamkniVariantu(v, { kdy: new Date().toISOString(), typ: 'nabidkaProjTisk', vysledek: { proj: vypocetProj(v.data.proj.zadani, v.data.proj.cenik) } });
+  v.data.kryciProj.hodnoty.cisloZakazky = 'Z2026-TEST-01';
+  render();
+});
+await s.waitForTimeout(300);
+ok('odeslaná CN: tlačítko náhledu je aktivní', await tlacitko.isEnabled());
+const poleZak = s.locator('#page-kryciproj .kl-row').filter({ has: s.locator('.lbl', { hasText: /^Číslo zakázky/ }) });
+ok('krycí list PROJ: pole „Číslo zakázky"', await poleZak.count() === 1);
 
 const [okno] = await Promise.all([s.context().waitForEvent('page', { timeout: 8000 }).catch(() => null), tlacitko.click()]);
 ok('otevřelo se okno náhledu', !!okno);
@@ -64,6 +78,11 @@ if (okno) {
   ok('náhled: Celkem Kč = Celkem s DPH cenové nabídky PROJ', text.indexOf(nb(nab.s)) >= 0 && /Celkem Kč/.test(text), nab.s);
   ok('náhled: poznámka s CN a podpis objednatele', /cenovou nabídkou č\. 2026-OVP-CN-0376 ze dne/.test(text) && /Podpis objednatele/.test(text));
   ok('náhled: objednatel z hlavičky', text.indexOf('TEST zákazník s.r.o.') >= 0);
+  ok('náhled: Zakázka z krycího listu, blok Místo určení / Objednatel', text.indexOf('Zakázka: Z2026-TEST-01') >= 0 && /Místo určení \/ Objednatel/i.test(text));
+  /* pořadí bloků podle vzoru: dodavatel → objednatel → datum případu → tabulka → Celkem Kč → podpis → poznámka */
+  const poz = ['DODAVATEL', 'MÍSTO URČENÍ / OBJEDNATEL', 'Datum případu', 'Popis dodávky', 'Celkem Kč', 'Podpis objednatele', 'Poznámka']
+    .map(t => text.toUpperCase().indexOf(t.toUpperCase()));
+  ok('náhled: pořadí bloků jako vzor', poz.every((x, i) => x >= 0 && (i === 0 || x > poz[i - 1])), poz);
   ok('náhled: tlačítko tisku', await okno.locator('.bar button', { hasText: 'Tisk' }).count() >= 1);
   await okno.screenshot({ path: '/tmp/objednavka_proj_nahled.png', fullPage: true }).catch(() => {});
   await okno.close();
@@ -84,7 +103,7 @@ if (!word.chyba) {
   ok('Word: číslo dokladu a Celkem Kč', /Číslo dokladu: 2026-OVP-OBJ-0376/.test(xml) && /Celkem Kč/.test(xml));
 }
 /* číslo bez CN: tlačítko dokument nevyrobí a řekne proč */
-const bezCn = await s.evaluate(() => { ZAK.cislo = '2026 - OVP - 0376'; render(); objednavkaProjWord();
+const bezCn = await s.evaluate(() => { ZAK.cislo = '2026 - OVP - 0376'; render(); objednavkaProjVstup();
   return [...document.querySelectorAll('.objednavkaProjStav')].map(e => e.textContent).join(' '); });
 ok('číslo bez CN: stav říká proč', /neobsahuje část „CN"/.test(bezCn), bezCn);
 

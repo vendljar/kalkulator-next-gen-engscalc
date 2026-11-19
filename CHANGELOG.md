@@ -24,12 +24,18 @@ Nad integrací `042fcbc` (v19.11.5). Nový dokument, cenu ani text nabídky a So
   po činnostech, schválená sleva, cestovné, DPH projekční části; odeslaná varianta z otisku zámku).
 - **Kde:** karta „Objednávka / Smlouva (PROJ)“ na konci krycího listu PROJ, pod Smlouvou o dílo PROJ (smluvní
   dokument ke stejné nabídce; platební kalendář a zástupci se vyplňují v krycím listu). Tisk / PDF z náhledu, Word
-  generovaný od nuly (bez nové šablony). Objednávka variantu nezamyká; u neodeslané CN upozorní v náhledu.
+  generovaný od nuly (bez nové šablony), se zápatím „Strana x / y“. Objednávka variantu nezamyká.
+- **Rozhodnutí J. V. k #676 (19. 11.):** objednávka **jen z odeslané (vytištěné) CN** — jinak zábrana s hláškou
+  a zhasnuté tlačítko (`objednavkaProjZabrana`, brána `dokumentZabrana`); nové pole krycího listu PROJ **„Číslo zakázky“**
+  (z účetnictví; zámek jako ostatní pole — po CN volné, po SoD / Prodáno zmrazené) se tiskne v kolonce Zakázka,
+  prázdné se vynechá; plný rozsah prací i za cenu 2 stran. Rozvržení podle vzoru: vlevo dodavatel a pod ním
+  Místo určení / Objednatel, datum případu, sloupce J. cena / C. cena / Celkem bez DPH, součtový řádek, rámeček
+  Celkem Kč, podpis, poznámka, Vystavil (zpracovatel), Strana x / y.
 - **Brány:** víc zákazníků jen pro řídícího (`vzTypProj`), zámek strany PROJ (`KONTROLY_DOKUMENTY_STRANY`), plán
   plateb s vadou i nesedícím součtem (`PLAN_DOKUMENTY`, jako SoD PROJ).
-- **Testy:** `src/test_objednavka_proj.js` (67 OK; před D3 0/1 — modul chybí; ceny po slevě místo před 5 FAIL; bez
-  `vzTypProj` 2 FAIL), `overit_objednavka_proj.mjs` (13 kontrol v prohlížeči).
-- **Otázky J. V. (#676):** 1 strana A4 vs. plný rozsah prací, zdroj „čísla zakázky“, objednávka z neodeslané CN.
+- **Testy:** `src/test_objednavka_proj.js` (76 OK; před D3 0/1 — modul chybí; ceny po slevě místo před 5 FAIL; bez
+  `vzTypProj` 2 FAIL; bez zábrany 3 FAIL; číslo zakázky z Čísla SoD 3 FAIL; bez pole KL 2 FAIL),
+  `overit_objednavka_proj.mjs` (17 kontrol v prohlížeči). Mutace jádra [D3] (11).
 
 ## v19.11.5 — #671 navazující drobnosti K50-N1 (editor a zveřejnění ceníku), větev claude/r-k50n1
 

@@ -170,6 +170,11 @@ function dokumentZabrana(typ, varianta) {
    * výjimka a marže té strany — zrcadlo serveru (403). */
   /* Smlouva o dílo realizace bez zvoleného režimu DPH (B189, 19. 10. 2026)
    * — táž věta, kterou by hodil sodData; tlačítko zhasne s důvodem. */
+  /* Objednávka PROJ jen z odeslané nabídky (D3, J. V. 19. 11. 2026). */
+  if (typ === 'objednavkaProj' && typeof objednavkaProjZabrana === 'function' && typeof ZAK !== 'undefined') {
+    const duvod = objednavkaProjZabrana(varianta || aktivniVarianta(ZAK));
+    if (duvod) return duvod;
+  }
   if (typ === 'sod' && typeof sodDphZabrana === 'function' && typeof ZAK !== 'undefined') {
     let duvod = '';
     try { duvod = sodDphZabrana(ZAK, varianta || aktivniVarianta(ZAK)); } catch (e) { duvod = ''; }

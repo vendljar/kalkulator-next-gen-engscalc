@@ -38,6 +38,17 @@ function objednavkaProjCislo(cisloNabidky) {
   return casti.join('-');
 }
 
+/* ZÁBRANA: JEN Z ODESLANÉ CENOVÉ NABÍDKY (J. V. 19. 11. 2026, #676 bod 3).
+ * Objednávka odkazuje na cenovou nabídku „ze dne …" jako na nedílnou součást —
+ * ta tedy musí existovat: varianta musí být zamčená tiskem nabídky PROJ.
+ * Vrací hlášku, nebo ''. Volá ji objednavkaProjData i brána tlačítka
+ * (dokumentZabrana v ui/ukazkove_ui.js). */
+function objednavkaProjZabrana(varianta) {
+  if (varianta && varianta.zamek && varianta.zamek.zamceno) return '';
+  return 'Objednávku jde vytvořit jen z odeslané (vytištěné) cenové nabídky PROJ. Vytiskněte nejdřív nabídku PROJ '
+    + 'této varianty (Kalkulace PROJ → Kompletní náhled a tisk nabídky), nebo otevřete odeslanou variantu.';
+}
+
 /* Datum vystavení (datum případu) ve tvaru d. m. rrrr. */
 function objednavkaProjDatum(d) {
   const x = d instanceof Date ? d : new Date();
@@ -90,6 +101,8 @@ function objednavkaProjData(zak, varianta, moznosti) {
   if (!cislo) return { chyba: cisloNabidky
     ? 'Číslo nabídky „' + cisloNabidky + '" neobsahuje část „CN" — číslo objednávky z něj nejde odvodit. Opravte číslo nabídky v hlavičce zakázky.'
     : 'Zakázka nemá číslo nabídky — objednávka bez čísla nevznikne. Vyplňte číslo nabídky v hlavičce zakázky.' };
+  const zabrana = objednavkaProjZabrana(varianta);
+  if (zabrana) return { chyba: zabrana };
   if (!d.nabizeneSekce.length) return { chyba: 'Varianta PROJ nenabízí žádnou činnost s cenou — objednávka by byla prázdná.' };
 
   const s = d.souhrn;
@@ -120,7 +133,7 @@ function objednavkaProjData(zak, varianta, moznosti) {
     if (b && b.hvezdicka) popis.push('*) ' + b.hvezdicka);
     const x = sDph(cena);
     return { c: i + 1, sekce: k, oznaceni: objednavkaProjOznaceni(k), nazev: sek ? sek.nazev : k, popis,
-      mnozstvi: 1, mj: 'kpl', cenaJedn: cena, celkemBezDph: cena, dphPct: s.dphPct, dph: x.dphKc, celkemSDph: x.sDph };
+      mnozstvi: 1, mj: 'kpl', cenaJedn: cena, cenaCelkem: cena, celkemBezDph: cena, dphPct: s.dphPct, dph: x.dphKc, celkemSDph: x.sDph };
   });
   const sleva = s.slevaKc ? (() => { const x = sDph(-s.slevaKc);
     return { pct: p.PROJ_SLEVA_PROC, bezDph: -s.slevaKc, dph: x.dphKc, sDph: x.sDph }; })() : null;
@@ -132,9 +145,6 @@ function objednavkaProjData(zak, varianta, moznosti) {
   if (sumBez !== hal(s.bezDph) || sumS !== hal(s.sDph))
     upozorneni.push('Součet řádků (' + kc(sumBez) + ' bez DPH, ' + kc(sumS) + ' s DPH) se liší od celkové ceny nabídky ('
       + p.PROJ_CELKEM_BEZ_DPH + ', ' + p.PROJ_CELKEM_S_DPH + ') o zaokrouhlení DPH.');
-  if (!(varianta && varianta.zamek && varianta.zamek.zamceno))
-    upozorneni.push('Nabídka PROJ této varianty ještě nebyla odeslána (vytištěna). Objednávka odkazuje na cenovou nabídku č. '
-      + cisloNabidky + ' — pošlete zákazníkovi nejdřív ji.');
 
   /* Mimo celkovou cenu: paušály nabídky (další varianta studie, autorský dozor). */
   const mimoCenu = d.bloky.filter(b => b.typ === 'cena' && !b.neuvedena && String(b.castka).indexOf(' / ') >= 0)
@@ -155,10 +165,12 @@ function objednavkaProjData(zak, varianta, moznosti) {
   const objednatel = { nazev: t(h.objednatel), adresa: t(h.adresaObjednatele), ico: t(h.ico), dic: t(h.dic || (zak && zak.dic)),
     zastupce: [t(za.smluvniJmeno), t(za.smluvniPozice)].filter(Boolean).join(', ') };
 
-  /* Číslo zakázky: ručně vyplněné „Číslo SoD" krycího listu PROJ (návrh z čísla
-   * nabídky se nebere — to by bylo jen číslo nabídky podruhé). */
+  /* Číslo zakázky z účetnictví = pole „Číslo zakázky" krycího listu PROJ
+   * (J. V. 19. 11. 2026, #676 bod 2); prázdné = řádek se netiskne. */
   const kl = (varianta && varianta.data && varianta.data.kryciProj && varianta.data.kryciProj.hodnoty) || {};
-  const cisloZakazky = t(kl.cisloSod);
+  const cisloZakazky = t(kl.cisloZakazky);
+  /* Vystavil = zpracovatel nabídky (přihlášený uživatel, Můj profil). */
+  const vystavil = [t(p.ZPRAC_JMENO), t(p.ZPRAC_TEL), t(p.ZPRAC_EMAIL)].filter(Boolean).join(', ');
 
   /* Platební kalendář z plánu plateb (tytéž splátky jako SoD PROJ, ceny po slevě,
    * bez DPH); odeslaná nabídka z doby před plánem nese pevné bloky jako nabídka. */
@@ -181,7 +193,7 @@ function objednavkaProjData(zak, varianta, moznosti) {
     'objednavka', { cislo, oblast: 'proj' });
 
   return { nazev: OBJ_PROJ_NAZEV, cislo, cisloNabidky, datumNabidky: p.DATUM,
-    datumVystaveni: objednavkaProjDatum(m.dnes), cisloZakazky, dodavatel, objednatel,
+    datumVystaveni: objednavkaProjDatum(m.dnes), cisloZakazky, vystavil, dodavatel, objednatel,
     akce: { nazev: p.NAZEV_AKCE, adresa: p.ADRESA },
     radky, sleva, mimoCenu, poznamka, platebniKalendar, terminy, upozorneni,
     souhrn: { bezDph: s.bezDph, dphPct: s.dphPct, dphKc: s.dphKc, sDph: s.sDph },
@@ -211,52 +223,92 @@ function objDocxTabulka(sirky, radkyXml, okraje) {
     + '<w:insideH w:val="' + hr + '" w:sz="4" w:color="C7D0DB"/><w:insideV w:val="' + hr + '" w:sz="4" w:color="C7D0DB"/></w:tblBorders></w:tblPr>'
     + '<w:tblGrid>' + sirky.map(w => '<w:gridCol w:w="' + w + '"/>').join('') + '</w:tblGrid>' + radkyXml + '</w:tbl>';
 }
+/* Sloupce tabulky řádků (jako „Přijatá objednávka" účetního systému). */
+const OBJ_PROJ_SLOUPCE = ['Č.', 'Označení', 'Popis dodávky', 'Množ.', 'MJ', 'J. cena bez DPH', 'C. cena bez DPH', 'Celkem bez DPH', 'DPH %', 'Celkem s DPH'];
+/* Text bloku strany (dodavatel / objednatel) po řádcích — tisk i Word. */
+function objednavkaProjStranaRadky(s, misto) {
+  const r = [s.nazev || '……', s.adresa || '……', 'IČ: ' + (s.ico || '……') + (s.dic ? '    DIČ: ' + s.dic : '')];
+  if (s.telefon) r.push('Tel.: ' + s.telefon);
+  if (s.email) r.push('E-mail: ' + s.email);
+  if (s.zastupce) r.push('Zastoupen: ' + s.zastupce);
+  if (misto) r.push('Místo určení: ' + misto);
+  return r;
+}
+function objednavkaProjMisto(o) { return [o.akce.nazev, o.akce.adresa].filter(x => x && x !== '…').join(', '); }
 /* Tělo dokumentu (XML) — tytéž údaje a pořadí jako tiskový náhled. */
 function objednavkaProjDocxTelo(o) {
   const kc = o.texty.kc;
   const B = (t, x) => objDocxOdst(t, Object.assign({ b: true }, x || {}));
-  const blokStrany = (nadpis, s, zastupce) => [B(nadpis, { sz: 18, color: '2B3850' }), B(s.nazev || '……'), objDocxOdst(s.adresa || '……'),
-    objDocxOdst('IČ: ' + (s.ico || '……') + (s.dic ? '    DIČ: ' + s.dic : ''))]
-    .concat(s.telefon || s.email ? [objDocxOdst([s.telefon ? 'Tel.: ' + s.telefon : '', s.email ? 'E-mail: ' + s.email : ''].filter(Boolean).join('    '))] : [])
-    .concat(zastupce ? [objDocxOdst('Zastoupen: ' + zastupce)] : []).join('');
-  /* Hlavička: vlevo dodavatel, vpravo název a čísla dokladu, pod nimi objednatel. */
+  const blok = (nadpis, r) => B(nadpis, { sz: 14, color: '6B7686' }) + B(r[0]) + r.slice(1).map(x => objDocxOdst(x)).join('') + objDocxOdst('', { after: 100 });
+  /* Hlavička: vlevo dodavatel a pod ním objednatel; vpravo název, číslo dokladu, zakázka. */
+  const vlevo = blok('Dodavatel', objednavkaProjStranaRadky(o.dodavatel))
+    + blok('Místo určení / Objednatel', objednavkaProjStranaRadky(o.objednatel, objednavkaProjMisto(o)));
   const vpravo = B(o.nazev, { sz: 28, vpravo: true }) + B('Číslo dokladu: ' + o.cislo, { vpravo: true, sz: 18 })
-    + (o.cisloZakazky ? objDocxOdst('Číslo zakázky: ' + o.cisloZakazky, { vpravo: true }) : '')
-    + objDocxOdst('Datum případu: ' + o.datumVystaveni, { vpravo: true, after: 120 })
-    + blokStrany('Objednatel', o.objednatel, o.objednatel.zastupce);
-  let body = objDocxTabulka([4800, 4838], '<w:tr>' + objDocxBunka(blokStrany('Dodavatel', o.dodavatel), 4800)
-    + objDocxBunka(vpravo, 4838) + '</w:tr>', false);
-  body += objDocxOdst('', { after: 80 });
-  if (o.akce.nazev || o.akce.adresa)
-    body += objDocxOdst('Akce: ' + [o.akce.nazev, o.akce.adresa].filter(x => x && x !== '…').join(', '), { after: 80 });
-  /* Tabulka řádků: č., označení, popis, množství, MJ, jedn. cena, celkem bez DPH, DPH %, celkem s DPH. */
-  const W = [380, 700, 3458, 500, 400, 1100, 1100, 500, 1500];
-  const hlava = ['Č.', 'Označení', 'Popis dodávky', 'Množ.', 'MJ', 'Jedn. cena bez DPH', 'Celkem bez DPH', 'DPH %', 'Celkem s DPH'];
-  let tr = '<w:tr>' + hlava.map((t, i) => objDocxBunka(B(t, { sz: 14, color: 'FFFFFF', vpravo: i >= 3 }), W[i], { fill: '2B3850' })).join('') + '</w:tr>';
+    + (o.cisloZakazky ? objDocxOdst('Zakázka: ' + o.cisloZakazky, { vpravo: true, sz: 18 }) : '');
+  let body = objDocxTabulka([5600, 4038], '<w:tr>' + objDocxBunka(vlevo, 5600) + objDocxBunka(vpravo, 4038) + '</w:tr>', false);
+  body += objDocxOdst('Datum případu: ' + o.datumVystaveni, { sz: 18, after: 100 });
+  const W = [330, 620, 2700, 420, 380, 1000, 1000, 1000, 450, 1738];
+  let tr = '<w:tr>' + OBJ_PROJ_SLOUPCE.map((t, i) => objDocxBunka(B(t, { sz: 14, color: 'FFFFFF', vpravo: i >= 3 }), W[i], { fill: '2B3850' })).join('') + '</w:tr>';
+  const radek = (bunky) => '<w:tr>' + bunky.map((c, i) => objDocxBunka(c, W[i])).join('') + '</w:tr>';
+  const V = t => objDocxOdst(t, { vpravo: true });
   o.radky.forEach(x => {
-    const popis = B(x.nazev) + (x.popis.length ? objDocxOdst(x.popis.join('\n'), { sz: 14 }) : '');
-    tr += '<w:tr>' + [objDocxOdst(String(x.c)), objDocxOdst(x.oznaceni), popis, objDocxOdst(String(x.mnozstvi), { vpravo: true }),
-      objDocxOdst(x.mj, { vpravo: true }), objDocxOdst(kc(x.cenaJedn), { vpravo: true }), objDocxOdst(kc(x.celkemBezDph), { vpravo: true }),
-      objDocxOdst(x.dphPct + ' %', { vpravo: true }), objDocxOdst(kc(x.celkemSDph), { vpravo: true })]
-      .map((c, i) => objDocxBunka(c, W[i])).join('') + '</w:tr>';
+    tr += radek([objDocxOdst(String(x.c)), objDocxOdst(x.oznaceni), B(x.nazev) + (x.popis.length ? objDocxOdst(x.popis.join('\n'), { sz: 14 }) : ''),
+      V(String(x.mnozstvi)), V(x.mj), V(kc(x.cenaJedn)), V(kc(x.cenaCelkem)), V(kc(x.celkemBezDph)), V(x.dphPct + ' %'), V(kc(x.celkemSDph))]);
   });
-  if (o.sleva)
-    tr += '<w:tr>' + objDocxBunka(objDocxOdst('Sleva ' + o.sleva.pct + ' %'), W[0] + W[1] + W[2] + W[3] + W[4] + W[5], { span: 6 })
-      + objDocxBunka(objDocxOdst(kc(o.sleva.bezDph), { vpravo: true }), W[6]) + objDocxBunka(objDocxOdst(o.souhrn.dphPct + ' %', { vpravo: true }), W[7])
-      + objDocxBunka(objDocxOdst(kc(o.sleva.sDph), { vpravo: true }), W[8]) + '</w:tr>';
-  const souctova = (t, v, tucne) => '<w:tr>' + objDocxBunka((tucne ? B : objDocxOdst)(t, { vpravo: true }), W.slice(0, 8).reduce((a, b) => a + b, 0), { span: 8, fill: tucne ? 'EEF2F8' : '' })
-    + objDocxBunka((tucne ? B : objDocxOdst)(v, { vpravo: true }), W[8], { fill: tucne ? 'EEF2F8' : '' }) + '</w:tr>';
-  tr += souctova('Celkem bez DPH', o.texty.bezDph) + souctova('DPH ' + o.souhrn.dphPct + ' %', o.texty.dph) + souctova('Celkem Kč', o.texty.sDph, true);
+  if (o.sleva) tr += radek([objDocxOdst(''), objDocxOdst(''), objDocxOdst('Sleva ' + o.sleva.pct + ' %'), V(''), V(''), V(''),
+    V(kc(o.sleva.bezDph)), V(kc(o.sleva.bezDph)), V(o.souhrn.dphPct + ' %'), V(kc(o.sleva.sDph))]);
+  tr += '<w:tr>' + objDocxBunka(B('Součet', { vpravo: true }), W.slice(0, 6).reduce((a, b) => a + b, 0), { span: 6, fill: 'EEF2F8' })
+    + [o.texty.bezDph, o.texty.bezDph, '', o.texty.sDph].map((t, i) => objDocxBunka(B(t, { vpravo: true }), W[6 + i], { fill: 'EEF2F8' })).join('') + '</w:tr>';
   body += objDocxTabulka(W, tr);
-  if (o.mimoCenu.length) body += objDocxOdst('Mimo celkovou cenu (podle cenové nabídky): ' + o.mimoCenu.join('; '), { sz: 14, after: 60 });
+  /* Rámeček „Celkem Kč" vpravo pod tabulkou. */
+  const R = (t, v, tucne) => '<w:tr>' + objDocxBunka((tucne ? B : objDocxOdst)(t, { vpravo: true, sz: tucne ? 20 : 16 }), 2000)
+    + objDocxBunka((tucne ? B : objDocxOdst)(v, { vpravo: true, sz: tucne ? 20 : 16 }), 1900) + '</w:tr>';
+  body += objDocxOdst('', { after: 60 });
+  body += objDocxTabulka([5738, 3900], '<w:tr>' + objDocxBunka(o.mimoCenu.length
+      ? objDocxOdst('Mimo celkovou cenu (podle cenové nabídky): ' + o.mimoCenu.join('; '), { sz: 14 }) : objDocxOdst(''), 5738)
+    + objDocxBunka(objDocxTabulka([2000, 1900], R('Celkem bez DPH', o.texty.bezDph) + R('DPH ' + o.souhrn.dphPct + ' %', o.texty.dph)
+      + R('Celkem Kč', o.texty.sDph, true)) + objDocxOdst(''), 3900) + '</w:tr>', false);
   body += objDocxOdst('', { after: 240 });
   body += objDocxOdst('Datum: ……………………………        Podpis objednatele: ………………………………………', { sz: 18, after: 240 });
   body += B('Poznámka', { sz: 16 }) + objDocxOdst(o.poznamka, { after: 80 });
   if (o.platebniKalendar.length) body += B('Platební kalendář') + objDocxOdst(o.platebniKalendar.join('\n'), { after: 80 });
   if (o.terminy.length) body += B('Termíny') + objDocxOdst(o.terminy.map(x => x[0] + (x[1] ? ' – ' + x[1] : '')).join('\n'), { after: 80 });
+  if (o.vystavil) body += objDocxOdst('Vystavil: ' + o.vystavil, { after: 0 });
   return body;
 }
-function objednavkaProjDocxBlob(o) { return docxSestavBlob(objednavkaProjDocxTelo(o)); }
+/* .docx se zápatím „Strana x / y" (pole PAGE a NUMPAGES). */
+function objednavkaProjDocxBlob(o) {
+  const enc = new TextEncoder();
+  const W = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
+  const R = 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+  const pole = k => '<w:fldSimple w:instr=" ' + k + ' "><w:r><w:rPr><w:sz w:val="14"/></w:rPr><w:t>1</w:t></w:r></w:fldSimple>';
+  const beh = t => '<w:r><w:rPr><w:sz w:val="14"/></w:rPr><w:t xml:space="preserve">' + t + '</w:t></w:r>';
+  const zapati = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr ' + W + '><w:p><w:pPr><w:jc w:val="right"/></w:pPr>'
+    + beh('Strana ') + pole('PAGE') + beh(' / ') + pole('NUMPAGES') + '</w:p></w:ftr>';
+  const doc = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ' + W + ' ' + R + '><w:body>'
+    + objednavkaProjDocxTelo(o)
+    + '<w:sectPr><w:footerReference w:type="default" r:id="rIdZapati"/><w:pgSz w:w="11906" w:h="16838"/>'
+    + '<w:pgMar w:top="850" w:right="1134" w:bottom="1000" w:left="1134" w:header="500" w:footer="500" w:gutter="0"/></w:sectPr></w:body></w:document>';
+  return zipZapis([
+    { nazev: '[Content_Types].xml', data: enc.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+      + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+      + '<Default Extension="xml" ContentType="application/xml"/>'
+      + '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+      + '<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>'
+      + '</Types>') },
+    { nazev: '_rels/.rels', data: enc.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+      + '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
+      + '</Relationships>') },
+    { nazev: 'word/_rels/document.xml.rels', data: enc.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+      + '<Relationship Id="rIdZapati" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>'
+      + '</Relationships>') },
+    { nazev: 'word/document.xml', data: enc.encode(doc) },
+    { nazev: 'word/footer1.xml', data: enc.encode(zapati) },
+  ]);
+}
 
 /* Registrace do jednotného registru dokumentů (dokumentVygeneruj hlídá
  * zábrany — víc zákazníků, zámek strany, kontroly, plán plateb). */
@@ -271,5 +323,5 @@ if (typeof dokumentRegistruj === 'function')
   });
 
 if (typeof module !== 'undefined')
-  module.exports = { OBJ_PROJ_NAZEV, objednavkaProjCislo, objednavkaProjDatum, objednavkaProjOznaceni, objednavkaProjRozsahy,
-    objednavkaProjData, objednavkaProjDocxTelo, objednavkaProjDocxBlob };
+  module.exports = { OBJ_PROJ_NAZEV, objednavkaProjZabrana, objednavkaProjCislo, objednavkaProjDatum, objednavkaProjOznaceni, objednavkaProjRozsahy,
+    objednavkaProjData, objednavkaProjDocxTelo, objednavkaProjDocxBlob, OBJ_PROJ_SLOUPCE, objednavkaProjStranaRadky, objednavkaProjMisto };

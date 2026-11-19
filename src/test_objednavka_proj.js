@@ -66,6 +66,13 @@ const zakazka = (uprava, moznosti) => {
   if (m.sleva !== false) v.data.slevaProj = { procenta: 10, stav: 'schváleno' };
   return { zak, v };
 };
+/* „Odeslání" nabídky PROJ jako ve skutečnosti (tisk zamkne variantu se
+ * zmrazeným výsledkem). Objednávka jde jen z odeslané nabídky (J. V. 19. 11.). */
+const odesli = (v, zak) => { if (!(v.zamek && v.zamek.zamceno)) {
+  if (zak) { kryciProjZmrazPodminky(zak, v); kryciProjZmrazPlan(zak, v); }   // jako zamekPoTisku
+  zamkniVariantu(v, { kdy: '2026-11-19T08:00:00Z', typ: 'nabidkaProjTisk',
+    vysledek: { proj: EP.vypocetProj(v.data.proj.zadani, v.data.proj.cenik) } }); } return v; };
+const obj = (zak, v) => O.objednavkaProjData(zak, odesli(v, zak), { dnes: DNES });
 const vyrad = (v, klice) => v.data.proj.zadani.sekce.filter(s => klice.indexOf(s.key) >= 0)
   .forEach(s => s.polozky.forEach(p => { p.vyrazeno = true; }));
 
@@ -78,20 +85,20 @@ test('číslo bez části CN → prázdné (nic se nevymýšlí)', O.objednavkaP
 {
   const { zak, v } = zakazka();
   const v2 = klonujVariantu(zak, v.id, { aktivovat: false });
-  const o2 = v2 ? O.objednavkaProjData(zak, v2, { dnes: DNES }) : null;
+  const o2 = v2 ? obj(zak, v2) : null;
   test('druhá varianta: číslo s příponou .2', !!o2 && o2.cislo === '2026-OVP-OBJ-0376.2' && o2.cisloNabidky === '2026-OVP-CN-0376.2', o2 && [o2.cislo, o2.cisloNabidky]);
   zak.cislo = '2026-OVP-0376';
-  const e = O.objednavkaProjData(zak, v, { dnes: DNES });
+  const e = obj(zak, v);
   test('číslo nabídky bez CN: dokument nevznikne a řekne proč', !!e.chyba && /neobsahuje část „CN"/.test(e.chyba), e);
   zak.cislo = '';
-  test('bez čísla nabídky: chyba', /nemá číslo nabídky/.test(O.objednavkaProjData(zak, v, { dnes: DNES }).chyba || ''));
+  test('bez čísla nabídky: chyba', /nemá číslo nabídky/.test(obj(zak, v).chyba || ''));
 }
 
 /* ---------------- 2) zlatá sada: ceny = jádro = nabídka ---------------- */
 const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 76800, ezc: 24000, kolaudace: 12000 };
 {
   const { zak, v } = zakazka();
-  const o = O.objednavkaProjData(zak, v, { dnes: DNES });
+  const o = obj(zak, v);
   const n = NP.nabidkaProjData(zak, v, 'cz');
   /* nezávislá cesta z jádra: cena sekce → zaokrouhlení po činnosti (nabídka #135) */
   const r = EP.vypocetProj(v.data.proj.zadani, v.data.proj.cenik);
@@ -117,7 +124,7 @@ const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 768
     && !o.upozorneni.some(t => /liší/.test(t)), [sumB, sumS, o.upozorneni]);
   test('DPH projekční části: vlastní sazba ceníku PROJ', (() => {
     const z2 = zakazka(); z2.v.data.proj.cenik.dph = 0.12;
-    const o2 = O.objednavkaProjData(z2.zak, z2.v, { dnes: DNES });
+    const o2 = obj(z2.zak, z2.v);
     return o2.souhrn.dphPct === 12 && o2.radky.every(x => x.dphPct === 12) && o2.souhrn.dphKc === Math.round(260500 * 0.12 * 100) / 100;
   })());
   test('dodavatel z Nastavení → Firma', o.dodavatel.nazev === firmaAktualni().nazev && o.dodavatel.ico === firmaHodnota(firmaAktualni(), 'ico') && !!o.dodavatel.adresa);
@@ -134,12 +141,11 @@ const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 768
   test('termíny z nabídky (jen nabízené činnosti) + poznámka k hvězdičce IČ', o.terminy.length > 0
     && o.terminy.some(x => /^\*\) Termíny pro vyjádření/.test(x[0])), o.terminy);
   test('mimo celkovou cenu: varianta studie a AD (nabízí se)', o.mimoCenu.length === 2 && /AUTORSKÝ DOZOR/.test(o.mimoCenu[1]));
-  test('nerozeslaná nabídka: upozornění (netiskne se)', o.upozorneni.some(t => /ještě nebyla odeslána/.test(t)));
   test('název souboru OBJEDNAVKA_<číslo>-PROJ', o.nazevSouboru === 'OBJEDNAVKA_2026-OVP-OBJ-0376-PROJ', o.nazevSouboru);
 }
 {
   const { zak, v } = zakazka(null, { sleva: false });
-  const o = O.objednavkaProjData(zak, v, { dnes: DNES });
+  const o = obj(zak, v);
   test('bez slevy: žádný řádek slevy, celkem = součet řádků', o.sleva === null && o.souhrn.bezDph === Object.values(ZLATA).reduce((a, b) => a + b, 0), o.souhrn);
 }
 
@@ -147,7 +153,7 @@ const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 768
 {
   const { zak, v } = zakazka();
   vyrad(v, ['ic', 'dps', 'kolaudace']);
-  const o = O.objednavkaProjData(zak, v, { dnes: DNES });
+  const o = obj(zak, v);
   const n = NP.nabidkaProjData(zak, v, 'cz');
   test('bez IČ/DPS/kolaudace: řádky jen nabízených činností', JSON.stringify(o.radky.map(x => x.sekce)) === JSON.stringify(['zamereni', 'studie', 'dpz', 'ezc']), o.radky.map(x => x.sekce));
   test('…celkem = nabídka', o.souhrn.sDph === n.souhrn.sDph && o.texty.bezDph === n.placeholders.PROJ_CELKEM_BEZ_DPH);
@@ -160,12 +166,12 @@ const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 768
   v2.data.proj.zadani.sekce.find(s => s.key === 'dpz').polozky.forEach(p => { p.vyrazeno = false; });
   const pbr = v2.data.proj.zadani.sekce.find(s => s.key === 'dpz').polozky.find(p => /PBŘ/.test(p.nazev));
   if (pbr) pbr.vyrazeno = true;
-  const o2 = O.objednavkaProjData(z2, v2, { dnes: DNES });
+  const o2 = obj(z2, v2);
   test('DPZ bez PBŘ: rozsah bez části PBŘ, popis ceny bez PBŘ', !!pbr && !o2.radky.find(x => x.sekce === 'dpz').popis.some(t => /PBŘ|Požárně/.test(t)),
     o2.radky.find(x => x.sekce === 'dpz').popis.slice(0, 2));
   const { zak: z3, v: v3 } = zakazka();
   vyrad(v3, ['zamereni', 'studie', 'projednani', 'dpz', 'ic', 'dps', 'ezc', 'kolaudace', 'geodet']);
-  test('nic nenabízeno: objednávka nevznikne', /žádnou činnost/.test(O.objednavkaProjData(z3, v3, { dnes: DNES }).chyba || ''));
+  test('nic nenabízeno: objednávka nevznikne', /žádnou činnost/.test(obj(z3, v3).chyba || ''));
 }
 
 /* ---------------- 4) projednání studie, cestovné ---------------- */
@@ -173,7 +179,7 @@ const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 768
   /* zkušební ceník projednání neoceňuje — smyšlená cena památkářů v ceníku varianty */
   const { zak, v } = zakazka();
   v.data.proj.cenik.fixy = Object.assign({}, v.data.proj.cenik.fixy, { pamatkari: 5000 });
-  const o = O.objednavkaProjData(zak, v, { dnes: DNES });
+  const o = obj(zak, v);
   const n = NP.nabidkaProjData(zak, v, 'cz');
   const rp = o.radky.find(x => x.sekce === 'projednani'), rs = o.radky.find(x => x.sekce === 'studie');
   test('projednání: vlastní řádek za cenu nabídky', n.nabizeneSekce.indexOf('projednani') >= 0 && !!rp && o.souhrn.sDph === n.souhrn.sDph, n.nabizeneSekce);
@@ -181,7 +187,7 @@ const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 768
     && !rs.popis.some(t => /Projednání STUDIE|památkové péče HMP/.test(t)) && rs.popis.some(t => /Návrh grafické studie/.test(t)), [rp && rp.popis, rs && rs.popis]);
   const m = zakazka({ akceMimoPrahu: true });
   m.v.data.proj.cenik.vyjezdTechnikKc = 3500;
-  const om = O.objednavkaProjData(m.zak, m.v, { dnes: DNES });
+  const om = obj(m.zak, m.v);
   const nm = NP.nabidkaProjData(m.zak, m.v, 'cz');
   test('mimo Prahu: cena ZA o výjezd výš (= nabídka) a věta o cestovném v popisu', om.radky.find(x => x.sekce === 'zamereni').cenaJedn === ZLATA.zamereni + 3500
     && om.radky.find(x => x.sekce === 'zamereni').popis.some(t => /cestovní náklady na 1 výjezd/.test(t)) && om.souhrn.sDph === nm.souhrn.sDph,
@@ -200,34 +206,55 @@ const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 768
   const zab = VZ.vzTiskZabrana(zak, r.zakaznik.id, v, 'objednavkaProj');
   test('VZ: pro dalšího zákazníka zábrana „jen pro řídícího"', /tisknou jen pro řídícího zákazníka/.test(zab), zab);
   test('VZ: pro řídícího bez zábrany', VZ.vzTiskZabrana(zak, '', v, 'objednavkaProj') === '');
+  odesli(v, zak);
   const pohled = VZ.vzTiskPohled(zak, '', v);
   const o = O.objednavkaProjData(pohled, VZ.vzTiskVarianta ? VZ.vzTiskVarianta(pohled, v) : v, { dnes: DNES });
   test('VZ: objednatel a zástupce = řídící zákazník', o.objednatel.nazev === 'TEST zákazník s.r.o.' && o.objednatel.zastupce === 'Jan Zkušební, jednatel'
     && JSON.stringify(o).indexOf('TEST druhý') < 0, o.objednatel);
-  test('VZ: celá zakázka (ne pohled) se netiskne', (() => { try { O.objednavkaProjData(zak, v, { dnes: DNES }); return false; } catch (e) { return /pohledu jednoho zákazníka/.test(e.message); } })());
+  test('VZ: celá zakázka (ne pohled) se netiskne', (() => { try { obj(zak, v); return false; } catch (e) { return /pohledu jednoho zákazníka/.test(e.message); } })());
 }
 
 /* ---------------- 6) odeslaná varianta = otisk ---------------- */
 {
   const { zak, v } = zakazka();
-  const pred = O.objednavkaProjData(zak, v, { dnes: DNES });
+  const pred = obj(zak, v);
   zamkniVariantu(v, { kdy: '2026-11-19T08:00:00Z', typ: 'nabidkaProjTisk',
     vysledek: { proj: EP.vypocetProj(v.data.proj.zadani, v.data.proj.cenik) } });
   v.data.proj.cenik.hodinaKc = (+v.data.proj.cenik.hodinaKc || 1000) * 3;   // pozdější změna ceníku varianty
   Object.keys(v.data.proj.cenik).forEach(k => { if (typeof v.data.proj.cenik[k] === 'number' && /Kc$/.test(k)) v.data.proj.cenik[k] *= 2; });
-  const po = O.objednavkaProjData(zak, v, { dnes: DNES });
+  const po = obj(zak, v);
   const n = NP.nabidkaProjData(zak, v, 'cz');
   test('odeslaná varianta: ceny z otisku = jako před změnou a = dotisk nabídky', po.souhrn.sDph === pred.souhrn.sDph && po.souhrn.sDph === n.souhrn.sDph
     && JSON.stringify(po.radky.map(x => x.cenaJedn)) === JSON.stringify(pred.radky.map(x => x.cenaJedn)), [po.souhrn, pred.souhrn]);
-  test('odeslaná varianta: bez upozornění na neodeslanou nabídku', !po.upozorneni.some(t => /nebyla odeslána/.test(t)));
+  test('odeslaná varianta: bez zábrany', !po.chyba && O.objednavkaProjZabrana(v) === '');
+}
+
+/* ---------------- 6b) zábrana: jen z odeslané nabídky (J. V. 19. 11., #676 bod 3) ---------------- */
+{
+  const { zak, v } = zakazka();
+  const e = O.objednavkaProjData(zak, v, { dnes: DNES });
+  test('neodeslaná (nezamčená) varianta: objednávka nevznikne, hláška říká proč', !!e.chyba && /jen z odeslané \(vytištěné\) cenové nabídky PROJ/.test(e.chyba), e);
+  test('zábrana: nezamčená → hláška, zamčená → prázdné', /odeslané/.test(O.objednavkaProjZabrana(v)) && O.objednavkaProjZabrana(odesli(v, zak)) === ''
+    && /odeslané/.test(O.objednavkaProjZabrana(null)));
+  test('zábrana: odemčený zámek (zamceno false) = neodeslaná', /odeslané/.test(O.objednavkaProjZabrana({ zamek: { zamceno: false } })));
+  const ui = fs.readFileSync(path.join(__dirname, 'ui/ukazkove_ui.js'), 'utf8');
+  test('brána tlačítka (dokumentZabrana) volá objednavkaProjZabrana — tlačítko zhasne s důvodem',
+    /typ === 'objednavkaProj' && typeof objednavkaProjZabrana === 'function'[\s\S]{0,160}objednavkaProjZabrana\(varianta \|\| aktivniVarianta\(ZAK\)\)/.test(ui));
 }
 
 /* ---------------- 7) Word, brány, UI ---------------- */
 (async () => {
   const { zak, v } = zakazka();
+  /* Pole „Číslo zakázky" krycího listu PROJ (J. V. 19. 11., #676 bod 2). */
+  const pole = KRYCI_PROJ_SEKCE.find(x => x.sekce === 'Základní údaje').pole.find(x => x.id === 'cisloZakazky');
+  test('KL PROJ: pole „Číslo zakázky" v Základních údajích (BO i Techdata)', !!pole && pole.label === 'Číslo zakázky'
+    && pole.verze.join() === 'bo,techdata' && !pole.prefill && !pole.bind);
   zak.varianty[0].data.kryciProj = { hodnoty: { cisloSod: 'SOD-TEST-1' } };
-  const o = O.objednavkaProjData(zak, v, { dnes: DNES });
-  test('číslo zakázky = ručně vyplněné Číslo SoD krycího listu PROJ', o.cisloZakazky === 'SOD-TEST-1');
+  test('bez Čísla zakázky: kolonka Zakázka prázdná (Číslo SoD se nebere)', obj(zak, v).cisloZakazky === '');
+  test('KL PROJ: Číslo zakázky jde doplnit po odeslání CN', zamekKryciPoleStav(v, 'kryciProj', 'cisloZakazky') === 'editovatelne');
+  v.data.kryciProj.hodnoty.cisloZakazky = 'Z2026-TEST-01';
+  const o = obj(zak, v);
+  test('číslo zakázky = pole Číslo zakázky krycího listu PROJ', o.cisloZakazky === 'Z2026-TEST-01');
   const blob = O.objednavkaProjDocxBlob(o);
   const buf = new Uint8Array(await blob.arrayBuffer());
   const pol = await DG.zipPrecti(buf);
@@ -236,10 +263,17 @@ const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 768
   test('Word: platné XML', !vada, vada);
   const text = nbsp(doc.replace(/<[^>]+>/g, ''));
   test('Word: název, číslo dokladu, číslo zakázky, datum případu', /Objednávka \/ Smlouva/.test(text) && text.indexOf('Číslo dokladu: 2026-OVP-OBJ-0376') >= 0
-    && text.indexOf('Číslo zakázky: SOD-TEST-1') >= 0 && text.indexOf('Datum případu: 19. 11. 2026') >= 0);
+    && text.indexOf('Zakázka: Z2026-TEST-01') >= 0 && text.indexOf('SOD-TEST-1') < 0 && text.indexOf('Datum případu: 19. 11. 2026') >= 0);
   test('Word: řádky, sleva, Celkem Kč a podpis', o.radky.every(x => text.indexOf(x.nazev) >= 0) && text.indexOf('Sleva 10 %') >= 0
     && text.indexOf('Celkem Kč') >= 0 && text.indexOf(nbsp(o.texty.sDph)) >= 0 && /Podpis objednatele/.test(text));
   test('Word: poznámka k termínům bez osiřelé pomlčky', text.indexOf('nemůže zhotovitel z velké části ovlivnit. –') < 0 && text.indexOf('nemůže zhotovitel z velké části ovlivnit.') >= 0);
+  test('Word: sloupce jako vzor (J. cena, C. cena, …)', O.OBJ_PROJ_SLOUPCE.every(t => text.indexOf(t) >= 0) && /Součet/.test(text));
+  test('Word: blok Místo určení / Objednatel s adresou akce', text.indexOf('Místo určení / Objednatel') >= 0 && text.indexOf('Místo určení: TEST akce D3, Zkušební 1, Praha') >= 0);
+  const zap = pol.find(p => p.nazev === 'word/footer1.xml');
+  const zapX = zap ? new TextDecoder().decode(zap.data) : '';
+  test('Word: zápatí Strana x / y (PAGE, NUMPAGES), platné XML', /Strana /.test(zapX) && /PAGE/.test(zapX) && /NUMPAGES/.test(zapX)
+    && !(typeof DG.xmlStrukturaVada === 'function' && DG.xmlStrukturaVada(zapX))
+    && /footer1\.xml/.test(new TextDecoder().decode(pol.find(p => p.nazev === 'word/_rels/document.xml.rels').data)));
   test('Word: poznámka s odkazem na CN', text.indexOf('cenovou nabídkou č. 2026-OVP-CN-0376') >= 0);
   if (typeof global.dokumentRegistruj !== 'function') {
     /* registr dokumentů: generate (bez šablony) */
@@ -272,7 +306,7 @@ const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 768
   const vm = require('vm');
   vm.runInThisContext(ui);
   const zx = zakazka(); zx.zak.objednatel = 'TEST <b>zlý</b>';
-  const html = objednavkaProjHtml(O.objednavkaProjData(zx.zak, zx.v, { dnes: DNES }));
+  const html = objednavkaProjHtml(obj(zx.zak, zx.v));
   test('náhled: escapuje text zákazníka', html.indexOf('<b>zlý</b>') < 0 && html.indexOf('&lt;b&gt;zlý') >= 0);
   test('náhled: poznámka k termínům bez osiřelé pomlčky', html.indexOf('ovlivnit. –') < 0 && html.indexOf('ovlivnit.') >= 0);
   test('náhled: číslo dokladu, Celkem Kč, podpis, poznámka', /id="objCislo">2026-OVP-OBJ-0376</.test(html) && /Celkem Kč/.test(html)

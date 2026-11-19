@@ -122,6 +122,10 @@ const KRYCI_PROJ_SEKCE = [
      * SoD (kryciProjZmrazSod). Plní symbol čísla smlouvy. */
     { id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'návrh z čísla nabídky', sod: 'SOD_CISLO_SMLOUVY',
       prefill: c => (typeof sodCisloNavrh === 'function' ? sodCisloNavrh(c.hl.cislo) : '') },
+    /* Číslo zakázky z účetnictví (D3, J. V. 19. 11. 2026): tiskne ho
+     * Objednávka / Smlouva PROJ v kolonce Zakázka; prázdné = řádek se vynechá.
+     * Běžné pole listu (zámek jako ostatní: po CN volné, po SoD/Prodáno zmrazené). */
+    { id: 'cisloZakazky', label: 'Číslo zakázky', verze: ['bo', 'techdata'], ph: 'z účetnictví, např. Z2026-…', src: 'ručně (účetnictví)' },
     { id: 'adresaStavby', label: 'Adresa stavby', verze: ['bo', 'techdata'], bind: 'ZAK.projHlavicka.adresa', prefill: c => c.hl.adresa, src: c => c.hlSrc('adresa') },
     { id: 'hodnotaBezDph', label: 'Hodnota zakázky bez DPH', verze: ['bo', 'techdata'], prefill: c => c.hodnota, src: 'z Kalkulace PROJ' },
     /* Vlastní pole projekční části – v OCK verzi obdobu nemají. */
