@@ -8,9 +8,9 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | prostředí | verze |
 |---|---|
 | ostrý web (`main`) | **v11.11.1** (`6c4bc80e`, 11. 11. 2026) |
-| testovací web (`test`) | **v19.11.1** (`b4dece98`, 19. 11. 2026) |
+| testovací web (`test`) | **v19.11.1** (`6ae5c5ac`, 19. 11. 2026) |
 
-Test je proti main napřed o 283 commitů.
+Test je proti main napřed o 285 commitů.
 
 ## V testu, ještě ne v main
 
@@ -84,7 +84,6 @@ Test je proti main napřed o 283 commitů.
 | #624 (dřív K40c-N5) | otázka | Zakázka bez autora dostane autora z relace prvního ukládajícího (B73) | zvážit nedoplňovat autora u existující zakázky (na později) |
 | #625 (dřív K44-I1, B7, B0.8) | úkol | Sazby skladebných můstků v ceníku testu, pak samostatné kolo na můstky | sazby doplní v testu (odložit s datem; sekce Můstky je prázdná, cena se nekazí) |
 | #627 (dřív DP-D1–D8, DP-T1) | otázka | DP #573 termín DPZ a dotazy obchodu D1–D8, T1 | rozhodnout (obsah v artefaktu dotazů) |
-| #628 | dávka | Zefektivnění programu | start po sloučení test → main |
 | #629 | rozhodnutí | Jmenovat kolegu s rolí administrátora (jen test) | jmenuje |
 | #630 | úkol | Nahrát skill testovaci-procedura-kng podle osnovy; zkrátit skill kalkulator-next-gen do 25 kB | nahrát skilly (mimo repo) |
 | #631 | otázka | Revize diffu S7 (CLAUDE.md, rozdělení PREDAVKA) | revize (doporučeno schválit) |
@@ -96,7 +95,7 @@ Test je proti main napřed o 283 commitů.
 | #642 | úkol | Zeštíhlení roadmap.json: hotové položky starší 60 dní do archivu (živý soubor kolem 60 položek) | souhlas (návrh režie S6 d; soubor má 1,2 MB) |
 | #643 | úkol | Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6) | nahrát upravený skill (mimo repo) |
 
-K tomu 11 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
+K tomu 12 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
 
 ## Nehotové položky evidence
 

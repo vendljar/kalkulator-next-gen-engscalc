@@ -7,11 +7,11 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "b4dece98",
+  "sha": "6ae5c5ac",
   "verze": "v19.11.1",
   "datum": "19. 11. 2026"
  },
- "test_navic_commitu": 283,
+ "test_navic_commitu": 285,
  "v_testu_ne_v_main": [
   {
    "id": "668",
@@ -478,12 +478,6 @@
    "cekaNa": "rozhodnout (obsah v artefaktu dotazů)"
   },
   {
-   "id": "628",
-   "typ": "davka",
-   "nazev": "Zefektivnění programu",
-   "cekaNa": "start po sloučení test → main"
-  },
-  {
    "id": "629",
    "typ": "rozhodnuti",
    "nazev": "Jmenovat kolegu s rolí administrátora (jen test)",
@@ -553,7 +547,7 @@
    "cekaNa": "nahrát upravený skill (mimo repo)"
   }
  ],
- "ceka_na_jv_odlozene": 11,
+ "ceka_na_jv_odlozene": 12,
  "nehotove_podle_kdo": {
   "J. V.": 40,
   "kolega": 5,
