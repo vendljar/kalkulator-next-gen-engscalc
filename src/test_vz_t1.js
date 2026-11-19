@@ -206,10 +206,22 @@ const invariant = z => z.vzRidici.varianta === vzRidiciVariantaId(z) && vzZakazn
   vzT1Nastav(z, varZ(z, 'z3').id);
   test('D N3 řídící C = IČO organizace dealu → sedí', vzOrgNesedi(z) === null && vzOrgDealuId(z) === 'z3');
   z.pdOrgDealu.ico = '';
-  test('D N3 organizace dealu bez IČ → nesedí (prázdné = nesedí)', !!vzOrgNesedi(z) && vzOrgDealuId(z) === '');
-  const icoC = z.ico; z.ico = '';
-  test('D N3 organizace dealu bez IČ a řídící bez IČO → nesedí (prázdné ≠ shoda)', !!vzOrgNesedi(z));
-  z.ico = icoC;
+  /* revize N6: bez IČ na straně organizace se neshoda IČ nehlásí — název, jinak odhad z1 */
+  test('D N6 organizace dealu bez IČ, název nesedí, řídící C ≠ z1 → nesedí podle odhadu z1', !!vzOrgNesedi(z) && vzOrgDealuId(z) === 'z1');
+  z.pdOrgDealu.nazev = 'ZKUŠEBNÍ GAMA, s. r. o.';
+  test('D N6 organizace dealu bez IČ, název = řídící C → sedí', vzOrgNesedi(z) === null && vzOrgDealuId(z) === 'z3');
+  z.pdOrgDealu.nazev = 'Gama v Pipedrive s.r.o.';
+  vzT1Nastav(z, z.varianty[0].id, 'z1');
+  test('D N6 organizace dealu bez IČ, řídící se nezměnil (z1) → sedí, žádný nepravdivý řádek', vzOrgNesedi(z) === null && vzPoznamkaText(z).indexOf('Řídící zákazník v kalkulaci') < 0);
+  z.pdOrgDealu.ico = '99999999';
+  const icoA = z.ico; z.ico = '';
+  test('D N6 organizace s IČ, které žádný zákazník nemá, řídící z1 bez IČO → neshoda IČ se nehlásí', vzOrgNesedi(z) === null);
+  z.ico = icoA;
+  z.pdOrgDealu.ico = '33334444';
+  test('D N6 organizace s IČ C, řídící z1 s jiným IČO → nesedí podle IČO', !!vzOrgNesedi(z));
+  z.pdOrgDealu.org = 0;
+  test('D N6 deal bez organizace → nic', vzOrgNesedi(z) === null && vzOrgDealuId(z) === '');
+  z.pdOrgDealu.org = 77; vzT1Nastav(z, varZ(z, 'z3').id);
   z.pdOrgDealu = { deal: '9999', org: 77, ico: '33334444', nazev: 'Jiný deal', kdy: '' };
   test('D N3 uložená organizace jiného dealu se nepočítá → odhad z1 (řídící C ≠ A → nesedí, deal dál vede A)',
     vzOrgDealuZnama(z) === null && /deal dál vede Zkušební Alfa s\.r\.o\.\)$/.test(vzOrgNesediText(z, true)), vzOrgNesediText(z, true));

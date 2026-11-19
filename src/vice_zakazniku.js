@@ -1695,16 +1695,22 @@ function vzOrgDealuZnama(zak) {
 }
 
 /* Zákazník, na kterého je veden deal, nebo '': prodaná zakázka → kupující;
- * známá skutečná organizace → zákazník se stejným IČO (řídící přednostně);
- * jinak ODHAD původní zákazník z1 (deal se váže, dokud je zákazník jeden). */
+ * známá skutečná organizace → zákazník se stejným IČO (řídící přednostně),
+ * bez IČ na straně organizace → zákazník se stejným názvem (jádro názvu);
+ * jinak ODHAD původní zákazník z1 (deal se váže, dokud je zákazník jeden).
+ * Deal bez organizace → ''. */
 function vzOrgDealuId(zak) {
   if (!vzRezim(zak)) return vzRidiciId(zak);
   if (vzProdanaVarianta(zak)) return vzProdanoKomu(zak);
   const o = vzOrgDealuZnama(zak);
+  const l = vzZakaznici(zak);   // řídící první
   if (o) {
-    if (!o.ico) return '';
-    const shoda = vzZakaznici(zak).filter(z => vzIcoNorm(z.hlavicka.ico) === o.ico);
-    return shoda.length ? shoda[0].id : '';   // vzZakaznici: řídící první
+    if (!o.org) return '';
+    if (o.ico) { const s = l.find(z => vzIcoNorm(z.hlavicka.ico) === o.ico); if (s) return s.id; }
+    const j = vzNazevJadro(o.nazev);
+    const n = j ? l.find(z => vzNazevJadro(z.hlavicka.objednatel) === j) : null;
+    if (n) return n.id;
+    if (o.ico) return '';   // organizace s IČ, které žádný zákazník nemá
   }
   return vzZakaznik(zak, VZ_RIDICI_ID) ? VZ_RIDICI_ID : '';
 }
@@ -1712,27 +1718,28 @@ function vzOrgDealuId(zak) {
 /* T1: organizace dealu nesedí na řídícího zákazníka? → { ridici, org, nazev }
  * (`org` = zákazník organizace dealu nebo null, `nazev` = název organizace
  * pro hlavičku), jinak null. Jen víc zákazníků a neprodaná zakázka.
- *  - známá skutečná organizace: sedí jen při shodě IČO (prázdné = nesedí);
- *  - odhad z1: týž zákazník = sedí, jinak IČO; bez z1 se nic nehlásí
- *    (řádek se nepíše naslepo, rozhodnutí J. V. a). */
+ *  - známá skutečná organizace s IČ a řídící s IČO: rozhoduje IČO;
+ *  - bez IČ na některé straně (organizace v Pipedrive IČ nemá, účet pole IČ
+ *    nemá, řídící je bez IČO — revize N6): neshoda IČ se nehlásí; rozhodne
+ *    shoda názvu organizace s řídícím, jinak odhad z1;
+ *  - odhad z1: týž zákazník = sedí, jinak IČO (prázdné = nesedí); bez z1 se
+ *    nic nehlásí (řádek se nepíše naslepo, rozhodnutí J. V. a);
+ *  - deal bez organizace: nic. */
 function vzOrgNesedi(zak) {
   if (!vzRezim(zak) || vzProdanaVarianta(zak)) return null;
   const r = vzZakaznik(zak, vzRidiciId(zak));
   if (!r) return null;
   const a = vzIcoNorm(r.hlavicka.ico);
   const znama = vzOrgDealuZnama(zak);
-  if (znama) {
-    if (znama.ico && a === znama.ico) return null;
-    const oid = vzOrgDealuId(zak);
-    const org = oid ? vzZakaznik(zak, oid) : null;
-    return { ridici: r, org, nazev: znama.nazev || (org ? vzText(org.hlavicka.objednatel).trim() : '') };
-  }
+  if (znama && !znama.org) return null;
   const oid = vzOrgDealuId(zak);
   const org = oid ? vzZakaznik(zak, oid) : null;
+  const nazevOrg = () => (znama && znama.nazev) || (org ? vzText(org.hlavicka.objednatel).trim() : '');
+  if (znama && znama.ico && a) return a === znama.ico ? null : { ridici: r, org, nazev: nazevOrg() };
   if (!org || org.id === r.id) return null;
   const b = vzIcoNorm(org.hlavicka.ico);
   if (a && b && a === b) return null;
-  return { ridici: r, org, nazev: vzText(org.hlavicka.objednatel).trim() };
+  return { ridici: r, org, nazev: nazevOrg() };
 }
 
 /* Řádek poznámky dealu / text bloku v hlavičce (prostý text) nebo ''. */
@@ -1744,20 +1751,18 @@ function vzOrgNesediText(zak, sOrganizaci) {
 }
 
 /* SERVER — invariant T1 (ZAP, po vzServerRidici). `stara` = uložená verze.
- * Hlídá se jen, když se řídící zákazník, řídící varianta nebo ukazatel
- * řídícího proti uložené verzi změnily (starší data se neodmítají), ne u obnovy.
- *  - Řídící zákazník musí ukazovat na řídící variantu. Starší klient
- *    v mezipaměti (revize N2) mění jen příznak `v.ridici` — když se řídící
- *    zákazník nemění, server ukazatel srovná jako dřív (vzSrovnej na konci
- *    kontroly); jinak 409 „Obnovte stránku…“.
- *  - Vlastnictví (revize N1): podle UKLÁDANÉ verze (ukazatele) a razítek
- *    odeslání z uložené — ne jen podle uložené verze, jinak by server odmítl
- *    legitimní kroky v jednom uložení (B přesunutý na variantu C a zvolený
- *    řídícím, C na nové variantě, C na sdílené). Řídící, který na řídící
- *    variantu ukazuje, jí tím patří; vlastní varianta jiného zákazníka po
- *    přesunu řídícího přestává být vlastní (je sdílená) — každý takový stav
- *    umí i obrazovka. Kdo smí řídícího a řídící variantu měnit, hlídá
- *    vzServerRidici. { status, chyba } | null. */
+ * Co server SKUTEČNĚ hlídá: jen to, že řídící zákazník ukazuje na řídící
+ * variantu (`vzRidici.varianta` = varianta s příznakem `ridici`), a to jen
+ * když se řídící zákazník, řídící varianta nebo ukazatel proti uložené verzi
+ * změnily (starší data se neodmítají) a nejde o obnovu.
+ *  - Nesedí-li ukazatel a řídící zákazník je týž jako v uložené verzi
+ *    (starší klient v mezipaměti mění jen `v.ridici`, revize N2), projde
+ *    a ukazatel srovná vzSrovnej na konci kontroly — jako dřív.
+ *  - Nesedí-li a řídící zákazník je jiný → 409 VZ_T1_OBNOVTE.
+ * Zvláštní kontrola „komu varianta patří" se nedělá (revize N1): podle
+ * ukládané verze patří řídící variantě každý řídící, který na ni ukazuje,
+ * a každý takový stav umí i obrazovka (vzVariantaSet + vzT1Nastav). Kdo smí
+ * řídícího a řídící variantu měnit, hlídá vzServerRidici. { status, chyba } | null. */
 const VZ_T1_OBNOVTE = 'Obnovte stránku (nová verze aplikace) — řídící zákazník musí mít řídící variantu; pak vyberte v hlavičce Řídící variantu a Řídícího zákazníka.';
 function vzServerInvariant(stara, zak, volby) {
   const o = volby || {};

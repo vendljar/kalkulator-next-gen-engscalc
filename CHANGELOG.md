@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v18.11.10 — VZ T1 #667: řídící varianta a řídící zákazník v hlavičce, větev claude/vz-t1
+## v19.11.2 — VZ T1 #667: řídící varianta a řídící zákazník v hlavičce, větev claude/vz-t1
 
 Nad integrací `2856345` (v18.11.6), sloučeno s integrací `d8e4fc1` (v18.11.8: C7+NS, VZ-F1) a `82cbd72` (UE v18.11.9). Rozhodnutí J. V. 18. 11. 2026, schválená maketa `podklady/T1_MAKETA_KALKULATOR.html`
 (kolo VZ na testu, `podklady/kola/STAV_TEST_VZ_2026-11-18.md` oddíl T1). Verzi přečísluje koordinace. Na webech, Disku
@@ -48,7 +48,12 @@ hlavička znak po znaku jako dřív (i tlačítko „nastavit jako řídící“
   - J. V. (b): přechod řídícího na variantu jen podle razítka se zapíše do protokolu zakázky; (d) krátké potvrzení
     „Řídícím zákazníkem bude C — … — hlavička zakázky se změní.“ jen při změně řídícího zákazníka (i automaticky
     u vlastní varianty), změna samotné varianty bez dialogu; (a), (c), (e) beze změny.
-- Testy: `src/test_vz_t1.js` (78), `netlify/test_vz_t1_server.mjs` (17), `test_vz_organizace.mjs` N3, `test_vz_poznamka.mjs` oddíl 11, `src/test_vz_ui.js` oddíl T1,
+- **Dorevize poradce (19. 11.):** N6 — bez IČ na některé straně (organizace v Pipedrive IČ nemá, účet pole IČ nemá,
+  řídící bez IČO) se neshoda IČ nehlásí: rozhodne shoda názvu organizace s řídícím, jinak odhad z1; deal bez
+  organizace nic (žádný nepravdivý řádek v poznámce ani blok). N7 — čtení organizace hlásí `volano` (třetí čtení
+  zakázky). N8 — žádná chyba čtení uložení nezastaví. N9 — čtení má vlastní limit 2,5 s mimo rozpočet poznámek.
+  N10 — komentář `vzServerInvariant` podle skutečného chování.
+- Testy: `src/test_vz_t1.js` (83), `netlify/test_vz_t1_server.mjs` (17), `test_vz_organizace.mjs` N3, `test_vz_poznamka.mjs` oddíly 11–13, `src/test_vz_ui.js` oddíl T1,
   `netlify/test_vz_poznamka.mjs` oddíl 10, harness `overit_vz_t1.mjs` (stavy makety, znak po znaku proti 2856345
   s `KNG_DIST_ZAKLAD`); upraveny `test_vz_server.mjs` (podvržený ukazatel → 409), `test_pd_stav.js`, `overit_vz_prodej.mjs`.
   Mutace [VZ T1] jádra a serveru. Pojistka: na 2856345 nové sady padají (funkce T1 chybí, server srovnával).

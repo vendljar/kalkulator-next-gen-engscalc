@@ -303,7 +303,9 @@ let Z2, ID2;
   SIM.pdSimNastav({ scenar: '' });
   test('7 visi: obě poznámky chyba, varování o obou, uloženo', t3.status === 200 && t3.pdPoznamka === 'chyba' && t3.pdPoznamkaZakaznici === 'chyba'
     && /Seznam šachet/.test(t3.varovani || '') && /Seznam dalších zákazníků/.test(t3.varovani || '') && /neodpověděl/.test(t3.varovani || ''), { t3 });
-  test('7 společný rozpočet: obě poznámky dohromady nejvýš PD_POZNAMKA_CELKEM_MS (+ rezerva)', trvalo < PP.PD_POZNAMKA_CELKEM_MS + 1500
+  /* VZ T1 (revize N9): čtení organizace dealu má vlastní limit PD_ORG_DEALU_MS mimo rozpočet poznámek. */
+  test('7 společný rozpočet: obě poznámky dohromady nejvýš PD_POZNAMKA_CELKEM_MS (+ čtení organizace PD_ORG_DEALU_MS, + rezerva)',
+    trvalo < PP.PD_POZNAMKA_CELKEM_MS + PP.PD_ORG_DEALU_MS + 1500
     && trvalo >= 2 * PP.PD_POZNAMKA_VOLANI_MS - 200, trvalo);
   const t4 = await uloz(z2);
   test('7 po obnovení Pipedrive se obě zapíší', t4.pdPoznamka === 'zalozeno' && t4.pdPoznamkaZakaznici === 'zalozeno', t4);
@@ -485,6 +487,38 @@ let Z2, ID2;
   const req = SIM.pdSimStav().pozadavky.filter(x => /\/api\/v2\/(deals|organizations)\//.test(x)).length;
   await uloz(z);
   test('11 N3: další uložení do hodiny deal ani organizaci znovu nečte', SIM.pdSimStav().pozadavky.filter(x => /\/api\/v2\/(deals|organizations)\//.test(x)).length === req);
+}
+
+/* 12) Revize N7–N9: pdOrgDealuObnov hlásí volano (třetí čtení), žádná chyba nevyletí, vlastní limit. */
+{
+  const deal = dealy[22];
+  const z = sVz(deal);
+  const relA = { role: 'Administrátor', email: ADMIN_EMAIL };
+  const r = await PP.pdOrgDealuObnov(z, { zapnuto: true, relace: relA, poleMapa: async () => ({ mapaOrganizace: {} }) }, G);
+  test('12 N7: přečteno → volano true; bez pole IČ v mapě uloží organizaci bez IČ', r.stav === 'precteno' && r.volano === true
+    && z.pdOrgDealu && z.pdOrgDealu.org > 0 && z.pdOrgDealu.ico === '', { r, o: z.pdOrgDealu });
+  const r2 = await PP.pdOrgDealuObnov(z, { zapnuto: true, relace: relA, poleMapa: async () => ({}) }, G);
+  test('12 N7: čerstvá hodnota → bez volání', r2.stav === 'cerstva' && r2.volano === false, r2);
+  const z3 = sVz(deal);
+  const r3 = await PP.pdOrgDealuObnov(z3, { zapnuto: true, relace: relA, poleMapa: async () => { throw new TypeError('úložiště mapy polí spadlo'); } }, G);
+  test('12 N8: chyba jiná než PdChyba (mapa polí) nevyletí → chyba, pdOrgDealu nezapsáno', r3.stav === 'chyba' && !z3.pdOrgDealu, r3);
+  const z4 = sVz(deal);
+  const t0 = Date.now();
+  const drz = setInterval(() => {}, 100);   // časovač limitu je unref() — test drží proces naživu sám
+  const r4 = await PP.pdOrgDealuObnov(z4, { zapnuto: true, relace: relA, poleMapa: () => new Promise(() => {}) }, G);
+  clearInterval(drz);
+  const trvalo4 = Date.now() - t0;
+  test('12 N9: visící mapa polí → konec po vlastním limitu PD_ORG_DEALU_MS', r4.stav === 'chyba' && trvalo4 < PP.PD_ORG_DEALU_MS + 800 && trvalo4 >= PP.PD_ORG_DEALU_MS - 200, { r4, trvalo4 });
+}
+
+/* 13) Revize N6: řídící bez IČO (organizace dealu IČ má) a řídící se nezměnil → žádný nepravdivý řádek. */
+{
+  const deal = dealy[23];
+  const z = sVz(deal);   // hlavička bez IČO
+  const t = await uloz(z);
+  const p = notes().filter(x => x.deal_id === deal);
+  test('13 N6: řídící bez IČO, původní zákazník → poznámka bez řádku „Řídící zákazník v kalkulaci“', t.status === 200 && p.length === 1
+    && t.pdOrgDealu && t.pdOrgDealu.ico && !/Řídící zákazník v kalkulaci/.test(p[0].content), { pd: t.pdOrgDealu, c: p[0] && p[0].content });
 }
 
 console.log(ok + ' OK, ' + fail + ' FAIL');
