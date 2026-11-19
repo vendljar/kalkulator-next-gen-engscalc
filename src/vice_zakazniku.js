@@ -1122,14 +1122,16 @@ function vzServerZakaznici(stara, zak, relace, volby) {
    * v poli (nový vložený před stávajícího prošel). Zákazník se stejným
    * IČO jako v uložené verzi se nehlídá: starší data s duplicitou ukládání
    * neblokují; obnova (i ze souboru) také ne. */
-  /* Hláška jmenuje toho DRUHÉHO zákazníka (ten, se kterým se IČO srazilo);
-   * předponu „Neuloženo:" přidá volající (zakazka_kontrola.mjs). */
+  /* Hláška jmenuje zákazníka, který v zakázce UŽ JE: přednost má ten, komu
+   * se IČO neměnilo; když jsou noví / změnění oba, ten dřívější v poli
+   * (pozdější se ohlásí, až na něj dojde řada). Předponu „Neuloženo:" přidá
+   * volající (zakazka_kontrola.mjs). */
+  const icoStejne = z => { const p = predIds.get(z.id); return !!p && vzIcoKlic(p.hlavicka.ico) === vzIcoKlic(z.hlavicka.ico); };
   if (!o.obnova) for (const n of ted) {
     const k = vzIcoKlic(n.hlavicka.ico);
-    if (!k) continue;
-    const p = predIds.get(n.id);
-    if (p && vzIcoKlic(p.hlavicka.ico) === k) continue;
-    const dupl = ted.find(z => z !== n && vzIcoKlic(z.hlavicka.ico) === k);
+    if (!k || icoStejne(n)) continue;
+    const stejne = ted.filter(z => z !== n && vzIcoKlic(z.hlavicka.ico) === k);
+    const dupl = stejne.find(icoStejne) || ted.slice(0, ted.indexOf(n)).find(z => vzIcoKlic(z.hlavicka.ico) === k);
     if (dupl) return { status: 400, chyba: vzIcoDuplicitaText(dupl) };
   }
   /* § 5: údaje dalšího zákazníka po odeslání jemu (uložená verze). */

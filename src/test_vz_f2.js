@@ -172,6 +172,30 @@ const jeText = x => typeof x === 'string' && x !== '' && x.indexOf('CHYBA ') !==
     /zakazniciIcoStop\(cil, karta, true\)/.test(zui) && /zakazniciIcoStop\(cil, z, false\)/.test(zui));
 }
 
+/* ================= #660: server (vzServerZakaznici, čisté jádro) ================= */
+{
+  const REL = { role: 'Obchodník', email: 'f2@priklad.cz' };
+  const srv = (stara, nova) => vzServerZakaznici(stara, nova, REL) || { status: 200 };
+  const st = zakazka(true);                      // A, B, C — různá IČO
+  const kod = (fnUprava, z0) => { const n = J(z0 || st); fnUprava(n); return srv(z0 || st, n); };
+  test('#660 server: beze změny → 200', srv(st, J(st)).status === 200);
+  { const st1 = J(st); st1.dalsiZakaznici[1].hlavicka.ico = '';
+    const r = kod(n => { n.dalsiZakaznici[1].hlavicka.ico = '271 828 18'; }, st1);
+    test('#660 server obchvat 1: doplněné IČO (= A) zákazníkovi uloženému bez IČO → 400 se jménem A', r.status === 400 && /Alfa zkušební/.test(r.chyba), r); }
+  { const r = kod(n => { n.ico = ICO.B; });
+    test('#660 server obchvat 2: změna IČO řídícího na IČO B → 400 se jménem B', r.status === 400 && /Beta zkušební/.test(r.chyba), r); }
+  { const r = kod(n => { const x = J(n.dalsiZakaznici[0]); Object.assign(x, { id: 'z4', pismeno: 'D' }); x.hlavicka.objednatel = 'Delta zkušební';
+      n.dalsiZakaznici.unshift(x); });
+    test('#660 server obchvat 3: nový zákazník vložený před B se stejným IČO → 400 se jménem B (ne nového)', r.status === 400 && /Beta zkušební/.test(r.chyba) && !/Delta/.test(r.chyba), r); }
+  { const r = srv(null, J(Object.assign(J(st), { ico: ICO.C })));
+    test('#660 server první uložení: A a C se stejným IČO → 400 jmenuje dřívějšího (A)', r.status === 400 && /Alfa zkušební/.test(r.chyba), r); }
+  { const leg = J(st); leg.dalsiZakaznici[1].hlavicka.ico = ICO.B;      // starší data: B = C
+    test('#660 server starší data s duplicitou: úprava kontaktu → 200', kod(n => { n.dalsiZakaznici[1].hlavicka.kontakt = 'Jiný'; }, leg).status === 200);
+    test('#660 server starší data: IČO jinak zapsané (161 803 39) → 200', kod(n => { n.dalsiZakaznici[1].hlavicka.ico = '161 803 39'; }, leg).status === 200);
+    test('#660 server obnova: duplicita se nehlídá', !vzServerZakaznici(st, Object.assign(J(st), { ico: ICO.B }), REL, { obnova: true })); }
+  test('#660 server: dva zákazníci bez IČO → 200', kod(n => { n.dalsiZakaznici[0].hlavicka.ico = ''; n.dalsiZakaznici[1].hlavicka.ico = ''; }).status === 200);
+}
+
 /* ================= #663: zmrazení zástupců po SoD (po zákaznících) ================= */
 {
   const zak = zakazka(true);
@@ -201,6 +225,16 @@ const jeText = x => typeof x === 'string' && x !== '' && x.indexOf('CHYBA ') !==
       ['ZAK.zastupci.smluvniJmeno', 'ZAK.dic'].map(c => zamekZakCestaZmrazena(zak, c)));
     test('#663: zamekZakStav — SoD jen dalšímu zákazníkovi → sod = false', zamekZakStav(zak).sod === false);
     test('#663: název akce a adresa stavby po CN dál zmrazené (víc zákazníků)', !!zamekZakCestaZmrazena(zak, 'ZAK.nazevAkce'));
+  }
+  {
+    const REL = { role: 'Administrátor', email: 'f2@priklad.cz' };
+    const n = J(zak); n.dalsiZakaznici[iB].zastupci.smluvniJmeno = 'Jiný';
+    const r = vzServerZakaznici(zak, n, REL);
+    test('#663 server: po SoD B změna zástupce B → 409', !!r && r.status === 409 && /smlouva o dílo/.test(r.chyba), r);
+    const n2 = J(zak); n2.dalsiZakaznici[iC].zastupci.smluvniJmeno = 'Jiný'; n2.zastupci.smluvniJmeno = 'Jiný A';
+    test('#663 server: po SoD B zástupci C a A volní (vzServerZakaznici i zamekZakZmeny)', !vzServerZakaznici(zak, n2, REL) && zamekZakZmeny(zak, n2).length === 0,
+      zamekZakZmeny(zak, n2));
+    test('#663 server obnova: zástupci B se nehlídají', !vzServerZakaznici(zak, n, REL, { obnova: true }));
   }
   tiskni(zak, vA, 'z1', 'sod');   // SoD i řídícímu A
   {
@@ -250,6 +284,7 @@ const jeText = x => typeof x === 'string' && x !== '' && x.indexOf('CHYBA ') !==
   /* obrazovka: klpVzCtxZak a klpVzKomu za otevřeného zákazníka */
   const o = obrazovka(zak);
   o.run("vzOtevri('z3')");
+  test('#661: klpVzCtxZak = kontext krycího listu OCK (klVzCtxZak)', o.run("klVzCtxZak = () => 'POHLED-OCK'; klpVzCtxZak()") === 'POHLED-OCK');
   test('#661: klpVzKomu u otevřeného C → C (ruční zmocnitel nejde do slotu řídícího)', o.run("klpVzKomu('pmZmocnitel')") === 'z3', o.run("klpVzKomu('pmZmocnitel')"));
   test('#661: klpVzKomu u pole mimo zákazníka (jednající za zhotovitele) → null', o.run("klpVzKomu('pmJednajici')") === null);
   o.run("vzOtevri('z1')");

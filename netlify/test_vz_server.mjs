@@ -31,6 +31,11 @@
  *     prodano.zakaznik / neexistující 409/400; server vymění řídícího sám;
  *     po prodeji výměna 409 a prodano.zakaznik z uložené verze; vzProdej
  *     vlastní varianty; návrat k jednomu zákazníkovi ≠ z1 s odeslanou 409.
+ *  9) VZ-F2 (#660, #663): duplicitní IČO — tři obchvaty z revize VZ-F1
+ *     (doplnění IČO dodatečně, změna IČO řídícího, nový zákazník vložený před
+ *     stávajícího) 400, starší data s duplicitou 200, první uložení; zástupci
+ *     a DIČ dalšího zákazníka po JEHO SoD 409, řídící A po SoD jen B volný,
+ *     po SoD A zámek hlavičky 409. Pojistka: na a3fad44 10 FAIL.
  * Paměťové úložiště, smyšlený ceník (src/zkusebni_cenik.js), smyšlené účty
  * a firmy. Spuštění: node netlify/test_vz_server.mjs */
 process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
@@ -480,6 +485,104 @@ for (const [jm, fn] of [['název', a => { a.dalsiZakaznici[0].hlavicka.objednate
   test('E3 zmrazení: kontakt B a název C (nic mu neodešlo) se změnit smí → 200',
     r.status === 200 && u.dalsiZakaznici[0].hlavicka.kontakt === 'Nová kontaktní osoba' && u.dalsiZakaznici[1].hlavicka.objednatel === 'TEST – TŘETÍ PŘEJMENOVANÝ s.r.o.',
     { status: r.status, chyba: r.chyba }); }
+
+/* ---------- VZ-F2 (#660): duplicitní IČO — tři obchvaty z revize VZ-F1 ----------
+ * Server porovnává každého NOVÉHO zákazníka a každého, komu se IČO ZMĚNILO
+ * (i řídícího), se VŠEMI ostatními. Pojistka: na a3fad44 všechny tři obchvaty
+ * projdou (200) → FAIL. Zákazník s IČO stejným jako v uložené verzi se
+ * nehlídá (starší data s duplicitou ukládání neblokují). */
+const ICO_A = '27182818', ICO_B = '16180339', ICO_V = '12345679';
+async function sIco(nazev, icoA, icoB, uprava) {
+  const z = sVz('F2 ' + nazev, zz => { zz.ico = icoA; zz.dalsiZakaznici[0].hlavicka.ico = icoB; if (uprava) uprava(zz); });
+  const r = await uloz(z, cO);
+  if (r.status !== 200) throw new Error('příprava F2 ' + nazev + ' ' + r.status + ' ' + r.chyba);
+  return { soubor: r.soubor, g: await nacti(r.soubor, cO) };
+}
+{ const o = await sIco('obchvat 1', ICO_A, '');
+  const pred = ulozeno(o.soubor);
+  const r = await opakuj(o, a => { a.dalsiZakaznici[0].hlavicka.ico = '271 828 18'; });
+  test('F2 #660 obchvat 1: B uložený bez IČO, doplněné IČO řídícího → 400 (jmenuje A), úložiště beze změny',
+    r.status === 400 && /Zákazník s tímto IČO už v zakázce je \(TEST – TESTOVACÍ ODBĚRATEL s\.r\.o\.\)/.test(r.chyba || '') && ulozeno(o.soubor) === pred,
+    { status: r.status, chyba: r.chyba });
+  const r2 = await opakuj(o, a => { a.dalsiZakaznici[0].hlavicka.ico = ICO_V; });
+  test('F2 #660 obchvat 1: doplněné volné IČO → 200', r2.status === 200, { status: r2.status, chyba: r2.chyba }); }
+{ const o = await sIco('obchvat 2', ICO_A, ICO_B);
+  const pred = ulozeno(o.soubor);
+  const r = await opakuj(o, a => { a.ico = ICO_B; });
+  test('F2 #660 obchvat 2: změna IČO řídícího na IČO B → 400 (jmenuje B), úložiště beze změny',
+    r.status === 400 && /Zákazník s tímto IČO už v zakázce je \(TEST – DRUHÝ ODBĚRATEL s\.r\.o\.\)/.test(r.chyba || '') && ulozeno(o.soubor) === pred,
+    { status: r.status, chyba: r.chyba });
+  const r2 = await opakuj(o, a => { a.ico = '271 828 18'; a.dalsiZakaznici[0].hlavicka.ico = '161-803-39'; });
+  test('F2 #660: vlastní IČO jinak zapsané (řídící i B) → 200', r2.status === 200, { status: r2.status, chyba: r2.chyba }); }
+{ const o = await sIco('obchvat 3', ICO_A, ICO_B);
+  const pred = ulozeno(o.soubor);
+  const r = await opakuj(o, a => { const p = G.vzPridej(a, Object.assign({}, UDAJE_C, { ico: ICO_V }), { kdo: 'x' });
+    if (!p.ok) throw new Error(p.chyba);
+    const novy = a.dalsiZakaznici.pop(); novy.hlavicka.ico = ICO_B; a.dalsiZakaznici.unshift(novy); });
+  test('F2 #660 obchvat 3: nový zákazník vložený v poli PŘED B se stejným IČO → 400 (jmenuje B), úložiště beze změny',
+    r.status === 400 && /Zákazník s tímto IČO už v zakázce je \(TEST – DRUHÝ ODBĚRATEL s\.r\.o\.\)/.test(r.chyba || '') && ulozeno(o.soubor) === pred,
+    { status: r.status, chyba: r.chyba }); }
+/* Starší data s duplicitou (B a C stejné IČO v úložišti, zapsané před VZ-F1):
+ * úpravy, které IČO nemění, projdou; změna IČO na IČO jiného ne. */
+{ const o = await sIco('starší data', ICO_A, ICO_B, zz => { const p = G.vzPridej(zz, UDAJE_C, { kdo: 'x' }); if (!p.ok) throw new Error(p.chyba); });
+  const ul = ulozenoObj(o.soubor); ul.dalsiZakaznici[1].hlavicka.ico = ICO_B; pamet.set('zakazky/z/' + o.soubor, JSON.stringify(ul));
+  const g = await nacti(o.soubor, cO);
+  const r = await opakuj({ g }, a => { a.dalsiZakaznici[1].hlavicka.kontakt = 'Nová osoba C'; a.ico = ICO_V; });
+  test('F2 #660 starší data s duplicitou B = C: kontakt C a nové volné IČO řídícího → 200 (duplicita zůstala)',
+    r.status === 200 && ulozenoObj(o.soubor).dalsiZakaznici[1].hlavicka.ico === ICO_B, { status: r.status, chyba: r.chyba });
+  const g2 = await nacti(o.soubor, cO);
+  const r2 = await opakuj({ g: g2 }, a => { a.ico = ICO_B; });
+  test('F2 #660 starší data: změna IČO řídícího na IČO B → 400', r2.status === 400 && /IČO už v zakázce je/.test(r2.chyba || ''), { status: r2.status, chyba: r2.chyba }); }
+/* První uložení nové zakázky: duplicita vzniklá úpravou před uložením je
+ * opravdová duplicita (server 400; klient ji hlásí hned při úpravě —
+ * vzIcoCestaDuvod, src/test_vz_f2.js); bez duplicity 200. */
+{ const z = sVz('F2 první uložení', zz => { zz.ico = ICO_A; zz.dalsiZakaznici[0].hlavicka.ico = ICO_A; });
+  const pred = zakazekVUlozisti();
+  const r = await uloz(z, cO);
+  test('F2 #660 první uložení: řídící upravený na IČO B před uložením → 400, nic se neuložilo',
+    r.status === 400 && /IČO už v zakázce je/.test(r.chyba || '') && zakazekVUlozisti() === pred, { status: r.status, chyba: r.chyba });
+  z.ico = ICO_V;
+  const r2 = await uloz(z, cO);
+  test('F2 #660 první uložení: po opravě IČO → 200', r2.status === 200, { status: r2.status, chyba: r2.chyba }); }
+
+/* ---------- VZ-F2 (#663): zástupci dalšího zákazníka po JEHO smlouvě o dílo ----------
+ * Pojistka: na a3fad44 změna zástupců B po SoD B projde (200) a změna
+ * zástupců A po SoD jen B skončí 409 (zámek hlavičky za celou zakázku). */
+{ const o = await sOdeslanouB('F2 SoD B', cO);   // V1 sdílená, CN odešla B
+  { const r = await opakuj(o, a => { a.dalsiZakaznici[0].zastupci.smluvniJmeno = 'Zástupce B po CN'; });
+    test('F2 #663: po CN zástupci B volní → 200', r.status === 200, { status: r.status, chyba: r.chyba }); }
+  let g = await nacti(o.soubor, cO);
+  { const a = zk.importZakazka(kopie(g)); zamkniSod(a, a.varianty[0], { id: 'z2' });
+    const r = await uloz(a, cO, g.uloRazitko);
+    test('F2 #663 příprava: SoD V1 pro B → 200', r.status === 200, { status: r.status, chyba: r.chyba }); }
+  g = await nacti(o.soubor, cO);
+  { const pred = ulozeno(o.soubor);
+    const r = await opakuj({ g }, a => { a.dalsiZakaznici[0].zastupci.smluvniJmeno = 'Jiný zástupce B'; });
+    test('F2 #663: po SoD B změna zástupce B → 409 „smlouva o dílo", úložiště beze změny',
+      r.status === 409 && /odešla smlouva o dílo/.test(r.chyba || '') && /smluvniJmeno/.test(r.chyba || '') && ulozeno(o.soubor) === pred,
+      { status: r.status, chyba: r.chyba });
+    const r2 = await opakuj({ g }, a => { a.dalsiZakaznici[0].zastupci.banka = 'Jiná banka'; });
+    test('F2 #663: po SoD B změna banky B (zástupci) → 409', r2.status === 409 && /banka/.test(r2.chyba || ''), { status: r2.status, chyba: r2.chyba });
+    const r3 = await opakuj({ g }, a => { a.dalsiZakaznici[0].hlavicka.dic = 'CZ99999999'; });
+    test('F2 #663: po SoD B změna DIČ B → 409', r3.status === 409 && /dic/.test(r3.chyba || ''), { status: r3.status, chyba: r3.chyba }); }
+  { const r = await opakuj({ g }, a => { a.dalsiZakaznici[0].hlavicka.kontakt = 'Nová kontaktní B'; a.zastupci.smluvniJmeno = 'Nový zástupce A'; a.dic = 'CZ27182818';
+      a.dalsiZakaznici[1].zastupci.smluvniJmeno = 'Nový zástupce C'; });
+    const u = ulozenoObj(o.soubor);
+    test('F2 #663: po SoD jen B — kontakt B, zástupce a DIČ řídícího A (nic mu neodešlo) a zástupce C se změnit smí → 200',
+      r.status === 200 && u.zastupci.smluvniJmeno === 'Nový zástupce A' && u.dalsiZakaznici[1].zastupci.smluvniJmeno === 'Nový zástupce C',
+      { status: r.status, chyba: r.chyba }); }
+  g = await nacti(o.soubor, cO);
+  { const a = zk.importZakazka(kopie(g)); zamkni(a, a.varianty[0], { id: 'z1' }); zamkniSod(a, a.varianty[0], { id: 'z1' });
+    const r = await uloz(a, cO, g.uloRazitko);
+    test('F2 #663 příprava: CN a SoD V1 i pro A → 200', r.status === 200, { status: r.status, chyba: r.chyba }); }
+  g = await nacti(o.soubor, cO);
+  { const pred = ulozeno(o.soubor);
+    const r = await opakuj({ g }, a => { a.zastupci.smluvniJmeno = 'Ještě jiný zástupce A'; });
+    test('F2 #663: po SoD A změna zástupce A → 409 (zámek hlavičky), úložiště beze změny',
+      r.status === 409 && /zastupci\.smluvniJmeno/.test(r.chyba || '') && ulozeno(o.soubor) === pred, { status: r.status, chyba: r.chyba }); }
+  { const r = await opakuj({ g }, a => { a.dalsiZakaznici[1].zastupci.smluvniJmeno = 'Zástupce C znovu'; });
+    test('F2 #663: zástupce C (bez SoD) se změnit smí i po SoD A a B → 200', r.status === 200, { status: r.status, chyba: r.chyba }); }
+}
 
 /* N9 písmeno */
 { const g = await nacti(zakB.soubor, cO);
