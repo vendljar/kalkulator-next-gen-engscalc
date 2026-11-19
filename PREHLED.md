@@ -8,9 +8,9 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | prostředí | verze |
 |---|---|
 | ostrý web (`main`) | **v11.11.1** (`6c4bc80e`, 11. 11. 2026) |
-| testovací web (`test`) | **v19.11.1** (`b4dece98`, 19. 11. 2026) |
+| testovací web (`test`) | **v19.11.1** (`66e15729`, 19. 11. 2026) |
 
-Test je proti main napřed o 283 commitů.
+Test je proti main napřed o 284 commitů.
 
 ## V testu, ještě ne v main
 
@@ -95,8 +95,8 @@ Test je proti main napřed o 283 commitů.
 | #642 | úkol | Zeštíhlení roadmap.json: hotové položky starší 60 dní do archivu (živý soubor kolem 60 položek) | souhlas (návrh režie S6 d; soubor má 1,2 MB) |
 | #643 | úkol | Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6) | nahrát upravený skill (mimo repo) |
 
-K tomu 11 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
+K tomu 12 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
 
 ## Nehotové položky evidence
 
-Celkem 63: J. V. 39, kolega 5, koordinace 13, dávka 3, integrátor 2, neuvedeno 1. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 63: J. V. 40, kolega 5, koordinace 13, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.

@@ -7,11 +7,11 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "b4dece98",
+  "sha": "66e15729",
   "verze": "v19.11.1",
   "datum": "19. 11. 2026"
  },
- "test_navic_commitu": 283,
+ "test_navic_commitu": 284,
  "v_testu_ne_v_main": [
   {
    "id": "668",
@@ -547,14 +547,13 @@
    "cekaNa": "nahrát upravený skill (mimo repo)"
   }
  ],
- "ceka_na_jv_odlozene": 11,
+ "ceka_na_jv_odlozene": 12,
  "nehotove_podle_kdo": {
-  "J. V.": 39,
+  "J. V.": 40,
   "kolega": 5,
   "koordinace": 13,
   "dávka": 3,
-  "integrátor": 2,
-  "neuvedeno": 1
+  "integrátor": 2
  },
  "nehotovych": 63
 }
