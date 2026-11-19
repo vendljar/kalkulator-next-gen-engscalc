@@ -451,6 +451,7 @@ async function prodejUiProdej(strana) {
     duvod = prodVyjimkaText(String(t));
     if (duvod.length < PROD_DUVOD_MIN) { hlaska('Bez důvodu nejde datum prodeje před mezí zapsat.'); return; }
   }
+  const lhutyPred = v.data && v.data.kryciProj ? v.data.kryciProj.lhutyProj : undefined;   // D8: návrat při neúspěchu
   const chyba = prodNastav(ZAK, v, datum, { kdo: ja, role: prodUiRole(), duvod });
   if (chyba) { hlaska(chyba); return; }
   /* PR #563: prodaná varianta je vždy řídící — přepne se v TÉMŽE uložení.
@@ -462,6 +463,9 @@ async function prodejUiProdej(strana) {
   const r = await prodUiUloz();
   if (!r.ok) {
     delete v.prodano;
+    if (v.data && v.data.kryciProj) {
+      if (lhutyPred === undefined) delete v.data.kryciProj.lhutyProj; else v.data.kryciProj.lhutyProj = lhutyPred;
+    }
     if (novaRidici) predRidici.forEach(p => {
       p.x.ridici = p.ridici;
       if (p.x.zamek) { if (p.hl === undefined) delete p.x.zamek.hlavicka; else p.x.zamek.hlavicka = p.hl; }

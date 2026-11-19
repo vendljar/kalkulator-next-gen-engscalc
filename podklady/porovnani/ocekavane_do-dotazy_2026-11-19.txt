@@ -1,0 +1,12 @@
+# Očekávané rozdíly DO (dotazy obchodníků 16. 11., rozhodnutí J. V. 19. 11.) × integrace 042fcbc (v19.11.5) — 19. 11. 2026
+# Formát: <vzor případu> <pole,pole|*>  # důvod   (popis v nastroje/porovnani_sada.js)
+#
+# Cena, výsledek jádra (vyp, vypZ, radky — po očistě popisku a pořadí zobrazení D4,
+# nastroje/zlata_ocista_d4.js) a zámek beze změny = SHODA ve všech 359 případech.
+# Mění se jen text, a to výhradně přejmenováním (ověřeno proti surovým výstupům 042fcbc,
+# 0 nevysvětlených rozdílů):
+#   D2: pás „bez — dodá stavba" → „bez opláštění" (EN Without cladding, DE Ohne Verkleidung,
+#       FR Sans bardage) — specifikace, symboly a náhled CN, Word, SoD;
+#   D4: materiál plechů ve Volitelných zobrazen „PŘECHODOVÉ PLECHY - NEREZ (MATERIÁL)" — controlling CSV.
+# Týká se jen fuzz zadání s opláštěním po stěnách (pás „bez") nebo s plechy v základní ceně.
+fuzz:*  ctrl,docx,nahled-cz,nahled-en,ph-cz,ph-en,sod,spec   # D2 + D4: jen přejmenování

@@ -4168,6 +4168,19 @@ function prehledRadekOtevri(ev, soubor) {
   onlineOtevri(soubor);
 }
 
+/* SLOUPEC AKCE: ADRESA NAHOŘE (D7, rozhodnutí J. V. 19. 11. 2026).
+ * Obchodníci zakázku poznávají podle místa stavby, ne podle popisu akce:
+ * tučně adresa, pod ní šedě název akce. Bez adresy zůstane jen název akce
+ * (tučně, ať řádky vypadají stejně). Hledání ani řazení se nemění — čtou
+ * tatáž pole rejstříku. Jedna funkce pro seznam online i seznam ve složce. */
+function rejstrikAkceBunka(z) {
+  const adresa = String((z && z.adresa) || '').trim();
+  const akce = String((z && z.nazevAkce) || '').trim();
+  if (!adresa) return `<b class="rejstrik-hlavni">${esc(akce || '—')}</b>`;
+  return `<b class="rejstrik-hlavni rejstrik-adresa">${esc(adresa)}</b>${akce
+    ? `<div class="rejstrik-akce" style="font-size:11px;color:#6b7686">${esc(akce)}</div>` : ''}`;
+}
+
 function onlineRadekZakazky(z, vyber) {
   const otevrena = z.soubor === ONLINE_STAV.soubor;
   const odeslane = z.odeslane ? `<span title="odeslané (vytištěné) nabídky">🔒 ${z.odeslane}</span>` : '';
@@ -4195,8 +4208,7 @@ function onlineRadekZakazky(z, vyber) {
   return `<tr class="${otevrena ? 'aktivni' : ''} radek-klik" onclick="prehledRadekOtevri(event, '${escJs(z.soubor)}')"
     title="kliknutím otevřete zakázku — souhrn a varianty se ukážou v sekcích níž">${chk}
     <td style="text-align:left">${esc(z.cislo || '(bez čísla)')}</td>
-    <td style="text-align:left;white-space:normal">${esc(z.nazevAkce || '—')}${z.adresa
-      ? `<div class="rejstrik-adresa" style="font-size:11px;color:#6b7686">${esc(z.adresa)}</div>` : ''}</td>
+    <td style="text-align:left;white-space:normal">${rejstrikAkceBunka(z)}</td>
     <td style="text-align:left;white-space:normal">${esc(z.objednatel || '—')}${zakaznici}</td>
     <td><span class="pill mut">${esc(druh)}</span>${rada}${sachty}${typeof pdVazbaRejstrikStitek === 'function' ? pdVazbaRejstrikStitek(z) : ''}</td>
     <td>${esc(z.datum || '')}</td>

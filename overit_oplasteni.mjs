@@ -298,7 +298,7 @@ zkus('stěna bez prohlubně ji nemá',
 zkus('kóty nesou horní hranu i zápornou dolní mez',
   nakres.steny.find(s => s.k === 'B').koty.some(t => /-1,1|-1\.1/.test(t)),
   nakres.steny.find(s => s.k === 'B').koty);
-zkus('pás „bez — dodá stavba" je odlišený šrafou, ne barvou materiálu',
+zkus('pás „bez opláštění" (dříve „bez — dodá stavba") je odlišený šrafou, ne barvou materiálu',
   nakres.steny.find(s => s.k === 'B').sraf === 1,
   nakres.steny.find(s => s.k === 'B').sraf);
 
@@ -347,9 +347,11 @@ zkus('pod kartou je legenda s plochami podle typu',
   const popis = (sl, klic) => sl.map(x => x.k + ': ' + x[klic].join(', ')).join(' | ');
   zkus('(předpoklad: dva sloupce stěn — A a C vlevo, B a D vpravo)',
     sloupce.length === 2 && sloupce.every(sl => sl.length === 2), JSON.stringify(m.map(x => x.k + '@' + x.sloupec)));
-  zkus('(pojistka proti prázdné kontrole: změřeno 5 + 3 polí materiálu, 5 + 2 výšek, název a sazba „jiné")',
+  /* D1 (19. 11. 2026): stěna po celé výšce (D) ukazuje i „Opláštění
+   * začíná" — v pravém sloupci tedy 3 výšky místo 2. */
+  zkus('(pojistka proti prázdné kontrole: změřeno 5 + 3 polí materiálu, 5 + 3 výšek, název a sazba „jiné")',
     vse(sloupce[0], 'material').length === 5 && vse(sloupce[1], 'material').length === 3
-    && vse(sloupce[0], 'vyska').length === 5 && vse(sloupce[1], 'vyska').length === 2
+    && vse(sloupce[0], 'vyska').length === 5 && vse(sloupce[1], 'vyska').length === 3
     && vse(m, 'nazev').length === 1 && vse(m, 'sazba').length === 1, JSON.stringify(m));
   sloupce.forEach(sl => {
     const kde = sl.map(x => x.k).join(' a ');

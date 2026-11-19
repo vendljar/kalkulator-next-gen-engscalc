@@ -7,12 +7,30 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "8245512b",
-  "verze": "v19.11.4",
+  "sha": "3dbd88ee",
+  "verze": "v19.11.7",
   "datum": "19. 11. 2026"
  },
- "test_navic_commitu": 315,
+ "test_navic_commitu": 328,
  "v_testu_ne_v_main": [
+  {
+   "id": "677",
+   "typ": "ukol",
+   "nazev": "D8: termíny krycího listu PROJ ze lhůt v týdnech (tabulka lhůt v Nastavení → Firma)",
+   "alias": [
+    "D8"
+   ],
+   "verze": "v19.11.7"
+  },
+  {
+   "id": "675",
+   "typ": "ukol",
+   "nazev": "Dotazy obchodu D1, D2, D4–D7: opláštění po celé výšce, „bez opláštění“, přechodové plechy (MATERIÁL), materiál+montáž, ukládání dodatkového…",
+   "alias": [
+    "DO"
+   ],
+   "verze": "v19.11.6"
+  },
   {
    "id": "672",
    "typ": "nalez",
@@ -23,6 +41,24 @@
    "verze": "v19.11.4"
   },
   {
+   "id": "671",
+   "typ": "ukol",
+   "nazev": "Ceník: buňka Zahraničí u statiky opláštění a dialog zveřejnění po K50-N1",
+   "alias": [
+    "K50-N1-R"
+   ],
+   "verze": "v19.11.5"
+  },
+  {
+   "id": "670",
+   "typ": "nalez",
+   "nazev": "K50-N1: statika opláštění u zahraniční řady ceníku počítána českou sazbou (od v19.11.1)",
+   "alias": [
+    "K50-N1"
+   ],
+   "verze": "v19.11.3"
+  },
+  {
    "id": "669",
    "typ": "ukol",
    "nazev": "VZ T1: řídící varianta a řídící zákazník v hlavičce (2+ zákazníků), karta ★/☆, náhled poznámky dealu",
@@ -30,18 +66,6 @@
     "T1"
    ],
    "verze": "v19.11.2"
-  },
-  {
-   "id": "668",
-   "typ": "rozhodnuti",
-   "nazev": "Audit #667: další položky se sdílenou cenou nebo bez ceny z nabídky — rozhodnout",
-   "verze": "v19.11.1"
-  },
-  {
-   "id": "667",
-   "typ": "ukol",
-   "nazev": "STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ jako zaškrtávací položka šachty s vlastní cenou C.statikaOplKc; cena z nabídky i nulová",
-   "verze": "v19.11.1"
   },
   {
    "id": "664",
@@ -138,15 +162,6 @@
     "VZ-N3"
    ],
    "verze": "v18.11.8"
-  },
-  {
-   "id": "652",
-   "typ": "rozhodnuti",
-   "nazev": "Při nasazení do main zadat do Nastavení → Firma 6. řádek termínů realizace (5 let záruka) ve 4 jazycích",
-   "alias": [
-    "K49-I5"
-   ],
-   "verze": "v19.11.1"
   },
   {
    "id": "651",
@@ -402,7 +417,7 @@
    ],
    "verze": "v19.11.3",
    "kolo": "50",
-   "stav": "oprava ve verzi v19.11.3, v testu ještě ne",
+   "stav": "opraveno v testu (v19.11.3), v main ne",
    "cekaNa": "—"
   }
  ],
@@ -614,15 +629,33 @@
    "typ": "ukol",
    "nazev": "Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6)",
    "cekaNa": "nahrát upravený skill (mimo repo)"
+  },
+  {
+   "id": "678",
+   "typ": "otazka",
+   "nazev": "D8 doladění: co počítat do povolení záměru a termíny po tisku SoD",
+   "alias": [
+    "D8-Q"
+   ],
+   "cekaNa": "rozhodnout (doporučené varianty v detailu)"
+  },
+  {
+   "id": "680",
+   "typ": "nalez",
+   "nazev": "DO-N1: návrh obchodníka do číselníku u příplatku přechodových plechů (MATERIÁL) správce v Ceník → číselník nevidí",
+   "alias": [
+    "DO-N1"
+   ],
+   "cekaNa": "rozhodnout, zda vypsat návrhy i k položkám mimo řádky číselníku"
   }
  ],
  "ceka_na_jv_odlozene": 12,
  "nehotove_podle_kdo": {
-  "J. V.": 40,
+  "J. V.": 42,
   "kolega": 5,
   "koordinace": 11,
   "dávka": 3,
   "integrátor": 2
  },
- "nehotovych": 61
+ "nehotovych": 63
 }

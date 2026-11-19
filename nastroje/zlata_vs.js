@@ -39,6 +39,7 @@
  * Jen smyšlený zkušební ceník (zkusebni_cenik.js), datumy pevné — krok kola
  * „hodiny +400 dní" otisk nesmí změnit. */
 'use strict';
+const { predD4Kopie } = require('./zlata_ocista_d4.js');
 const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -196,10 +197,11 @@ async function scenar(zak, v, J) {
   const o = {};
   const ok = !!(d && d.ock && d.cenik);
   const r = ok ? zkus(() => vypocet(kop(d.ock.zadani), kop(d.cenik), J, d.ock.fixes)) : null;
-  o.vyp = otisk(r);
+  /* D4 (19. 11. 2026): popisek a pořadí zobrazení Volitelných — zlata_ocista_d4.js */
+  o.vyp = otisk(predD4Kopie(r));
   if (r && r.souhrn) o.zakladCena = r.souhrn.zakladCena;
   const rz = zkus(() => vypocetZ(v, J));
-  o.vypZ = otisk(rz);
+  o.vypZ = otisk(predD4Kopie(rz));
   o.cena = otisk(zkus(() => cenaNabidkyOck(rz, d.sleva, d.zaokr)));
   let klice = [];
   for (const L of ['cz', 'en']) {
@@ -233,7 +235,7 @@ async function scenar(zak, v, J) {
     return exp && exp.ok === false ? exp : ctrlExportCsv(exp);
   }));
   o.snimek = otisk(zkus(() => zamekSnimekSpocti(v)));
-  o.zamek = otisk(zkus(() => { const x = zamekVysledekSpocti(v, J, 'zlata'); if (x) delete x.kdy; return x; }));
+  o.zamek = otisk(zkus(() => { const x = zamekVysledekSpocti(v, J, 'zlata'); if (x) delete x.kdy; return predD4Kopie(x); }));
   return o;
 }
 

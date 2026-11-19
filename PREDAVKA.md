@@ -18,6 +18,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/vz-t1` | (tato dávka) | v19.11.2 | VZ T1 #669: řídící varianta a zákazník v hlavičce; s d8e4fc1 a 82cbd72; revize poradce; viz CHANGELOG |
 | `claude/vz-f2` | (tato dávka) | v19.11.4 | VZ-F2 #660–#663 + VZF1-I1 nad a3fad44; číslo verze přečísluje koordinace |
 | `claude/on-online` | (tato dávka) | v19.11.8 | #ON kdo je online (Nastavení → Uživatelé) nad 042fcbc; verzi přečísluje koordinace |
+| `claude/d8-lhuty` | (tato dávka) | v19.11.7 | D8 #677 (pracovní) lhůty PROJ → termíny krycího listu; nad integrací 042fcbc; verzi přečísluje koordinace |
 | `claude/vz-f1` | (tato dávka) | v18.11.8 | VZ-F1 #659 opravy nálezů ruční zkoušky VZ; nad ec5bbac, sloučeno s integrací 41bbe99 |
 
 Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tagu: `python3 nastroje/release_odkaz.py --chybejici`
@@ -25,6 +26,13 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 
 ## Běžící dávky
 
+- **DO** (`claude/do-dotazy`, v19.11.6, nad 042fcbc): dotazy obchodníků 16. 11. — D1 po celé výšce = jediný pás,
+  D2 „bez opláštění" (klíč `bez`) + „do (m)" = 0, D4 montáž pod materiálem + „(MATERIÁL)" (klíč přepisů beze změny),
+  D5 materiál nese montáž (příplatky), D6 „uloženo pro všechny…" / „jen pro tuto zakázku" + návrh do číselníku
+  (`varianta.popisyNavrhy`, štítek návrh ve sběru), D7 adresa nahoře v seznamu. Cenu nemění; dokumenty jen
+  přejmenování. Kolo VŠE ZELENÉ (480/0/7, 389/0/1, 9/9, porovnání 164 SHODA + 195 očekávaných — jen text
+  D2/D4), mutace [DO] jádro 20/20, server 2/2. HOTOVO, slučuje koordinace. Otevřené: nové vydání manuálu výpočtu
+  (popisek „bez opláštění"), odeslané nabídky drží starý text (zmrazené).
 - **R-K50N1 #671** (`claude/r-k50n1`, v19.11.5, nad a018828): editor ceníku (prázdná zahr. statika opláštění =
   zahraniční statické posouzení), upozornění v dialogu zveřejnění, zahr. statika textem → číslo. Test oddíl 6, mutace [K50N1] 5/5 + 3/3. Kolo VŠE ZELENÉ (475/0/7, 386/0/1, 9/9, porovnání 359/359 SHODA). HOTOVO.
 - **SP #667** (`claude/sp-statika`, verzi přidělí koordinace): statika opláštění Ano/Ne v zadání šachty
@@ -54,6 +62,10 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 - **ON** (`claude/on-online`, v19.11.8, nad 042fcbc): čas poslední aktivity (jen čas, 1×/min, best-effort, úložiště
   `aktivita` mimo zálohu), výpis jen správci, sloupec „Naposledy aktivní“ se zelenou tečkou. Testy test_on_aktivita,
   test_prava #ON, test_on_naposledy, overit_on_online; mutace [ON] 11/11. Kolo 480/0/7, 9/9, SHODA 359/359, hodiny 389/0/1 (na 2. pokus; občasné selhání test_vz_unik). Mez B — návrh v BEZPECNOST_MEZE.md. HOTOVO.
+- **D8 #677** (`claude/d8-lhuty`, v19.11.7, nad 042fcbc): tabulka lhůt PROJ v Nastavení → Firma (zveřejní se s firmou),
+  čísla v textu termínů nabídky PROJ z tabulky (online i Word, 4 jazyky; s výchozí tabulkou beze změny), po Prodáno
+  dopočet termínů krycího listu PROJ (řetěz, horní mez, 4,3 t/měsíc, ruční přednost, ↺, zdroj u data), lhůty zamrzne
+  prodej. Šablona v8 pevné týdny nemá → nová šablona netřeba. Otázky J. V. #678 (pracovní). Kolo VŠE ZELENÉ (427/0/59, 389/0/1, 9/9, SHODA 359/359), mutace [D8] 19/19 + 6/6. HOTOVO.
 
 ## Čeká na J. V.
 
