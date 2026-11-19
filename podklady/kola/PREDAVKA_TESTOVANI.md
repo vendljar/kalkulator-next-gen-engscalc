@@ -25,7 +25,13 @@ Nové TEST 9815 (správce), 9816 (obchodník). Souhlas J. V. potvrzen v sezení.
 
 `STAV_TEST_D8_2026-11-19.md`: vše ✅, informace D8-I1 (text DPZ „od schválení studie“ u vyřazené studie, i na main).
 TEST OVP 9817–9820, lhůty PROJ ve Firmě vráceny na výchozí a zveřejněny. Harness `d8.js` (s pojistkou návratu lhůt), `d8_text.js`.
-Čeká: ON a NP (pošle koordinace).
+ON a NP hotovo.
+
+## Zkoušky ON (#679) a NP (#681) — hotovo 19. 11.
+
+ON: 10 OK (vedoucí bez účtu neověřen). NP: nálezy NP-N1 (řádek SVĚTLÍKY v náhledu, šablona CN v17 ho nemá), NP-N2–N4 drobné,
+#682 potvrzen. 9815 Varianta 1 zamčená (tlačítko Word z náhledu). Harness `on.js`, `np.js`, `np_porovnej.py`, `np_word.js`.
+Čeká: PG + D3 (v19.11.11) od koordinace.
 
 ## Harnessy (`podklady/kola/harness_testovani/`, spouštět z kořene repa)
 
