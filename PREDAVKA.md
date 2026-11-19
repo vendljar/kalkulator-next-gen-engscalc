@@ -18,16 +18,16 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/vz-t1` | (tato dávka) | v19.11.2 | VZ T1 #669: řídící varianta a zákazník v hlavičce; s d8e4fc1 a 82cbd72; revize poradce; viz CHANGELOG |
 | `claude/vz-f2` | (tato dávka) | v19.11.4 | VZ-F2 #660–#663 + VZF1-I1 nad a3fad44; číslo verze přečísluje koordinace |
 | `claude/vz-f1` | (tato dávka) | v18.11.8 | VZ-F1 #659 opravy nálezů ruční zkoušky VZ; nad ec5bbac, sloučeno s integrací 41bbe99 |
-| `claude/pg-tisk` | (tato dávka) | v19.11.6 | PG #675–#678 nad integrací 042fcbc; čísla a verzi přečísluje koordinace |
+| `claude/pg-tisk` | (tato dávka) | v19.11.10 | PG #684–#687 nad integrací 042fcbc; čísla a verzi přečísluje koordinace |
 
 Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tagu: `python3 nastroje/release_odkaz.py --chybejici`
 (18. 11.: žádná).
 
 ## Běžící dávky
 
-- **PG** (`claude/pg-tisk`, v19.11.6, nad 042fcbc): #675 tlačítka tisku CN OCK (náhled podkladů → Word modře → náhled
-  a tisk), #676 vlastní řádek TS v SOUČÁSTÍ DODÁVKY NENÍ (`extra[i].sekce='neni'`), #677 DALŠÍ UJEDNÁNÍ v nabídce PROJ
-  (`PJ.dalsiUjednani`, Word přes šablonu PROJ v9 `--proj-v9`, kontrola `dalsiUjednaniWordProj`), #678 číslo stránky: vada šablony CN v9–v17 (pevná „1“ v záhlaví) → `--cn-v18`,
+- **PG** (`claude/pg-tisk`, v19.11.10, nad 042fcbc): #684 tlačítka tisku CN OCK (náhled podkladů → Word modře → náhled
+  a tisk), #685 vlastní řádek TS v SOUČÁSTÍ DODÁVKY NENÍ (`extra[i].sekce='neni'`), #686 DALŠÍ UJEDNÁNÍ v nabídce PROJ
+  (`PJ.dalsiUjednani`, Word přes šablonu PROJ v9 `--proj-v9`, kontrola `dalsiUjednaniWordProj`), #687 číslo stránky: vada šablony CN v9–v17 (pevná „1“ v záhlaví) → `--cn-v18`,
   upozornění v průvodci šablon (`docxCisloStranky`). Testy `test_pg_*.js`. Kolo `--bez-mutaci --proti integrace`
   VŠE ZELENÉ (sady 482/0/7, hodiny 392/0/1, statické 9/9, porovnání SHODA), mutace jádra [PG] 16/16. HOTOVO, předáno koordinaci.
   Šablony PROJ v9 a CN v18 vyrobí a nahraje J. V. (`podklady/SABLONA_PROJ_V9_19_11.md`, `SABLONA_CN_V18_19_11.md`).

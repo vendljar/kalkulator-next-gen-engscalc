@@ -8,23 +8,23 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v19.11.6 — PG #675–#678: tisk nabídky OCK, vlastní řádky NENÍ a DALŠÍ UJEDNÁNÍ PROJ, číslo stránky CN v18, větev claude/pg-tisk
+## v19.11.10 — PG #684–#687: tisk nabídky OCK, vlastní řádky NENÍ a DALŠÍ UJEDNÁNÍ PROJ, číslo stránky CN v18, větev claude/pg-tisk
 
 Nad integrací `042fcbc` (v19.11.5). Cenu nemění. Čísla roadmapy a verzi přečísluje koordinace.
 
-- **#675 tlačítka tisku nabídky OCK:** pořadí zleva *Kompletní náhled podkladů* → *Vytvořit nabídku (Word)* (modré,
+- **#684 tlačítka tisku nabídky OCK:** pořadí zleva *Kompletní náhled podkladů* → *Vytvořit nabídku (Word)* (modré,
   `primary`) → *Kompletní náhled a tisk nabídky* (bez barvy); zábrany `zab` / `zabTisk` u svých tlačítek; nová poznámka
   pod tlačítky a manuál. PROJ beze změny.
-- **#676 vlastní řádek v SOUČÁSTÍ DODÁVKY NENÍ (OCK):** u vlastního řádku specifikace volba sekce (DALŠÍ UJEDNÁNÍ /
+- **#685 vlastní řádek v SOUČÁSTÍ DODÁVKY NENÍ (OCK):** u vlastního řádku specifikace volba sekce (DALŠÍ UJEDNÁNÍ /
   SOUČÁSTÍ DODÁVKY NENÍ, `techspec.extra[i].sekce = 'neni'`). Řádek NENÍ stojí na konci sekce na obrazovce, v online
   náhledu, ve Wordu CN v16/v17 (i víc šachet: klon za `{{TS_NENI_PRISTUP}}` před pruh DALŠÍ UJEDNÁNÍ) a v EN/DE/FR.
   Starší zakázky bez pole beze změny (vše v DALŠÍ UJEDNÁNÍ).
-- **#677 DALŠÍ UJEDNÁNÍ v nabídce PROJ:** „+ přidat vlastní řádek" (text bez ceny) v kartě Cenová nabídka (PROJ),
+- **#686 DALŠÍ UJEDNÁNÍ v nabídce PROJ:** „+ přidat vlastní řádek" (text bez ceny) v kartě Cenová nabídka (PROJ),
   `proj.zadani.dalsiUjednani`, zápis přes `set()` (zámek). Sekce za termíny v online náhledu; Word symboly
   `PROJ_DALSI_UJEDNANI_NAZEV | _TEXT` (řádek za řádek) v bloku `BLOK_DALSI_UJEDNANI`. Nová šablona **PROJ v9**
   (`nastroje/vyrob_sablony.js --proj-v9`, postup `podklady/SABLONA_PROJ_V9_19_11.md`) — nahraje J. V. Se starší
   šablonou Word funguje bez řádků a kontrola **dalsiUjednaniWordProj** upozorní (pravidel kontrol 53).
-- **#678 číslování stránek CN:** příčina je v **šabloně** (diagnostika testovacího sezení): CN OCK v9–v17 mají v záhlaví
+- **#687 číslování stránek CN:** příčina je v **šabloně** (diagnostika testovacího sezení): CN OCK v9–v17 mají v záhlaví
   (textové pole) pevné „1" místo pole PAGE. Generátor pole PAGE nerozbíjí (`src/test_pg_pole_page.js`: složená pole,
   `fldSimple`, pole vedle symbolu, v tabulce zápatí a v záhlaví — vyplnění i překlad EN/DE/FR). Nový krok
   `nastroje/vyrob_sablony.js --cn-v18`: v17 → **CN v18** (pevná „1" → pole `PAGE \* MERGEFORMAT` se stejným formátem,
