@@ -63,7 +63,8 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   nálezu), příplatky za cenou, pruh (Jazyk tisku, upozornění, Word se zábranami). Data jako Word, cenu ani Word nemění.
   Pojistka shody `test_np_nahled_word.js` (náhled = text Wordu ze syntetické CN v17), `test_np_okno.js`,
   `overit_np_nahled.mjs`, snímky `podklady/kola/np_nahled_2026-11-19/`. Nález #677 (prac.): cizojazyčný Word nechá
-  prázdný pruh sekce — čeká na J. V. Testovací sezení: porovnat s Wordem z pravé CN v17 na testu.
+  prázdný pruh sekce — čeká na J. V. Kolo `--bez-mutaci --proti integrace` VŠE ZELENÉ (483/0/7, hodiny 391/0/1,
+  statické 9/9, porovnání SHODA 359/359), mutace [NP] 16/16 + VZ-E2 1/1. Testovací sezení: porovnat s Wordem z pravé CN v17.
 
 ## Čeká na J. V.
 

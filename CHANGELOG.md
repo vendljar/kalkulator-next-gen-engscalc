@@ -55,6 +55,9 @@ Nad integrací `6092af3` (v19.11.6). Zadání J. V. 19. 11. 2026. **Cenu ani Wor
   `podklady/kola/np_nahled_2026-11-19/`). Upravené: `test_k13_preklad.js` (pevné texty NW_TEXT mají překlad),
   `test_vz_tisk_vstupy.js` a `test_platby_ock.js` (nabidkaNahled v novém souboru), `test_escape.js` (logo).
   Mutace [NP] v `mutace_jadro.mjs` 16/16 chycených (+ VZ-E2 náhled podkladů přesunutá na nový soubor).
+- **Kolo** `--bez-mutaci --proti origin/claude/integrace-16-10`: VŠE ZELENÉ — sady 483/0/7, hodiny +400 dní 391/0/1,
+  statické 9/9, porovnání sestavení SHODA 359/359. Harnessy `overit_560_mustky.mjs` a `overit_vs_dokumenty.mjs`
+  upravené na tvar Wordu (záměrná změna náhledu).
 
 ## v19.11.6 — DO: dotazy obchodníků z 16. 11. (D1, D2, D4–D7), větev claude/do-dotazy
 
