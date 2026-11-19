@@ -69,12 +69,15 @@ function nastPanelAktivni() {
   const p = NAST.panel || 'obecne';
   return nastPanelyViditelne().find(x => x.id === p) || NAST_PANELY[0];
 }
-/* #ON (19. 11. 2026): přepnutí na Uživatele načte seznam účtů znovu — ať
- * tečka „online“ a „Naposledy aktivní“ nejsou z doby přihlášení. */
+/* #ON (19. 11. 2026): přepnutí na Uživatele načte seznam účtů znovu na
+ * pozadí — ať tečka „online“ a „Naposledy aktivní“ nejsou z doby přihlášení.
+ * Do příchodu odpovědi zůstane vidět dosavadní seznam (žádné „Načítám…"). */
 function nastPanel(p) {
-  if (p === 'uzivatele' && NAST.panel !== 'uzivatele' && typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.uzivateleNacteno)
-    ONLINE_STAV.uzivateleNacteno = false;
+  const obnovUcty = p === 'uzivatele' && NAST.panel !== 'uzivatele' && typeof ONLINE_STAV !== 'undefined'
+    && ONLINE_STAV.uzivateleNacteno && ONLINE_STAV.bezi && typeof jeAdminOnline === 'function' && jeAdminOnline();
   NAST.panel = p; renderNastaveni();
+  if (obnovUcty) onlineUzivateleNacti().then(() => {
+    if (nastOtevreno() && NAST.panel === 'uzivatele') renderNastaveni(); });
 }
 
 /* Přepínač rolí je z doby před přihlašováním – byl to náhled pro toho,
