@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v19.11.4 — #671 navazující drobnosti K50-N1 (editor a zveřejnění ceníku), větev claude/r-k50n1
+## v19.11.5 — #671 navazující drobnosti K50-N1 (editor a zveřejnění ceníku), větev claude/r-k50n1
 
 Nad integrací `a018828` (v19.11.3). Cenu nemění (jen zahraniční statika zadaná textem). Verzi přečísluje koordinace.
 

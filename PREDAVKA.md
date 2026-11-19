@@ -23,7 +23,7 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 
 ## Běžící dávky
 
-- **R-K50N1 #671** (`claude/r-k50n1`, v19.11.4, nad a018828): editor ceníku (prázdná zahr. statika opláštění =
+- **R-K50N1 #671** (`claude/r-k50n1`, v19.11.5, nad a018828): editor ceníku (prázdná zahr. statika opláštění =
   zahraniční statické posouzení), upozornění v dialogu zveřejnění, zahr. statika textem → číslo. Test oddíl 6, mutace [K50N1] 5/5 + 3/3. Kolo VŠE ZELENÉ (475/0/7, 386/0/1, 9/9, porovnání 359/359 SHODA). HOTOVO.
 - **SP #667** (`claude/sp-statika`, verzi přidělí koordinace): statika opláštění Ano/Ne v zadání šachty
   (`Z.statikaOpl`, chybí = Ano u šachty s opláštěním), vlastní sazba `C.statikaOplKc` (migrace = `statikaKc`), cena
