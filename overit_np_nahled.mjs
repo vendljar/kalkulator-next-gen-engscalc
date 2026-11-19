@@ -12,7 +12,7 @@
  *   5) písmo Calibri / Carlito, bez chyb v konzoli;
  *   6) víc šachet (VS) — technická část za každou šachtu;
  * a uloží snímky stránek (TEST zakázka, smyšlená data) do
- * podklady/kola/np_nahled_2026-11-19/ (KNG_NP_SNIMKY=0 = bez snímků).
+ * podklady/kola/np_nahled_2026-11-19/ jen s KNG_NP_SNIMKY=1 (pak zmenšit paletou na 128 barev).
  * Ceník = zkušební (src/zkusebni_cenik.js).
  *
  * Spuštění: NODE_PATH=$(npm root -g) node overit_np_nahled.mjs */
@@ -23,7 +23,7 @@ import { createRequire } from 'node:module';
 
 const KOREN = fileURLToPath(new URL('.', import.meta.url));
 const KDE = new URL('dist/kalkulacka.html', import.meta.url).href;
-const SNIMKY = process.env.KNG_NP_SNIMKY !== '0';
+const SNIMKY = process.env.KNG_NP_SNIMKY === '1';   // snímky jen na vyžádání (kolo je nepřepisuje)
 const CIL = KOREN + 'podklady/kola/np_nahled_2026-11-19/';
 let ok = 0, fail = 0;
 const zkus = (popis, podminka, detail) => {
