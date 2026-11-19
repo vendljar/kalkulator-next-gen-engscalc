@@ -162,6 +162,8 @@ n += await beh('PROJ texty, administrátor, zábrany vypnuté, tisk DE', { rezim
 n += await beh('OCK volné texty (bez výčtů), administrátor, zábrany ZAPNUTÉ', { rezim: 'volne', admin: true });
 n += await beh('PROJ volné texty (bez výčtů), administrátor, zábrany ZAPNUTÉ', { rezim: 'volne', admin: true, proj: true });
 n += await beh('PROJ volné texty, administrátor, zábrany ZAPNUTÉ, tisk EN', { rezim: 'volne', admin: true, proj: true, jazyk: 'en' });
+n += await beh('PROJ volné texty, administrátor, zábrany vypnuté (objednávka PROJ)', { rezim: 'volne', admin: true, proj: true, brany: true });
+n += await beh('PROJ volné texty, obchodník, zábrany vypnuté, tisk EN', { rezim: 'volne', admin: false, proj: true, brany: true, jazyk: 'en' });
 n += await beh('PROJ čísla → text, administrátor, zábrany vypnuté', { rezim: 'cisla', admin: true, proj: true, brany: true });
 await b.close(); server.close();
 console.log('\nVÝSLEDEK: ' + (n ? 'ZRANITELNÉ (' + n + ' míst)' : 'ODOLNÉ — žádný payload z dat zakázky se nespustil'));
