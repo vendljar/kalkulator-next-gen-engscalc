@@ -168,12 +168,45 @@ function vzVariantyHlavicka() {
  * (`ZAK.dalsiZakaznici.<i>.hlavicka.<pole>`) → důvod z jádra
  * (vzZakaznikPoleZmrazeno) nebo ''. Jiné cesty (řídící, jeden zákazník)
  * vždy '' — hlavičku řídícího hlídá zámek hlavičky jako dřív. */
+/* VZ-F2 (#663): i zástupci (`ZAK.dalsiZakaznici.<i>.zastupci.<pole>`) — po
+ * odeslání SMLOUVY O DÍLO tomu zákazníkovi (vzZastupciZmrazeno); po CN
+ * zůstávají volní. */
 function vzCestaZmrazena(cesta) {
-  const m = /^ZAK\.dalsiZakaznici\.(\d+)\.hlavicka\.([A-Za-z]+)$/.exec(String(cesta));
+  const m = /^ZAK\.dalsiZakaznici\.(\d+)\.(hlavicka|zastupci)\.([A-Za-z]+)$/.exec(String(cesta));
   const z = vzZakUI();
   if (!m || !z || !Array.isArray(z.dalsiZakaznici)) return '';
   const d = z.dalsiZakaznici[+m[1]];
-  return vzObj(d) ? vzZakaznikPoleZmrazeno(z, String(d.id), m[2]) : '';
+  if (!vzObj(d)) return '';
+  return m[2] === 'zastupci' ? vzZastupciZmrazeno(z, String(d.id)) : vzZakaznikPoleZmrazeno(z, String(d.id), m[3]);
+}
+/* VZ-F2 (#660): IČO, které by zákazník `id` dostal, nese v zakázce už jiný
+ * zákazník → důvod odmítnutí, jinak ''. `id` null = nový zákazník (formulář).
+ * Stejné IČO, jaké zákazník už má (i jinak zapsané), se nehlídá — starší
+ * data s duplicitou se nezablokují. Hlídá se hned při úpravě, aby obchodník
+ * nenarazil až na odmítnutí serveru při uložení (i při prvním uložení
+ * nové zakázky). */
+function vzIcoDuvod(id, ico) {
+  const z = vzZakUI();
+  if (!z || typeof vzIcoDuplicita !== 'function') return '';
+  if (id != null) {
+    if (!vzRezim(z)) return '';
+    const ja = vzZakaznik(z, id);
+    if (ja && vzIcoKlic(ja.hlavicka.ico) === vzIcoKlic(ico)) return '';
+  }
+  const dupl = vzIcoDuplicita(z, ico, id == null ? undefined : id);
+  return dupl ? vzIcoDuplicitaText(dupl) + ' Týž subjekt nemůže být v zakázce dvakrát — zkontrolujte IČO.' : '';
+}
+/* Cesta pole IČO zákazníka (řídící `ZAK.ico`, další
+ * `ZAK.dalsiZakaznici.<i>.hlavicka.ico`) → důvod odmítnutí hodnoty `v` nebo ''.
+ * Volá set() (common.js). */
+function vzIcoCestaDuvod(cesta, v) {
+  const z = vzZakUI();
+  if (!z || !vzRezimUI()) return '';
+  const s = String(cesta);
+  if (s === 'ZAK.ico') return vzIcoDuvod(vzRidiciId(z), v);
+  const m = /^ZAK\.dalsiZakaznici\.(\d+)\.hlavicka\.ico$/.exec(s);
+  const d = m && Array.isArray(z.dalsiZakaznici) ? z.dalsiZakaznici[+m[1]] : null;
+  return vzObj(d) ? vzIcoDuvod(String(d.id), v) : '';
 }
 /* Atribut pole hlavičky (common.js zakaznikRow, icoRow): zmrazené pole jen
  * ke čtení s důvodem v bublině. U jednoho zákazníka a u řídícího vždy ''
@@ -248,6 +281,7 @@ function vzZakaznikCil(kde) {
       formular: true,
       set: (k, v) => { if (VZ_HLAVICKA_POLE.indexOf(k) >= 0) f.h[k] = vzText(v).slice(0, VZ_TEXT_MAX); vzFormPrekresli(); },
       zmrazeno: () => '',
+      icoDuvod: ico => vzIcoDuvod(null, ico),   // VZ-F2 (#660)
       poPrevzeti: (n) => {
         f.zastupci = d.zastupci;
         f.zdroj = 'databáze zákazníků';
@@ -270,6 +304,7 @@ function vzZakaznikCil(kde) {
       set(vzCesta('ZAK.' + k), v);
     },
     zmrazeno: () => vzZakaznikPoleZmrazeno(ZAK, String(d.id), 'objednatel'),
+    icoDuvod: ico => vzIcoDuvod(String(d.id), ico),   // VZ-F2 (#660)
     poPrevzeti: (n) => {
       aktivniVarianta(ZAK).upraveno = new Date().toISOString();
       if (typeof ZAK_DB !== 'undefined')
@@ -334,15 +369,19 @@ function vzFormularBlok(kde) {
   const pis = vzPismenoDalsi(ZAK);
   const rid = ridiciVarianta(ZAK);
   const ridNazev = vzNazevZ(vzZakaznici(ZAK)[0]);
-  const hotovo = String(f.h.objednatel || '').trim() !== '';
+  /* VZ-F2 (#660): IČO, které už v zakázce je — upozornění hned ve formuláři. */
+  const icoDupl = vzIcoDuvod(null, f.h.ico);
+  const hotovo = String(f.h.objednatel || '').trim() !== '' && !icoDupl;
+  const proc = icoDupl || 'nejdřív vyplňte zákazníka — ručně, z ARES nebo z databáze';
   return `<div class="vz-blok noprint" id="vzFormular"><div class="vz-form"><b>Nový zákazník na zakázce</b>
     <div class="vz-form-pole"><div>${zakaznik}${pole('adresaObjednatele', 'Sídlo zákazníka')}${pole('kontakt', 'Kontaktní osoba')}</div>
       <div>${pole('ico', 'IČO zákazníka', VZ_ICO_ATR)}${pole('dic', 'DIČ zákazníka')}${ares}</div></div>
     <div class="row vz-form-nab"><label>Nabídka</label><span class="vz-volba">
       <label><input type="radio" name="vzFormNova" value="stejna"${f.nova === 'stejna' ? ' checked' : ''} onchange="vzFormNova('stejna')"> stejná varianta jako ${esc(ridNazev)} („${esc(rid.nazev)}")</label>
       <label><input type="radio" name="vzFormNova" value="vlastni"${f.nova === 'vlastni' ? ' checked' : ''} onchange="vzFormNova('vlastni')"> vlastní varianta (kopie)</label></span></div>
+    ${icoDupl ? `<div class="note vz-ico-dupl" id="vzFormIcoDupl" style="color:#a40000">⚠ ${esc(icoDupl)}</div>` : ''}
     <div class="note">Zákazník dostane písmeno <b>${esc(pis)}</b> — jeho nabídky ponesou číslo …-${esc(pis)} (čísla s písmenem zavede další etapa).${f.zdroj ? ' Údaje: ' + esc(f.zdroj) + '.' : ''}</div>
-    <div class="vz-form-tl"><button type="button" class="vz-modre" id="vzFormPridej" onclick="vzFormPridej()"${hotovo ? '' : ' disabled title="nejdřív vyplňte zákazníka — ručně, z ARES nebo z databáze"'}>Přidat zákazníka</button>
+    <div class="vz-form-tl"><button type="button" class="vz-modre" id="vzFormPridej" onclick="vzFormPridej()"${hotovo ? '' : ' disabled title="' + esc(proc) + '"'}>Přidat zákazníka</button>
       <button type="button" class="mini" id="vzFormZrus" onclick="vzFormZavri()">Zrušit</button></div></div></div>`;
 }
 
@@ -542,7 +581,7 @@ function vzFormPsani(v) {
   if (!f) return;
   f.h.objednatel = vzText(v).slice(0, VZ_TEXT_MAX);
   const b = document.getElementById('vzFormPridej');
-  if (b) { const ok = f.h.objednatel.trim() !== ''; b.disabled = !ok; if (ok) b.removeAttribute('title'); }
+  if (b) { const ok = f.h.objednatel.trim() !== '' && !vzIcoDuvod(null, f.h.ico); b.disabled = !ok; if (ok) b.removeAttribute('title'); }
 }
 /* Překreslit formulář, jen když se pole na stránce liší od dat. Opuštění
  * pole Zákazník (onchange) přichází při mousedown na Zrušit / Přidat —

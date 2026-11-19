@@ -1115,15 +1115,21 @@ function vzServerZakaznici(stara, zak, relace, volby) {
     if (n.pismeno && ulozPismena.has(n.pismeno))
       return { status: 400, chyba: 'Neuloženo: písmeno ' + n.pismeno + ' už nese odeslaná nabídka jiného zákazníka.' };
   }
-  /* VZ-F1 (VZ-N1): NOVÝ zákazník nesmí nést IČO, které už v zakázce je
-   * (zákazníci bez IČO se nehlídají; dřívější data s duplicitou ukládání
-   * neblokují — hlídá se jen přidání). */
-  /* Hláška jmenuje dřívějšího zákazníka (pořadí: řídící, další); předponu
-   * „Neuloženo:" přidá volající (zakazka_kontrola.mjs). */
+  /* VZ-F1 (VZ-N1): zákazník nesmí nést IČO, které už v zakázce je
+   * (zákazníci bez IČO se nehlídají). VZ-F2 (#660): hlídá se každý NOVÝ
+   * zákazník a každý, komu se IČO ZMĚNILO (i řídící, i doplnění IČO zákazníkovi
+   * uloženému bez něj), a to proti VŠEM ostatním — ne jen proti dřívějším
+   * v poli (nový vložený před stávajícího prošel). Zákazník se stejným
+   * IČO jako v uložené verzi se nehlídá: starší data s duplicitou ukládání
+   * neblokují; obnova (i ze souboru) také ne. */
+  /* Hláška jmenuje toho DRUHÉHO zákazníka (ten, se kterým se IČO srazilo);
+   * předponu „Neuloženo:" přidá volající (zakazka_kontrola.mjs). */
   if (!o.obnova) for (const n of ted) {
-    if (predIds.has(n.id)) continue;
     const k = vzIcoKlic(n.hlavicka.ico);
-    const dupl = k ? ted.slice(0, ted.indexOf(n)).find(z => vzIcoKlic(z.hlavicka.ico) === k) : null;
+    if (!k) continue;
+    const p = predIds.get(n.id);
+    if (p && vzIcoKlic(p.hlavicka.ico) === k) continue;
+    const dupl = ted.find(z => z !== n && vzIcoKlic(z.hlavicka.ico) === k);
     if (dupl) return { status: 400, chyba: vzIcoDuplicitaText(dupl) };
   }
   /* § 5: údaje dalšího zákazníka po odeslání jemu (uložená verze). */
@@ -1136,7 +1142,45 @@ function vzServerZakaznici(stara, zak, relace, volby) {
       return { status: 409, chyba: 'Neuloženo: zákazníkovi „' + (p.hlavicka.objednatel || p.id) + '" už odešla nabídka — '
         + 'název, sídlo, IČO a DIČ se už nemění (' + zm.join(', ') + ').' };
   }
+  /* VZ-F2 (#663, J. V. 18. 11. 2026): po odeslání SMLOUVY O DÍLO zákazníkovi
+   * se nemění ani jeho zástupci (vytištění ve smlouvě) — po zákaznících, podle
+   * razítek ULOŽENÉ verze. Řídící, který řídícím zůstává, hlídá zámek
+   * hlavičky (zamekZakZmeny — jen SoD řídícímu, ne SoD dalšímu). */
+  for (const p of pred) {
+    const n = tedIds.get(p.id);
+    if (!n || o.obnova || (p.ridici && n.ridici) || !vzSodOdeslanaKomu(stara, p.id)) continue;
+    const zm = VZ_ZASTUPCI_POLE.filter(k => vzText(p.zastupci[k]) !== vzText(n.zastupci[k]));
+    if (zm.length)
+      return { status: 409, chyba: 'Neuloženo: ' + vzSodZmrazenoText(p) + ' (' + zm.join(', ') + ').' };
+  }
   return null;
+}
+
+/* VZ-F2 (#663): odešla zákazníkovi `id` smlouva o dílo (OCK i PROJ, i jazyková)?
+ * Tisk se smlouvou s jeho razítkem v zámku kterékoli varianty; tisk bez
+ * razítka patří z1 (jeden zákazník). Smlouva v zámku v historii odemčení se
+ * nepočítá — po odemčení jde smlouva vystavit znovu. */
+function vzSodOdeslanaKomu(zak, id) {
+  const sid = String(id);
+  return ((zak && Array.isArray(zak.varianty)) ? zak.varianty : [])
+    .some(v => vzTiskyVarianty(v).some(t => vzTiskSmlouva(t) && vzTiskKomu(t) === sid));
+}
+function vzTiskSmlouva(t) {
+  const typ = vzText(t && t.typ).replace(/_(en|de|fr)$/, '');
+  return typ === 'sod' || typ === 'sodProj';
+}
+function vzSodZmrazenoText(z) {
+  return 'zákazníkovi „' + (vzText(z && z.hlavicka && z.hlavicka.objednatel).trim() || (z && z.id) || '?')
+    + '" už odešla smlouva o dílo — zástupci a DIČ se už nemění';
+}
+/* Klient (#663): zástupci dalšího zákazníka `id` po odeslání SoD jemu —
+ * důvod nebo ''. Řídícího hlídá zámek hlavičky (zamekZakCestaZmrazena). */
+function vzZastupciZmrazeno(zak, id) {
+  if (!vzRezim(zak)) return '';
+  const z = vzZakaznik(zak, id);
+  if (!z || z.ridici || !vzSodOdeslanaKomu(zak, z.id)) return '';
+  const t = vzSodZmrazenoText(z);
+  return t.charAt(0).toUpperCase() + t.slice(1) + '. Jiné zástupce zapište do nové zakázky.';
 }
 
 /* N4 (revize E0): `zalozen` píše server — u existujícího id z uložené verze,
@@ -1781,7 +1825,7 @@ if (typeof module !== 'undefined' && module.exports)
   module.exports = { VZ_DALSI_MAX, VZ_VYPNUTO_VARIANTA, VZ_TEXT_MAX, VZ_RIDICI_ID, VZ_ID_TVAR, VZ_PISMENO_TVAR, VZ_PISMENA, VZ_HLAVICKA_POLE,
     VZ_ZASTUPCI_POLE, VZ_RIDICI_KLICE, VZ_DALSI_KLICE, VZ_PLATNA_KLICE, VZ_OTISK_FIRMA, VZ_POHLED_BEZ, VZ_VYPNUTO,
     vzDalsi, vzRezim, vzMaData, vzRidiciId, vzRidiciVariantaId, vzZastupciPrazdni, vzZakaznici, vzZakaznik,
-    vzRazitkaZakazniku, vzPismenoDalsi, vzIdDalsi, vzIcoKlic, vzIcoDuplicita, vzIcoDuplicitaText, vzPridej, vzVariantaJenJeho, vzOdstran, vzVymenRidiciho,
+    vzRazitkaZakazniku, vzPismenoDalsi, vzIdDalsi, vzIcoKlic, vzIcoDuplicita, vzIcoDuplicitaText, vzSodOdeslanaKomu, vzTiskSmlouva, vzZastupciZmrazeno, vzPridej, vzVariantaJenJeho, vzOdstran, vzVymenRidiciho,
     vzSrovnej, vzProjFirma, vzUkazateleOprav, vzPohled, vzTvarProblemy, vzOcisti, vzPodpis, vzPlatnaDrz, vzTvarText,
     vzPismenoPohledu, vzCisloSPismenem, vzCisloRozloz, vzVariantyZakaznika, vzTiskPohled, vzNorm, vzNazevJadro,
     vzTextCizi, vzTypProj, vzSdileneTexty, vzTiskZabrana, vzTiskPruhText, vzTiskVarianta, vzTiskHlidej,

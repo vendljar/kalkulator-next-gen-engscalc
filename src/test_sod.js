@@ -161,6 +161,23 @@ test('prázdné pole plné moci se neplní — ve Wordu zůstane {{…}} k dops�
   test('nevyplněná splátka zůstane ve smlouvě vidět jako {{…}}',
     !('SODP_PLATBA5_KC' in sodP.placeholders));
 }
+/* VZF1-I1 (VZ-F2): název souboru plné moci nese číslo zakázky jako smlouva
+ * o dílo PROJ. Do VZ-F2 bral `projHlavicka.cislo || zak.cislo` — nedopsaná
+ * předloha v hlavičce PROJ dala PLNA-MOC_2026-OPR-CN-PROJ-CZ bez čísla.
+ * Pojistka: na a3fad44 oba testy padají (název bez 4242). */
+{
+  const zI = novaZakazka();
+  zI.cislo = '2026 - OPR - CN - 4242';
+  zI.projHlavicka = Object.assign({}, zI.projHlavicka || {}, { cislo: '2026 - OPR - CN - ' });
+  const n1 = plnaMocData(zI, zI.varianty[0]).nazevSouboru;
+  test('VZF1-I1: plná moc OPR nese číslo zakázky (ne nedopsanou předlohu hlavičky PROJ)',
+    n1 === 'PLNA-MOC_2026-OPR-CN-4242-PROJ-CZ', n1);
+  const v2 = klonujVariantu(zI, zI.varianty[0].id, { aktivovat: false });
+  const n2 = plnaMocData(zI, v2).nazevSouboru;
+  const sp2 = sodProjData(zI, v2).nazevSouboru;
+  test('VZF1-I1: plná moc druhé varianty nese totéž číslo jako SoD PROJ (…-4242.2)',
+    n2 === 'PLNA-MOC_2026-OPR-CN-4242.2-PROJ-CZ' && sp2.indexOf('SOD_2026-OPR-CN-4242.2-') === 0, { n2, sp2 });
+}
 /* Když hlavička PROJ adresu nemá, bere se adresa stavby z hlavičky OCK —
  * plná moc se vyřizuje pro OBJEKT, ne pro konkrétní kalkulaci. */
 const zakBez = novaZakazka(); zakBez.adresa = 'Náhradní 1, Brno';

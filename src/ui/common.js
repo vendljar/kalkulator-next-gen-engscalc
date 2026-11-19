@@ -738,6 +738,16 @@ function set(path, v) {
       return;
     }
   }
+  /* VZ-F2 (#660): IČO jiného zákazníka zakázky se nezapíše (řídící i další;
+   * server totéž odmítne 400 — tady hláška hned u pole, ne až při uložení). */
+  if ((path === 'ZAK.ico' || path.startsWith('ZAK.dalsiZakaznici.')) && typeof vzIcoCestaDuvod === 'function') {
+    const duvod = vzIcoCestaDuvod(path, v);
+    if (duvod) {
+      if (typeof hlaska === 'function') hlaska(duvod);
+      render();
+      return;
+    }
+  }
   /* ČÍSLO ODESLANÉ NABÍDKY MĚNÍ JEN ADMINISTRÁTOR (nález A3, rozhodnutí
    * J. V. 15. 9. 2026: „Pouze administrátor").
    *

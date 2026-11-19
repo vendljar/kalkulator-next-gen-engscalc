@@ -739,7 +739,18 @@ function plnaMocData(zak, varianta, sablona) {
    * J. V. 11. 11. 2026), bez kontroly před tiskem. */
   const nevyplnene = sodNevyplnene(placeholders, sablona, null);
   return { placeholders, jazyk: 'cz', obrazky: {}, ...(nevyplnene ? { nevyplnene } : {}),
-    nazevSouboru: (typeof nazevExportu === 'function' ? nazevExportu : require('./nazvy_souboru.js').nazevExportu)('plna-moc', { cislo: h.cislo || zak.cislo }) };   // #533
+    nazevSouboru: (typeof nazevExportu === 'function' ? nazevExportu : require('./nazvy_souboru.js').nazevExportu)('plna-moc', { cislo: plnaMocCislo(zak, varianta) }) };   // #533
+}
+/* Číslo do názvu souboru plné moci (VZF1-I1, VZ-F2): totéž číslo jako smlouva
+ * o dílo PROJ, se kterou plná moc odchází (projCisloNabidky + přípona varianty,
+ * nabidkaProjData). Do VZ-F2 bralo `projHlavicka.cislo || zak.cislo` — hlavička
+ * PROJ s nedopsanou předlohou „2026 - OPR - CN - " dala soubor
+ * PLNA-MOC_2026-OPR-CN-PROJ-CZ bez čísla zakázky. */
+function plnaMocCislo(zak, varianta) {
+  let c = typeof projCisloNabidky === 'function' ? projCisloNabidky(zak)
+    : String((zak && zak.cislo) || ((zak && zak.projHlavicka) || {}).cislo || '');
+  if (typeof cisloSVariantou === 'function') c = cisloSVariantou(zak, varianta, c);
+  return String(c || '').replace(/\s+/g, '');
 }
 
 /* registrace do jednotného registru dokumentů (dokumenty.js) */
@@ -764,6 +775,6 @@ if (typeof dokumentRegistruj === 'function') {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { SOD_OBJ_BEZ_ROZPISU, sodData, sodProjData, sodProjRozsahText, SODP_CINNOSTI, plnaMocData, sodObjednatelDoplna, sodVedouciMontaziDoplna, sodPokutaZhotovitele,
+  module.exports = { SOD_OBJ_BEZ_ROZPISU, sodData, sodProjData, sodProjRozsahText, SODP_CINNOSTI, plnaMocData, plnaMocCislo, sodObjednatelDoplna, sodVedouciMontaziDoplna, sodPokutaZhotovitele,
     sodJazykZabrana, sodPrelozHodnoty, sodSachtySymboly, sodRozpisVyrovnani, sodCenaPredSlevou, SOD_SACHTY_SYMBOLY, SOD_SACHTY_BEZ_SABLONY, sodSablonaUmiSachty,
     SOD_TECKY, sodNevyplnene, SOD_NEVYPLNENE_POPIS, sodNevyplnenePopisy, sodNevyplneneText, SOD_NEVYPLNENE_NEPOVINNE, sodNevyplneneRozdel, sodDphSymboly, sodDphZabrana, sodSkladne, SOD_OBJ_SYMBOLY, sodObjednaneSymboly, SOD_DPH_VETY, SOD_DPH_PROHLASENI_SNIZENA, SOD_DPH_PROHLASENI_OZNAMENI };
