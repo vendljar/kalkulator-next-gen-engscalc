@@ -943,6 +943,16 @@
    "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
   },
   {
+   "id": "cisloZakazky",
+   "label": "Číslo zakázky",
+   "sekce": "Základní údaje",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 19. 11. (D3 #676): nové pole z účetnictví, zámek jako ostatní pole KL — po CN volné"
+  },
+  {
    "id": "adresaStavby",
    "label": "Adresa stavby",
    "sekce": "Základní údaje",
