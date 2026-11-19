@@ -43,7 +43,7 @@ a spustilo skript. `kontrola.py` data se znakem `<` odmítne.
 |---|---|
 | `aktualizace` | „15. 10. 2026 15:25 UTC“ — čas posledního přepsání |
 | `koordinace` | `{id, kontext}` — kontext v % z `get_session` (bez id) |
-| `cekaNaJV` | jen věci, které opravdu čekají na J. V. (rozhodnutí, release k vydání, oprávnění); prázdné pole = zelený rámeček „Nic na vás nečeká“ |
+| `cekaNaJV` | jen věci, které opravdu čekají na J. V. (rozhodnutí, release k vydání, oprávnění); položka `{"t": text, "s": "todo" \| "run" \| "done"}` (prostý řetězec = todo) — ikona stavu, rozpracované nahoře; `done` se při uložení přesune do `hotovo` s datem a z „Čeká na vás“ zmizí (J. V. 19. 11. 2026); prázdné pole = zelený rámeček „Nic na vás nečeká“ |
 | `dlazdice` | 4 dlaždice: main, test, integrace, celé kolo; `s` = ok / run / warn / bad / idle |
 | `releasy` | jeden řádek: vydané / bez tagu (z `release_odkaz.py --chybejici` + GitHub `list_releases`) |
 | `faze` | `["kód","testy","mutace","souhrn","integrace","sady","test"]` |
