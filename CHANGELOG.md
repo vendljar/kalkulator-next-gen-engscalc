@@ -43,7 +43,11 @@ roadmapy přidělí koordinace.
   a pořadí zobrazení D4 — `vyp`, `vypZ`, `zamek` zůstávají bajt po bajtu), `test_vs_zlata.json` přegenerován
   (změny jen `ph-*`, `nahled-*`, `docx`, `spec`, `sod`, `ctrl`; surové výstupy proti 042fcbc se liší výhradně
   přejmenováním D2/D4), `cisla_vydani.json` (`ps2.bezNazev`), `test_vz_rejstrik.mjs` (buňka Akce).
-- **Mutace [DO]:** jádro 20, server 2 (výsledek v předávce).
+- **Mutace [DO]:** jádro 20/20, server 2/2 chycené. `test_prava.mjs` 1001/0 (zakázky D6 0661–0663).
+- **Kolo** `--bez-mutaci --proti origin/claude/integrace-16-10`: sady 480/0/7, hodiny 389/0/1, statické 9/9;
+  porovnání 359 kalkulací, 164 shodných, 195 jen očekávaných (`podklady/porovnani/ocekavane_do-dotazy_2026-11-19.txt`:
+  fuzz, jen text dokumentů a controlling — přejmenování D2/D4; cena, výsledek a zámek SHODA). `porovnani_sada.js`
+  očistí popisek a pořadí zobrazení D4 stejně jako zlaté sady.
 
 ## v19.11.5 — #671 navazující drobnosti K50-N1 (editor a zveřejnění ceníku), větev claude/r-k50n1
 
