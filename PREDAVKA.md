@@ -17,6 +17,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/s6s8-evidence` | (tato dávka) | v18.11.5 | S6 + S8 #613: jedna evidence, PREHLED.md, NOVINKY; nad integrací 9bd6dc8 |
 | `claude/vz-t1` | (tato dávka) | v19.11.2 | VZ T1 #669: řídící varianta a zákazník v hlavičce; s d8e4fc1 a 82cbd72; revize poradce; viz CHANGELOG |
 | `claude/vz-f2` | (tato dávka) | v19.11.4 | VZ-F2 #660–#663 + VZF1-I1 nad a3fad44; číslo verze přečísluje koordinace |
+| `claude/d3-objednavka-proj` | (tato dávka) | v19.11.6 | D3 #675 Objednávka / Smlouva PROJ nad integrací 042fcbc; číslo verze přečísluje koordinace |
 | `claude/vz-f1` | (tato dávka) | v18.11.8 | VZ-F1 #659 opravy nálezů ruční zkoušky VZ; nad ec5bbac, sloučeno s integrací 41bbe99 |
 
 Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tagu: `python3 nastroje/release_odkaz.py --chybejici`
@@ -45,6 +46,11 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   | B1–B2 | spojovací materiál, lakování | souhrn skupiny, bez ceny z nabídky | J. V. (lak: dop. cena z nabídky) |
   | B6 | nulová cena z nabídky | dřív odmítnuta | opraveno #667 |
 
+- **D3 #675** (`claude/d3-objednavka-proj`, v19.11.6, nad 042fcbc): nový dokument „Objednávka / Smlouva“ PROJ
+  (`src/objednavka_proj.js`, `src/ui/objednavka_proj_ui.js`; karta v KL PROJ pod SoD PROJ; tisk/PDF + Word bez šablony;
+  číslo CN → OBJ; ceny = nabídka PROJ). Sdílené soubory jen po řádku: `build.py`, `kryci_proj_ui.js` (karta),
+  `vice_zakazniku.js` (vzTypProj), `kontroly.js` (strana), `plan_plateb_ui.js` (brána), `nazvy_souboru.js` (druh).
+  Otázky J. V. #676. Kolo a mutace: viz zpráva koordinaci.
 - **VZ-F2** (`claude/vz-f2`, v19.11.4): #660 IČO nového/změněného zákazníka proti všem (klient hned při úpravě),
   #663 zástupci+DIČ dalšího zákazníka zmrazení po JEHO SoD, hlavičku zmrazí jen SoD řídícímu, #661 KL PROJ v pohledu
   otevřeného zákazníka, #662 `overit_vz_f2.mjs`, VZF1-I1 název plné moci. Kolo VŠE ZELENÉ (475/0/7, 385/0/1, 9/9, SHODA 353/353),

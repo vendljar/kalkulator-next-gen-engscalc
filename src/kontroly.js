@@ -1772,7 +1772,7 @@ function kontrolyProved(ctx) {
  * ukáže správně) — úroveň 1 nemají, takže sem nikdy nedojdou. */
 const KONTROLY_DOKUMENTY_STRANY = {
   ock: ['nabidka', 'nabidkaTisk', 'sod', 'kryci'],
-  proj: ['nabidkaProj', 'nabidkaProjTisk', 'sodProj', 'kryciproj'],
+  proj: ['nabidkaProj', 'nabidkaProjTisk', 'sodProj', 'objednavkaProj', 'kryciproj'],
 };
 /* Zábrany, které hlídá jiná (přesnější) brána — tady se přeskakují, aby
  * hláška nezazněla dvakrát a plán plateb dál rozlišoval nabídku a smlouvu. */

@@ -836,7 +836,7 @@ function vzTextCizi(text, vlastni, cizi) {
 /* Typ dokumentu PROJ (nabídka, náhled, krycí list, SoD PROJ, plná moc PROJ). */
 function vzTypProj(typ) {
   const t = vzText(typ).replace(/_(en|de|fr)$/, '');
-  return t === 'nabidkaProj' || t === 'nabidkaProjTisk' || t === 'sodProj' || t === 'plnaMoc' || /^kryciproj(_|$)/.test(t);
+  return t === 'nabidkaProj' || t === 'nabidkaProjTisk' || t === 'sodProj' || t === 'objednavkaProj' || t === 'plnaMoc' || /^kryciproj(_|$)/.test(t);
 }
 
 /* Sdílené tištěné texty zakázky (§ 9 R1): [popisek, hodnota]. */

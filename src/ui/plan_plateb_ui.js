@@ -435,7 +435,7 @@ function planKlpPlatbyKarta(c) {
  * milník) nesmí do nabídky PROJ (Word i náhled) ani do smlouvy o dílo PROJ;
  * smlouva navíc potřebuje součet plateb = cena díla. Odeslaná nabídka z doby
  * před plánem se nehlídá (tiskne se, jak odešla). Volá dokumentZabrana(typ). */
-const PLAN_DOKUMENTY = ['nabidkaProj', 'nabidkaProjTisk', 'sodProj'];
+const PLAN_DOKUMENTY = ['nabidkaProj', 'nabidkaProjTisk', 'sodProj', 'objednavkaProj'];
 function planPlatebZabranaDokumentu(typ, varianta) {
   const t = String(typ || '').replace(/_(en|de|fr)$/, '');
   if (PLAN_DOKUMENTY.indexOf(t) < 0 || typeof nabidkaProjPlatby !== 'function' || typeof ZAK === 'undefined') return '';
@@ -450,8 +450,10 @@ function planPlatebZabranaDokumentu(typ, varianta) {
     return 'Plán plateb projekce nejde spočítat (' + e.message + ') — dokument nevznikne.';
   }
   if (!pl || pl.stary) return '';
-  const vady = (pl.kontrola || []).filter(k => t === 'sodProj' || k.kod !== 'soucet');
+  /* Objednávka PROJ (D3) tiskne platební kalendář s částkami jako smlouva — i součet. */
+  const smluvni = t === 'sodProj' || t === 'objednavkaProj';
+  const vady = (pl.kontrola || []).filter(k => smluvni || k.kod !== 'soucet');
   if (!vady.length) return '';
-  return 'Plán plateb projekce má nedostatky — ' + (t === 'sodProj' ? 'smlouva o dílo' : 'nabídka PROJ')
+  return 'Plán plateb projekce má nedostatky — ' + (t === 'sodProj' ? 'smlouva o dílo' : t === 'objednavkaProj' ? 'objednávka' : 'nabídka PROJ')
     + ' nevznikne, dokud se neopraví (krycí list PROJ → Plán plateb): ' + vady.map(v => v.text).join(' ');
 }

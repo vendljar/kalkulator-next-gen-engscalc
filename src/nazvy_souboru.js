@@ -115,6 +115,8 @@ const NAZVY_DRUHY = {
     obsah: [String(u.oblast || 'ock').toUpperCase(), u.zakaznik, u.varianta, nazevJazyk(u.jazyk)], verze: false }),
   sod: u => ({ typ: 'SOD', klic: nazevCislo(u.cislo, u.oblast === 'proj' ? 'OVP-CN' : 'CN'),
     obsah: [String(u.oblast || 'ock').toUpperCase(), u.zakaznik, nazevJazyk(u.jazyk)], verze: false }),
+  /* Objednávka / Smlouva PROJ (D3): klíč = číslo objednávky (…-OBJ-…). */
+  objednavka: u => ({ typ: 'OBJEDNAVKA', klic: nazevCislo(u.cislo, 'OVP-OBJ'), obsah: ['PROJ'], verze: false }),
   'plna-moc': u => ({ typ: 'PLNA-MOC', klic: nazevCast(u.cislo), obsah: ['PROJ', 'CZ'], verze: false }),
   specifikace: u => ({ typ: 'SPECIFIKACE', klic: nazevCislo(u.cislo, 'CN'), obsah: ['OCK', nazevJazyk(u.jazyk)], verze: false }),
   /* Interní dokumenty zakázky. */

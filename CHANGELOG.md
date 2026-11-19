@@ -8,6 +8,29 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.11.6 — D3 #675: Objednávka / Smlouva PROJ z nabídky PROJ, větev claude/d3-objednavka-proj
+
+Nad integrací `042fcbc` (v19.11.5). Nový dokument, cenu ani text nabídky a SoD nemění. Verzi přečísluje koordinace.
+
+- **Nový dokument „Objednávka / Smlouva“** (dotaz obchodu D3, rozhodnutí J. V. 19. 11.): jednostránkové rozvržení
+  podle „Přijaté objednávky“ z účetního systému — vpravo název, číslo dokladu, číslo zakázky (je-li), datum případu;
+  Dodavatel z Nastavení → Firma, Objednatel z hlavičky zakázky (zástupce ve věcech smluvních), tabulka řádků
+  (č., označení, popis dodávky s rozsahem prací z textu nabídky, množství, MJ, jedn. cena, celkem bez DPH, DPH %,
+  celkem s DPH), řádek slevy, součty a „Celkem Kč“, místo pro datum a podpis objednatele, poznámka s odkazem na CN,
+  platební kalendář (plán plateb jako SoD PROJ) a termíny z nabídky. Jen čeština.
+- **Číslo:** z čísla nabídky „CN“ → „OBJ“ (`2026-OVP-CN-0376.2` → `2026-OVP-OBJ-0376.2`); bez části „CN“ dokument
+  nevznikne a obchodník dostane důvod.
+- **Ceny = nabídka PROJ na haléř:** vše z `nabidkaProjData` / `nabidkaProjCeny` (jádro `engine_proj.js`, zaokrouhlení
+  po činnostech, schválená sleva, cestovné, DPH projekční části; odeslaná varianta z otisku zámku).
+- **Kde:** karta „Objednávka / Smlouva (PROJ)“ na konci krycího listu PROJ, pod Smlouvou o dílo PROJ (smluvní
+  dokument ke stejné nabídce; platební kalendář a zástupci se vyplňují v krycím listu). Tisk / PDF z náhledu, Word
+  generovaný od nuly (bez nové šablony). Objednávka variantu nezamyká; u neodeslané CN upozorní v náhledu.
+- **Brány:** víc zákazníků jen pro řídícího (`vzTypProj`), zámek strany PROJ (`KONTROLY_DOKUMENTY_STRANY`), plán
+  plateb s vadou i nesedícím součtem (`PLAN_DOKUMENTY`, jako SoD PROJ).
+- **Testy:** `src/test_objednavka_proj.js` (67 OK; před D3 0/1 — modul chybí; ceny po slevě místo před 5 FAIL; bez
+  `vzTypProj` 2 FAIL), `overit_objednavka_proj.mjs` (13 kontrol v prohlížeči).
+- **Otázky J. V. (#676):** 1 strana A4 vs. plný rozsah prací, zdroj „čísla zakázky“, objednávka z neodeslané CN.
+
 ## v19.11.5 — #671 navazující drobnosti K50-N1 (editor a zveřejnění ceníku), větev claude/r-k50n1
 
 Nad integrací `a018828` (v19.11.3). Cenu nemění (jen zahraniční statika zadaná textem). Verzi přečísluje koordinace.
