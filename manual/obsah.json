@@ -748,6 +748,7 @@
           ]
         },
         { "typ": "text", "text": "Tiskové náhledy se otevírají v novém okně. **Když prohlížeč okno zablokuje**, aplikace to řekne hláškou „Prohlížeč zablokoval okno s náhledem…“. Povolte pro stránku kalkulačky vyskakovací okna (ikona v adresním řádku prohlížeče) a klikněte znovu. Dřív se v takové chvíli nestalo nic a nebylo jasné proč." },
+        { "typ": "text", "text": "**Kompletní náhled podkladů** (tlačítko vedle *Vytvořit nabídku (Word)*) ukazuje nabídku OCK tak, jak vyjde z Wordu: stránky A4 se záhlavím (*Cenová nabídka*, logo, číslo stránky) a zápatím s údaji firmy, hlavička, Popis záměru s úvodní fotkou, technická specifikace, cena **včetně řádku slevy**, příplatky hned za cenou, kapitoly III.–VI., doložky a podpis. Jazyk se řídí volbou **Jazyk tisku**. V pruhu nad stránkami (do tisku nejde) aplikace upozorní na prázdná místa — chybí fotka, popis záměru, kontakt, prázdná kapitola — a tlačítkem **Vytvořit nabídku (Word)** z náhledu rovnou vytvoříte dokument; platí stejné zábrany jako u tlačítka v aplikaci. Náhled nic nezamyká. Úpravy textu před tiskem a tisk do PDF dál dělá *Kompletní náhled a tisk nabídky*." },
         {
           "typ": "kroky", "nadpis": "Postup: vytisknout cenovou nabídku OCK",
           "polozky": [

@@ -17,6 +17,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/s6s8-evidence` | (tato dávka) | v18.11.5 | S6 + S8 #613: jedna evidence, PREHLED.md, NOVINKY; nad integrací 9bd6dc8 |
 | `claude/vz-t1` | (tato dávka) | v19.11.2 | VZ T1 #669: řídící varianta a zákazník v hlavičce; s d8e4fc1 a 82cbd72; revize poradce; viz CHANGELOG |
 | `claude/vz-f2` | (tato dávka) | v19.11.4 | VZ-F2 #660–#663 + VZF1-I1 nad a3fad44; číslo verze přečísluje koordinace |
+| `claude/np-nahled` | (tato dávka) | v19.11.7 | NP: Kompletní náhled podkladů OCK ve vzhledu Wordu CN v17 (#676 prac.); nad 6092af3 |
 | `claude/vz-f1` | (tato dávka) | v18.11.8 | VZ-F1 #659 opravy nálezů ruční zkoušky VZ; nad ec5bbac, sloučeno s integrací 41bbe99 |
 
 Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tagu: `python3 nastroje/release_odkaz.py --chybejici`
@@ -56,6 +57,13 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   #663 zástupci+DIČ dalšího zákazníka zmrazení po JEHO SoD, hlavičku zmrazí jen SoD řídícímu, #661 KL PROJ v pohledu
   otevřeného zákazníka, #662 `overit_vz_f2.mjs`, VZF1-I1 název plné moci. Kolo VŠE ZELENÉ (475/0/7, 385/0/1, 9/9, SHODA 353/353),
   mutace [VZ F2] jádro 19/19, server 5/5. Detail v CHANGELOG. HOTOVO, slučuje koordinace.
+
+- **NP #676** (`claude/np-nahled`, v19.11.7, nad 6092af3): „Kompletní náhled podkladů" = dokument ve vzhledu Wordu CN v17
+  (`src/nahled_word.js`, `src/ui/nahled_word_ui.js`): stránky A4, záhlaví/zápatí, pořadí Wordu, **řádek slevy** (oprava
+  nálezu), příplatky za cenou, pruh (Jazyk tisku, upozornění, Word se zábranami). Data jako Word, cenu ani Word nemění.
+  Pojistka shody `test_np_nahled_word.js` (náhled = text Wordu ze syntetické CN v17), `test_np_okno.js`,
+  `overit_np_nahled.mjs`, snímky `podklady/kola/np_nahled_2026-11-19/`. Nález #677 (prac.): cizojazyčný Word nechá
+  prázdný pruh sekce — čeká na J. V. Testovací sezení: porovnat s Wordem z pravé CN v17 na testu.
 
 ## Čeká na J. V.
 

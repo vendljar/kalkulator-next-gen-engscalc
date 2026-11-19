@@ -186,7 +186,13 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   'ui/ukazkove_ui.js', 'ui/techspec_ui.js', 'ui/kontroly_ui.js',
   /* vz_poznamka.js (VZ T1, 18. 11. 2026): řádek „Řídící zákazník v kalkulaci"
    * v poznámce dealu. Hlídá src/test_vz_t1.js (server netlify/test_vz_poznamka.mjs). */
-  'vz_poznamka.js'];
+  'vz_poznamka.js',
+  /* nahled_word.js a ui/nahled_word_ui.js (NP, 19. 11. 2026): Kompletní
+   * náhled podkladů ve vzhledu Wordu CN v17 — pořadí sekcí, řádek slevy,
+   * příplatky za cenou, mizení prázdných řádků a kapitol (pravidla docxgen)
+   * a stránkování. Hlídá src/test_np_nahled_word.js (náhled = text Wordu)
+   * a src/test_k13_preklad.js (překlad pevných textů). */
+  'nahled_word.js', 'ui/nahled_word_ui.js'];
 /* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
  * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
  * nastroje/mutace_cast.mjs). */
@@ -4703,7 +4709,7 @@ const MUTACE = [
     hledej: "  const vt = vzTiskVstup('nabidka', varianta, nabidkaStavText);   // VZ-E2 #601: pohled zákazníka",
     nahrad: "  const vt = { zak: ZAK, varianta: varianta };",
     proc: "dokument „Word CN“ by vznikl z celé zakázky (údaje řídícího pro dalšího zákazníka, únik R1)", sady: ["test_vz_tisk_vstupy.js"] },
-  { nazev: "VZ-E2: vynechaný pohled — náhled podkladů [VZ E2]", soubor: "ui/zakazka_ui.js",
+  { nazev: "VZ-E2: vynechaný pohled — náhled podkladů [VZ E2] (od NP v ui/nahled_word_ui.js)", soubor: "ui/nahled_word_ui.js",
     hledej: "  const vt = vzTiskVstup('nabidka', varianta);   // VZ-E2 #601: pohled zákazníka (podklady)",
     nahrad: "  const vt = { zak: ZAK, varianta: varianta };",
     proc: "dokument „náhled podkladů“ by vznikl z celé zakázky (údaje řídícího pro dalšího zákazníka, únik R1)", sady: ["test_vz_tisk_vstupy.js"] },
@@ -5240,6 +5246,73 @@ const MUTACE = [
     hledej: "    if (out.cestina.zabrana) out.chyby.push(out.cestina.zabrana);",
     nahrad: "    if (false) out.chyby.push(out.cestina.zabrana);",
     proc: "administrátor by zveřejnil smlouvu z velké části česky (server by ji pak odmítl až po kliknutí)", sady: ["test_sablony_online.js"] },
+  /* [NP] dávka NP (19. 11. 2026, J. V.): Kompletní náhled podkladů ve vzhledu
+   * Wordu CN v17. Hlídá src/test_np_nahled_word.js (text náhledu = text Wordu ze
+   * syntetické šablony CN v17 nad porovnávací a zlatou sadou VS/VZ). */
+  { nazev: '[NP] náhled zase bez řádků slevy', soubor: 'nahled_word.js',
+    hledej: "  if (!nwPrazdna(ph.SLEVA_KC)) {\n    cena.push(",
+    nahrad: "  if (false) {\n    cena.push(",
+    proc: 'náhled by slevu nevypsal, Word ano (nález z porovnání 19. 11. 2026)', sady: ['test_np_nahled_word.js'] },
+  { nazev: '[NP] kapitola II. v náhledu bez příplatků', soubor: 'nahled_word.js',
+    hledej: "  (data.priplatky || []).forEach(pr => bloky.push({ typ: 'priplatek', nazev: pr.nazev, popis: pr.popis, cena: pr.cena, bezDph: bez }));\n",
+    nahrad: "",
+    proc: 'kapitola II. by v náhledu byla bez položek (Word je má hned za cenou)', sady: ['test_np_nahled_word.js'] },
+  { nazev: '[NP] příplatky zase až za doložkami', soubor: 'nahled_word.js',
+    hledej: "  bloky.push({ typ: 'nadpis', uroven: 2, text: T('priplatky'), mezera: true });\n  (data.priplatky || [])",
+    nahrad: "  const prPozde = [{ typ: 'nadpis', uroven: 2, text: T('priplatky'), mezera: true }];\n  (data.priplatky || [])",
+    proc: 'nadpis II. by se v náhledu ztratil / příplatky by stály mimo kapitolu (Word: hned za cenou)', sady: ['test_np_nahled_word.js'] },
+  { nazev: '[NP] prázdný řádek technické části nezmizí', soubor: 'nahled_word.js',
+    hledej: "  return nwPrazdna(hodnota) ? null : { bunky: [popis, hodnota] };",
+    nahrad: "  return { bunky: [popis, hodnota] };",
+    proc: 'náhled by ukázal řádky s pomlčkou, které Word vyhodí (odstranPrazdneTsRadky)', sady: ['test_np_nahled_word.js'] },
+  { nazev: '[NP] prázdná sekce nechá pruh', soubor: 'nahled_word.js',
+    hledej: "    if (!radky.length) return;                       // sekce bez řádků zmizí i s pruhem",
+    nahrad: "",
+    proc: 'náhled by ukázal pruh sekce bez řádků (MŮSTKY u šachty bez můstků)', sady: ['test_np_nahled_word.js'] },
+  { nazev: '[NP] prázdná kapitola nechá nadpis', soubor: 'nahled_word.js',
+    hledej: "    const radky = nwRadky(ph[sym]);\n    if (!radky.length) return;",
+    nahrad: "    const radky = nwRadky(ph[sym]);",
+    proc: 'prázdná kapitola by v náhledu zůstala s nadpisem, ve Wordu zmizí (KAP_*)', sady: ['test_np_nahled_word.js'] },
+  { nazev: '[NP] kapitola V. z textu Firmy místo NAB_KAP_TERMINY', soubor: 'nahled_word.js',
+    hledej: "  kap('kapV', 'NAB_KAP_TERMINY', { cislovani: '1' });",
+    nahrad: "  kap('kapV', 'FIRMA_NAB_TERMINY', { cislovani: '1' });",
+    proc: 'náhled by vynechal termín dodání a záruku z krycího listu', sady: ['test_np_nahled_word.js'] },
+  { nazev: '[NP] DALŠÍ UJEDNÁNÍ bez řádků s prázdnou hodnotou', soubor: 'nahled_word.js',
+    hledej: "    extra.forEach(e => ts.push({ typ: 'radek', siroka: true, bunky: [e.nazev, e.hodnota] }));",
+    nahrad: "    extra.filter(e => !nwPrazdna(e.hodnota)).forEach(e => ts.push({ typ: 'radek', siroka: true, bunky: [e.nazev, e.hodnota] }));",
+    proc: 'vlastní řádek jen s popiskem by v náhledu chyběl (Word ho vloží, docxRadkyNavic vzdy)', sady: ['test_np_nahled_word.js'] },
+  { nazev: '[NP] víc šachet bez nadpisu šachty', soubor: 'nahled_word.js',
+    hledej: "      if (!nwPrazdna(sa.ph.SACHTA_TS_NAZEV)) ts.push(",
+    nahrad: "      if (false) ts.push(",
+    proc: 'technická část víc šachet by nevěděla, ke které šachtě sekce patří', sady: ['test_np_nahled_word.js'] },
+  { nazev: '[NP] víc šachet bez řádků šachet v ceně', soubor: 'nahled_word.js',
+    hledej: "    if ([sa.ph.SACHTA_NAZEV, sa.ph.SACHTA_POPIS, sa.ph.SACHTA_CENA_BEZ_DPH].every(nwPrazdna)) return;",
+    nahrad: "    return;",
+    proc: 'obchodní část víc šachet by neukázala cenu jednotlivých šachet (R4)', sady: ['test_np_nahled_word.js'] },
+  { nazev: '[NP] řádek DPH bez symbolu sazby', soubor: 'nahled_word.js',
+    hledej: "  dph: 'DPH {{DPH_SAZBA}} % ({{DPH_NAZEV}} sazba)',",
+    nahrad: "  dph: 'DPH ({{DPH_NAZEV}} sazba)',",
+    proc: 'náhled by neukázal sazbu DPH, kterou Word vytiskne', sady: ['test_np_nahled_word.js'] },
+  { nazev: '[NP] pevný text cizí nabídky zůstane česky', soubor: 'nahled_word.js',
+    hledej: "  if (!L || L === 'cz') return t;\n  const stav =",
+    nahrad: "  return t;\n  const stav =",
+    proc: 'anglický náhled by měl české nadpisy a věty, Word z jazykové šablony ne', sady: ['test_np_nahled_word.js', 'test_k13_preklad.js'] },
+  { nazev: '[NP] hlavička bez kontaktní osoby', soubor: 'nahled_word.js',
+    hledej: "[ph.OBJEDNATEL, ph.OBJEDNATEL_KONTAKT]",
+    nahrad: "[ph.OBJEDNATEL]",
+    proc: 'náhled by vynechal kontakt, který Word pod objednatelem tiskne', sady: ['test_np_nahled_word.js'] },
+  { nazev: '[NP] náhled zase z jazyka aplikace místo Jazyka tisku', soubor: 'ui/nahled_word_ui.js',
+    hledej: "  const L = (typeof tiskJazyk === 'function') ? tiskJazyk() : ((typeof jazyk === 'function') ? jazyk() : 'cz');",
+    nahrad: "  const L = (typeof jazyk === 'function') ? jazyk() : 'cz';",
+    proc: 'náhled by byl v jiném jazyce než Word, který z něj obchodník vytvoří', sady: ['test_np_okno.js'] },
+  { nazev: '[NP] tlačítko Word bez zábran', soubor: 'ui/nahled_word_ui.js',
+    hledej: "  const zabrana = (typeof dokumentZabrana === 'function') ? (dokumentZabrana('nabidka', varianta) || '') : '';",
+    nahrad: "  const zabrana = '';",
+    proc: 'z náhledu by šel vytvořit Word, který tlačítko v aplikaci nepustí', sady: ['test_np_okno.js'] },
+  { nazev: '[NP] náhled bez pohledu zákazníka (vzTiskVstup)', soubor: 'ui/nahled_word_ui.js',
+    hledej: "    data = nabidkaData(vt.zak, vt.varianta, JEKLY, L);",
+    nahrad: "    data = nabidkaData(ZAK, vt.varianta, JEKLY, L);",
+    proc: 'náhled dalšího zákazníka by ukázal hlavičku řídícího (únik VZ)', sady: ['test_vz_tisk_vstupy.js', 'test_np_okno.js'] },
   /* [DO] dávka DO (19. 11. 2026, rozhodnutí J. V. — dotazy obchodníků z 16. 11.):
    * D1 po celé výšce, D2 pás „bez opláštění", D4 přechodové plechy ve Volitelných,
    * D5 materiál + montáž jedním stiskem, D6 dodatkový text, D7 adresa v seznamu.

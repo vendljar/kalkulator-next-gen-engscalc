@@ -66,6 +66,66 @@ const pruh = t => tr_(tc(t, 3));
 const r2 = (l, v) => tr_(tc(l), tc(v, 2));
 const r3 = (l, a, b) => tr_(tc(l), tc(a), tc(b));
 const T = NW.NW_TEXT;
+/* Pevný text šablony opsaný DOSLOVA ze snímků Wordu CN v17 (word_01–06.png) —
+ * ne z NW_TEXT: změna textu v náhledu (nahled_word.js) se tak proti Wordu
+ * ukáže jako rozdíl, ne že se změní obě strany naráz. */
+const S = {
+  hlObjednatel: "Objednatel:",
+  hlDatum: "Datum:",
+  hlNazev: "Název akce:",
+  hlCislo: "Číslo nabídky:",
+  hlAdresa: "Adresa stavby / projekt:",
+  popisNadpis: "Popis záměru:",
+  popisNase: "Naše nabídka obsahuje výrobu, dodání a stavbu MONTOVANÉ ocelové konstrukce výtahové šachty včetně jejího opláštění. Specifikace provedení nabízené šachty je v technické části této nabídky.",
+  popisSkladba: "Nabídka se skládá z Technické a Obchodní části. Objednatelem odsouhlasená Technická část bude použita jako příloha smlouvy o dílo nebo závazné objednávky.",
+  pohled: "Pohled na objekt z ulice:",
+  castA: "A. TECHNICKÁ ČÁST NABÍDKY:",
+  tsTitul: "I. TECHNICKÁ SPECIFIKACE VÝTAHOVÉ ŠACHTY",
+  tsPozn: "(tato technická specifikace bude použita jako příloha Smlouvy o Dílo nebo závazné objednávky)",
+  poznRozmery: "* Uvažované rozměry nabízené šachty vychází ze zadání objednatele. Po přesném zaměření skutečného stavu zhotovitelem se mohou změnit!",
+  poznProfily: "** parametry profilů se mohou změnit po zpracování statického posouzení",
+  roztec: "svislá rozteč příčníků:",
+  castB: "B. OBCHODNÍ ČÁST NABÍDKY:",
+  cnTitul: "I. CENOVÁ NABÍDKA:",
+  sachta: "VÝTAHOVÁ ŠACHTA",
+  sachtaRozsah: "rozsah dodávky dle Technické části nabídky - A. TECHNICKÁ SPECIFIKACE VÝTAHOVÉ ŠACHTY",
+  mustky: "MŮSTKY MEZI BUDOVOU A OCK",
+  mustkyRozsah: "rozsah dodávky dle Technické části nabídky - MŮSTKY MEZI BUDOVOU A OCK",
+  predSlevou: "Cena před slevou",
+  sleva: "Sleva",
+  slevaHodnota: "− {{SLEVA_KC}} ({{SLEVA_PROC}} %)",
+  celkemCena: "CENA CELKEM",
+  celkemCenaPopis: "výtahová šachta a můstky mezi budovou a OCK",
+  bezDph: "bez DPH",
+  dph: "DPH {{DPH_SAZBA}} % ({{DPH_NAZEV}} sazba)",
+  celkem: "CELKEM za nabídku",
+  vcDph: "včetně DPH",
+  poznCena: [
+    "Poznámky k cenové nabídce: a. cena vychází z technické specifikace nabídky – viz výše",
+    "b. DPH bude účtováno dle aktuálně platných daňových předpisů",
+    "c. k úpravě celkové ceny může dojít po přesném zaměření a vyhodnocení statiky"
+  ],
+  zvyseni: "Dojde-li v průběhu realizace díla k VÝRAZNÉMU zvýšení cen vstupních materiálů, oceli, skla a dopravného a paliv, může zhotovitel cenu díla zvýšit o tento rozdíl. Pro posouzení cenových změn se přihlíží k cenám platným v době uzavření smlouvy o dílo (nebo objednávky) ve srovnání s cenami platnými v době, kdy byl zhotovitel povinen dílo provést.",
+  priplatky: "II. ROZŠÍŘENÍ CENOVÉ NABÍDKY – Příplatky:",
+  kapIII: "III. PLATEBNÍ PODMÍNKY:",
+  splatky: "Cena díla je splatná v následujících dílčích splátkách:",
+  mesicne: "Způsob fakturace:",
+  poznPlatby: "Poznámky k platebním podmínkám: v případě podepsané rámcové nebo subdodavatelské smlouvy, platí dohodnuté podmínky z těchto smluv. Bude-li potřeba upravit tyto standardní platební podmínky, jsme připraveni k jejich projednání na úrovni vedení společnosti.",
+  splatnostNadpis: "Splatnost faktur a platnost nabídky:",
+  splatnost: "Splatnost faktur {{PODM_SPLATNOST_DNI_CISLO}} dní ode dne vystavení.",
+  platnost: "Platnost této nabídky je {{PODM_PLATNOST_NABIDKY}} od data uvedeného v záhlaví.",
+  kapIV: "IV. POŽADAVKY PRO PROVEDENÍ REALIZACE:",
+  kapV: "V. TERMÍNY REALIZACE:",
+  kapVI: "VI. PŘEDÁNÍ DÍLA:",
+  predaniPozn: "Předávací protokol z bodů 1. a 2. lze nahradit oboustranně podepsaným zápisem do montážního deníku.",
+  dolozky: "DOLOŽKY:",
+  vypracoval: "Vypracoval:",
+  tel: "Tel: {{ZPRAC_TEL}}",
+  email: "Email: {{ZPRAC_EMAIL}}",
+  kancelar: "Kancelář:",
+  kIco: "IČ: {{FIRMA_ICO}}",
+  kTel: "Tel.: {{FIRMA_TELEFON}}"
+};
 
 const TS_SACHTA = [
   ['ZÁKLADNÍ PARAMETRY ŠACHTY', [
@@ -78,15 +138,15 @@ const TS_SACHTA = [
     r2('PŮDORYSNÉ ŘEŠENÍ ŠACHTY', '{{TS_PUDORYS}}'),
     r2('USAZENÍ OCK – ČELNÍ STĚNA', '{{TS_USAZENI_CELNI}}'), r2('USAZENÍ OCK – BOČNÍ STĚNY', '{{TS_USAZENI_BOCNI}}'),
     r2('USAZENÍ OCK – LEVÁ BOČNÍ STĚNA', '{{TS_USAZENI_LEVA}}'), r2('USAZENÍ OCK – PRAVÁ BOČNÍ STĚNA', '{{TS_USAZENI_PRAVA}}'),
-    r2('USAZENÍ OCK – ZADNÍ STĚNA', '{{TS_USAZENI_ZADNI}}'), pruh(T.poznRozmery)]],
+    r2('USAZENÍ OCK – ZADNÍ STĚNA', '{{TS_USAZENI_ZADNI}}'), pruh(S.poznRozmery)]],
   ['KONSTRUKČNÍ ŘEŠENÍ ŠACHTY', [
     r2('TYP KONSTRUKCE (ENG-M)', '{{TS_TYP_KONSTRUKCE}}'), r2('SVISLÉ NOSNÉ PRVKY', '{{TS_SVISLE_NOSNE}}'),
     r2('PROFIL SLOUPKŮ **', '{{TS_PROFIL_SLOUPKU}}'), r2('VODOROVNÉ NOSNÉ PRVKY', '{{TS_VODOROVNE_NOSNE}}'),
-    r3('', T.roztec, '{{TS_ROZTEC}}'), r2('PROFIL PŘÍČNÍKŮ **', '{{TS_PROFIL_PRICNIKU}}'),
+    r3('', S.roztec, '{{TS_ROZTEC}}'), r2('PROFIL PŘÍČNÍKŮ **', '{{TS_PROFIL_PRICNIKU}}'),
     r2('KOTVENÍ KONSTRUKCE (POLOHA)', '{{TS_KOTVENI_POLOHA}}'), r2('KOTVENÍ KONSTRUKCE (TYP)', '{{TS_KOTVENI_TYP}}'),
     r2('ŘEŠENÍ PORTÁLŮ (PROSTOROVÉ)', '{{TS_PORTALY_PROSTOR}}'), r2('ŘEŠENÍ PORTÁLŮ (ČLENĚNÍ)', '{{TS_PORTALY_CLENENI}}'),
     r2('POVRCHOVÁ ÚPRAVA KONSTRUKCE', '{{TS_POVRCH_UPRAVA}}'), r2('HÁKY PRO ČIŠTĚNÍ ŠACHTY', '{{TS_HAKY}}'),
-    r2('STŘECHA ŠACHTY', '{{TS_STRECHA}}'), r2('POŽÁRNÍ KLASIFIKACE KONSTRUKCE', '{{TS_POZARNI}}'), pruh(T.poznProfily)]],
+    r2('STŘECHA ŠACHTY', '{{TS_STRECHA}}'), r2('POŽÁRNÍ KLASIFIKACE KONSTRUKCE', '{{TS_POZARNI}}'), pruh(S.poznProfily)]],
   ['OPLÁŠTĚNÍ ŠACHTY', [
     r2('TYP OPLÁŠTĚNÍ', '{{TS_TYP_OPLASTENI}}'), r2('MATERIÁL OPLÁŠTĚNÍ', '{{TS_MATERIAL_OPLASTENI}}'),
     r2('POVRCHOVÁ ÚPRAVA OPLÁŠTĚNÍ', '{{TS_POVRCH_OPLASTENI}}'), r2('OPLÁŠTĚNÍ ČELA POD NÁSTUPIŠTĚM', '{{TS_OPLASTENI_CELA}}'),
@@ -123,35 +183,35 @@ const TS_ZAKAZKA = [
 ];
 const sekceXml = s => s.map(([n, radky]) => pruh(n) + radky.join('')).join('');
 const cenaRadek = (popis, hodnota) => tr_(tc(popis), tc(hodnota));
-const BEZ = T.bezDph;
+const BEZ = S.bezDph;
 const BODY = ''
-  + tbl(r2(T.hlObjednatel, ['{{OBJEDNATEL}}', '{{OBJEDNATEL_KONTAKT}}']), r2(T.hlDatum, '{{DATUM}}'), r2(T.hlNazev, '{{NAZEV_AKCE}}'),
-    r2(T.hlCislo, '{{CISLO_NABIDKY}}'), r2(T.hlAdresa, '{{ADRESA}}'))
-  + p(T.popisNadpis) + p('{{POPIS_ZAMERU_OCK}}') + p(T.popisNase) + p('{{OPLASTENI_VETA}}') + p(T.popisSkladba) + p(T.pohled)
-  + p(T.castA)
-  + tbl(pruh(T.tsTitul), pruh(T.tsPozn), pruh('{#sachty}'), pruh('{{SACHTA_TS_NAZEV}}'), sekceXml(TS_SACHTA), pruh('{/sachty}'), sekceXml(TS_ZAKAZKA))
-  + p(T.castB) + p(T.cnTitul)
+  + tbl(r2(S.hlObjednatel, ['{{OBJEDNATEL}}', '{{OBJEDNATEL_KONTAKT}}']), r2(S.hlDatum, '{{DATUM}}'), r2(S.hlNazev, '{{NAZEV_AKCE}}'),
+    r2(S.hlCislo, '{{CISLO_NABIDKY}}'), r2(S.hlAdresa, '{{ADRESA}}'))
+  + p(S.popisNadpis) + p('{{POPIS_ZAMERU_OCK}}') + p(S.popisNase) + p('{{OPLASTENI_VETA}}') + p(S.popisSkladba) + p(S.pohled)
+  + p(S.castA)
+  + tbl(pruh(S.tsTitul), pruh(S.tsPozn), pruh('{#sachty}'), pruh('{{SACHTA_TS_NAZEV}}'), sekceXml(TS_SACHTA), pruh('{/sachty}'), sekceXml(TS_ZAKAZKA))
+  + p(S.castB) + p(S.cnTitul)
   + tbl(pruh('{#sachty}'), cenaRadek(['{{SACHTA_NAZEV}}', '{{SACHTA_POPIS}}'], ['{{SACHTA_CENA_BEZ_DPH}}', BEZ]), pruh('{/sachty}'),
-    cenaRadek([T.sachta, T.sachtaRozsah], ['{{CENA_SACHTA_BEZ_DPH}}', BEZ]),
-    cenaRadek([T.mustky, T.mustkyRozsah], ['{{CENA_MUSTKY_BEZ_DPH}}', BEZ]),
-    cenaRadek(T.predSlevou, '{{CENA_PRED_SLEVOU}}'), cenaRadek(T.sleva, T.slevaHodnota),
-    cenaRadek([T.sachta, T.sachtaRozsah], ['{{CENA_BEZ_DPH_SACHTA}}', BEZ]),
-    cenaRadek([T.celkemCena, T.celkemCenaPopis, '{{SACHTY_CELKEM_POPIS}}'], ['{{CENA_BEZ_DPH_CELKEM}}', BEZ]),
-    cenaRadek(T.dph, '{{DPH_KC}}'), cenaRadek(T.celkem, ['{{CENA_S_DPH}}', T.vcDph]))
-  + T.poznCena.map(p).join('') + p(T.zvyseni)
-  + p(T.priplatky) + tbl(cenaRadek(['{{PRIP_NAZEV}}', '{{PRIP_POPIS}}'], ['{{PRIP_CENA}}', BEZ]))
-  + p(T.kapIII)
-  + p('{{PLATBY_SPLATKY_ZAC}}') + tbl(tr_(tc(T.splatky)), tr_(tc('{{PODM_PLATEBNI_KALENDAR}}'))) + p('{{PLATBY_SPLATKY_KON}}')
-  + p('{{PLATBY_MESICNE_ZAC}}') + tbl(tr_(tc(T.mesicne)), tr_(tc('{{PODM_FAKTURACE_MESICNE}}'))) + p('{{PLATBY_MESICNE_KON}}')
-  + p(T.poznPlatby)
-  + tbl(tr_(tc(T.splatnostNadpis)), tr_(tc(T.splatnost)), tr_(tc(T.platnost)))
-  + p('{{KAP_IV_ZAC}}') + p(T.kapIV) + tbl(tr_(tc('{{FIRMA_NAB_POZADAVKY}}'))) + p('{{KAP_IV_KON}}')
-  + p('{{KAP_V_ZAC}}') + p(T.kapV) + tbl(tr_(tc('{{NAB_KAP_TERMINY}}'))) + p('{{KAP_V_KON}}')
-  + p('{{KAP_VI_ZAC}}') + p(T.kapVI) + tbl(tr_(tc('{{FIRMA_NAB_PREDANI}}'))) + p(T.predaniPozn) + p('{{KAP_VI_KON}}')
-  + p('{{KAP_DOLOZKY_ZAC}}') + p(T.dolozky) + tbl(tr_(tc('{{FIRMA_NAB_DOLOZKY}}'))) + p('{{KAP_DOLOZKY_KON}}')
-  + p(T.vypracoval) + p('{{ZPRAC_JMENO}}') + p('{{ZPRAC_FUNKCE}}') + p(T.tel) + p(T.email)
-  + p(T.kancelar) + p('{{FIRMA_NAZEV}}') + p('{{FIRMA_SIDLO_ULICE}}') + p('{{FIRMA_SIDLO_PSC}}  {{FIRMA_SIDLO_MESTO}}')
-  + p(T.kIco) + p(T.kTel) + p('{{FIRMA_WEB}}');
+    cenaRadek([S.sachta, S.sachtaRozsah], ['{{CENA_SACHTA_BEZ_DPH}}', BEZ]),
+    cenaRadek([S.mustky, S.mustkyRozsah], ['{{CENA_MUSTKY_BEZ_DPH}}', BEZ]),
+    cenaRadek(S.predSlevou, '{{CENA_PRED_SLEVOU}}'), cenaRadek(S.sleva, S.slevaHodnota),
+    cenaRadek([S.sachta, S.sachtaRozsah], ['{{CENA_BEZ_DPH_SACHTA}}', BEZ]),
+    cenaRadek([S.celkemCena, S.celkemCenaPopis, '{{SACHTY_CELKEM_POPIS}}'], ['{{CENA_BEZ_DPH_CELKEM}}', BEZ]),
+    cenaRadek(S.dph, '{{DPH_KC}}'), cenaRadek(S.celkem, ['{{CENA_S_DPH}}', S.vcDph]))
+  + S.poznCena.map(p).join('') + p(S.zvyseni)
+  + p(S.priplatky) + tbl(cenaRadek(['{{PRIP_NAZEV}}', '{{PRIP_POPIS}}'], ['{{PRIP_CENA}}', BEZ]))
+  + p(S.kapIII)
+  + p('{{PLATBY_SPLATKY_ZAC}}') + tbl(tr_(tc(S.splatky)), tr_(tc('{{PODM_PLATEBNI_KALENDAR}}'))) + p('{{PLATBY_SPLATKY_KON}}')
+  + p('{{PLATBY_MESICNE_ZAC}}') + tbl(tr_(tc(S.mesicne)), tr_(tc('{{PODM_FAKTURACE_MESICNE}}'))) + p('{{PLATBY_MESICNE_KON}}')
+  + p(S.poznPlatby)
+  + tbl(tr_(tc(S.splatnostNadpis)), tr_(tc(S.splatnost)), tr_(tc(S.platnost)))
+  + p('{{KAP_IV_ZAC}}') + p(S.kapIV) + tbl(tr_(tc('{{FIRMA_NAB_POZADAVKY}}'))) + p('{{KAP_IV_KON}}')
+  + p('{{KAP_V_ZAC}}') + p(S.kapV) + tbl(tr_(tc('{{NAB_KAP_TERMINY}}'))) + p('{{KAP_V_KON}}')
+  + p('{{KAP_VI_ZAC}}') + p(S.kapVI) + tbl(tr_(tc('{{FIRMA_NAB_PREDANI}}'))) + p(S.predaniPozn) + p('{{KAP_VI_KON}}')
+  + p('{{KAP_DOLOZKY_ZAC}}') + p(S.dolozky) + tbl(tr_(tc('{{FIRMA_NAB_DOLOZKY}}'))) + p('{{KAP_DOLOZKY_KON}}')
+  + p(S.vypracoval) + p('{{ZPRAC_JMENO}}') + p('{{ZPRAC_FUNKCE}}') + p(S.tel) + p(S.email)
+  + p(S.kancelar) + p('{{FIRMA_NAZEV}}') + p('{{FIRMA_SIDLO_ULICE}}') + p('{{FIRMA_SIDLO_PSC}}  {{FIRMA_SIDLO_MESTO}}')
+  + p(S.kIco) + p(S.kTel) + p('{{FIRMA_WEB}}');
 const SYMBOLY = new Set(klicePlaceholderu(BODY));
 
 let SABLONA = null;
@@ -315,6 +375,19 @@ const sleva = (zak, pct) => { const v = zak.varianty[0]; v.data.sleva = Object.a
     const r = await shoda('C ' + jm, zak, zak.varianty[0]);
     if (r) test('C ' + jm + ': blok ' + (ocek === 'mesicne' ? '„Způsob fakturace:" bez splátek' : 'splátek bez měsíční fakturace'),
       ocek === 'mesicne' ? (r.n.includes(T.mesicne) && !r.n.includes(T.splatky)) : (!r.n.includes(T.mesicne) && r.n.includes(T.splatky)));
+  }
+  {
+    /* Sekce, jejíž všechny hodnoty jsou prázdné („-"), zmizí v náhledu i ve Wordu
+     * i s pruhem — reálná data to dávají zřídka, proto přímo nad symboly. */
+    const zak = scenar('interiérová', {}, false);
+    const v = zak.varianty[0];
+    const d = nabidkaData(zak, v, J, 'cz', { symboly: SYMBOLY });
+    ['TS_LESENI_UVNITR', 'TS_LESENI_VNE', 'TS_ZABRANY_VSTUPY'].forEach(k => { d.placeholders[k] = ' -'; });
+    const pol = await zipPrecti(new Uint8Array(await (await docxVyplnSablonu(await sablona(), d.placeholders, d.priplatky, {}, { radkyNavic: d.tsRadkyNavic })).arrayBuffer()));
+    const w = nwTextZDocx(new TextDecoder().decode(pol.find(x => x.nazev === 'word/document.xml').data));
+    const n = nwTextZHtml(nwHtml(nwBloky(d, 'cz', {})));
+    const r = rozdil(w, n);
+    test('C sekce bez hodnot: náhled = Word a pruh STAVEBNÍ A PŘÍPRAVNÉ PRÁCE zmizí v obou', !r && !n.includes('STAVEBNÍ A PŘÍPRAVNÉ PRÁCE') && !w.includes('STAVEBNÍ A PŘÍPRAVNÉ PRÁCE'), r);
   }
   {
     /* angličtina: text šablony přeložený týmž slovníkem (docxPrelozSablonu) */

@@ -8,6 +8,54 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.11.7 — NP: Kompletní náhled podkladů OCK ve vzhledu Wordu CN v17, větev claude/np-nahled
+
+Nad integrací `6092af3` (v19.11.6). Zadání J. V. 19. 11. 2026. **Cenu ani Word nemění** — nový je jen náhled
+(okno „Kompletní náhled podkladů"). Verzi a čísla roadmapy (pracovní #676, #677) přidělí koordinace.
+
+- **Náhled = Word:** „Kompletní náhled podkladů" (`nabidkaNahled`) už není tabulka hodnot, ale dokument v pořadí
+  a členění šablony CN v17: hlavička (objednatel s kontaktem, datum, název akce, číslo, adresa) → Popis záměru
+  (šedý blok, věty šablony, věta o opláštění) a Pohled na objekt z ulice s úvodní fotkou → zlom stránky →
+  A. TECHNICKÁ ČÁST / I. TECHNICKÁ SPECIFIKACE (sekce s pruhy, počet stanic a kabina ve dvou buňkách, svislá
+  rozteč jako podřádek, poznámky * a **, SOUČÁSTÍ DODÁVKY NENÍ, DALŠÍ UJEDNÁNÍ) → B. OBCHODNÍ ČÁST / I. CENOVÁ
+  NABÍDKA → **II. PŘÍPLATKY hned za cenou** → III. platební podmínky (věty kalendáře a), b), c) / měsíční
+  fakturace, splatnost a platnost) → IV.–VI. (termíny a předání číslovaně) → DOLOŽKY → Vypracoval / Kancelář.
+  Tabulka DODAVATEL a věta „Přesně tyto hodnoty se vyplní…" odpadly.
+- **Oprava nálezu: sleva v náhledu.** Starý náhled řádek slevy vynechával (porovnání náhled × Word na TEST zakázce,
+  `podklady/kola/nahled_vs_word_2026-11-19/ROZDILY.md`). Teď „Cena před slevou" a „Sleva − … (N %)" jako Word —
+  jen se schválenou slevou (rozhoduje `SLEVA_KC`).
+- **Vzhled:** stránky A4 pod sebou; na každé záhlaví („Cenová nabídka" šedě, logo firmy z Nastavení → Firma,
+  jinak název textem, linka, číslo stránky) a zápatí (čárkovaná linka, `FIRMA_PATICKA` kurzívou modře). Písmo
+  Calibri, náhradou metricky shodné Carlito (systémové, bez externích serverů). Modré podtržené nadpisy
+  s dvojtečkou a číslováním, tabulky s rámečkem po sekcích, popisek verzálkami vlevo. Stránkuje se podle výšky
+  bloků (technická tabulka se dělí po řádcích, nadpis nezůstane sám dole).
+- **Pruh nad stránkami (netiskne se):** jazyk podle volby „Jazyk tisku" (dřív jazyk aplikace), upozornění na prázdná
+  místa (fotka, popis záměru, hlavička, prázdná kapitola, chybějící překlad kapitoly, termín, zpracovatel, žádné
+  příplatky), počet stran, tlačítko **„Vytvořit nabídku (Word)"** (volá `nabidkaWord()`; se zábranou
+  `dokumentZabrana` vypnuté s důvodem) a Tisk (`@media print` bez pruhu, stránka = list A4).
+- **Data jako Word, žádný druhý výpočet:** `nabidkaData` (pohled zákazníka přes `vzTiskVstup`), řádky technické části
+  z `nabidkaNahledSekce`, pravidla mizení řádků a bloků jako docxgen (prázdný řádek a sekce, řádky slevy a ceny
+  šachty/můstků/CENA CELKEM, prázdná kapitola i s nadpisem, vlastní řádky). Víc šachet (VS-E4): technická část
+  za každou šachtu s nadpisem „VARIANTA ŠACHTY: …", řádky šachet v ceně. Pevný text šablony se do EN/DE/FR
+  překládá týmž slovníkem a stejně po úsecích jako `docxPrelozSablonu`. Zámek a zábrany beze změny.
+  `nabidkaNahledSekce` ani `nabidkaData` se neměnily (porovnání sestavení SHODA).
+- **Kód:** nový `src/nahled_word.js` (bloky dokumentu, HTML toku, text pro porovnání, upozornění) a
+  `src/ui/nahled_word_ui.js` (okno, CSS, stránkování); z `src/ui/zakazka_ui.js` jen odebraný starý `nabidkaNahled`
+  (karta a tlačítka beze změny — souběh s dávkou PG). „Kompletní náhled a tisk nabídky" (`nabidkaOckDokument`)
+  beze změny, PROJ beze změny.
+- **Nález (neopraveno, mimo zadání) #677:** Word v EN/DE/FR nechává prázdný pruh sekce technické části
+  (např. „BRIDGES BETWEEN THE BUILDING AND THE STEEL STRUCTURE" bez řádků u šachty bez skladebných můstků):
+  `odstranPrazdneTsRadky` pozná pruh jen podle českého názvu. Náhled pruh vynechá. Návrh: rychlá cesta (dokument).
+- **Testy:** `src/test_np_nahled_word.js` (pojistka shody: text náhledu = text Wordu ze syntetické šablony CN v17
+  řádek po řádku — fixtury, scénáře #560, 120 fuzz zakázek (část se slevou), víc šachet, víc zákazníků, sleva,
+  DALŠÍ UJEDNÁNÍ, měsíční fakturace, prázdná kapitola i sekce, EN hodnoty; pevný text šablony doslova z CN v17; starý náhled se s Wordem neshoduje — 174 OK;
+  proti 6092af3 FAIL, modul neexistuje), `src/test_np_okno.js` (okno ve vm: Jazyk tisku, zábrany tlačítka Word,
+  pohled zákazníka, stránky, tisk — 14 OK), `overit_np_nahled.mjs` (prohlížeč: stránkování neztratí text, záhlaví
+  a zápatí na každé stránce, nic nepřetéká, pořadí, sleva, EN, zábrana, VS, tisk — 19 OK, snímky
+  `podklady/kola/np_nahled_2026-11-19/`). Upravené: `test_k13_preklad.js` (pevné texty NW_TEXT mají překlad),
+  `test_vz_tisk_vstupy.js` a `test_platby_ock.js` (nabidkaNahled v novém souboru), `test_escape.js` (logo).
+  Mutace [NP] v `mutace_jadro.mjs` 16/16 chycených (+ VZ-E2 náhled podkladů přesunutá na nový soubor).
+
 ## v19.11.6 — DO: dotazy obchodníků z 16. 11. (D1, D2, D4–D7), větev claude/do-dotazy
 
 Nad integrací `042fcbc` (v19.11.5). Rozhodnutí J. V. 19. 11. 2026. **Cenu nemění** (výsledek jádra bajt po bajtu
