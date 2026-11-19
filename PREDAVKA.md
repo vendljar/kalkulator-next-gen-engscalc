@@ -28,7 +28,8 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 - **PG** (`claude/pg-tisk`, v19.11.6, nad 042fcbc): #675 tlačítka tisku CN OCK (náhled podkladů → Word modře → náhled
   a tisk), #676 vlastní řádek TS v SOUČÁSTÍ DODÁVKY NENÍ (`extra[i].sekce='neni'`), #677 DALŠÍ UJEDNÁNÍ v nabídce PROJ
   (`PJ.dalsiUjednani`, Word přes šablonu PROJ v9 `--proj-v9`, kontrola `dalsiUjednaniWordProj`), #678 číslo stránky: vada šablony CN v9–v17 (pevná „1“ v záhlaví) → `--cn-v18`,
-  upozornění v průvodci šablon (`docxCisloStranky`). Testy `test_pg_*.js`, mutace [PG].
+  upozornění v průvodci šablon (`docxCisloStranky`). Testy `test_pg_*.js`. Kolo `--bez-mutaci --proti integrace`
+  VŠE ZELENÉ (sady 482/0/7, hodiny 392/0/1, statické 9/9, porovnání SHODA), mutace jádra [PG] 16/16. HOTOVO, předáno koordinaci.
   Šablony PROJ v9 a CN v18 vyrobí a nahraje J. V. (`podklady/SABLONA_PROJ_V9_19_11.md`, `SABLONA_CN_V18_19_11.md`).
 
 - **R-K50N1 #671** (`claude/r-k50n1`, v19.11.5, nad a018828): editor ceníku (prázdná zahr. statika opláštění =
