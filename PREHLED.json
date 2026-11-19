@@ -7,11 +7,11 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "9a0a3868",
+  "sha": "b4dece98",
   "verze": "v19.11.1",
   "datum": "19. 11. 2026"
  },
- "test_navic_commitu": 282,
+ "test_navic_commitu": 283,
  "v_testu_ne_v_main": [
   {
    "id": "668",
@@ -478,12 +478,6 @@
    "cekaNa": "rozhodnout (obsah v artefaktu dotazů)"
   },
   {
-   "id": "628",
-   "typ": "davka",
-   "nazev": "Zefektivnění programu",
-   "cekaNa": "start po sloučení test → main"
-  },
-  {
    "id": "629",
    "typ": "rozhodnuti",
    "nazev": "Jmenovat kolegu s rolí administrátora (jen test)",
@@ -555,11 +549,12 @@
  ],
  "ceka_na_jv_odlozene": 11,
  "nehotove_podle_kdo": {
-  "J. V.": 40,
+  "J. V.": 39,
   "kolega": 5,
   "koordinace": 13,
   "dávka": 3,
-  "integrátor": 2
+  "integrátor": 2,
+  "neuvedeno": 1
  },
  "nehotovych": 63
 }
