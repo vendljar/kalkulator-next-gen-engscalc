@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v19.11.6 — D8 #675: termíny krycího listu PROJ ze lhůt v týdnech, větev claude/d8-lhuty
+## v19.11.7 — D8 #677: termíny krycího listu PROJ ze lhůt v týdnech, větev claude/d8-lhuty
 
 Nad integrací `042fcbc` (v19.11.5). Rozhodnutí J. V. 19. 11. 2026 (dotaz obchodu D8). Cenu nemění; text nabídky
 s výchozí tabulkou beze změny (porovnání sestavení SHODA). Verzi a číslo roadmapy přečísluje koordinace.
