@@ -39,7 +39,10 @@ ani v Pipedrive nic. U jednoho zákazníka a s vypnutou funkcí beze změny (por
   Mění se jen název souboru (porovnání sestavení plnou moc nemá).
 - Testy: `src/test_vz_f2.js` 58/0 (pojistka a3fad44 padá), `netlify/test_vz_server.mjs` oddíl 9 (pojistka a3fad44 10 FAIL),
   `src/test_sod.js` VZF1-I1 (pojistka a3fad44 2 FAIL), `overit_vz_f2.mjs` 51/0. Mutace [VZ F2] jádro 19/19, server 5/5;
-  přepsané hledané úseky [VZ F1] (jádro 19/19, server 4/4).
+  přepsané hledané úseky [VZ F1] (jádro 19/19, server 4/4), #540 (jádro) a VZ-E3 (server) po přesunu kódu chycené.
+  `overit_vz_zadani.mjs`: řídící dostal jiné smyšlené IČO (dřív stejné jako další zákazník = duplicita).
+- **Kolo** `--bez-mutaci --proti origin/claude/integrace-16-10`: **VŠE ZELENÉ** — sady 475/0/7, hodiny +400 dní
+  385/0/1, statické 9/9, porovnání sestavení 353/353 **SHODA** (seznam očekávaných rozdílů není potřeba).
 
 ## v19.11.2 — VZ T1 #669: řídící varianta a řídící zákazník v hlavičce, větev claude/vz-t1
 

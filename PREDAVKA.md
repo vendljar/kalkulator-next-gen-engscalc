@@ -62,7 +62,8 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 
 - **VZ-F2** (`claude/vz-f2`, v19.11.1): #660 IČO nového/změněného zákazníka proti všem (klient hned při úpravě),
   #663 zástupci+DIČ dalšího zákazníka zmrazení po JEHO SoD, hlavičku zmrazí jen SoD řídícímu, #661 KL PROJ v pohledu
-  otevřeného zákazníka, #662 `overit_vz_f2.mjs`, VZF1-I1 název plné moci. Detail a výsledky v CHANGELOG. HOTOVO, slučuje koordinace.
+  otevřeného zákazníka, #662 `overit_vz_f2.mjs`, VZF1-I1 název plné moci. Kolo VŠE ZELENÉ (475/0/7, 385/0/1, 9/9, SHODA 353/353),
+  mutace [VZ F2] jádro 19/19, server 5/5. Detail v CHANGELOG. HOTOVO, slučuje koordinace.
 - **C7 #615 + NS #645** (`claude/c7-sablony`, v18.11.7, nad 9bd6dc8 + sloučená integrace 41bbe99): výroba jazykové verze
   z češtiny zrušena u všech šablon (jen nahraný přeložený soubor); `sablonaJazykPodil` + mez 20 %: smlouvy (SoD, SoD proj.,
   plná moc) nad mezí server nezveřejní/nevrátí a klient nevytiskne, CN jen upozornění. Ověřeno na textech z Disku
