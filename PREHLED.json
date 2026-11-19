@@ -631,15 +631,6 @@
    "cekaNa": "nahrát upravený skill (mimo repo)"
   },
   {
-   "id": "678",
-   "typ": "otazka",
-   "nazev": "D8 doladění: co počítat do povolení záměru a termíny po tisku SoD",
-   "alias": [
-    "D8-Q"
-   ],
-   "cekaNa": "rozhodnout (doporučené varianty v detailu)"
-  },
-  {
    "id": "680",
    "typ": "nalez",
    "nazev": "DO-N1: návrh obchodníka do číselníku u příplatku přechodových plechů (MATERIÁL) správce v Ceník → číselník nevidí",
@@ -660,9 +651,9 @@
  ],
  "ceka_na_jv_odlozene": 12,
  "nehotove_podle_kdo": {
-  "J. V.": 43,
+  "J. V.": 42,
   "kolega": 5,
-  "koordinace": 11,
+  "koordinace": 12,
   "dávka": 3,
   "integrátor": 2
  },

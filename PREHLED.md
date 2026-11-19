@@ -103,7 +103,6 @@ Test je proti main napřed o 328 commitů.
 | #640 (dřív B221) | otázka | Role jen ke čtení: „kdo smí ukládat“ je dnes každý přihlášený | zavést roli jen ke čtení? (doporučeno až s kolegou s rolí administrátora) |
 | #642 | úkol | Zeštíhlení roadmap.json: hotové položky starší 60 dní do archivu (živý soubor kolem 60 položek) | souhlas (návrh režie S6 d; soubor má 1,2 MB) |
 | #643 | úkol | Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6) | nahrát upravený skill (mimo repo) |
-| #678 (dřív D8-Q) | otázka | D8 doladění: co počítat do povolení záměru a termíny po tisku SoD | rozhodnout (doporučené varianty v detailu) |
 | #680 (dřív DO-N1) | nález | DO-N1: návrh obchodníka do číselníku u příplatku přechodových plechů (MATERIÁL) správce v Ceník → číselník nevidí | rozhodnout, zda vypsat návrhy i k položkám mimo řádky číselníku |
 | #682 (dřív NP-N1) | úkol | Word CN v EN/DE/FR nechává prázdný pruh sekce technické části (MŮSTKY bez řádků) | rozhodnout opravu (rychlá cesta, text dokumentu) |
 
@@ -111,4 +110,4 @@ K tomu 12 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --ziv
 
 ## Nehotové položky evidence
 
-Celkem 64: J. V. 43, kolega 5, koordinace 11, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 64: J. V. 42, kolega 5, koordinace 12, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
