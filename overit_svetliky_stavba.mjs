@@ -157,8 +157,8 @@ zkus('3) „bez" nad dveřmi ani na bocích kontrola nehlásí', !vysl.kodyBez.i
 zkus('3) sklo s 12 světlíky na 5 dveří hlásí dál', /víc než dva/.test(vysl.n12), vysl.n12);
 zkus('4) klon odeslané varianty je „bez", zdroj „stavba"', vysl.klon.nad === 'bez' && vysl.klon.boky === 'bez' && vysl.klon.zdroj === 'stavba',
   JSON.stringify(vysl.klon));
-zkus('5) materiál „bez — dodá stavba": věta v liště o přepočtu jako „bez"', vysl.material.pocet === 1
-  && /Světlík z materiálu opláštění „bez — dodá stavba" se počítá jako „bez" \(1 rozpracovaná varianta/.test(vysl.material.veta), JSON.stringify(vysl.material));
+zkus('5) materiál „bez opláštění" (dříve „bez — dodá stavba"): věta v liště o přepočtu jako „bez"', vysl.material.pocet === 1
+  && /Světlík z materiálu opláštění „bez opláštění" se počítá jako „bez" \(1 rozpracovaná varianta/.test(vysl.material.veta), JSON.stringify(vysl.material));
 zkus('5) … bublina u boků to vysvětlí', /se počítá jako „bez"/.test(vysl.material.bublina), vysl.material.bublina);
 zkus('5) … 0 bočních světlíků, kontrola „počet je 0" nestraší, specifikace „ -"', vysl.material.bokyKs === 0
   && !vysl.material.kody.includes('bokyDveri') && vysl.material.spec === ' -', JSON.stringify(vysl.material));

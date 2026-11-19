@@ -46,7 +46,10 @@ const SCENARE = [
 const NOVE_SYMBOLY = /^(TS_MUSTKY_|CENA_SACHTA_BEZ_DPH$|CENA_MUSTKY_BEZ_DPH$|CENA_BEZ_DPH_SACHTA$|CENA_BEZ_DPH_CELKEM$)/;
 
 function otisk(o) { return crypto.createHash('sha256').update(JSON.stringify(o)).digest('hex').slice(0, 24); }
-function bezMustku(r) { const k = Object.assign({}, r); delete k.mustky; return k; }
+/* D4 (19. 11. 2026): popisek a pořadí zobrazení Volitelných se z otisku
+ * očistí — zlata_ocista_d4.js. */
+const { predD4Kopie } = require('./zlata_ocista_d4.js');
+function bezMustku(r) { const k = predD4Kopie(r); delete k.mustky; return k; }
 
 function zlata(src) {
   const g = nacti(src);

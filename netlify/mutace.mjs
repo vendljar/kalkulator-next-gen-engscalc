@@ -2432,6 +2432,17 @@ const MUTACE = [
     nahrad: "    nove = texty;",
     proc: 'stránka otevřená před nasazením by starou mapou smazala nové texty' },
 
+  /* [DO] D6 (19. 11. 2026): návrh obchodníka do číselníku — sběr ho označí
+   * a řadí napřed (hlídá test_prava.mjs, blok dodatkových textů). */
+  { nazev: '[DO] D6: sběr návrh obchodníka neoznačí', soubor: 'functions/popisy.mjs',
+    hledej: "            const navrh = navrhy[klic] === cist[klic];",
+    nahrad: "            const navrh = false;",
+    proc: 'správce by v číselníku nepoznal, který text obchodník navrhl' },
+  { nazev: '[DO] D6: návrhy nejdou napřed', soubor: 'functions/popisy.mjs',
+    hledej: "      Object.values(nalez).forEach(sez => sez.sort((a, b) => (b.navrh ? 1 : 0) - (a.navrh ? 1 : 0)\n        || String(b.kdy).localeCompare(String(a.kdy))));",
+    nahrad: "      Object.values(nalez).forEach(sez => sez.sort((a, b) => String(b.kdy).localeCompare(String(a.kdy))));",
+    proc: 'návrh obchodníka by se v číselníku ztratil mezi staršími texty (zobrazují se jen tři)' },
+
   { nazev: 'razítko celé mapy se nekontroluje', soubor: 'functions/popisy.mjs',
     hledej: "    if ((puvodni ? String(puvodni.kdy || '') : '') !== t.ocekavaneKdy)",
     nahrad: "    if (false)",

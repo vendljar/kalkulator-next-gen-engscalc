@@ -246,7 +246,9 @@ const OPLASTENI_TYPY = [
   { id: 'C.skloCelniKc', nazev: 'Sklo VSG 4.4.1', kde: 'vse' },
   { id: 'C.skloVsg442Kc', nazev: 'Sklo VSG 4.4.2', kde: 'int' },
   { id: 'C.cetrisKc', nazev: 'Cetris', kde: 'vse' },
-  { id: 'bez', nazev: 'bez — dodá stavba', kde: 'vse' },
+  /* Popisek do 19. 11. 2026 „bez — dodá stavba" (D2, rozhodnutí J. V.).
+   * Klíč `bez` se nemění — nese ho každá uložená zakázka. */
+  { id: 'bez', nazev: 'bez opláštění', kde: 'vse' },
   { id: 'jine', nazev: 'jiné', kde: 'vse' },
 ];
 function oplasteniTypy(ext) {
@@ -2143,7 +2145,12 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
       naklad = prepis != null && mnozstvi ? opts.naklad * (mn / mnozstvi) : opts.naklad;
     else naklad = mn * cenaEff;
     const novyNazev = z.nazvyPrepis ? z.nazvyPrepis[nazev] : null;
-    return { nazev: novyNazev || nazev, origNazev: nazev, nazevPrepsan: !!novyNazev,
+    /* `opts.zobrazit` = jiný ZOBRAZOVANÝ název při stejném klíči (D4,
+     * 19. 11. 2026). Klíčem přepisů, vyřazení i dodatkového textu zůstává
+     * `nazev` (`origNazev`) — přejmenování popisku tak nehne s cenou uložené
+     * zakázky ani s jejími ručními přepisy. Ruční název obchodníka
+     * (`nazvyPrepis`) má přednost jako dosud. */
+    return { nazev: novyNazev || opts.zobrazit || nazev, origNazev: nazev, nazevPrepsan: !!novyNazev,
              mnozstvi: mn, mnozstviAuto: mnozstvi, prepsano: prepis != null,
              cena: cenaEff, cenaAuto: cena, cenaPrepsana: cenaPrepis != null, cenaPath: opts.cenaPath || null,
              /* Dodatkový text z ceníku (#267) — stejně jako u příplatků. */
@@ -2360,7 +2367,10 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * o nich mlčela. Klíč je jednoznačný a nezmění se přejmenováním položky.
    * Že oba seznamy souhlasí, hlídá test_priplatky_volitelne.js. */
   const volKatalogDef = [
-    { key: 'prechodove', mk: () => mkItem('PŘECHODOVÉ PLECHY - NEREZ', prechKg, c.prechodoveKgKc, { cenaPath: 'C.prechodoveKgKc' }), zahrnuto: prechodoveAno, dostupne: true, prip: 'prechMat' },
+    /* Materiál se od 19. 11. 2026 ZOBRAZUJE jako příplatek — „… (MATERIÁL)"
+     * (D4, rozhodnutí J. V.). Klíč ruční úpravy zůstává dosavadní název
+     * (`zobrazit`, viz mkItem), aby se uložené přepisy nepřestěhovaly. */
+    { key: 'prechodove', mk: () => mkItem('PŘECHODOVÉ PLECHY - NEREZ', prechKg, c.prechodoveKgKc, { cenaPath: 'C.prechodoveKgKc', zobrazit: 'PŘECHODOVÉ PLECHY - NEREZ (MATERIÁL)' }), zahrnuto: prechodoveAno, dostupne: true, prip: 'prechMat' },
     { key: 'leseniVnitrni', mk: () => mkItem('LEŠENÍ - vnitřní', leseniVez, c.leseniVnitrniKc, { cenaPath: 'C.leseniVnitrniKc', fix: c.leseniFix, pozn: `+ fix ${c.leseniFix} Kč` }), zahrnuto: v.leseniVnitrni, dostupne: true, prip: 'leseniVnitrni' },
     /* VNĚJŠÍ LEŠENÍ JE V ZÁKLADNÍ CENĚ JEN NA EXTERIÉROVÉ ŠACHTĚ (nález K1,
      * rozhodnutí J. V.: „u interiérové šachty vnější lešení primárně
@@ -2389,7 +2399,10 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
      * `=H64*G64*F63` sahá na buňku o řádek výš, protože jeho vlastní F64
      * zůstala prázdná. Vlastní přepínač, který kvůli tomu 11. 8. 2026 přibyl,
      * vydržel do 5. kola testů: „Plechy mají vždy 2 položky." Excel měl tedy
-     * ve výsledku pravdu a dvojice se nerozpojuje — viz `prechMontAno` výš. */
+     * ve výsledku pravdu a dvojice se nerozpojuje — viz `prechMontAno` výš.
+     *
+     * V ZOBRAZENÍ stojí od 19. 11. 2026 hned pod materiálem (D4) — viz
+     * `volitelneKatalog` níž; tady zůstává kvůli pořadí výpočtu. */
     { key: 'prechMont', mk: () => mkItem('PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)', prechKsMont, pp.prechMontKc,
       { cenaPath: 'C.priplatky.prechMontKc' }),
       zahrnuto: prechMontAno, dostupne: true, prip: 'prechMont' },
@@ -2406,11 +2419,25 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   // mk() voláme i u nedostupných variant (interiér vs. exteriér) – položka se do
   // výsledku nedostane, ale její název se zapíše do rejstříku. Jinak by ruční
   // přepis u exteriérové položky vypadal na interiérové šachtě jako sirotek (#4).
-  const volitelneKatalog = volKatalogDef.map(d => ({ d, it: d.mk() }))
+  const volitelneVypocet = volKatalogDef.map(d => ({ d, it: d.mk() }))
     .filter(x => x.d.dostupne)
     .map(x => ({ ...x.it, key: x.d.key, zahrnuto: !!x.d.zahrnuto, prip: x.d.prip || null }))
     .concat(vlastniProSekci('volitelne').map(r => ({ ...r, key: 'vlastni:' + r.idx, zahrnuto: true })));
-  const volitelne = volitelneKatalog.filter(r => r.zahrnuto);
+  /* Sčítá se v PŮVODNÍM pořadí (`volitelneVypocet`): pořadí sčítání mění
+   * poslední bit součtu a zaokrouhlení nahoru by ho mohlo přenést do ceny. */
+  const volitelne = volitelneVypocet.filter(r => r.zahrnuto);
+  /* ZOBRAZENÍ: montáž přechodových plechů hned pod materiálem (D4, rozhodnutí
+   * J. V. 19. 11. 2026), stejně jako v příplatcích; do té doby stála za
+   * oběma lešeními. Jen pořadí řádků v tabulce Volitelných — ruční pořadí
+   * z přetažení (`Z.poradi.volitelne`) má v obrazovce přednost (serazSekci). */
+  const volitelneKatalog = (() => {
+    const mont = volitelneVypocet.find(r => r.key === 'prechMont');
+    const iMat = volitelneVypocet.findIndex(r => r.key === 'prechodove');
+    if (!mont || iMat < 0) return volitelneVypocet;
+    const out = volitelneVypocet.filter(r => r !== mont);
+    out.splice(out.findIndex(r => r.key === 'prechodove') + 1, 0, mont);
+    return out;
+  })();
 
   const rezie = [
     mkItem('ZAMĚŘENÍ 3D SKENEREM', 1, c.sken3dKc, { cenaPath: 'C.sken3dKc' }),

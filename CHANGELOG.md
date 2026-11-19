@@ -30,6 +30,46 @@ s výchozí tabulkou beze změny (porovnání sestavení SHODA). Verzi a číslo
   padá). Mutace [D8] jádro 19/19 (jedna ekvivalentní vynechána), server 6/6; upravené #540, O7, #547 K37-N2 chycené.
 - **Kolo** `--bez-mutaci --proti origin/claude/integrace-16-10`: VŠE ZELENÉ — sady 427/0/59, hodiny 389/0/1, statické 9/9,
   porovnání 359/359 SHODA.
+## v19.11.6 — DO: dotazy obchodníků z 16. 11. (D1, D2, D4–D7), větev claude/do-dotazy
+
+Nad integrací `042fcbc` (v19.11.5). Rozhodnutí J. V. 19. 11. 2026. **Cenu nemění** (výsledek jádra bajt po bajtu
+stejný mimo popisek a pořadí zobrazení, viz níž). Mění se text dokumentů (přejmenování D2 a D4). Verzi a čísla
+roadmapy přidělí koordinace.
+
+- **D1 „po celé výšce" = jediný pás:** zaškrtnutí už nezávisí na začátku opláštění — po „Opláštit i prohlubeň"
+  zůstane zaškrtnuté, ruční zaškrtnutí nevrací začátek na 0 a neruší opláštění prohlubně. „Opláštění začíná" je vidět
+  i u stěny po celé výšce a začátek mimo šachtu se ohlásí i u ní.
+- **D2 pás „bez opláštění":** volba „bez — dodá stavba" se jmenuje „bez opláštění" (výběr, nákres, specifikace,
+  nabídka, smlouva; EN „Without cladding", DE „Ohne Verkleidung", FR „Sans bardage"; manuál). Klíč `bez` se nemění
+  — uložená data fungují dál. Nově zvolený nižší pás „bez opláštění" dostane „do (m)" = 0 (úroveň nástupu), přepsat
+  jde; žluté „nemá dělicí výšku" u něj nevznikne. Cena stejná (jádro prázdnou výšku nižšího pásu bralo jako 0).
+- **D4 přechodové plechy ve Volitelných:** montáž hned pod materiálem (jako v příplatcích), ruční pořadí z přetažení
+  zůstává. Materiál se zobrazuje jako „PŘECHODOVÉ PLECHY - NEREZ (MATERIÁL)" (shodně s příplatkem, i v překladech
+  a controlling CSV). **Klíč ruční úpravy zůstává „PŘECHODOVÉ PLECHY - NEREZ"** (`mkItem` volba `zobrazit`): uložené
+  přepisy množství, vyřazení a dodatkový text platí dál a přepis příplatku do základní ceny nevteče. Sčítá se
+  v původním pořadí (jinak by se lišil poslední bit součtu).
+- **D5 materiál a montáž jedním stiskem (příplatky):** zaškrtnutí i odškrtnutí materiálu nese montáž; montáž jde pak
+  sama odškrtnout i zaškrtnout bez materiálu. Jen obrazovka, zámek varianty beze změny. Jiný pár materiál + montáž
+  v příplatcích není.
+- **D6 dodatkový text viditelně:** správce po uložení do číselníku vidí u pole „uloženo pro všechny nové zakázky"
+  (po 4 s zmizí; neukáže se, když server neuloží). Obchodník vidí „jen pro tuto zakázku" a — liší-li se text od
+  číselníku a je přihlášený — „navrhnout do číselníku": návrh se uloží do varianty (`popisyNavrhy`) a správce ho
+  v Ceník → číselník po „Najít texty v uložených zakázkách" vidí se štítkem **návrh** (napřed) a převezme
+  tlačítkem „převzít" (minimální varianta přes stávající sběr).
+- **D7 seznam nabídek:** ve sloupci Akce tučně adresa stavby, pod ní šedě název akce (online seznam, Přehled
+  cenových nabídek i seznam ve složce). Bez adresy jen název akce. Hledání a řazení beze změny.
+- **Testy:** nové `src/test_do_dotazy.js` (21; proti 042fcbc 5 FAIL), `src/test_do_obrazovka.js` (35; proti 042fcbc
+  padá i hledání funkcí), `overit_do_dotazy.mjs` (47; proti 042fcbc 30 FAIL), `test_prava.mjs` D6 (proti 042fcbc
+  1 FAIL). Upravené: `test_k18_nalezy`, `test_oplasteni_zapnuti`, `overit_oplasteni`, `overit_svetliky_stavba`
+  (nový popisek), `test_profil_neznamy` + `nastroje/zlata_ocista_d4.js` (zlatá pojistka #560 a VS očistí popisek
+  a pořadí zobrazení D4 — `vyp`, `vypZ`, `zamek` zůstávají bajt po bajtu), `test_vs_zlata.json` přegenerován
+  (změny jen `ph-*`, `nahled-*`, `docx`, `spec`, `sod`, `ctrl`; surové výstupy proti 042fcbc se liší výhradně
+  přejmenováním D2/D4), `cisla_vydani.json` (`ps2.bezNazev`), `test_vz_rejstrik.mjs` (buňka Akce).
+- **Mutace [DO]:** jádro 20/20, server 2/2 chycené. `test_prava.mjs` 1001/0 (zakázky D6 0661–0663).
+- **Kolo** `--bez-mutaci --proti origin/claude/integrace-16-10`: sady 480/0/7, hodiny 389/0/1, statické 9/9;
+  porovnání 359 kalkulací, 164 shodných, 195 jen očekávaných (`podklady/porovnani/ocekavane_do-dotazy_2026-11-19.txt`:
+  fuzz, jen text dokumentů a controlling — přejmenování D2/D4; cena, výsledek a zámek SHODA). `porovnani_sada.js`
+  očistí popisek a pořadí zobrazení D4 stejně jako zlaté sady.
 
 ## v19.11.5 — #671 navazující drobnosti K50-N1 (editor a zveřejnění ceníku), větev claude/r-k50n1
 

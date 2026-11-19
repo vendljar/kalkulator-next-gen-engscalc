@@ -53,6 +53,9 @@ const fs = require('fs');
 const KOREN = path.join(__dirname, '..');
 const ZV = require('./zlata_vs.js');
 const { kop, otisk, zkus, zkusA, DATUM } = ZV;
+/* D4 (19. 11. 2026): popisek a pořadí zobrazení Volitelných se z otisků výsledku
+ * očistí (obě strany týmž kódem); cena, dokumenty a controlling se porovnávají celé. */
+const { predD4Kopie } = require('./zlata_ocista_d4.js');
 const SEMINKO = 20261110;              // semínko generátoru v zlata_vs.js (mulberry32)
 
 /* ---------- skupiny polí ---------- */
@@ -108,10 +111,11 @@ async function scenar(zak, v, J) {
   const o = {};
   const ok = !!(d && d.ock && d.cenik);
   const r = ok ? zkus(() => vypocet(kop(d.ock.zadani), kop(d.cenik), J, d.ock.fixes)) : null;
-  o.vyp = otisk(r);
-  o.radky = otisk(r && r.sekce ? { sekce: r.sekce, priplatky: r.priplatky } : r);
+  const rc = predD4Kopie(r);
+  o.vyp = otisk(rc);
+  o.radky = otisk(rc && rc.sekce ? { sekce: rc.sekce, priplatky: rc.priplatky } : rc);
   const rz = zkus(() => vypocetZ(v, J));
-  o.vypZ = otisk(rz);
+  o.vypZ = otisk(predD4Kopie(rz));
   o.cena = otisk(zkus(() => cenaNabidkyOck(rz, d.sleva, d.zaokr)));
   for (const L of ['cz', 'en']) {
     const nd = zkus(() => nabidkaData(zak, v, J, L));
@@ -141,7 +145,7 @@ async function scenar(zak, v, J) {
     return exp && exp.ok === false ? exp : ctrlExportCsv(exp);
   }));
   o.snimek = otisk(zkus(() => zamekSnimekSpocti(v)));
-  o.zamek = otisk(zkus(() => { const x = zamekVysledekSpocti(v, J, 'zlata'); if (x) delete x.kdy; return x; }));
+  o.zamek = otisk(zkus(() => { const x = zamekVysledekSpocti(v, J, 'zlata'); if (x) delete x.kdy; return predD4Kopie(x); }));
   return o;
 }
 

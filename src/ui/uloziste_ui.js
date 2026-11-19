@@ -354,7 +354,7 @@ function uloSrovnejSPlatnymCenikem() {
   if (typeof cenikPrepoctiRozpracovane !== 'function'
     || typeof cenikDnesniData !== 'function'
     || typeof ZAK === 'undefined' || !ZAK) return stavba ? { prepocteno: 0, svetlikyStavba: stavba } : null;
-  /* #560: světlík z materiálu „bez — dodá stavba" = „bez" (jen výsledek jádra). */
+  /* #560: světlík z materiálu „bez opláštění" = „bez" (jen výsledek jádra). */
   const materialBez = (typeof svetlikyMaterialBezPocet === 'function' && typeof JEKLY !== 'undefined')
     ? svetlikyMaterialBezPocet(ZAK, JEKLY) : 0;
 
@@ -396,7 +396,7 @@ function uloSvetlikyStavbaVeta(r) {
   const vety = [];
   if (n) vety.push('Zrušená volba světlíku „zajistí stavba" převedena na „bez" (' + kolik(n)
     + '; prostor světlíku dozdí stavba, cena se přepočetla).');
-  if (m) vety.push('Světlík z materiálu opláštění „bez — dodá stavba" se počítá jako „bez" (' + kolik(m)
+  if (m) vety.push('Světlík z materiálu opláštění „bez opláštění" se počítá jako „bez" (' + kolik(m)
     + '; bez naší konstrukce světlíku, cena přepočtená).');
   if (vety.length) vety.push('Odeslané nabídky zůstávají beze změny.');
   return vety.join(' ');
@@ -729,7 +729,8 @@ function ulozisteRadekHtml(z) {
   const odeslane = z.odeslane ? `<span title="odeslané (vytištěné) nabídky">🔒 ${z.odeslane}</span>` : '';
   return `<tr class="${otevrena ? 'aktivni' : ''}">
     <td style="text-align:left">${esc(z.cislo || '(bez čísla)')}</td>
-    <td style="text-align:left;white-space:normal">${esc(z.nazevAkce || '—')}</td>
+    <td style="text-align:left;white-space:normal">${(typeof rejstrikAkceBunka === 'function')
+      ? rejstrikAkceBunka(z) : esc(z.nazevAkce || '—')}</td>
     <td style="text-align:left;white-space:normal">${esc(z.objednatel || '—')}</td>
     <td>${esc(z.datum || '')}</td>
     <td>${z.variant}</td>
