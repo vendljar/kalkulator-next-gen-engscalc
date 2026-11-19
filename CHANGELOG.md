@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v19.11.6 — PG #675–#678: tisk nabídky OCK, vlastní řádky NENÍ a DALŠÍ UJEDNÁNÍ PROJ, pole PAGE, větev claude/pg-tisk
+## v19.11.6 — PG #675–#678: tisk nabídky OCK, vlastní řádky NENÍ a DALŠÍ UJEDNÁNÍ PROJ, číslo stránky CN v18, větev claude/pg-tisk
 
 Nad integrací `042fcbc` (v19.11.5). Cenu nemění. Čísla roadmapy a verzi přečísluje koordinace.
 
@@ -24,11 +24,14 @@ Nad integrací `042fcbc` (v19.11.5). Cenu nemění. Čísla roadmapy a verzi př
   `PROJ_DALSI_UJEDNANI_NAZEV | _TEXT` (řádek za řádek) v bloku `BLOK_DALSI_UJEDNANI`. Nová šablona **PROJ v9**
   (`nastroje/vyrob_sablony.js --proj-v9`, postup `podklady/SABLONA_PROJ_V9_19_11.md`) — nahraje J. V. Se starší
   šablonou Word funguje bez řádků a kontrola **dalsiUjednaniWordProj** upozorní (pravidel kontrol 53).
-- **#678 číslování stránek CN:** test `src/test_pg_pole_page.js` se syntetickou šablonou (PAGE/NUMPAGES složené,
-  kód ve dvou bězích, `fldSimple`, pole vedle symbolu, v tabulce zápatí a v záhlaví) — vyplnění, překlad EN/DE/FR
-  i překlad + vyplnění nechají pole celá. Chyba generátoru nedoložena, oprava se nedělá; čeká na diagnostiku šablon.
+- **#678 číslování stránek CN:** příčina je v **šabloně** (diagnostika testovacího sezení): CN OCK v9–v17 mají v záhlaví
+  (textové pole) pevné „1" místo pole PAGE. Generátor pole PAGE nerozbíjí (`src/test_pg_pole_page.js`: složená pole,
+  `fldSimple`, pole vedle symbolu, v tabulce zápatí a v záhlaví — vyplnění i překlad EN/DE/FR). Nový krok
+  `nastroje/vyrob_sablony.js --cn-v18`: v17 → **CN v18** (pevná „1" → pole `PAGE \* MERGEFORMAT` se stejným formátem,
+  jinak beze změny; postup `podklady/SABLONA_CN_V18_19_11.md`) — vyrobí a nahraje J. V. Průvodce šablon u CN upozorní
+  „číslo stránky je pevný text" (upozornění, ne zábrana; `docxCisloStranky`).
 - **Testy:** `test_pg_neni_radky.js` 21/0 (před 15 FAIL), `test_pg_proj_dalsi.js` 33/0 (před 3 FAIL na exportech),
-  `test_pg_tlacitka.js` 15/0 (před 7 FAIL), `test_pg_pole_page.js` 46/0 (podvržené rozbití pole 15 resp. 12 FAIL).
+  `test_pg_tlacitka.js` 15/0 (před 7 FAIL), `test_pg_pole_page.js` 46/0 (podvržené rozbití pole 15 resp. 12 FAIL), `test_pg_cislo_stranky.js` 24/0 (před 2 FAIL na exportech).
   Mutace jádra [PG].
 
 ## v19.11.5 — #671 navazující drobnosti K50-N1 (editor a zveřejnění ceníku), větev claude/r-k50n1

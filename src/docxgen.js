@@ -1786,8 +1786,43 @@ async function docxXmlVady(arrayBuffer) {
   return vady;
 }
 
+/* ČÍSLO STRÁNKY V ZÁHLAVÍ / ZÁPATÍ (PG #4, J. V. 19. 11. 2026). Šablony CN OCK
+ * v9–v17 nesly v záhlaví (textové pole) číslo stránky jako PEVNÝ TEXT „1"
+ * místo pole PAGE — každá vytištěná stránka měla „1". Vrací
+ *   { pole: v záhlaví nebo zápatí je pole PAGE (složené i fldSimple),
+ *     pevne: texty běhů v záhlaví, které jsou jen číslice (mimo výsledek pole) }.
+ * Upozornění (ne zábranu) z toho skládá průvodce šablon (sablKontrolaSouboru). */
+const DOCX_POLE_PAGE_RE = /<w:instrText\b[^>]*>\s*PAGE\b[^<]*<\/w:instrText>|<w:fldSimple\b[^>]*w:instr="\s*PAGE\b/;
+function docxCisloStrankyXml(dily) {
+  const out = { pole: false, pevne: [] };
+  (dily || []).forEach(d => {
+    if (DOCX_POLE_PAGE_RE.test(d.xml)) out.pole = true;
+    if (!/^word\/header\d*\.xml$/.test(d.nazev)) return;
+    /* výsledky složených polí (separate … end) a obsah fldSimple se nepočítají */
+    const bezPoli = d.xml.replace(/<w:fldChar\b[^>]*w:fldCharType="separate"[^>]*\/>[\s\S]*?<w:fldChar\b[^>]*w:fldCharType="end"[^>]*\/>/g, '')
+      .replace(/<w:fldSimple\b[\s\S]*?<\/w:fldSimple>/g, '');
+    (bezPoli.match(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/g) || []).forEach(t => {
+      const x = xmlUnesc(t.replace(/^<w:t(?:\s[^>]*)?>/, '').replace(/<\/w:t>$/, '')).trim();
+      if (/^\d+$/.test(x)) out.pevne.push(x);
+    });
+  });
+  return out;
+}
+async function docxCisloStranky(arrayBuffer) {
+  const polozky = await zipPrecti(new Uint8Array(arrayBuffer));
+  const dek = new TextDecoder();
+  return docxCisloStrankyXml(polozky.filter(p => /^word\/(header|footer)\d*\.xml$/.test(p.nazev))
+    .map(p => ({ nazev: p.nazev, xml: dek.decode(p.data) })));
+}
+/* Text upozornění průvodce, nebo '' (pole je, nebo v záhlaví není pevná číslice). */
+function docxCisloStrankyVarovani(c) {
+  if (!c || c.pole || !c.pevne.length) return '';
+  return 'Číslo stránky je pevný text („' + c.pevne[0] + '" v záhlaví), ne pole PAGE — každá vytištěná stránka bude mít „'
+    + c.pevne[0] + '". Opravte šablonu (nastroje/vyrob_sablony.js --cn-v18, nebo ve Wordu Vložit → Číslo stránky).';
+}
+
 if (typeof module !== 'undefined')
-  module.exports = { docxPodbarveniTecek, docxBehRozdel, docxRPrZluta, docxStudieBezZamereni, docxDpzBezZamereni, DOCX_DPZ_STAVAJICI, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
+  module.exports = { docxCisloStranky, docxCisloStrankyXml, docxCisloStrankyVarovani, docxPodbarveniTecek, docxBehRozdel, docxRPrZluta, docxStudieBezZamereni, docxDpzBezZamereni, DOCX_DPZ_STAVAJICI, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
     odstranPrazdneTsRadky, docxSmyckaSachet, DOCX_CENA_CASTI, DOCX_TECKY, docxTecky, docxTeckySada, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,

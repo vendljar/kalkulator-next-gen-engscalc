@@ -232,6 +232,14 @@ async function sablKontrolaSouboru(data, lang, symbolyVzor, typ) {
     if (out.cestina.zabrana) out.chyby.push(out.cestina.zabrana);
     else if (out.cestina.varovani) out.varovani.push(out.cestina.varovani);
   }
+  /* PG #4 (19. 11. 2026): CN OCK v9–v17 měly číslo stránky v záhlaví jako
+   * pevnou „1" — upozornění, ne zábrana (šablona jinak funguje). */
+  if (typ === 'nabidka' && typeof docxCisloStranky === 'function') {
+    try {
+      const v = docxCisloStrankyVarovani(await docxCisloStranky(data));
+      if (v) out.varovani.push(v);
+    } catch (e) { /* čtení ZIPu selhalo — ohlásí ho kontroly výš */ }
+  }
   if (out.rozdil && out.rozdil.ubylo.length)
     out.varovani.push('Proti platné české verzi chybí symboly: ' + out.rozdil.ubylo.join(', ') + ' — tyto údaje se do dokumentu nedosadí.');
   return out;
@@ -273,7 +281,7 @@ async function sablPruvodceStart(typ, predvybrany) {
     let vzor = null;
     if (sablonaPlatna(sablRej(), d.typ))
       vzor = sablonaSymboly(await docxTextSablony((await onlineSablonaStahni(d.typ)).data));
-    const k = await sablKontrolaSouboru(soubor.data, 'cz', vzor);
+    const k = await sablKontrolaSouboru(soubor.data, 'cz', vzor, d.typ);   // typ: PG #4 upozornění na pevné číslo stránky
     /* #474 (O12, 21. 10. 2026): stejný soubor jako platná čeština — průvodce
      * ji znovu nezveřejní (server by odmítl „už je zveřejněná") a jen k ní
      * přidá jazykové verze. U dokumentu bez jazyků není co zveřejňovat. */

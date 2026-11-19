@@ -27,9 +27,9 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 
 - **PG** (`claude/pg-tisk`, v19.11.6, nad 042fcbc): #675 tlačítka tisku CN OCK (náhled podkladů → Word modře → náhled
   a tisk), #676 vlastní řádek TS v SOUČÁSTÍ DODÁVKY NENÍ (`extra[i].sekce='neni'`), #677 DALŠÍ UJEDNÁNÍ v nabídce PROJ
-  (`PJ.dalsiUjednani`, Word přes šablonu PROJ v9 `--proj-v9`, kontrola `dalsiUjednaniWordProj`), #678 pole PAGE —
-  test `test_pg_pole_page.js` 46/0, chyba generátoru nedoložena → **čeká na zprávu koordinace** (diagnostika šablon).
-  Šablonu PROJ v9 vyrobí a nahraje J. V. (`podklady/SABLONA_PROJ_V9_19_11.md`).
+  (`PJ.dalsiUjednani`, Word přes šablonu PROJ v9 `--proj-v9`, kontrola `dalsiUjednaniWordProj`), #678 číslo stránky: vada šablony CN v9–v17 (pevná „1“ v záhlaví) → `--cn-v18`,
+  upozornění v průvodci šablon (`docxCisloStranky`). Testy `test_pg_*.js`, mutace [PG].
+  Šablony PROJ v9 a CN v18 vyrobí a nahraje J. V. (`podklady/SABLONA_PROJ_V9_19_11.md`, `SABLONA_CN_V18_19_11.md`).
 
 - **R-K50N1 #671** (`claude/r-k50n1`, v19.11.5, nad a018828): editor ceníku (prázdná zahr. statika opláštění =
   zahraniční statické posouzení), upozornění v dialogu zveřejnění, zahr. statika textem → číslo. Test oddíl 6, mutace [K50N1] 5/5 + 3/3. Kolo VŠE ZELENÉ (475/0/7, 386/0/1, 9/9, porovnání 359/359 SHODA). HOTOVO.
