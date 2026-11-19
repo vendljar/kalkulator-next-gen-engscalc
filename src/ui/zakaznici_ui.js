@@ -107,7 +107,21 @@ function zakazniciCil(kde) {
     zak: ZAK,
     set: (k, v) => set('ZAK.' + k, v),
     zmrazeno: () => (typeof zamekZakCestaZmrazena === 'function' ? zamekZakCestaZmrazena(ZAK, 'ZAK.objednatel') : ''),
+    /* VZ-F2 (#660): IČO jiného zákazníka zakázky (jen víc zákazníků). */
+    icoDuvod: ico => (typeof vzIcoDuvod === 'function' && typeof vzRidiciId === 'function' ? vzIcoDuvod(vzRidiciId(ZAK), ico) : ''),
   };
+}
+/* VZ-F2 (#660): převzetí karty by zákazníkovi dalo IČO jiného zákazníka
+ * zakázky → hláška a true (nic se nezapíše). `jenPrazdne` = našeptávač,
+ * který IČO doplní jen do prázdného pole. */
+function zakazniciIcoStop(cil, karta, jenPrazdne) {
+  if (!cil || typeof cil.icoDuvod !== 'function' || !karta) return false;
+  if (jenPrazdne && String((cil.zak && cil.zak.ico) || '').trim()) return false;
+  const duvod = cil.icoDuvod(karta.ico);
+  if (!duvod) return false;
+  if (typeof hlaska === 'function') hlaska(duvod);
+  render();
+  return true;
 }
 function naseptavacZakVyber(hodnota, kde) {
   const cil = zakazniciCil(kde);
@@ -122,6 +136,7 @@ function naseptavacZakVyber(hodnota, kde) {
     render(); return;
   }
   if (typeof nahledStop === 'function' && nahledStop('dotažení zákazníka do hlavičky')) return;
+  if (zakazniciIcoStop(cil, karta, true)) return;
   const zak = cil.zak;
   const v = zakaznikPredvypln(karta, zak);
   if (v.zmeny.indexOf('objednatel') < 0) zak.objednatel = hodnota;   // název se vybral výslovně
@@ -270,6 +285,7 @@ function zakaznikDoZakazkyUI(klic, kde) {
     render(); return;
   }
   if (typeof nahledStop === 'function' && nahledStop('přenesení zákazníka do zakázky')) return;
+  if (zakazniciIcoStop(cil, z, false)) return;
   const n = zakaznikDoZakazky(z, cil.zak);
   if (typeof cil.poPrevzeti === 'function') { cil.poPrevzeti(n, z); return; }   // VZ: formulář / další zákazník
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();

@@ -7,12 +7,21 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "a3fad448",
-  "verze": "v19.11.2",
+  "sha": "8245512b",
+  "verze": "v19.11.4",
   "datum": "19. 11. 2026"
  },
- "test_navic_commitu": 304,
+ "test_navic_commitu": 315,
  "v_testu_ne_v_main": [
+  {
+   "id": "672",
+   "typ": "nalez",
+   "nazev": "VZF1-I1: soubor plné moci u OPR zakázek bez čísla zakázky (PLNA-MOC_2026-OPR-CN-PROJ-CZ)",
+   "alias": [
+    "VZF1-I1"
+   ],
+   "verze": "v19.11.4"
+  },
   {
    "id": "669",
    "typ": "ukol",
@@ -23,10 +32,55 @@
    "verze": "v19.11.2"
   },
   {
+   "id": "668",
+   "typ": "rozhodnuti",
+   "nazev": "Audit #667: další položky se sdílenou cenou nebo bez ceny z nabídky — rozhodnout",
+   "verze": "v19.11.1"
+  },
+  {
+   "id": "667",
+   "typ": "ukol",
+   "nazev": "STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ jako zaškrtávací položka šachty s vlastní cenou C.statikaOplKc; cena z nabídky i nulová",
+   "verze": "v19.11.1"
+  },
+  {
    "id": "664",
    "typ": "ukol",
    "nazev": "UE: úprava existujícího účtu v Nastavení → Uživatelé (titul, jméno, funkce, telefon; e-mail jen ke čtení)",
    "verze": "v18.11.9"
+  },
+  {
+   "id": "663",
+   "typ": "ukol",
+   "nazev": "Zmrazit zástupce a DIČ dalšího zákazníka po odeslání jeho SoD (po zákaznících, klient i server)",
+   "verze": "v19.11.4"
+  },
+  {
+   "id": "662",
+   "typ": "ukol",
+   "nazev": "Test v prohlížeči: otevřený zákazník C, zápis zástupce v krycím listu, tisk SoD A bez údajů C",
+   "alias": [
+    "VZ-F1-R4"
+   ],
+   "verze": "v19.11.4"
+  },
+  {
+   "id": "661",
+   "typ": "ukol",
+   "nazev": "Krycí list PROJ u otevřeného dalšího zákazníka ukazuje název a firmu řídícího (smíšená obrazovka)",
+   "alias": [
+    "VZ-F1-R3"
+   ],
+   "verze": "v19.11.4"
+  },
+  {
+   "id": "660",
+   "typ": "ukol",
+   "nazev": "Kontrola duplicitního IČO u víc zákazníků jde obejít (doplnění IČO dodatečně, změna IČO řídícího, pořadí v poli)",
+   "alias": [
+    "VZ-F1-R1"
+   ],
+   "verze": "v19.11.4"
   },
   {
    "id": "659",
@@ -84,6 +138,15 @@
     "VZ-N3"
    ],
    "verze": "v18.11.8"
+  },
+  {
+   "id": "652",
+   "typ": "rozhodnuti",
+   "nazev": "Při nasazení do main zadat do Nastavení → Firma 6. řádek termínů realizace (5 let záruka) ve 4 jazycích",
+   "alias": [
+    "K49-I5"
+   ],
+   "verze": "v19.11.1"
   },
   {
    "id": "651",
@@ -557,9 +620,9 @@
  "nehotove_podle_kdo": {
   "J. V.": 40,
   "kolega": 5,
-  "koordinace": 14,
+  "koordinace": 11,
   "dávka": 3,
   "integrátor": 2
  },
- "nehotovych": 64
+ "nehotovych": 61
 }

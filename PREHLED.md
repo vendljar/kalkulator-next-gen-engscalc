@@ -8,16 +8,23 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | prostředí | verze |
 |---|---|
 | ostrý web (`main`) | **v11.11.1** (`6c4bc80e`, 11. 11. 2026) |
-| testovací web (`test`) | **v19.11.2** (`a3fad448`, 19. 11. 2026) |
+| testovací web (`test`) | **v19.11.4** (`8245512b`, 19. 11. 2026) |
 
-Test je proti main napřed o 304 commitů.
+Test je proti main napřed o 315 commitů.
 
 ## V testu, ještě ne v main
 
 | # | typ | co | verze |
 |---|---|---|---|
+| #672 (dřív VZF1-I1) | nález | VZF1-I1: soubor plné moci u OPR zakázek bez čísla zakázky (PLNA-MOC_2026-OPR-CN-PROJ-CZ) | v19.11.4 |
 | #669 (dřív T1) | úkol | VZ T1: řídící varianta a řídící zákazník v hlavičce (2+ zákazníků), karta ★/☆, náhled poznámky dealu | v19.11.2 |
+| #668 | rozhodnutí | Audit #667: další položky se sdílenou cenou nebo bez ceny z nabídky — rozhodnout | v19.11.1 |
+| #667 | úkol | STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ jako zaškrtávací položka šachty s vlastní cenou C.statikaOplKc; cena z nabídky i nulová | v19.11.1 |
 | #664 | úkol | UE: úprava existujícího účtu v Nastavení → Uživatelé (titul, jméno, funkce, telefon; e-mail jen ke čtení) | v18.11.9 |
+| #663 | úkol | Zmrazit zástupce a DIČ dalšího zákazníka po odeslání jeho SoD (po zákaznících, klient i server) | v19.11.4 |
+| #662 (dřív VZ-F1-R4) | úkol | Test v prohlížeči: otevřený zákazník C, zápis zástupce v krycím listu, tisk SoD A bez údajů C | v19.11.4 |
+| #661 (dřív VZ-F1-R3) | úkol | Krycí list PROJ u otevřeného dalšího zákazníka ukazuje název a firmu řídícího (smíšená obrazovka) | v19.11.4 |
+| #660 (dřív VZ-F1-R1) | úkol | Kontrola duplicitního IČO u víc zákazníků jde obejít (doplnění IČO dodatečně, změna IČO řídícího, pořadí v poli) | v19.11.4 |
 | #659 (dřív VZ-F1) | dávka | Dávka VZ-F1: opravy nálezů ruční zkoušky víc zákazníků na testu (18. 11. 2026) | v18.11.8 |
 | #658 | úkol | Controlling: řádek prodeje dalšímu zákazníkovi nese číslo s písmenem (…9801-B) jako nabídka a deal | v18.11.8 |
 | #657 | úkol | Krycí list BO (i PROJ a Techdata) tiskl prázdnou sekci Zástupci a kontakty zákazníka i banku, účet a zápis v rejstříku | v18.11.8 |
@@ -25,6 +32,7 @@ Test je proti main napřed o 304 commitů.
 | #655 (dřív VZ-N2) | úkol | VZ-N2: výběr „Otevřená varianta“ v hlavičce nabízel při otevřeném A i vlastní variantu C | v18.11.8 |
 | #654 (dřív VZ-N1) | úkol | VZ-N1: „Přidat zákazníka“ se stejným IČO, jaké už v zakázce je, prošlo bez upozornění | v18.11.8 |
 | #653 (dřív VZ-N3) | úkol | VZ-N3: zástupci a kontakty v krycím listu u otevřeného dalšího zákazníka se zapisovali do hlavičky řídícího (SoD A nesla zástupce C) | v18.11.8 |
+| #652 (dřív K49-I5) | rozhodnutí | Při nasazení do main zadat do Nastavení → Firma 6. řádek termínů realizace (5 let záruka) ve 4 jazycích | v19.11.1 |
 | #651 (dřív K49-I7) | úkol | Ověřit SoD u víc šachet a slevy v EUR (L3) na testu | v18.11.7 |
 | #645 (dřív NS) | úkol | NS: v Nastavení → Smlouvy / Šablony stojí správa šablon hned pod přepínačem OCK / PROJ, nad platebními podmínkami | v18.11.7 |
 | #632 (dřív B0.7, B6, K37-N6, K38-I2) | úkol | Ceník a termíny firmy v testu srovnané podle main — ověřit v kole 49 | v18.11.7 |
@@ -99,4 +107,4 @@ K tomu 12 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --ziv
 
 ## Nehotové položky evidence
 
-Celkem 64: J. V. 40, kolega 5, koordinace 14, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 61: J. V. 40, kolega 5, koordinace 11, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.

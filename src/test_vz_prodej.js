@@ -270,8 +270,30 @@ const CTX = { kdo: 'obchodnik@priklad.cz', role: 'Obchodník' };
   test('H zamekZakZmeny: výměna řídícího po SoD — údaje se jen přestěhují, žádná zmrazená cesta se „nezměnila"',
     zamekZakZmeny(stara, n).length === 0, zamekZakZmeny(stara, n));
   n.ico = '99998888';
-  test('H zamekZakZmeny: změna IČO nového řídícího (B) po výměně se pozná, je-li hlavička zmrazená',
-    zamekZakZmeny(stara, n).indexOf('ZAK.ico') >= 0, zamekZakZmeny(stara, n));
+  /* VZ-F2 (#663, J. V. 18. 11. 2026): SoD po zákaznících — SoD odešla A, novému
+   * řídícímu B jen CN: hlavičku (údaje B) zámek hlavičky nehlídá, změnu IČO B
+   * (odešla mu CN) odmítne vzServerZakaznici (§ 5) 409. Do VZ-F2 hlídala
+   * hlavičku SoD KOMUKOLI. */
+  test('H zamekZakZmeny (VZ-F2): SoD odešla A, ne B — po výměně hlavička (údaje B) zámkem SoD nehlídaná',
+    zamekZakZmeny(stara, n).indexOf('ZAK.ico') < 0, zamekZakZmeny(stara, n));
+  const sz = vzServerZakaznici(stara, kop(n), { role: 'Administrátor', email: 'autor@priklad.cz' });
+  test('H vzServerZakaznici: změnu IČO B (odešla mu CN) po výměně odmítne 409', !!sz && sz.status === 409 && /ico/.test(sz.chyba), sz);
+}
+/* VZ-F2 (#663): SoD odešla B (vlastní varianta) a B se stane řídícím →
+ * hlavička nese údaje B a zámek SoD ji zmrazí. */
+{
+  const z = zakazka({ Bvlastni: true });
+  const vB = varZ(z, 'z2');
+  tiskni(z, z.varianty[0], 'z1'); tiskni(z, vB, 'z2');
+  tiskni(z, vB, 'z2', 'sod');
+  vB.data.kryci = { hodnoty: {}, zmrazeno: {} };
+  const stara = kop(z);
+  const n = kop(z);
+  vzVymenRidiciho(n, 'z2');
+  test('H (VZ-F2): výměna na B se SoD — údaje se jen přestěhují', zamekZakZmeny(stara, n).length === 0, zamekZakZmeny(stara, n));
+  n.zastupci = Object.assign({}, n.zastupci, { smluvniJmeno: 'Jiný zástupce' });
+  test('H (VZ-F2): změna zástupce nového řídícího B, kterému odešla SoD, se pozná',
+    zamekZakZmeny(stara, n).indexOf('ZAK.zastupci.smluvniJmeno') >= 0, zamekZakZmeny(stara, n));
 }
 
 /* ---------- I) doplněk 3: vlastnictví po výměně řídícího ---------- */

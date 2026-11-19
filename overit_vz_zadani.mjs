@@ -104,7 +104,10 @@ async function otevri(url, { width = 1440, zap = false } = {}) {
     if (zap) window.viceZakaznikuZapnuto = () => true;
     ZAK = novaZakazka();
     ZAK.varianty[0].id = 'v1'; ZAK.aktivni = 'v1';
-    Object.assign(ZAK, { objednatel: 'Řídící firma s.r.o.', kontakt: 'Ing. Zkušební', ico: '25596641' });
+    /* VZ-F2 (#660): řídící má jiné IČO než firma z ARES, kterou dostane další
+     * zákazník — stejné IČO dvou zákazníků zakázky se hlásí hned ve formuláři
+     * i v hlavičce (dřív tu obě IČO byla 25596641). */
+    Object.assign(ZAK, { objednatel: 'Řídící firma s.r.o.', kontakt: 'Ing. Zkušební', ico: '00000019' });
     syncVarianta();
     Object.assign(Z, { sirka: 1.6, hloubka: 2.1, zdvih: 12, prejezd: 2.7, prohluben: 1.05 });
     OCK.fixes = true;
@@ -413,7 +416,7 @@ await cast('4–10 ZAP', async () => {
   test('úprava pole Zákazník jde do položky dalšího zákazníka, řídící beze změny', s.d === 'Druhý zákazník — pobočka' && s.r === 'Řídící firma s.r.o.', s);
   await zapisPole(p, 'IČO zákazníka', '25596641');
   s = await p.evaluate(() => ({ d: ZAK.dalsiZakaznici[0].hlavicka.ico, r: ZAK.ico }));
-  test('úprava IČO jde do položky dalšího zákazníka', s.d === '25596641' && s.r === '25596641', s);
+  test('úprava IČO jde do položky dalšího zákazníka', s.d === '25596641' && s.r === '00000019', s);
   await p.evaluate(() => { window.__fetchOdp = { status: 200, json: window.__aresOdp }; });
   await aresKlik(p, false);
   await klik(p, '#kalk-hlavicka .ares-panel button.primary');

@@ -537,10 +537,27 @@ function zamekZakHlavickaOznac(zak, stara) {
 function zamekZakVzOdeslano(zak) {
   return typeof vzRezim === 'function' && vzRezim(zak) && ((zak && zak.varianty) || []).some(v => variantaUzamcena(v));
 }
+/* VZ-F2 (#663, J. V. 18. 11. 2026): zmrazí odeslaná smlouva o dílo zamčené
+ * varianty `v` hlavičku (údaje ŘÍDÍCÍHO zákazníka)? Smlouva jde po
+ * zákaznících — SoD odeslaná dalšímu zákazníkovi B zmrazí jen jeho údaje
+ * (vzZastupciZmrazeno, server vzServerZakaznici), ne hlavičku řídícího A,
+ * kterému nic neodešlo. Tisk bez razítka „komu" patří z1 — u jednoho
+ * zákazníka proto beze změny (každá SoD zmrazí hlavičku). Prodaná varianta
+ * a zámek bez záznamu smlouvy v `tisky` (jen `typ`) jako dřív. `ridiciId`
+ * = řídící zákazník, jehož údaje hlavička nese. */
+function zamekSodHlavicky(v, zak, ridiciId) {
+  if (variantaProdana(v)) return true;
+  if (zamekKryciOtevreny(v)) return false;
+  if (typeof vzTiskSmlouva !== 'function' || typeof vzTiskKomu !== 'function') return true;
+  const sod = (Array.isArray(v.zamek.tisky) ? v.zamek.tisky : []).filter(t => t && typeof t === 'object' && vzTiskSmlouva(t));
+  if (!sod.length) return true;
+  const rid = ridiciId || (typeof vzRidiciId === 'function' ? vzRidiciId(zak) : 'z1');
+  return sod.some(t => vzTiskKomu(t) === rid);
+}
 function zamekZakStav(zak) {
   const zam = ((zak && zak.varianty) || []).filter(v => variantaUzamcena(v));
   return { cn: variantaUzamcena(zamekZakRidici(zak)) || zam.some(v => v.zamek.hlavicka === true) || zamekZakVzOdeslano(zak),
-           sod: zam.some(v => !zamekKryciOtevreny(v) || variantaProdana(v)) };
+           sod: zam.some(v => zamekSodHlavicky(v, zak)) };
 }
 
 /* Důvod, proč se cesta hlavičky nesmí změnit, nebo ''. */
@@ -575,8 +592,10 @@ function zamekZakZmeny(stara, nova) {
   const nr = zamekZakRidici(nova);
   /* VZ-E3: u víc zákazníků (uložená nebo ukládaná verze) kterákoli odeslaná varianta. */
   const vz = typeof vzRezim === 'function' && (vzRezim(stara) || vzRezim(nova)) && zamcene.length > 0;
+  /* VZ-F2 (#663): SoD jen ŘÍDÍCÍMU ukládané verze (razítka z uložené). */
+  const ridTed = typeof vzRidiciId === 'function' ? vzRidiciId(nova) : '';
   const st = { cn: vz || zamcene.some(v => v === sr || (!!nr && v.id === nr.id) || v.zamek.hlavicka === true),
-               sod: zamcene.some(v => !zamekKryciOtevreny(v) || variantaProdana(v)) };   // #540
+               sod: zamcene.some(v => zamekSodHlavicky(v, stara, ridTed)) };   // #540
   if (!st.cn && !st.sod) return [];
   const c = zamekZakCesty();
   const hodnota = (o, cesta) => {
@@ -1297,5 +1316,5 @@ if (typeof module !== 'undefined')
                      zajistiZamek, ZAMEK_KRYCI_SMLOUVY, zamekTiskyTypy, zamekKryciOtevreny, zamekPrvniSmlouva,
                      zamekKryciPoleVNabidce, zamekKryciPoleVolne, zamekKryciPolePlnaMoc, zamekDataPorovnani, zamekJsonKanon, zamekDataRozdilCesta,
                      ZAMEK_KRYCI_PO_CN, zamekKryciPoleStav, zamekKryciPoleZname, zamekSnimekSpocti, zamekSnimek,
-                     zamekDphVolna, zamekNabidkaPohled, zamekZakCesty, zamekZakCestaZmrazena, zamekZakZmeny, zamekZakHlavickaOznac,
+                     zamekDphVolna, zamekNabidkaPohled, zamekZakCesty, zamekSodHlavicky, zamekZakStav, zamekZakCestaZmrazena, zamekZakZmeny, zamekZakHlavickaOznac,
                      zamekZakRidici, ZAMEK_KRYCI_PO_SOD_VOLNE };

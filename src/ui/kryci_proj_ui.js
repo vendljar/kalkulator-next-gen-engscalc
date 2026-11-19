@@ -5,11 +5,21 @@
  * (data.kryciProj.hodnoty) a mají přednost (↺ vrátí prefill).
  * Vlastní prefix klp* / kryciProj*, aby se názvy nemíchaly s OCK verzí. */
 
-/* VZ-E3 (#602, U1): ruční pole zákazníka KL PROJ po zákaznících — PROJ je jen
- * řídícího (R5), píše a čte se tedy za řídícího; jeden zákazník = null (dnešek). */
+/* VZ-F2 (#661): zakázka pro kontext krycího listu PROJ — u otevřeného
+ * dalšího zákazníka jeho tiskový pohled (klVzCtxZak z kryci_ui.js, tentýž
+ * výběr adresáta jako krycí list OCK); jinak ZAK. */
+function klpVzCtxZak() {
+  return typeof klVzCtxZak === 'function' ? klVzCtxZak() : ZAK;
+}
+/* VZ-E3 (#602, U1): ruční pole zákazníka KL PROJ po zákaznících; jeden
+ * zákazník = null (dnešek). Do VZ-F2 se psalo a četlo vždy za řídícího
+ * (PROJ je jen řídícího, R5) — u otevřeného B pak obrazovka míchala jeho
+ * předvyplnění s ručními hodnotami řídícího. Od VZ-F2 (#661) za otevřeného
+ * zákazníka jako v OCK (klVzKomu); tisk PROJ pro dalšího zákazníka zůstává
+ * zablokovaný (vzTiskZabrana), takže jeho hodnoty nikam netisknou. */
 function klpVzKomu(id) {
   if (typeof vzRezim !== 'function' || typeof ZAK === 'undefined' || !vzRezim(ZAK) || !kryciProjPoleZakaznika(id)) return null;
-  return vzRidiciId(ZAK);
+  return (typeof vzTiskId === 'function' && vzTiskId()) || vzRidiciId(ZAK);
 }
 function klpSet(id, v) {
   if (!KLP.hodnoty) KLP.hodnoty = {};
@@ -107,7 +117,7 @@ function klpRow(id, label, opts = {}) {
  * ale dvě oddělené sady od začátku — stejně jako jsou oddělené obě hlavičky. */
 function kryciProjPodminkyBlok() {
   let c = null;
-  try { c = kryciProjCtx(ZAK, aktivniVarianta(ZAK)); } catch (e) { c = null; }
+  try { c = kryciProjCtx(klpVzCtxZak(), aktivniVarianta(ZAK)); } catch (e) { c = null; }   // VZ-F2 (#661)
   const sekceHtml = KRYCI_PROJ_SEKCE.filter(s => KRYCI_PROJ_NABIDKA_SEKCE.indexOf(s.sekce) >= 0).map(s => {
     /* Pole dřívějšího znění (`stary`) a tiskové řádky plánu (`plan`) —
      * viz kryciProjPoleViditelne; plán se edituje kartou pod sekcí. */
@@ -136,7 +146,10 @@ function renderKryciProj() {
    * s vyřazenou PROJ nevzniká. */
   const vyr = (typeof stranaVyrazenaPanel === 'function') ? stranaVyrazenaPanel('proj', 'Krycí list zakázky PROJ') : '';
   if (vyr) { el.innerHTML = vyr; return; }
-  const c = kryciProjCtx(ZAK, aktivniVarianta(ZAK));   // kontext prefillů (jeden zdroj pravdy: KRYCI_PROJ_SEKCE)
+  /* VZ-F2 (#661): pohled otevřeného dalšího zákazníka (jako OCK, klVzCtxZak) —
+   * dřív kontext celé zakázky: u otevřeného B název a firma řídícího
+   * a zmocnitel plné moci předvyplněný zástupcem řídícího. */
+  const c = kryciProjCtx(klpVzCtxZak(), aktivniVarianta(ZAK));   // kontext prefillů (jeden zdroj pravdy: KRYCI_PROJ_SEKCE)
   /* Prázdný ceník zhasíná výstupy – krycí list nese ceny stejně jako nabídka. */
   /* #377: i zábrany z kontroly před nabídkou (strana PROJ). */
   const zab = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr('kryciproj_bo') : '';

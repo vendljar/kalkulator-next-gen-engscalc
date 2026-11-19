@@ -20,6 +20,41 @@ Nad integrací `a018828` (v19.11.3). Cenu nemění (jen zahraniční statika zad
   jádro (`+text`); text, který číslo nedá, nechá tuzemskou sazbu jako dosud.
 - **Testy:** `src/test_k50n1_statika_zahr.js` oddíl 6 (29 OK; proti a018828 5 FAIL). Mutace [K50N1] jádro 5/5, server 3/3.
 
+## v19.11.4 — VZ-F2 #660–#663 + VZF1-I1: dorovnání víc zákazníků po revizi VZ-F1, větev claude/vz-f2
+
+Nad integrací `a3fad44` (test v19.11.2). Verzi přečísluje koordinace (podle dne commitu, pořadí 1). Na webech, Disku
+ani v Pipedrive nic. U jednoho zákazníka a s vypnutou funkcí beze změny (porovnání sestavení proti integraci SHODA).
+
+- **#660 duplicitní IČO (klient + server):** server porovnává každého **nového** zákazníka a každého, komu se IČO
+  **změnilo** (i řídícího), se **všemi** ostatními — tři obchvaty z revize VZ-F1 (IČO doplněné až po uložení, změna
+  IČO řídícího na IČO dalšího zákazníka, nový zákazník vložený v poli před stávajícího) teď končí 400. Hláška jmenuje
+  zákazníka, který v zakázce už je. Zákazník se stejným IČO jako v uložené verzi se nehlídá (starší data s duplicitou
+  se ukládají dál), obnova taky ne. Klient hlásí duplicitu **hned při úpravě**: IČO v hlavičce (řídící i otevřený
+  další zákazník, `set()`), převzetí karty z databáze zákazníků a našeptávač (`zakazniciIcoStop`), formulář nového
+  zákazníka (upozornění a zhasnuté „Přidat zákazníka“) — obchodník nenarazí na 400 až při (i prvním) uložení.
+- **#663 zmrazení po zákaznících (rozhodnutí J. V. 18. 11.):** po odeslání **smlouvy o dílo** dalšímu zákazníkovi B
+  (OCK, PROJ i jazyková) se nemění jeho zástupci (všech 15 polí) a DIČ — obrazovka (krycí list jen ke čtení, `set()`
+  odmítne) i server 409. Po CN zůstávají zástupci volní jako dřív; kontaktní osoba vždy. **Zámek hlavičky počítá jen
+  SoD řídícímu** (`zamekSodHlavicky`): SoD odeslaná B už nezmrazí zástupce, DIČ ani IČO řídícího A, kterému smlouva
+  neodešla (dřív stav „odešla SoD“ platil za celou zakázku). Tisk bez razítka „komu“ patří z1 → u jednoho zákazníka
+  beze změny. Po výměně řídícího na B, kterému SoD odešla, hlídá hlavičku zámek; změnu údajů nového řídícího, kterému
+  odešla jen CN, dál odmítá § 5 (409). Test `src/test_vz_prodej.js` H upraven podle nového pravidla.
+- **#661 krycí list PROJ u otevřeného dalšího zákazníka:** kontext z jeho pohledu (`klpVzCtxZak` → `klVzCtxZak` jako
+  OCK) — název, firma a předvyplněný zmocnitel plné moci jsou jeho; ruční pole zákazníka (zmocnitel, podpisy, kopie
+  faktur) se píšou za otevřeného zákazníka (`klpVzKomu` jako OCK). Dřív šla za řídícího: zmocnitel zapsaný u B na
+  sdílené variantě skončil v plné moci A (harness to na a3fad44 ukáže). Tisk PROJ pro dalšího zákazníka dál blokovaný.
+- **#662 harness `overit_vz_f2.mjs`:** v sestavené aplikaci zápis zástupců s kanárkem v KL OCK i PROJ u otevřeného C
+  (a zmocnitele u B), tisk plné moci, KL PROJ, KL OCK (tisk + Word), CN a SoD A bez kanárku; totéž po výměně řídícího
+  na B přes výběr v hlavičce s potvrzovacím dialogem (T1), pak dotisk CN a SoD A. Pojistka: ec5bbac 19 FAIL, a3fad44 3 FAIL.
+- **VZF1-I1 název plné moci:** soubor nese číslo zakázky jako smlouva o dílo PROJ (`plnaMocCislo`:
+  `projCisloNabidky` + přípona varianty) — dřív `PLNA-MOC_2026-OPR-CN-PROJ-CZ` z nedopsané předlohy hlavičky PROJ.
+  Mění se jen název souboru (porovnání sestavení plnou moc nemá).
+- Testy: `src/test_vz_f2.js` 58/0 (pojistka a3fad44 padá), `netlify/test_vz_server.mjs` oddíl 9 (pojistka a3fad44 10 FAIL),
+  `src/test_sod.js` VZF1-I1 (pojistka a3fad44 2 FAIL), `overit_vz_f2.mjs` 51/0. Mutace [VZ F2] jádro 19/19, server 5/5;
+  přepsané hledané úseky [VZ F1] (jádro 19/19, server 4/4), #540 (jádro) a VZ-E3 (server) po přesunu kódu chycené.
+  `overit_vz_zadani.mjs`: řídící dostal jiné smyšlené IČO (dřív stejné jako další zákazník = duplicita).
+- **Kolo** `--bez-mutaci --proti origin/claude/integrace-16-10`: **VŠE ZELENÉ** — sady 475/0/7, hodiny +400 dní
+  385/0/1, statické 9/9, porovnání sestavení 353/353 **SHODA** (seznam očekávaných rozdílů není potřeba).
 ## v19.11.3 — rychlá oprava K50-N1: statika opláštění v zahraniční řadě, větev claude/r-k50n1
 
 Nad integrací `a3fad44` (v19.11.2). Vada kola 50 na testu (vysoká, cena). Verzi přečísluje koordinace.
