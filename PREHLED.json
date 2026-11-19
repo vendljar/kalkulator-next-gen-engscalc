@@ -665,15 +665,35 @@
     "NP-N1"
    ],
    "cekaNa": "rozhodnout opravu (rychlá cesta, text dokumentu)"
+  },
+  {
+   "id": "690",
+   "typ": "nalez",
+   "nazev": "NP-N1: řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ je v náhledu podkladů, ale Word CN v17 ho nemá",
+   "alias": [
+    "NP-N1"
+   ],
+   "cekaNa": "doplnit {{TS_SVETLIKY_DVERI}} do šablony CN (v18), nebo řádek v náhledu vynechat"
+  },
+  {
+   "id": "691",
+   "typ": "nalez",
+   "nazev": "NP-N2–N4: drobné odchylky náhledu od Wordu (verzálky jednotek, dvojtečka EN/DE, IČ/Tel. v bloku Kancelář)",
+   "alias": [
+    "NP-N2",
+    "NP-N3",
+    "NP-N4"
+   ],
+   "cekaNa": "NP-N4 — přeložit IČ/Tel. i v cizojazyčné šabloně, nebo nechat česky"
   }
  ],
  "ceka_na_jv_odlozene": 12,
  "nehotove_podle_kdo": {
-  "J. V.": 42,
+  "J. V.": 44,
   "kolega": 5,
   "koordinace": 12,
   "dávka": 3,
   "integrátor": 2
  },
- "nehotovych": 64
+ "nehotovych": 66
 }

@@ -107,9 +107,11 @@ Test je proti main napřed o 343 commitů.
 | #643 | úkol | Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6) | nahrát upravený skill (mimo repo) |
 | #680 (dřív DO-N1) | nález | DO-N1: návrh obchodníka do číselníku u příplatku přechodových plechů (MATERIÁL) správce v Ceník → číselník nevidí | rozhodnout, zda vypsat návrhy i k položkám mimo řádky číselníku |
 | #682 (dřív NP-N1) | úkol | Word CN v EN/DE/FR nechává prázdný pruh sekce technické části (MŮSTKY bez řádků) | rozhodnout opravu (rychlá cesta, text dokumentu) |
+| #690 (dřív NP-N1) | nález | NP-N1: řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ je v náhledu podkladů, ale Word CN v17 ho nemá | doplnit {{TS_SVETLIKY_DVERI}} do šablony CN (v18), nebo řádek v náhledu vynechat |
+| #691 (dřív NP-N2, NP-N3, NP-N4) | nález | NP-N2–N4: drobné odchylky náhledu od Wordu (verzálky jednotek, dvojtečka EN/DE, IČ/Tel. v bloku Kancelář) | NP-N4 — přeložit IČ/Tel. i v cizojazyčné šabloně, nebo nechat česky |
 
 K tomu 12 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
 
 ## Nehotové položky evidence
 
-Celkem 64: J. V. 42, kolega 5, koordinace 12, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 66: J. V. 44, kolega 5, koordinace 12, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
