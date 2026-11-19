@@ -31,7 +31,13 @@ ON a NP hotovo.
 
 ON: 10 OK (vedoucí bez účtu neověřen). NP: nálezy NP-N1 (řádek SVĚTLÍKY v náhledu, šablona CN v17 ho nemá), NP-N2–N4 drobné,
 #682 potvrzen. 9815 Varianta 1 zamčená (tlačítko Word z náhledu). Harness `on.js`, `np.js`, `np_porovnej.py`, `np_word.js`.
-Čeká: PG + D3 (v19.11.11) od koordinace.
+PG + D3 hotovo (viz níž).
+
+## Zkoušky PG (#684–#687) a D3 (#688) — hotovo 19. 11. (v19.11.11)
+
+PG: 31 OK, nález PG-N1 (náhled podkladů zdvojí řádek NENÍ; `nwBloky` bez filtru `!e.neni`). D3: vše OK kromě D3-N1 (objednávka
+v tisku 3–4 strany), D3-N2 (lišta kontroly SoD v náhledu objednávky). Nové TEST OVP 9821 (CN + SoD PROJ), 9822 (2 zákazníci).
+Harness `pg.js`, `d3.js`, `d3_doplnek.js`, `d3_spolecne.js`. Kontext sezení ~50 %.
 
 ## Harnessy (`podklady/kola/harness_testovani/`, spouštět z kořene repa)
 
