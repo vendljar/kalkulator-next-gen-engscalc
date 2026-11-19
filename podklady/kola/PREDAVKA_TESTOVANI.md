@@ -21,6 +21,12 @@ TEST sada: 320 zakázek „TEST -“ (nové 9811 F1, 9812 T1, 9813 F2, 9814 F2 P
 `STAV_TEST_DO_2026-11-19.md`: 59 OK, nález DO-N1 (návrh obchodníka u příplatku „… (MATERIÁL)“ správce v číselníku nevidí).
 Nové TEST 9815 (správce), 9816 (obchodník). Souhlas J. V. potvrzen v sezení. Harness `do.js` (opakovatelný, sám uklidí).
 
+## Zkouška D8 (#677) — hotovo 19. 11.
+
+`STAV_TEST_D8_2026-11-19.md`: vše ✅, informace D8-I1 (text DPZ „od schválení studie“ u vyřazené studie, i na main).
+TEST OVP 9817–9820, lhůty PROJ ve Firmě vráceny na výchozí a zveřejněny. Harness `d8.js` (s pojistkou návratu lhůt), `d8_text.js`.
+Čeká: ON a NP (pošle koordinace).
+
 ## Harnessy (`podklady/kola/harness_testovani/`, spouštět z kořene repa)
 
 - `vzf1.js`, `vzf2.js`, `t1.js`: zkoušky VZ v živé stránce (přihlášení, `T(typ)` = tisk cestou tlačítek bez zámku, kanárky,
