@@ -722,75 +722,9 @@ async function nabidkaWordGeneruj(srv) {
  * lokálně (Word / tiskový náhled). Byla to jediná cesta k dokumentu bez
  * zábrany ukázkového ceníku (audit, N9); teď žádná taková výjimka není. */
 
-/* Kompletní tiskový náhled cenové nabídky.
- * N1 – tiskne se ve zvoleném jazyce dokumentů (cz / en / de / fr): hodnoty
- * překládá nabidkaData, popisky a nadpisy nabidkaNahledSekce + P() níže.
- * Neznámý výraz zůstává česky (slovník, preklad.js) – nic se nevymýšlí. */
-async function nabidkaNahled() {
-  /* Zámek strany (P6 / K19-N114): u zakázky s vyřazenou OCK (číslo OVP,
-   * jen projekce) by podklady ukázaly ceny vynulované strany. Zábrany
-   * z kontrol se tu záměrně neptají (kontrolní pohled, #377) — tahle ano. */
-  if (typeof kontrolyStranaZabrana === 'function') {
-    const duvod = kontrolyStranaZabrana(ZAK, 'nabidka');
-    if (duvod) { if (typeof hlaska === 'function') hlaska(duvod, { nadpis: 'Dokument nelze vytvořit' }); return; }
-  }
-  const L = (typeof jazyk === 'function') ? jazyk() : 'cz';
-  const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
-  const varianta = await nabidkaVarianta();
-  const vt = vzTiskVstup('nabidka', varianta);   // VZ-E2 #601: pohled zákazníka (podklady)
-  if (!vt) return;
-  /* #518: od téhle chvíle se sbírají texty, které zůstaly česky —
-   * až po všech otázkách (await), ať se nepřimíchá nic z aplikace. */
-  const sleduj = typeof neprelozenoZacni === 'function' && neprelozenoZacni(L);
-  let data;
-  try { data = nabidkaData(vt.zak, vt.varianta, JEKLY, L); } catch (e) { if (sleduj) neprelozenoKonec(); throw e; }
-  const p = data.placeholders;
-  const radek = (l, v) => `<tr><td style="font-weight:600">${esc(l)}</td><td>${esc(v)}</td></tr>`;
-  /* platební kalendář OCK: splátky a měsíční fakturace podle týchž pravidel jako Word (D1/D2) */
-  const sekceHtml = nabidkaNahledSekce(p, L, data.platbyOck, data.tsExtra, data.sachty).map(s =>
-    `<h2>${esc(s.sekce)}</h2><table>${s.radky.map(r => radek(r[0], r[1])).join('')}</table>`).join('');
-  const nadpisPripl = `<h2>${esc('II. ' + P('ROZŠÍŘENÍ CENOVÉ NABÍDKY – PŘÍPLATKY'))}</h2>`;
-  const priplatkyHtml = data.priplatky.length
-    ? `${nadpisPripl}<table>${data.priplatky.map(pr =>
-        `<tr><td style="font-weight:600">${esc(pr.nazev)}<br><span style="font-weight:400;color:#6b7686">${esc(pr.popis)}</span></td>
-         <td>${esc(pr.cena)} ${esc(P('bez DPH'))}</td></tr>`).join('')}</table>`
-    : `${nadpisPripl}<p>${esc(P('žádné příplatky nejsou vybrány'))}</p>`;
-
-  // hlavička s logem a patička s firemními údaji (SET-3) – společné pro obě nabídky
-  const logoHtml = dokLogoHtml();
-  const patickaHtml = dokPatickaHtml(P);
-
-  const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
-  if (!w) { if (sleduj) neprelozenoKonec(); return; }
-  w.document.write(`<!DOCTYPE html><html lang="${esc(L === 'cz' ? 'cs' : L)}"><head><meta charset="utf-8">
-    <title>${esc(data.nazevSouboru)}</title>
-    <style>body{font:13px/1.5 "Segoe UI",sans-serif;color:#1a2332;max-width:860px;margin:24px auto;padding:0 16px}
-    h1{font-size:19px} h2{font-size:13px;background:#eef2f8;padding:6px 10px;margin:18px 0 6px;text-transform:uppercase;letter-spacing:.03em}
-    table{width:100%;border-collapse:collapse} td{border-bottom:1px solid #eee;padding:4px 8px;vertical-align:top}
-    td:first-child{width:46%}
-    ${dokHlavickaCss()}
-    ${sleduj ? neprelozenoCss() : ''}
-    .bar{position:sticky;top:0;background:#fff;border-bottom:1px solid #e5e9f0;padding:8px 0;margin-bottom:8px}
-    .bar button{font:13px "Segoe UI";padding:6px 14px;border:1px solid #1d4ed8;background:#1d4ed8;color:#fff;border-radius:6px;cursor:pointer}
-    /* margin:0 — Chrome tiskne svou hlavičku (čas, název stránky) a patičku
-       (about:blank) DO OKRAJE STRÁNKY; s nulovým okrajem nemá kam. Okraj
-       dokumentu proto dělá padding uvnitř body (5. 9. 2026, zadání J. V.). */
-    @page{size:A4;margin:0} @media print{.noprint{display:none} body{margin:0;padding:14mm}}</style></head><body>
-    <div class="bar noprint"><button onclick="window.print()">🖨 ${esc(P('Tisk / Uložit jako PDF'))}</button></div>
-    ${sleduj ? neprelozenoLegendaHtml(L) : ''}
-    ${logoHtml}
-    <h1>${esc(P('Podklady nabídky'))} ${esc(p.CISLO_NABIDKY)}</h1>
-    <p class="noprint">${esc(P('Přesně tyto hodnoty se vyplní do šablony nabídky. Tlačítkem výše vytisknete do PDF.'))}</p>
-    ${sekceHtml}
-    ${priplatkyHtml}
-    ${patickaHtml}`);
-  /* Seznam se uzavírá až po sestavení celého HTML — popisky P() výše
-   * patří do dokumentu stejně jako hodnoty. */
-  w.document.write((sleduj ? neprelozenoSkript(L, neprelozenoKonec(), neprelozenoRucne([
-    p.OBJEDNATEL, p.OBJEDNATEL_KONTAKT, p.NAZEV_AKCE, p.ADRESA, vt.zak.popisZameru])) : '')
-    + '</body></html>');
-  w.document.close();
-}
+/* „Kompletní náhled podkladů" (nabidkaNahled) je od 19. 11. 2026 (dávka NP)
+ * náhled ve vzhledu Wordu CN v17 — src/nahled_word.js (obsah) a
+ * src/ui/nahled_word_ui.js (okno, stránky, pruh). */
 
 /* ============================================================================
  * ÚVODNÍ FOTKA CENOVÉ NABÍDKY (OCK i PROJ)
