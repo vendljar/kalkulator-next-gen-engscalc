@@ -1839,6 +1839,22 @@ function kontrolyZabranaDokumentu(vysl, typ) {
     + zab.map(n => n.nazev + ': ' + n.text).join(' | ');
 }
 
+/* D3-N2 (19. 11. 2026): nálezy, které se týkají dokumentu `typ` — jeho
+ * strany zakázky (`strany`) a, má-li nález seznam `dokumenty`, jen těch.
+ * Okno náhledu objednávky PROJ tak neukazuje chybějící údaje smlouvy o dílo
+ * OCK ani SoD PROJ. Vrací kopii výsledku se stejnými poli (varovat, nalezy,
+ * kody, brani…); bez strany dokumentu (neznámý typ) vrací vstup beze změny. */
+function kontrolyProDokument(vysl, typ) {
+  const strana = kontrolyDokumentStrana(typ);
+  if (!strana || !vysl || !Array.isArray(vysl.nalezy)) return vysl;
+  const zakl = String(typ || '').replace(/_(en|de|fr)$/, '');
+  const nalezy = vysl.nalezy.filter(n => (!Array.isArray(n.strany) || n.strany.indexOf(strana) >= 0)
+    && (!Array.isArray(n.dokumenty) || n.dokumenty.indexOf(zakl) >= 0));
+  const zabrany = nalezy.filter(n => n.uroven === KONTROLY_UROVEN_ZABRANA);
+  return Object.assign({}, vysl, { varovat: nalezy.length > 0, nalezy, kody: nalezy.map(n => n.kod),
+    brani: zabrany.length > 0, kodyBrani: zabrany.map(n => n.kod), textBrani: zabrany.map(n => n.text).join(' ') });
+}
+
 /* Text pro člověka. opts.cisla = smí vidět částky (administrátor / KPI marže).
  * Bez té volby se nevypíše ani koruna – ale všechny nálezy zazní. */
 function kontrolyText(vysl, opts) {
@@ -1878,7 +1894,7 @@ if (typeof module !== 'undefined')
                      KONTROLY_VYSKA_DVERI, KONTROLY_ZDVIH_MAX_M, KONTROLY_MUSTEK_MAX_MM, KONTROLY_ROZMERY_KLADNE, KONTROLY_ROZMERY_NEZAPORNE, KONTROLY_ROZMER_MIN_M, KONTROLY_ROZMERY_MIN, kontrolyRozmery, kontrolyVyctem, kontrolyBokySirka,
                      kontrolyPravidla, kontrolyProved, kontrolyText, kontrolyProjNavic, kontrolyPlatbyDuvody, kontrolyProjCenyBezSymbolu,
                      kontrolyPotvrzeni, kontrolyPotvrzeniPlati,
-                     KONTROLY_DOKUMENTY_STRANY, KONTROLY_BRANA_JINDE, kontrolyDokumentStrana, kontrolyZabranaDokumentu,
+                     KONTROLY_DOKUMENTY_STRANY, KONTROLY_BRANA_JINDE, kontrolyDokumentStrana, kontrolyZabranaDokumentu, kontrolyProDokument,
                      kontrolyCtxStrany, kontrolyStranaZabrana,
                      KONTROLY_PO_SACHTE, kontrolyVsOck, kontrolyVsZapnuto, kontrolyVsOckSurova, kontrolyVsTvarText, kontrolyVsPriprav, kontrolyVsPravidlo,
                      kontrolyProjProdava };

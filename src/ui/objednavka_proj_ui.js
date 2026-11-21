@@ -134,7 +134,7 @@ function objednavkaProjNahled() {
   w.document.write(`<!DOCTYPE html><html lang="cs"><head><meta charset="utf-8"><title>${esc(o.nazevSouboru)}</title>
     <style>${objednavkaProjCss()}</style></head><body>
     ${o.upozorneni.map(t => `<div class="obj-upoz noprint">⚠ ${esc(t)}</div>`).join('')}
-    ${tiskListaHtml({ dph: false, pozn: 'Objednávku lze před uložením do PDF ručně upravit; do zakázky se změny nepropíšou.' })}
+    ${tiskListaHtml({ dph: false, kontrolyTyp: 'objednavkaProj', pozn: 'Objednávku lze před uložením do PDF ručně upravit; do zakázky se změny nepropíšou.' })}
     <div id="dok">${objednavkaProjHtml(o)}</div>
     ${tiskListaSkript({}, null)}</body></html>`);
   w.document.close();

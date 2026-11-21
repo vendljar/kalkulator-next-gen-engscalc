@@ -304,6 +304,19 @@ const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 768
   test('UI: karta je v krycím listu PROJ hned pod SoD PROJ', /sodProjKarta\(\)\)}<\/div>` : ''}\s*\n\s*\$\{typeof objednavkaProjKarta === 'function'/.test(cti('ui/kryci_proj_ui.js')));
   const build = fs.readFileSync(path.join(__dirname, '..', 'build.py'), 'utf8');
   test('build: modul i UI v sestavení', /'objednavka_proj\.js'/.test(build) && /'ui\/objednavka_proj_ui\.js'/.test(build));
+  /* D3-N2: lišta kontrol v okně objednávky jen s nálezy, které se objednávky týkají.
+   * Pojistka: před opravou kontrolyProDokument neexistuje a okno volá
+   * tiskListaHtml bez typu → oba testy FAIL. */
+  {
+    const N = (kod, strany, dokumenty, uroven) => Object.assign({ kod, strany, text: kod, uroven: uroven || 2 }, dokumenty ? { dokumenty } : {});
+    const vysl = { varovat: true, brani: true, nalezy: [N('sodNevyplneno', ['ock'], ['sod']), N('sodProjNevyplneno', ['proj'], ['sodProj']),
+      N('rozmerOck', ['ock'], null, KO.KONTROLY_UROVEN_ZABRANA), N('cenaProj', ['proj']), N('obe', ['ock', 'proj'])] };
+    const f = typeof KO.kontrolyProDokument === 'function' ? KO.kontrolyProDokument(vysl, 'objednavkaProj') : null;
+    test('D3-N2: kontroly pro objednávku = jen nálezy strany PROJ bez cizích dokumentů (SoD OCK, SoD PROJ)',
+      !!f && f.kody.join() === 'cenaProj,obe' && f.varovat && !f.brani && vysl.nalezy.length === 5, f && f.kody);
+    test('D3-N2: okno objednávky předává typ dokumentu liště kontrol', /tiskListaHtml\(\{[^}]*kontrolyTyp: 'objednavkaProj'/.test(ui)
+      && /function kontrolyTiskLista\(typ\)/.test(cti('ui/kontroly_ui.js')) && /kontrolyTiskLista\(o\.kontrolyTyp\)/.test(cti('ui/common.js')));
+  }
   /* HTML náhledu: escapování a tytéž údaje */
   global.esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   global.dokLogoHtml = () => '';

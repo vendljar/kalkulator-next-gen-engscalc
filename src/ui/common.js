@@ -2463,7 +2463,8 @@ function tiskListaHtml(o) {
     ? marzeLista({ bezCisel: true }) : '';
   /* #33 – deset otázek, které by položil kolega přes rameno. Tady je poslední
    * místo, kde je ještě co zastavit; bez čísel, náhled odchází ven. */
-  const kontroly = (typeof kontrolyTiskLista === 'function') ? kontrolyTiskLista() : '';
+  /* o.kontrolyTyp (D3-N2): okno dokumentu ukáže jen kontroly, které se ho týkají. */
+  const kontroly = (typeof kontrolyTiskLista === 'function') ? kontrolyTiskLista(o.kontrolyTyp) : '';
   /* Přepínač zobrazení DPH (5. 9. 2026, zadání J. V.). Nabídka se generuje
    * BEZ DPH — zákazník ji dostává v cenách bez daně a řádky s DPH mátly.
    * Zapnout je jde jedním zaškrtnutím; volba platí pro tenhle výtisk, do
