@@ -278,6 +278,11 @@ const PROVERENO = {
   'zakaznici_ui.js': {
     "typeof vzZakaznikKartaTlacitka === 'function' ? vzZakaznikKartaTlacitka(klic) : ''": 'hotové HTML z vzZakaznikKartaTlacitka() — klíč karty uvnitř přes escJs()',
   },
+  /* PR (21. 11. 2026): připomínky z aplikace — složené HTML bloky panelu a nastavení. */
+  'pripominky_ui.js': {
+    'misto': 'hotové HTML čipu místa (pripominkaMistoPopis přes esc(), onclick literál) nebo tlačítka (literál)',
+    'role': 'hotové HTML zaškrtávátek rolí z PRIPOMINKA_ROLE (konstanta kódu), hodnoty přes esc()',
+  },
   'vice_zakazniku_ui.js': {
     "odeslano ? r('Kdo smí', 'jen <b>administrátor</b> — zákazníkovi už odešla nabídka') : ''": 'VZ-E3: literál kódu do r() (hotové HTML řádku potvrzení)',
     'zakaznik': 'hotové HTML řádku Zákazník z vzFormularBlok() — hodnota přes esc(), argumenty obsluhy jsou literál VZ_FORM_KDE',

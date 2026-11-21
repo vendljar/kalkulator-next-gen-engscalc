@@ -1340,8 +1340,61 @@
       ]
     },
     {
+      "id": "kap-pripominky",
+      "nadpis": "34. Připomínky z aplikace",
+      "bloky": [
+        {
+          "typ": "text",
+          "text": "Když něco nefunguje, cena nesedí, napadne vás zlepšení nebo nevíte, jak na něco, napište to **přímo z aplikace**. Vpravo dole je tmavě modré tlačítko **Připomínka** (vidíte ho, jen když ho správce pro vaši roli zapnul). Červené číslo na tlačítku znamená, že máte **novou odpověď**."
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: nová připomínka",
+          "polozky": [
+            {
+              "text": "Vpravo dole klikněte na tmavě modré tlačítko **Připomínka**. Zprava se vysune panel se záložkami **Nová připomínka** a **Moje připomínky**.",
+              "snimek": "k34-pripominka-tlacitko",
+              "klik": {
+                "obsahuje": "Připomínka"
+              }
+            },
+            {
+              "text": "Zvolte, co hlásíte (🐞 **Chyba**, 💰 **Cena**, 💡 **Návrh**, ❓ **Dotaz**), popište to vlastními slovy, nepovinně ukažte místo (📍) a klikněte na **Odeslat připomínku**. Dokud není zvolený typ a napsaná aspoň krátká věta, tlačítko nejde stisknout.",
+              "snimek": "k34-pripominka-panel",
+              "klik": {
+                "obsahuje": "Odeslat připomínku"
+              }
+            }
+          ]
+        },
+        {
+          "typ": "odrazky",
+          "nadpis": "Postup: nová připomínka",
+          "polozky": [
+            "Klikněte na **Připomínka** — zprava se vysune panel se záložkami **Nová připomínka** a **Moje připomínky**.",
+            "Zvolte, co hlásíte: 🐞 **Chyba**, 💰 **Cena**, 💡 **Návrh** nebo ❓ **Dotaz**. Nápověda v poli pod tím se podle volby změní.",
+            "Popište to **vlastními slovy** — stačí krátká věta. Dokud není zvolený typ a napsaný text, tlačítko Odeslat nejde stisknout.",
+            "Nepovinně klikněte na **📍 Ukázat místo na obrazovce**: panel se schová, nahoře se objeví lišta a prvek pod myší se orámuje oranžově. Klikněte na místo, kterého se připomínka týká (klik nic nespustí). Zpět v panelu uvidíte čip „📍 Sekce › Popisek“; křížkem ho zrušíte.",
+            "Klikněte na **Odeslat připomínku**. Dostanete číslo **P-…** a popis, co bude dál."
+          ]
+        },
+        {
+          "typ": "text",
+          "text": "**Co se přikládá samo:** obrazovka, číslo zakázky a varianta, verze aplikace a **snímek obrazovky** (zaškrtávátko *Přiložit snímek obrazovky*; když snímek nechcete, odškrtněte ho). Snímek a tyto údaje vidí **jen správce**. Odesláním se v zakázce nic nezmění."
+        },
+        {
+          "typ": "text",
+          "text": "V záložce **Moje připomínky** vidíte u každé připomínky stav (Přijato → Řeší se → Testuje se → Hotovo) a odpověď správce. Když správce připomínku **odloží** nebo **zamítne**, napíše vždy důvod — je zvýrazněný oranžově. Po otevření záložky se nové odpovědi označí jako přečtené."
+        },
+        {
+          "typ": "text",
+          "text": "Za den můžete poslat nejvýš tolik připomínek, kolik nastaví správce (výchozí 20). Když potřebujete víc, napište mu přímo."
+        }
+      ]
+    },
+    {
       "id": "kap-dotaz",
-      "nadpis": "34. Kam s dotazem",
+      "nadpis": "35. Kam s dotazem",
       "bloky": [
         { "typ": "text", "text": "Vše, co začíná slovy „administrátor musí…“, řeší **Jaroslav Vendl** — účty, hesla, zveřejnění ceníku i firemních údajů, zálohy, export dat." },
         { "typ": "text", "text": "Když narazíte na něco, co vypadá jako chyba aplikace, přiložte k hlášení **číslo verze** z hlavičky aplikace a **číslo nabídky**, u které se to stalo. Z toho se dá dohledat i to, z jaké verze ceníku se počítalo." },

@@ -79,7 +79,7 @@ function pripFabKresli() {
   el.setAttribute('aria-label', 'Připomínka k aplikaci');
   el.onclick = () => pripPanelOtevri(PRIP.novych ? 'moje' : 'nova');
   el.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="fill:currentColor"><path d="M4 3h16a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H9l-5 4v-4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/></svg>
-    <span>Připomínka</span>${PRIP.novych ? `<b class="prip-fab-pocet" title="Nové odpovědi">${PRIP.novych}</b>` : ''}`;
+    <span>Připomínka</span>${PRIP.novych ? `<b class="prip-fab-pocet" title="Nové odpovědi">${esc(PRIP.novych)}</b>` : ''}`;
   if (!pripSmiOdesilat()) { const p = document.getElementById(PRIP_PANEL_ID); if (p) p.style.display = 'none'; PRIP.panel = false; }
 }
 
@@ -197,7 +197,7 @@ function pripPanelKresli() {
   el.style.display = '';
   el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Připomínka k aplikaci');
   const novych = PRIP.moje.filter(p => p.odpovedNova).length;
-  const tab = (id, nazev) => `<button class="${PRIP.zalozka === id ? 'act' : ''}" onclick="pripZalozka('${id}')">${nazev}</button>`;
+  const tab = (id, nazev, pocet) => `<button class="${PRIP.zalozka === id ? 'act' : ''}" onclick="pripZalozka('${escJs(id)}')">${esc(nazev)}${pocet ? ` <b class="prip-pocet">${esc(pocet)}</b>` : ''}</button>`;
   let telo;
   if (PRIP.zalozka === 'moje') {
     telo = PRIP.moje.length ? PRIP.moje.map(pripKartaAutora).join('')
@@ -212,8 +212,8 @@ function pripPanelKresli() {
       <div class="btns"><button class="mini" onclick="pripNovaZnovu()">Napsat další</button>
         <button class="mini" onclick="pripZalozka('moje')">Moje připomínky</button></div>`;
   } else {
-    const typy = PRIPOMINKA_TYPY.map(t => `<button type="button" class="prip-typ${PRIP.typ === t.id ? ' act' : ''}" data-typ="${t.id}"
-        onclick="pripTyp('${t.id}')"><span class="prip-typ-ikona">${t.ikona}</span><b>${esc(t.nazev)}</b><span>${esc(t.popis)}</span></button>`).join('');
+    const typy = PRIPOMINKA_TYPY.map(t => `<button type="button" class="prip-typ${PRIP.typ === t.id ? ' act' : ''}" data-typ="${esc(t.id)}"
+        onclick="pripTyp('${escJs(t.id)}')"><span class="prip-typ-ikona">${esc(t.ikona)}</span><b>${esc(t.nazev)}</b><span>${esc(t.popis)}</span></button>`).join('');
     const typ = pripominkaTyp(PRIP.typ);
     const misto = PRIP.misto
       ? `<span class="prip-cip">📍 ${esc(pripominkaMistoPopis(PRIP.misto))} <button type="button" title="Zrušit označení" onclick="pripMistoZrus()">×</button></span>`
@@ -250,7 +250,7 @@ function pripPanelKresli() {
     ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
   el.innerHTML = `<h2>💬 Připomínka k aplikaci <span class="sp" style="flex:1"></span>
       <button class="mini" onclick="pripPanelZavri()" aria-label="Zavřít">✕</button></h2>
-    <div class="nast-tabs">${tab('nova', 'Nová připomínka')}${tab('moje', 'Moje připomínky' + (novych ? ` <b class="prip-pocet">${novych}</b>` : ''))}</div>
+    <div class="nast-tabs">${tab('nova', 'Nová připomínka')}${tab('moje', 'Moje připomínky', novych)}</div>
     <div class="body">${telo}</div>`;
   if (fokus) { const t = document.getElementById('prip-text'); if (t) { t.focus(); try { t.setSelectionRange(fokus[0], fokus[1]); } catch (e) {} } }
 }
@@ -365,7 +365,7 @@ function pripSnimekPoriz() {
         + `<div xmlns="http://www.w3.org/1999/xhtml" class="prip-html" style="width:${W}px;height:${H}px;overflow:hidden;position:relative;background:${pozadi}">`
         /* CSS jde do XML: & a < se musí zapsat jako entity, jinak SVG neprojde parserem */
         + `<style>${css.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</style>`
-        + `<div class="${esc(tridy)}"${data} style="position:absolute;left:${-window.scrollX}px;top:${-window.scrollY}px;width:${document.documentElement.scrollWidth}px;margin:0">${vnitrek}</div>`
+        + `<div class="${esc(tridy)}"${data} style="position:absolute;left:${-window.scrollX}px;top:${-window.scrollY}px;width:${+document.documentElement.scrollWidth}px;margin:0">${vnitrek}</div>`
         + `</div></foreignObject></svg>`;
       const img = new Image();
       img.onload = () => {
@@ -520,7 +520,7 @@ function pripSpravceNastaveniHtml() {
   const n = PRIP.sp.nastaveni || pripominkyNastaveniVychozi();
   const k = PRIP.sp.klic || { nastaven: false };
   const role = PRIPOMINKA_ROLE.map(r => `<label class="prip-chk"><input type="checkbox" class="prip-n-role" value="${esc(r)}" ${n.role.includes(r) ? 'checked' : ''}> ${esc(r)}</label>`).join(' ');
-  const zdroje = PRIPOMINKA_ZDROJE.map(z => `<option value="${z.id}" ${n.zdrojFronty === z.id ? 'selected' : ''}>${esc(z.nazev)}</option>`).join('');
+  const zdroje = PRIPOMINKA_ZDROJE.map(z => `<option value="${esc(z.id)}" ${n.zdrojFronty === z.id ? 'selected' : ''}>${esc(z.nazev)}</option>`).join('');
   const zaznam = (PRIP.sp.zaznam || []).slice(0, 5).map(z => `<li>${esc(pripDatum(z.kdy))} — ${esc(z.udalost)}</li>`).join('');
   return `<div class="sec-title">Nastavení připomínek</div>
     <div class="prip-nast">
@@ -575,9 +575,9 @@ function nastPripominky() {
   if (!pripPrihlasen()) return '<div class="note">Připomínky jsou dostupné po přihlášení k online databázi.</div>';
   if (!sp.nacteno && !sp.nacita) setTimeout(pripSpravceNacti, 0);
   const pocty = pripominkyPocty(sp.seznam, sp.zdroj);
-  const cipy = PRIPOMINKA_FILTRY.map(f => `<button class="mini prip-cip-filtr${sp.filtr === f.id ? ' aktivni' : ''}" data-filtr="${f.id}"
-      onclick="pripSpFiltr('${f.id}')">${esc(f.nazev)} <b>${pocty[f.id] || 0}</b></button>`).join(' ');
-  const zdroje = PRIPOMINKA_ZDROJE.map(z => `<option value="${z.id}" ${sp.zdroj === z.id ? 'selected' : ''}>${esc(z.nazev)}</option>`).join('');
+  const cipy = PRIPOMINKA_FILTRY.map(f => `<button class="mini prip-cip-filtr${sp.filtr === f.id ? ' aktivni' : ''}" data-filtr="${esc(f.id)}"
+      onclick="pripSpFiltr('${escJs(f.id)}')">${esc(f.nazev)} <b>${esc(pocty[f.id] || 0)}</b></button>`).join(' ');
+  const zdroje = PRIPOMINKA_ZDROJE.map(z => `<option value="${esc(z.id)}" ${sp.zdroj === z.id ? 'selected' : ''}>${esc(z.nazev)}</option>`).join('');
   return `<div class="note">Připomínky obchodníků z tlačítka „Připomínka". Snímek a kontext vidí jen správce. Každý web (ostrý i test) má vlastní
       databázi; zdroj filtru platí pro připomínky v tomto webu (${esc((PRIP.nastaveni && PRIP.nastaveni.zdroj) === 'test' ? 'testovací web' : 'ostrý web')}) a pro čtení koordinací.</div>
     ${PRIP.nastaveni && !PRIP.nastaveni.zapnuto ? '<div class="prip-chyba">Funkce je vypnutá — obchodníci tlačítko nevidí. Zapnete ji dole v Nastavení připomínek.</div>' : ''}

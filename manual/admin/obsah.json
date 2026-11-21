@@ -1540,6 +1540,47 @@
           ]
         }
       ]
+    },
+    {
+      "id": "kap-a-pripominky",
+      "nadpis": "A16. Připomínky z aplikace",
+      "bloky": [
+        {
+          "typ": "text",
+          "text": "Obchodníci posílají z aplikace chyby, nesedící ceny, návrhy a dotazy (tlačítko **Připomínka** vpravo dole). Správce je vyřizuje v **Nastavení → 💬 Připomínky (N)** (hned za Uživateli); totéž otevře tlačítko **💬 Připomínky N** v horní liště. Číslo = nepřečtené."
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: vyřídit připomínku",
+          "polozky": [
+            {
+              "text": "Klikněte v horní liště na **💬 Připomínky** (nebo **⚙ → 💬 Připomínky**). Vyberte řádek v tabulce, vpravo se otevře detail. Napište odpověď a zvolte akci — u **Odložit** a **Zamítnout** je odpověď povinná.",
+              "snimek": "a-pripominky",
+              "klik": {
+                "obsahuje": "Nastavení připomínek"
+              }
+            }
+          ]
+        },
+        {
+          "typ": "odrazky",
+          "polozky": [
+            "**Zapnutí:** funkce je výchozí **vypnutá**. Dole v oddílu *Nastavení připomínek* zaškrtněte *Funkce zapnutá* a role, které tlačítko uvidí, a uložte.",
+            "**Třídění:** čipy Nové / Ve frontě oprav / Řeší se / Na testu / Hotové / Odložené a zamítnuté / Vše, výběr zdroje (ostrý i test / jen ostrý / jen test) a hledání. Klik na řádek otevře detail: text, kontext (obrazovka, zakázka s odkazem *otevřít zakázku*, označené místo, verze a prohlížeč), snímek s vyznačeným místem a průběh.",
+            "**Akce:** *➜ Do fronty oprav* (převezme koordinace), *Odpovědět a uzavřít*, *Odložit*, *Zamítnout*, *Duplicitní s…* (číslo P-…). U odložení a zamítnutí je **zdůvodnění povinné** — autor ho vidí vždy.",
+            "**Limity:** připomínek za den na uživatele (výchozí 20), uchovávání vyřízených (hotové, zamítnuté, duplicitní; výchozí 365 dní, 0 = navždy; maže se při otevření seznamu správcem).",
+            "**E-mail správci:** aplikace zatím e-maily neodesílá — volba se uloží a platit začne, až odesílání přibude."
+          ]
+        },
+        {
+          "typ": "text",
+          "text": "**Klíč pro koordinaci.** *Vydat klíč* (potvrzuje se vlastním heslem) ukáže klíč **jen jednou** — zkopírujte ho a předejte koordinaci; server drží jen jeho otisk. Klíč smí jen číst připomínky puštěné do fronty oprav (`GET /api/pripominky?pro=koordinace&od=<čas>`, hlavička `Authorization: Bearer`) a měnit jejich stav, odpověď a číslo roadmapy. Nové (nepuštěné) připomínky, autora, zakázku, hodnoty polí ani snímek koordinace nedostane. Špatný klíč se počítá (10 pokusů za 15 minut, pak 429) a zapisuje do *Posledních událostí klíče*. *Vydat nový klíč* starý zneplatní; *Zrušit klíč* čtení zastaví. Po obnově ze zálohy je třeba klíč vydat znovu (do zálohy nejde)."
+        },
+        {
+          "typ": "text",
+          "text": "**Zálohy:** záznamy připomínek a nastavení jsou v nočním otisku, v ruční záloze, v kopii na Disk i v obnově (část *Připomínky z aplikace*). **Snímky obrazovky do zálohy nejdou** (velké, nesou ceny) — po obnově zůstane připomínka bez snímku. Každý web (ostrý i testovací) má vlastní databázi připomínek."
+        }
+      ]
     }
   ]
 }

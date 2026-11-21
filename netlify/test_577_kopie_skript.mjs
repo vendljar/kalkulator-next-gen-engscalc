@@ -251,7 +251,13 @@ try {
   p = await priprav();
   kusy = await stahni(p.telo);
   const objM = JSON.parse(gunzipSync(Buffer.concat(kusy.map(k => k.telo))).toString('utf8'));
-  test('K10 starý jednolitý otisk → týž tvar jako otiskProDisk + web', p.telo.otisk === DEN(2) && isDeepStrictEqual(objM, await ocekavany(DEN(2))), objM);
+  /* PR (21. 11. 2026): starý jednolitý otisk nezná části přidané později
+   * (pripominky). Skript je vypíše výchozí hodnotou null (jako otiskZaklad),
+   * otiskProDisk je vynechá — pro obnovu totéž („záloha tuto část nenese“).
+   * Očekávání proto doplní chybějící části null; jinak beze změny. */
+  const ocekM = await ocekavany(DEN(2));
+  for (const k of ['pripominky']) if (!(k in ocekM)) ocekM[k] = null;
+  test('K10 starý jednolitý otisk → týž tvar jako otiskProDisk + web', p.telo.otisk === DEN(2) && isDeepStrictEqual(objM, ocekM), objM);
 
   /* ---------------- V: > 60 MB ---------------- */
   for (const k of [...pamet.keys()]) if (k.startsWith('zalohy/') || k.startsWith('zakazky/') || k.startsWith(KS.KS_ULOZISTE + '/')) pamet.delete(k);

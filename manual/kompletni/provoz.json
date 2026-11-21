@@ -601,6 +601,12 @@
        "dokud je administrátor nesmaže"
       ],
       [
+       "pripominky",
+       "připomínky z aplikace (`p/P-…`: typ, text, autor, stav, odpověď, kontext obrazovky), nastavení funkce, počítadlo čísel; snímky obrazovky zvlášť v `pripominky_snimky` (mimo zálohu), limity a záznam klíče koordinace v `pripominky_limit` (mimo zálohu), otisk klíče koordinace v `program/pripominky_klic` (mimo zálohu)",
+       "jméno a e-mail autora, text psaný obchodníkem, číslo zakázky; snímek může nést ceny (vidí jen správce)",
+       "vyřízené podle nastavení (výchozí 365 dní), ostatní dokud je správce neuzavře"
+      ],
+      [
        "uzivatele",
        "účty: e-mail, jméno, titul, funkce, telefon, role, otisk hesla, stav",
        "údaje zaměstnanců",
@@ -1510,6 +1516,12 @@
        "GET, POST, DELETE",
        "GET a POST přihlášený; DELETE jen administrátor",
        "karty zákazníků"
+      ],
+      [
+       "/api/pripominky",
+       "GET, POST, PATCH",
+       "GET a POST přihlášený (odesílá jen povolená role při zapnuté funkci; autor vidí jen svoje); snímek, nastavení, klíč a PATCH stavu jen administrátor; klíč koordinace (Authorization: Bearer) jen GET ?pro=koordinace a PATCH stavu",
+       "připomínky z aplikace"
       ],
       [
        "/api/program",

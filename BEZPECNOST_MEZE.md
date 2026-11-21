@@ -2130,3 +2130,55 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   v posledních 5 min bez pozdějšího odhlášení) je odhad: otevřená karta bez volání API zhasne po
   5 minutách, a relace ukončená změnou hesla nebo zásahem správce zhasne až po 5 minutách (bez
   záznamu odhlášení). Údaj je pro přehled správce, ne doklad o docházce ani o přítomnosti.
+
+## PR — připomínky z aplikace (dávka PR, 21. 11. 2026) — B231
+
+- **B231 — připomínky z aplikace: klíč koordinace, snímky obrazovky, osobní údaje.**
+  *Co to dělá:* `/api/pripominky` (funkce `netlify/functions/pripominky.mjs`, logika `src/pripominky.js`).
+  Odesílá jen přihlášený s rolí povolenou v nastavení a jen při zapnuté funkci (výchozí VYPNUTO → 403
+  `kod: vypnuto`); autor, čas, zdroj (ostrý / test podle `PROSTREDI`), stav `nova` a číslo `P-…` píše
+  server, ne klient. Vstup projde očistou (`pripominkaNova`: známá pole, ořez, řídicí znaky pryč, kontext
+  ≤ 8 kB, text 10–4000 znaků), tělo nad 800 kB → 413, nejvýš `limitDen` připomínek za den na účet
+  (výchozí 20, strop 200; → 429). HTML se nikde neukládá „hotové“ — escapuje až UI (`esc`/`escJs`,
+  hlídá `test_escape.js`); XSS v textu ověřuje `overit_pripominky.mjs` u správce i u autora.
+  *Snímek obrazovky:* bez knihoven (CSP `script-src 'self'`): klient serializuje viditelnou část DOM do
+  SVG `<foreignObject>`, vykreslí do `<canvas>` a pošle **JPEG** (šířka ≤ 1280 px, ≤ 700 kB). Server
+  přijme jen `data:image/jpeg|png;base64` (žádné SVG — umí nést skript —, žádný odkaz). Hesla se do
+  snímku neberou (pole `password` vyprázdněna), soubory a skripty se odstraní. Když prohlížeč vykreslení
+  odmítne nebo trvá přes 4 s, připomínka odejde bez snímku; strukturovaný kontext (obrazovka, zakázka,
+  označené místo, verze, prohlížeč; hodnota pole jen u označeného necenového pole) jde vždy.
+  Snímek **může nést ceny a osobní údaje** (je to interní nástroj, ceny se nemažou) — proto: leží zvlášť
+  v úložišti `pripominky_snimky`, čte ho **jen Administrátor** (`?snimek=` ostatním 403), **nejde do
+  zálohy ani do kopie na Disk**, nikdy ke koordinaci. Snímky v repozitáři jen ze smyšlených dat.
+  *Kdo co vidí:* autor jen svoje připomínky a jen stav, odpověď a průběh (`pripominkaProAutora`, bez
+  kontextu, roadmapy a příznaků správce); správce vše. Stav mění jen správce (PATCH) — autor smí jen
+  označit SVÉ nové odpovědi jako přečtené. Odložení a zamítnutí bez zdůvodnění server odmítne (400),
+  autor ho vidí vždy (rozhodnutí J. V.).
+  *Klíč koordinace:* vydává jen Administrátor s vlastním heslem (B77, `potvrdHesloSpravce`), klíč
+  `kngpr_` + 256 bitů náhody se vrátí **jednou**, server drží jen SHA-256 v `program/pripominky_klic`
+  (mimo zálohu — po obnově se vydá nový; ze zálohy se klíč nikdy neobnovuje). Klíč platí **jen** na
+  `GET /api/pripominky?pro=koordinace&od=<ISO>[&stav=…]` a `PATCH` stavu, v hlavičce
+  `Authorization: Bearer`; v adrese → 400, spolu s cookie relace → 400, jinde neplatí (žádná jiná funkce
+  ho nezná; `test_pripominky.mjs` ověřuje `/api/zakazky` → 401). Čte jen připomínky, které správce pustil
+  do fronty (stav ≠ `nova`), a dostane jen číslo, typ, text, stav, roadmapu, odpověď, obrazovku, označené
+  místo a verzi — **ne autora, zakázku, hodnoty polí ani snímek** (`pripominkaProKoordinaci`). Mění jen
+  stav (fronta/řeší se/test/hotovo/odloženo/zamítnuto), odpověď a číslo roadmapy, nikdy u nové
+  připomínky. Porovnání v konstantním čase (`tajneShodne`). Zneužití: špatný klíč se počítá na adresu
+  (10 za 15 min → 429), správný klíč nejvýš 300 požadavků za hodinu (→ 429); obojí jde do záznamu
+  `pripominky_limit/klic_zaznam` (čas, událost, klíč počítadla adresy — bez obsahu, bez klíče), který
+  vidí správce v Nastavení. Zrušení klíče okamžitě zastaví čtení.
+  *Zálohy:* úložiště `pripominky` (záznamy, nastavení, počítadlo) je v nočním otisku, ruční záloze,
+  kopii na Disk i obnově (obnova záznam znovu očistí `pripominkaObnovaOciste`, cizí klíče přeskočí);
+  `pripominky_snimky` a `pripominky_limit` jsou výjimky (`test_zalohy.mjs` N4).
+  *Uchovávání:* vyřízené (hotové, zamítnuté, duplicitní) se mažou po `uchovatDni` (výchozí 365, 0 =
+  navždy) při čtení seznamu správcem, nejvýš 50 naráz, i se snímkem.
+  *Co to nedělá:* počítadla (limit za den, číslo P-…, špatné klíče, hodinový limit) jsou čtení–změna–zápis
+  řazené jen v jedné instanci funkce (`vyhradne`, jako B158) — dvě instance pod náporem mohou limit
+  překročit o jednotky a číslo připomínky se pak hledá další volné (kolize se nepřepíše, ale počítadlo může
+  přeskočit). E-mail správci aplikace neodesílá (není odesílání e-mailů) — volba se jen uloží, text je
+  připravený (`pripominkaEmailText`), do logu jde jen předmět. Text připomínky píše obchodník volně a může
+  v něm být cokoli (i jméno zákazníka nebo cena): koordinace ho **nesmí kopírovat do repozitáře ani do
+  kokpitu doslova**, jen shrnutí bez cen a osobních údajů. Každý web má vlastní databázi; „zdroj“ filtru
+  u správce rozlišuje jen záznamy uložené v tomto webu, obě databáze čte koordinace zvlášť (dvěma klíči).
+  Snímek je obraz DOM v prohlížeči autora: obrázky z jiných domén, `<canvas>` a některé styly se v něm
+  nemusí vykreslit; je to diagnostika, ne doklad.

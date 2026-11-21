@@ -1054,6 +1054,24 @@ if (dialog22) {
 await cekej(500);
 await dlgStub();
 
+/* ---- kap. 34: připomínky z aplikace (PR, 21. 11. 2026) ----
+ * Funkce se zapne až tady (přímo v úložišti), ať tlačítko Připomínka
+ * nesvítí na snímcích ostatních kapitol; po snímcích se zase vypne. */
+krok('kap. 34: připomínky z aplikace');
+pamet.set('pripominky/nastaveni', JSON.stringify({ zapnuto: true, role: ['Obchodník', 'Vedoucí', 'Administrátor'],
+  snimekVychozi: false, limitDen: 20, uchovatDni: 365 }));
+await page.evaluate(() => pripominkyPoPrihlaseni());
+await cekej(400);
+await vezmi('k34-pripominka-tlacitko', '#prip-fab', { uprav: "klon.style.position = 'static';" });
+await page.evaluate(() => { pripPanelOtevri('nova'); pripTyp('chyba');
+  const t = document.getElementById('prip-text'); t.value = 'Po kliknutí na Uložit zakázku se nic nestalo.'; pripTextZmena(t); });
+await cekej(300);
+await vezmi('k34-pripominka-panel', '#prip-panel', { uprav: "klon.style.position = 'static'; klon.style.height = 'auto';" });
+await page.evaluate(() => pripPanelZavri());
+pamet.delete('pripominky/nastaveni');
+await page.evaluate(() => pripominkyPoPrihlaseni());
+await cekej(300);
+
 /* ---------- odevzdání ---------- */
 
 const data = await page.evaluate(() => SNIMAC.data());

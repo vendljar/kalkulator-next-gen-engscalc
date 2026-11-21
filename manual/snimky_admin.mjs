@@ -462,6 +462,18 @@ await vezmi('a-nahled-menu', () => document.querySelector('.nahled-menu'), { upr
   "klon.style.position = 'static'; klon.style.right = 'auto'; klon.style.top = 'auto';" });
 await page.evaluate(() => { if (NAST.nahledMenu) nahledMenuPrepni(); });
 
+/* ---------- 7) připomínky z aplikace (PR, 21. 11. 2026) ---------- */
+krok('Nastavení → Připomínky');
+pamet.set('pripominky/nastaveni', JSON.stringify({ zapnuto: true, role: ['Obchodník', 'Vedoucí', 'Administrátor'],
+  snimekVychozi: false, limitDen: 20, uchovatDni: 365 }));
+await page.evaluate(() => pripominkyPoPrihlaseni());
+await page.evaluate(() => pripominkySpravceOtevri());
+await cekej(900);
+await vezmi('a-pripominky', '#nastaveni-panel');
+await page.evaluate(() => { if (typeof zavriNastaveni === 'function') zavriNastaveni(); });
+pamet.delete('pripominky/nastaveni');
+await page.evaluate(() => pripominkyPoPrihlaseni());
+
 /* ---------- odevzdání ---------- */
 const data = await page.evaluate(() => SNIMAC.data());
 data.snimky.push(...ODLOZENE.filter(o => !data.snimky.some(s => s.id === o.id)));
