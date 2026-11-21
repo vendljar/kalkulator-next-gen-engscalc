@@ -8,6 +8,26 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.11.1 — OP1 drobnosti ze zkoušek testovacího sezení (PG-N1, #682, D3-N1, D3-N2), větev claude/op1-drobnosti
+
+Nad integrací `cda289e` (v19.11.11). Cenu nemění; mění vzhled náhledu podkladů OCK, Word CN v EN/DE/FR (prázdný
+pruh pryč) a rozvržení objednávky PROJ. Verzi a pracovní čísla roadmapy (#692–#694) přečísluje koordinace.
+
+- **PG-N1 (#692 prac.) — Kompletní náhled podkladů:** vlastní řádek přepnutý na SOUČÁSTÍ DODÁVKY NENÍ se už neukazuje
+  podruhé pod DALŠÍ UJEDNÁNÍ a jen s řádky NENÍ náhled nemá pruh DALŠÍ UJEDNÁNÍ (jako Word). `nwBloky` filtr `!e.neni`.
+- **#682 — Word CN v EN/DE/FR:** prázdný pruh sekce technické části (typicky BRIDGES… / BRÜCKEN… u šachty bez
+  skladebných můstků) zmizí jako v češtině. `odstranPrazdneTsRadky` pozná pruh i podle překladu ze slovníku
+  (`tsSekceNazvy`: živý i zabudovaný PREKLAD, všechny jazyky, bez ohledu na velikost písmen).
+- **D3-N1 (#693 prac.) — objednávka PROJ na 2 strany:** popis dodávky přes celou šířku řádku a pod ním řádek čísel
+  (Množ. · MJ · J. cena · C. cena · celkem bez DPH · DPH % · celkem s DPH) jako vzor účetního systému, v náhledu
+  i ve Wordu stejně; záhlaví ve Wordu se opakuje, popis drží s čísly. Rozsah prací se nezkracuje. Zkušební ceník:
+  4 činnosti PDF 2 / Word 2 strany (dřív 3 / 2), 7 činností PDF 2 / Word 2 (dřív 4 / 3).
+- **D3-N2 (#694 prac.) — okno náhledu objednávky:** lišta „Kontrola před odesláním“ ukazuje jen kontroly, které se
+  objednávky týkají (strana PROJ, bez nálezů SoD OCK a SoD PROJ) — `kontrolyProDokument`. Do tisku nejde.
+- **Testy (s pojistkou):** `test_np_nahled_word.js` C2 (před opravou 9 FAIL → 183/0), `test_docxgen.js` (d2) (4 FAIL
+  → vše OK), `test_objednavka_proj.js` D3-N2 (2 FAIL → 78/0), nový harness `overit_objednavka_strany.mjs`
+  (6/6 FAIL → 6/6 OK; PDF z Chromia, Word orientačně přes LibreOffice).
+
 ## v19.11.11 — D3 #688: Objednávka / Smlouva PROJ z nabídky PROJ, větev claude/d3-objednavka-proj
 
 Nad integrací `042fcbc` (v19.11.5). Nový dokument, cenu ani text nabídky a SoD nemění. Verzi přečísluje koordinace.
