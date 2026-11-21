@@ -6,7 +6,7 @@ import { nova, uloz, nacti, cO, zamkni, G, cenaOck, verdikt } from './poc_AZ_zak
 const z0 = nova('AZ-8 ceník'); const c0 = cenaOck(z0.varianty[0]);
 const z = nova('AZ-8 nuly'); const v = z.varianty[0]; v.data.rucniCeny = {}; let n = 0;
 const projdi = (o, c) => { for (const k of Object.keys(o || {})) { const cc = c + '.' + k;
-  if (typeof o[k] === 'number' && G.rucniCenaSmi(cc) && o[k] > 0) { o[k] = 0; n++;
+  if (typeof o[k] === 'number' && G.rucniCenaSmi(cc) && o[k] > 0 && cc !== 'C.profilasKgKc') { o[k] = 0; n++;
     v.data.rucniCeny[cc] = { hodnota: 0, dodavatel: 'x', cislo: '', datum: '', platnostDo: '', zaklad: null, potvrdil: { lokalne: true } }; }
   else if (o[k] && typeof o[k] === 'object' && !Array.isArray(o[k]) && c.split('.').length < 2) projdi(o[k], cc); } };
 projdi(v.data.cenik, 'C');
