@@ -22,7 +22,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/on-online` | (tato dávka) | v19.11.8 | #ON kdo je online (Nastavení → Uživatelé) nad 042fcbc; verzi přečísluje koordinace |
 | `claude/d8-lhuty` | (tato dávka) | v19.11.7 | D8 #677 (pracovní) lhůty PROJ → termíny krycího listu; nad integrací 042fcbc; verzi přečísluje koordinace |
 | `claude/vz-f1` | (tato dávka) | v18.11.8 | VZ-F1 #659 opravy nálezů ruční zkoušky VZ; nad ec5bbac, sloučeno s integrací 41bbe99 |
-| `claude/dos-drobnosti` | (tato dávka) | v21.11.1 | DOS #680 #690 #691 nad cda289e |
+| `claude/dos-drobnosti` | (tato dávka) | v21.11.4 | DOS #680 #690 #691 nad cda289e |
 | `claude/pg-tisk` | (tato dávka) | v19.11.10 | PG #684–#687 nad integrací 042fcbc; čísla a verzi přečísluje koordinace |
 
 Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tagu: `python3 nastroje/release_odkaz.py --chybejici`
@@ -30,7 +30,7 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 
 ## Běžící dávky
 
-- **DOS** (`claude/dos-drobnosti`, v21.11.1, nad cda289e): #680 návrhy mimo číselník; #690 náhled bez světlíků;
+- **DOS** (`claude/dos-drobnosti`, v21.11.4, nad cda289e): #680 návrhy mimo číselník; #690 náhled bez světlíků;
   #691 bez verzálek, EN/DE dvojtečka; N4 → šablony v18 (SB). Kolo VŠE ZELENÉ, SHODA 359/359, mutace [DOS] 6/6. HOTOVO.
 - **PG** (`claude/pg-tisk`, v19.11.10, nad 042fcbc): #684 tlačítka tisku CN OCK (náhled podkladů → Word modře → náhled
   a tisk), #685 vlastní řádek TS v SOUČÁSTÍ DODÁVKY NENÍ (`extra[i].sekce='neni'`), #686 DALŠÍ UJEDNÁNÍ v nabídce PROJ

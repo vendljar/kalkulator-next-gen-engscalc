@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v21.11.1 — DOS: drobnosti DO-N1 #680 a náhled podkladů NPT-N1–N4 #690/#691, větev claude/dos-drobnosti
+## v21.11.4 — DOS: drobnosti DO-N1 #680 a náhled podkladů NPT-N1–N4 #690/#691, větev claude/dos-drobnosti
 
 Nad integrací `cda289e` (v19.11.11). Cenu ani text Wordu nemění (porovnání sestavení SHODA). Verzi přečísluje koordinace.
 
