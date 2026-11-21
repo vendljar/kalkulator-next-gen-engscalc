@@ -31,8 +31,8 @@ console.log('razítko ověření serveru:', JSON.stringify(ov && { stav: ov.stav
 if (g) {
   console.log('controlling z podvrženého zámku:', JSON.stringify(ctrl(g)));
   const zi = imp(g); const vz = G.vypocetZ(zi.varianty[0], JEKLY);
-  console.log('vypocetZ (z čeho tisknou dokumenty) souhrn:', JSON.stringify(vz.souhrn));
+  console.log('vypocetZ (z čeho tisknou dokumenty) — klíče souhrnu, které zbyly:', Object.keys(vz.souhrn).join(', '));
   const cn = G.cenaNabidkyOck(vz, zi.varianty[0].data.sleva, zi.varianty[0].data.zaokr);
-  console.log('cenaNabidkyOck nese řádek můstků z přidaného čísla:', JSON.stringify(cn && cn.mustky));
+  console.log('cenaNabidkyOck nese řádek můstků z přidaného čísla:', !!(cn && cn.mustky));
 }
 verdikt(!!(ov && ov.stav === 'shoda' && vypusteno > 0), 'AZ-2: zmrazený výsledek s ' + vypusteno + ' vypuštěnými čísly a jedním přidaným dostal razítko „' + (ov && ov.stav) + '".');

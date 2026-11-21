@@ -152,7 +152,7 @@ delete process.env.TAJEMSTVI_RELACE;
 let vyj = '';
 try { const o = await kdo(cA2); vyj = 'HTTP ' + o.s; } catch (e) { vyj = 'výjimka: ' + String(e.message).slice(0, 60) + '…'; }
 radek('bez TAJEMSTVI_RELACE se cookie neověří (žádný výchozí klíč)', /výjimka/.test(vyj) || /HTTP (401|500|503)/.test(vyj), vyj);
-process.env.TAJEMSTVI_RELACE = 'testovaci-kratke';
+process.env.TAJEMSTVI_RELACE = 'testovaci-kratke'.slice(0, 12);   // 12 znaků < 16
 try { const o = await kdo(cA2); vyj = 'HTTP ' + o.s; } catch (e) { vyj = 'výjimka'; }
 radek('tajemství kratší než 16 znaků se odmítne', vyj === 'výjimka', vyj);
 process.env.TAJEMSTVI_RELACE = TAJ;
