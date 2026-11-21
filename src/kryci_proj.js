@@ -68,17 +68,31 @@ const KRYCI_PROJ_CINNOSTI = [
 
 const kryciProjKc = n => Math.round(n || 0).toLocaleString('cs-CZ') + ' Kč';
 
+/* #683 (D8-I1, technické sjednocení): je činnost v nabídce? TÉMŽ pravidlem
+ * jako nabídka PROJ (nabidkaProjNabizi — cena před slevou); dřív krycí list
+ * bral cenu po slevě (`celkem > 0`) a se slevou 100 % se rozešel s nabídkou
+ * (rozsah činností i dopočet termínů D8). Bez modulu nabídky (sady, server)
+ * a bez varianty platí cena po slevě jako dřív. Počítá se jednou na kontext. */
+function kryciProjNabizi(c, key) {
+  if (!c) return false;
+  if (c.nabiziFn === undefined) {
+    c.nabiziFn = null;
+    try { if (typeof nabidkaProjNabizi === 'function' && c.varianta) c.nabiziFn = nabidkaProjNabizi(c.varianta); } catch (e) { c.nabiziFn = null; }
+  }
+  if (c.nabiziFn) return !!c.nabiziFn(key);
+  return !!(c.sekce && c.sekce[key] && +c.sekce[key].celkem > 0);
+}
 /* prefill jedné činnosti: „ANO – 47 250 Kč“ / „není součástí nabídky“ */
 function kryciProjCinnost(c, key) {
   const s = c.sekce && c.sekce[key];
   if (!s) return '';
-  return s.celkem > 0 ? 'ANO – ' + kryciProjKc(s.celkem) : 'není součástí nabídky';
+  return kryciProjNabizi(c, key) ? 'ANO – ' + kryciProjKc(s.celkem) : 'není součástí nabídky';
 }
 /* ANO/NE bez částky – pro technickou verzi, kde se ceny neuvádějí */
 function kryciProjAno(c, key) {
   const s = c.sekce && c.sekce[key];
   if (!s) return '';
-  return s.celkem > 0 ? 'ANO' : 'NE';
+  return kryciProjNabizi(c, key) ? 'ANO' : 'NE';
 }
 
 /* pole pro jednotlivé činnosti se generují z jednoho seznamu, aby se
@@ -121,7 +135,7 @@ function kryciProjTerminy(c) {
   c.terminyLhuty = m ? m.lhutyProjDopocet({
     podpis: prodana ? v.prodano.datum : '',
     lhuty: kl.lhutyProj && typeof kl.lhutyProj === 'object' ? kl.lhutyProj : null,
-    nabizi: key => !!(c.sekce && c.sekce[key] && +c.sekce[key].celkem > 0),
+    nabizi: key => kryciProjNabizi(c, key),   // #683: totéž pravidlo jako nabídka
     rucne: h,
   }) : null;
   return c.terminyLhuty;

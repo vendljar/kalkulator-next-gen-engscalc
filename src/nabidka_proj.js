@@ -628,6 +628,19 @@ function nabidkaProjCeny(varianta, lang) {
   return { r, mena, zaokrP, slevaPodilProj, pSleva, cenyPred, cenyPo };
 }
 
+/* CO NABÍDKA NABÍZÍ (#683, D8-I1 — technické sjednocení). Jediné pravidlo
+ * „činnost je v nabídce": cena sekce PŘED slevou po obchodním zaokrouhlení
+ * je nenulová — tak rozhoduje nabídka (vRozsahu / cenaSekce, CN vypisuje
+ * činnosti za cenu před slevou a slevu zvlášť). Krycí list PROJ (rozsah
+ * činností, dopočet termínů D8) se ptá TÉHOŽ pravidla — dřív bral cenu PO
+ * slevě (`celkem > 0`), takže se slevou 100 % nabídka studii nabízela
+ * a krycí list ne. Vrací key → bool (podmíněné klíče „dpz+studie" řeší
+ * volající). */
+function nabidkaProjNabizi(varianta, spoctene) {
+  const c = spoctene || nabidkaProjCeny(varianta, 'cz');
+  return key => { const x = c.cenyPred[key]; return x != null && !!x; };
+}
+
 /* PLÁN PLATEB ZAKÁZKY (etapa B, #367). Efektivní plán varianty
  * (planPlatebVarianty v plan_plateb.js) nad cenami činností PO SLEVĚ — týmiž,
  * které tiskne nabídka bez řádku slevy a smlouva o dílo; nabízená činnost =
@@ -708,6 +721,11 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
   const slevaZvlast = !(moznosti && moznosti.slevaZvlast === false);
   const cenyZobr = slevaZvlast ? cenyPred : cenyPo;
   const cenaSekce = key => (cenyZobr[key] == null ? null : cenyZobr[key]);
+  /* #683: „je v nabídce" = nabidkaProjNabizi (cena před slevou) — totéž
+   * pravidlo čte krycí list PROJ. Dokument bez řádku slevy (smlouva o dílo,
+   * slevaZvlast false) rozhoduje dál podle ceny po slevě jako dřív (beze změny
+   * textu smlouvy). Částka pro dokument dál z cenaSekce. */
+  const nabizi = slevaZvlast ? nabidkaProjNabizi(varianta, cenyNabidky) : (k => !!cenaSekce(k));
 
   /* DPH: přednost má vlastní sazba projekční části (ceník PROJ). Starší zakázky
    * ji nemají – tam se použije dosud platná sazba z ceníku OCK, ať se čísla
@@ -789,14 +807,14 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     const jmeno = klic.slice(i + 1).trim().toLowerCase();
     /* Neznámý název (položku někdo z kalkulace smazal) se bere jako
      * nepočítaný — text bez ceny je horší než chybějící text. */
-    return !!cenaSekce(sekce) && !!polozkyMapa[sekce + ':' + jmeno];
+    return nabizi(sekce) && !!polozkyMapa[sekce + ':' + jmeno];
   };
   /* Podmíněný klíč (D1, termín DPZ podle studie): „dpz+studie" = DPZ se
    * studií, „dpz-studie" = DPZ bez studie. */
   const vRozsahu = k => {
     const m = /^([a-z]+)([+-])([a-z]+)$/.exec(String(k));
-    if (m) return !!cenaSekce(m[1]) && (m[2] === '+' ? !!cenaSekce(m[3]) : !cenaSekce(m[3]));
-    return (String(k).indexOf(':') > 0) ? polozkaVRozsahu(String(k)) : !!cenaSekce(k);
+    if (m) return nabizi(m[1]) && (m[2] === '+' ? nabizi(m[3]) : !nabizi(m[3]));
+    return (String(k).indexOf(':') > 0) ? polozkaVRozsahu(String(k)) : nabizi(k);
   };
   /* `jenSe` = podmínka VIDITELNOSTI nezávislá na tom, odkud se bere částka.
    * Bez ní by šlo říct jen „ukaž se, když má tahle sekce cenu", což u částí
@@ -1297,4 +1315,4 @@ if (typeof dokumentRegistruj === 'function')
   });
 
 if (typeof module !== 'undefined')
-  module.exports = { nabidkaProjDalsiUjednani, nabidkaProjStudieBezZamereni, nabidkaProjDpzBezZamereni, NABIDKA_PROJ_DPZ_STAVAJICI, NABIDKA_PROJ_STUDIE_CASTI, NABIDKA_PROJ_PUVODNI_STAV, nabidkaProjData, nabidkaProjNabiziAD, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, nabidkaProjUvodRucne, nabidkaProjUvodNesedi, NABIDKA_PROJ_CESTOVNE, NABIDKA_PROJ_CESTOVNE_KDE, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_UVOD_ZAVER, NABIDKA_PROJ_DPZ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };
+  module.exports = { nabidkaProjNabizi, nabidkaProjDalsiUjednani, nabidkaProjStudieBezZamereni, nabidkaProjDpzBezZamereni, NABIDKA_PROJ_DPZ_STAVAJICI, NABIDKA_PROJ_STUDIE_CASTI, NABIDKA_PROJ_PUVODNI_STAV, nabidkaProjData, nabidkaProjNabiziAD, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, nabidkaProjUvodRucne, nabidkaProjUvodNesedi, NABIDKA_PROJ_CESTOVNE, NABIDKA_PROJ_CESTOVNE_KDE, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_UVOD_ZAVER, NABIDKA_PROJ_DPZ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };
