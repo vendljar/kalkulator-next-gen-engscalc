@@ -134,7 +134,7 @@ async function beh(popis, cfg) {
     await krok('obnova', async () => { if (typeof onlineObnovaOtevri === 'function') onlineObnovaOtevri(); }, 500);
     try { document.getElementById('nastaveni-overlay').style.display = 'none'; } catch (e) {}
     await krok('zákazníci', async () => { prepniTab('zakaznici'); await zakazniciNacti(); render(); const z = (ZAK_DB.seznam || [])[0]; if (z) { await zakaznikOtevri(z.klic); render(); } }, 700);
-    await krok('schvalování cizí', async () => { prepniTab('schvalovani'); if (typeof schvCiziNacti === 'function') await schvCiziNacti(true); render(); }, 900);
+    await krok('schvalování cizí', async () => { prepniTab('schvalovani'); if (typeof SCHV_CIZI !== 'undefined') { SCHV_CIZI.vse = true; SCHV_CIZI.rozsah = 'vse'; } if (typeof schvNactiCizi === 'function') await schvNactiCizi(); render(); }, 1200);
     await krok('otevření zakázky', async () => { const z = (ONLINE_STAV.rejstrik || [])[0]; if (z) await onlineOtevri(z.soubor); render(); }, 1200);
     for (const t of TABY) await krok('zakázka ze serveru / ' + t, async () => { prepniTab(t); render(); }, 300);
     await krok('přehled zakázek', async () => { prepniTab('zakazka'); render(); }, 600);
