@@ -97,7 +97,8 @@
  *   node nastroje/vyrob_sablony.js --cn-v18 <složka podkladů> [výstupní složka]
  * Vstup:  Sablona_NABIDKA_CN_v17.docx (+ _EN/_DE/_FR)
  * Výstup: Sablona_NABIDKA_CN_v18.docx (+ _EN/_DE/_FR) — pevná „1" v textovém
- *           poli záhlaví → pole PAGE, viz cnV18. Nic jiného se nemění.
+ *           poli záhlaví → pole PAGE, viz cnV18; v EN/DE/FR navíc popisky
+ *           „IČ:" a „Tel.:" v bloku Kancelář ze slovníku (SB, viz cnV18Kancelar).
  *
  * CN v14 (etapa A platebních podmínek OCK, 30. 9. 2026) — samostatný režim:
  *   node nastroje/vyrob_sablony.js --cn-v14 <složka podkladů> [výstupní složka]
@@ -874,9 +875,16 @@ function cnV18(xml) {
 }
 /* Celý soubor: header*.xml s textovým polem a během „1" (1–2 výskyty na díl —
  * wps + VML záloha), aspoň jeden díl; jinak chyba. document.xml beze změny. */
-async function cnV18Soubor(bajty, popis) {
+async function cnV18Soubor(bajty, popis, L) {
   const polozky = await dg.zipPrecti(bajty);
-  let celkem = 0;
+  let celkem = 0, kancelar = [];
+  if (L && L !== 'cz') {   // SB (NPT-N4): popisky IČ/Tel. v bloku Kancelář jazykové verze
+    const d = polozky.find(p => p.nazev === 'word/document.xml');
+    if (!d) chyba(popis + ': chybí word/document.xml');
+    let r;
+    try { r = cnV18Kancelar(dec.decode(d.data), L); } catch (e) { chyba(popis + ' ' + e.message); }
+    d.data = enc.encode(r.xml); kancelar = r.zmeny;
+  }
   for (const p of polozky) {
     if (!/^word\/header\d*\.xml$/.test(p.nazev)) continue;
     const xml = dec.decode(p.data);
@@ -887,7 +895,67 @@ async function cnV18Soubor(bajty, popis) {
     if (r.pocet) { p.data = enc.encode(r.xml); celkem += r.pocet; }
   }
   if (!celkem) chyba(popis + ': v záhlaví není textové pole s pevným číslem stránky „1" — nic nehádám');
-  return { bajty: new Uint8Array(await dg.zipZapis(polozky).arrayBuffer()), pocet: celkem };
+  return { bajty: new Uint8Array(await dg.zipZapis(polozky).arrayBuffer()), pocet: celkem, kancelar };
+}
+/* ---------- CN v18 EN/DE/FR: popisky „IČ:" a „Tel.:" v bloku Kancelář (SB, NPT-N4) ----------
+ * Rozhodnutí J. V. 21. 11. 2026: v jazykové CN zůstávalo v podpisovém bloku
+ * Kancelář česky „IČ: …" a „Tel.: …" (pevný text šablony), kdežto náhled je
+ * překládá. v18 EN/DE/FR je přeloží STEJNĚ jako náhled: popisek se bere
+ * z NW_TEXT.kIco / kTel přes nwPreloz (src/nahled_word.js = slovník aplikace),
+ * ne natvrdo — EN „Company ID (IČ):" / „Phone:", DE „Identifikationsnummer
+ * (IČ):" / „Tel.:", FR „Numéro d’identification (IČ) :" / „Tél. :".
+ * Blok = odstavce za nadpisem „Kancelář:" (v jazyce souboru, též ze slovníku)
+ * do prvního prázdného odstavce. Změní se jen úvodní popisek v prvním w:t
+ * odstavce; číslo, telefon, rPr i zbytek dokumentu zůstanou. Nic se nehádá:
+ * nadpis Kancelář ne právě jednou, popisek ne právě jednou nebo rozdělený
+ * mezi běhy = chyba. Česká šablona se nemění. Řádek SVĚTLÍKY se nepřidává. */
+let NW = null;
+const nwModul = () => NW || (NW = require(path.join(SRC, 'nahled_word.js')));
+const popisekPred = s => String(s).split('{{')[0].replace(/\s+$/, '');
+function cnV18KancelarPopisky(L) {
+  const nw = nwModul();
+  const nadpisCz = nw.NW_TEXT.kancelar;
+  return { nadpis: nw.nwPreloz(nadpisCz, L), popisky: ['kIco', 'kTel'].map(k => ({
+    cz: popisekPred(nw.NW_TEXT[k]), cil: popisekPred(nw.nwPreloz(nw.NW_TEXT[k], L)) })) };
+}
+function cnV18Kancelar(xml, L) {
+  if (!L || L === 'cz') return { xml, zmeny: [] };
+  const P = cnV18KancelarPopisky(L);
+  /* „IČ:" překládá slovník ve všech jazycích; „Tel.:" smí zůstat (DE „Tel.:") */
+  if (P.popisky[0].cil === P.popisky[0].cz) chyba('CN ' + L + ': slovník nezná popisek „' + P.popisky[0].cz + '" — nic nehádám');
+  const reP = /<w:p\b(?:(?!<\/w:p>)[\s\S])*?<\/w:p>|<w:p\b[^>]*\/>/g;
+  const odst = [];
+  let m;
+  while ((m = reP.exec(xml))) odst.push({ zac: m.index, kon: m.index + m[0].length, xml: m[0], text: textBehu(m[0]) });
+  const norm = s => String(s).replace(/\u00a0/g, ' ').trim();
+  const iNad = odst.map((o, i) => i).filter(i => norm(odst[i].text) === norm(P.nadpis));
+  if (iNad.length !== 1) chyba('CN ' + L + ': nadpis bloku „' + P.nadpis + '" je v dokumentu ' + iNad.length + '× (čekám 1) — nic nehádám');
+  const blok = [];
+  for (let i = iNad[0] + 1; i < odst.length && norm(odst[i].text) !== ''; i++) blok.push(odst[i]);
+  const zmeny = [];
+  let out = xml;
+  /* od konce, ať platí pozice */
+  const nahrady = [];
+  for (const p of P.popisky) {
+    const jeCil = o => norm(o.text).startsWith(norm(p.cil) + ' ');
+    const jeCz = o => norm(o.text).startsWith(p.cz + ' ');
+    const kde = blok.filter(jeCz);
+    if (!kde.length && p.cil !== p.cz && blok.some(jeCil)) chyba('CN ' + L + ': popisek „' + p.cil + '" v bloku Kancelář už je — není co překládat');
+    if (kde.length !== 1) chyba('CN ' + L + ': v bloku Kancelář čekám právě jeden řádek „' + p.cz + ' …", je jich ' + kde.length + ' — nic nehádám');
+    if (p.cil === p.cz) { zmeny.push(p.cz + ' (stejné)'); continue; }
+    const o = kde[0];
+    let hotovo = false;
+    const novy = o.xml.replace(/(<w:t)(?:\s[^>]*)?(>)([^<]*)(<\/w:t>)/, (x, a, b, t, c) => {
+      if (!t.startsWith(p.cz)) return x;
+      hotovo = true;
+      return a + ' xml:space="preserve"' + b + escTextu(p.cil) + t.slice(p.cz.length) + c;
+    });
+    if (!hotovo) chyba('CN ' + L + ': popisek „' + p.cz + '" je v bloku Kancelář rozdělený mezi běhy — nic nehádám');
+    nahrady.push({ zac: o.zac, kon: o.kon, xml: novy });
+    zmeny.push(p.cz + ' → ' + p.cil);
+  }
+  nahrady.sort((a, b) => b.zac - a.zac).forEach(n => { out = out.slice(0, n.zac) + n.xml + out.slice(n.kon); });
+  return { xml: out, zmeny };
 }
 async function hlavniV18() {
   if (!PODKLADY) { console.error('Použití: node nastroje/vyrob_sablony.js --cn-v18 <složka podkladů> [výstupní složka]'); process.exit(2); }
@@ -898,18 +966,20 @@ async function hlavniV18() {
     const vstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v17' + pr + '.docx');
     if (!fs.existsSync(vstup)) { console.log('– ' + path.basename(vstup) + ' ve složce není — přeskočeno'); continue; }
     const b17 = new Uint8Array(fs.readFileSync(vstup));
-    const r = await cnV18Soubor(b17, path.basename(vstup));
+    const r = await cnV18Soubor(b17, path.basename(vstup), L);
     const soubor = path.join(VYSTUP, 'Sablona_NABIDKA_CN_v18' + pr + '.docx');
     fs.writeFileSync(soubor, r.bajty);
     const vady = await dg.docxXmlVady(r.bajty.slice().buffer);
     const rozdil = so.sablonaSymbolyRozdil(await symbolyASablona(b17), await symbolyASablona(r.bajty));
     const doc = async b => dec.decode((await dg.zipPrecti(b)).find(p => p.nazev === 'word/document.xml').data);
-    const telo = (await doc(b17)) === (await doc(r.bajty));
+    /* tělo = v17 znak po znaku; u EN/DE/FR jen s přeloženými popisky Kancelář */
+    const telo = cnV18Kancelar(await doc(b17), L).xml === (await doc(r.bajty));
     const cs = dg.docxCisloStrankyXml((await dg.zipPrecti(r.bajty)).filter(p => /^word\/(header|footer)\d*\.xml$/.test(p.nazev))
       .map(p => ({ nazev: p.nazev, xml: dec.decode(p.data) })));
     const vada = vady.length + rozdil.ubylo.length + rozdil.pribylo.length + (telo ? 0 : 1) + (cs.pole ? 0 : 1);
     prob += vada; hotovo++;
     console.log((vada ? '✗ ' : '✓ ') + path.basename(soubor) + ' — pole PAGE: ' + r.pocet + '× (textové pole záhlaví)'
+      + (r.kancelar.length ? '; Kancelář: ' + r.kancelar.join(', ') : '')
       + (vady.length ? '\n    vady XML: ' + vady.join('; ') : '') + (telo ? '' : '\n    document.xml se změnil!')
       + (rozdil.ubylo.length || rozdil.pribylo.length ? '\n    symboly proti v17: +' + rozdil.pribylo.join(',') + ' −' + rozdil.ubylo.join(',') : ''));
   }
@@ -2297,7 +2367,7 @@ async function hlavni() {
 
 /* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
 if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
-module.exports = { cnV13, cnV14, cnV15, cnV16, cnV17, cnPrejmenujSymbol, projV3, projV4, projV5, projV6, projV7, projV8, projV9, cnV18, cnV18Soubor, PROJ_V8_CESTOVNE, textBehu, sodProjV2, sodRealV2, sodRealV3, sodRealV4, SOD_REAL_V4_PREKLAD, pPrSInd, sodProjCislo, sodProjV4, prepisUsekOdstavce, prelozSablonu };
+module.exports = { cnV18Kancelar, cnV18KancelarPopisky, cnV13, cnV14, cnV15, cnV16, cnV17, cnPrejmenujSymbol, projV3, projV4, projV5, projV6, projV7, projV8, projV9, cnV18, cnV18Soubor, PROJ_V8_CESTOVNE, textBehu, sodProjV2, sodRealV2, sodRealV3, sodRealV4, SOD_REAL_V4_PREKLAD, pPrSInd, sodProjCislo, sodProjV4, prepisUsekOdstavce, prelozSablonu };
 module.exports.cnUsazeni = cnUsazeni; module.exports.cnUsazeniSoubor = cnUsazeniSoubor; module.exports.cnV17Jazyk = cnV17Jazyk; module.exports.cnV17TextRozdil = cnV17TextRozdil; module.exports.CN_USAZENI_STARE = CN_USAZENI_STARE;
 module.exports.sodRealV5 = sodRealV5;   // C2 #583 (vlastní řádek kvůli souběžné C1)
 module.exports.sodRealV5BezNovych = sodRealV5BezNovych;
