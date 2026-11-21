@@ -2186,6 +2186,6 @@ Roadmapa #692–#700 (pracovní čísla).
   server do téhož dealu už zapsal, se dál upravuje bez nového ověření; dvě zakázky s různým číslem
   na jednom dealu — píše jen ta s číslem dealu; oprava firmy (`akce: zapis`, B209) vazbu dealu
   neověřuje (#700 (4)).
-- **B195 — nulová ruční cena — UPRAVENO (text meze).** Viz oddíl RC #561 výš: nula jen se zdrojem,
+- **Nulová ruční cena (mez B195) — UPRAVENO (text meze).** Viz oddíl RC #561 výš: nula jen se zdrojem,
   bez zdroje jen administrátor.
 

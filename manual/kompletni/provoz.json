@@ -318,6 +318,11 @@
        "oba weby"
       ],
       [
+       "PIPEDRIVE_ZAPIS",
+       "vypínač zápisu do skutečného Pipedrive: jen hodnota „ano“ pustí zápis (poznámky, organizace, vazba, odkaz z webhooku); bez ní (výchozí) jde jen čtení — zapíná J. V.",
+       "oba weby (nejdřív testovací)"
+      ],
+      [
        "PIPEDRIVE_WEBHOOK_KLIC",
        "tajný klíč webhooku „Vygenerovat nabídku“, aspoň 32 znaků; nastavuje správce, do repozitáře ani klientovi nejde",
        "oba weby (nejdřív testovací)"
@@ -1792,6 +1797,13 @@
        "nepovinně",
        "nepovinně",
        "kam Prodáno přesune deal: id fáze nebo název; bez ní fáze „Vyhrané k podpisu SoD“ v pipeline dealu (stav dealu Prodáno nemění)"
+      ],
+      [
+       "PIPEDRIVE_ZAPIS",
+       "ne",
+       "nepovinně",
+       "nepovinně",
+       "„ano“ = zápis do Pipedrive povolen; chybí nebo jiná hodnota → každý zápis 503 bez požadavku (výchozí vypnuto); simulátor ho nepotřebuje"
       ],
       [
        "PIPEDRIVE_WEBHOOK_KLIC",
