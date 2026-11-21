@@ -29,6 +29,7 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 
 ## Běžící dávky
 
+- **SB** (`claude/sb-sablony`, 8996260): `--cn-v18` EN/DE/FR + IČ/Tel. Kancelář ze slovníku (#691). Šablony u J. V. (zip). Kolo: sady/hodiny zelené, SHODA 359/359; statické 8/9 = verze.txt 19.11.11 (číslo dá koordinace).
 - **PG** (`claude/pg-tisk`, v19.11.10, nad 042fcbc): #684 tlačítka tisku CN OCK (náhled podkladů → Word modře → náhled
   a tisk), #685 vlastní řádek TS v SOUČÁSTÍ DODÁVKY NENÍ (`extra[i].sekce='neni'`), #686 DALŠÍ UJEDNÁNÍ v nabídce PROJ
   (`PJ.dalsiUjednani`, Word přes šablonu PROJ v9 `--proj-v9`, kontrola `dalsiUjednaniWordProj`), #687 číslo stránky: vada šablony CN v9–v17 (pevná „1“ v záhlaví) → `--cn-v18`,
