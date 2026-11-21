@@ -6,18 +6,29 @@
  *
  * Jednotkové testy hlídají data (src/test_sod.js) — tenhle skript hlídá to,
  * co z nich vidět není: že tlačítka v aplikaci opravdu jsou, že se do
- * SKUTEČNÝCH šablon smluv dosadí SKUTEČNÁ čísla z kalkulace, že symboly
- * SOD_*, SODP_* a PM_* zůstanou v hotovém dokumentu VIDITELNÉ k ručnímu
- * doplnění a že se výběr jazyka tisku promítne do generování.
+ * šablon smluv dosadí SKUTEČNÁ čísla z kalkulace, že nevyplněná místa
+ * SOD_*, SODP_* a PM_* dostanou v hotovém dokumentu tečky „……" k ručnímu
+ * doplnění (C3 #584; do v11.11 zůstával vidět symbol {{…}}) a že se výběr
+ * jazyka tisku promítne do generování.
  *
- * Šablony nejsou v repozitáři (leží ve /home/claude/work/smlouvy); když se
- * nenajdou, sada se přeskočí s vysvětlením místo selhání.
+ * Šablony (#646 / K49-I2, 21. 11. 2026): skutečné v repozitáři nejsou
+ * (firemní dokumenty) — hledají se v $KNG_PODKLADY a ve
+ * /home/claude/work/smlouvy, vždy NEJVYŠŠÍ verze (najdiSablonu). Chybí-li
+ * některá, harness si vyrobí SYNTETICKÉ šablony ve stavbě skutečných
+ * (nastroje/smlouvy_syntet.mjs: smyšlený text, verze týmiž nástroji
+ * vyrob_sablony.js — SoD realizace v4–v6, SoD projekce v2–v4, plná moc
+ * v1–v2) do dočasné složky a ověří se nad nimi. Do 21. 11. se sada bez
+ * podkladů přeskočila (kód 4), takže pět očekávání z doby šablony v1
+ * a symbolů {{…}} nikdo neviděl padat — kolo 18. 11. se šablonami z Disku
+ * skončilo 46/5. Očekávání se teď řídí verzí, ze které dokument vznikl.
  *
  * Spuštění: NODE_PATH=$(npm root -g) node overit_sod.mjs
+ *           (se skutečnými šablonami: KNG_PODKLADY=/cesta node overit_sod.mjs)
  */
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, mkdtempSync, rmSync } from 'fs';
 import { createRequire } from 'module';
 import { join } from 'path';
+import { tmpdir } from 'os';
 import { chromium } from 'playwright';
 
 /* Cesta k sestavení i ke zdrojákům se odvozuje od UMÍSTĚNÍ HARNESSU, ne od
@@ -35,7 +46,8 @@ import { chromium } from 'playwright';
 import { fileURLToPath } from 'node:url';
 const KOREN = fileURLToPath(new URL('.', import.meta.url));
 
-import { najdiSablonu, preskoc } from './nastroje/harness_podklady.mjs';
+import { najdiSablonu } from './nastroje/harness_podklady.mjs';
+import { vyrobSyntetickeSmlouvy, ZNACKA_VERZE } from './nastroje/smlouvy_syntet.mjs';
 const require = createRequire(import.meta.url);
 const { zipPrecti, zipZapis } = require(KOREN + 'src/docxgen.js');
 
@@ -43,14 +55,35 @@ const { zipPrecti, zipZapis } = require(KOREN + 'src/docxgen.js');
  * z cizího prostředí, takže se tahle sada mimo ně nemohla spustit nikdy. */
 /* K40-T1: šablona s nejvyšší verzí (Sablona_SOD_REALIZACE_v<číslo>.docx …,
  * na Disku verzované — SoD v4), jinak jméno bez čísla. */
-const SABLONY_SOUBORY = {}, chybi = [];
-for (const [klic, zaklad] of [['sod', 'Sablona_SOD_REALIZACE'], ['sodProj', 'Sablona_SOD_PROJEKCE'], ['plnaMoc', 'Sablona_PLNA_MOC']]) {
-  const n = najdiSablonu(zaklad, ['/home/claude/work/smlouvy']);
-  if (n) { SABLONY_SOUBORY[klic] = n.cesta; console.log('Šablona ' + klic + ': ' + n.cesta); }
-  else chybi.push(zaklad + '[_v<číslo>].docx');
+const ZAKLADY = [['sod', 'Sablona_SOD_REALIZACE'], ['sodProj', 'Sablona_SOD_PROJEKCE'], ['plnaMoc', 'Sablona_PLNA_MOC']];
+const najdiVse = slozky => {
+  const cesty = {}, verze = {}, chybi = [];
+  for (const [klic, zaklad] of ZAKLADY) {
+    const n = najdiSablonu(zaklad, slozky);
+    if (n) { cesty[klic] = n.cesta; verze[klic] = n.verze; } else chybi.push(zaklad + '[_v<číslo>].docx');
+  }
+  return { cesty, verze, chybi };
+};
+/* #646: bez skutečných šablon se nepřeskakuje — vyrobí se syntetické. */
+let nalez = najdiVse(['/home/claude/work/smlouvy']);
+let SYNTET = null, PODKLADY = String(process.env.KNG_PODKLADY || '').trim();
+if (nalez.chybi.length) {
+  const slozka = mkdtempSync(join(tmpdir(), 'kng-smlouvy-'));
+  SYNTET = { slozka, ...(await vyrobSyntetickeSmlouvy(slozka)) };
+  process.on('exit', () => { try { rmSync(slozka, { recursive: true, force: true }); } catch (e) { /* dočasná složka */ } });
+  console.log('Skutečné šablony smluv nenalezeny (' + nalez.chybi.join(', ') + ') — ověřuje se nad SYNTETICKÝMI '
+    + '(nastroje/smlouvy_syntet.mjs, smyšlený text): ' + slozka);
+  /* Hledá se jen v syntetické složce — KNG_PODKLADY s částí šablon by se jinak
+   * míchal se syntetickými. */
+  const puvodni = process.env.KNG_PODKLADY;
+  process.env.KNG_PODKLADY = slozka;
+  nalez = najdiVse([]);
+  if (puvodni === undefined) delete process.env.KNG_PODKLADY; else process.env.KNG_PODKLADY = puvodni;
+  PODKLADY = slozka;
+  if (nalez.chybi.length) { console.log('CHYBA: syntetické šablony se nevyrobily: ' + nalez.chybi.join(', ')); process.exit(1); }
 }
-if (chybi.length) preskoc('šablony smluv (' + chybi.join(', ') + ')',
-  '/home/claude/work/smlouvy/ nebo $KNG_PODKLADY');
+const SABLONY_SOUBORY = nalez.cesty, SABLONY_VERZE = nalez.verze;
+for (const [klic] of ZAKLADY) console.log('Šablona ' + klic + ': ' + SABLONY_SOUBORY[klic] + ' (verze ' + SABLONY_VERZE[klic] + ')');
 
 const KDE = new URL('dist/kalkulacka.html', import.meta.url).href;
 let ok = 0, fail = 0;
@@ -192,14 +225,25 @@ for (const [typ, cesta] of Object.entries(SABLONY_SOUBORY))
    * pod nadpisem (vyrob_sablony --sod-proj-cislo). Leží-li v podkladech
    * hotová Sablona_SOD_PROJEKCE_v3.docx z Disku, zkouší se ta. */
   const { sodProjCislo } = require(KOREN + 'nastroje/vyrob_sablony.js');
-  const v3Disk = process.env.KNG_PODKLADY ? join(process.env.KNG_PODKLADY, 'Sablona_SOD_PROJEKCE_v3.docx') : '';
+  const v3Disk = PODKLADY ? join(PODKLADY, 'Sablona_SOD_PROJEKCE_v3.docx') : '';
   if (v3Disk && existsSync(v3Disk)) {
     b64.sodProjV3 = readFileSync(v3Disk).toString('base64');
     console.log('  (SoD PROJ v3 z podkladů: ' + v3Disk + ')');
   } else {
     b64.sodProjV3 = await prevod(b64.sodProjV2, sodProjCislo, 'sodProjV3');
   }
+  /* #646: stará šablona SoD PROJ (osm pevných plateb) — u syntetických
+   * šablon je po ruce v1, ze které řetězec verzí vznikl; jinak dodaná šablona
+   * (je-li už převedená, kontrola se přeskočí). */
+  b64.sodProjStara = SYNTET ? SYNTET.v1.sodProj : b64.sodProj;
 }
+/* #646: očekávání podle verze, ze které dokument vznikl. Šablona SoD
+ * realizace v2+ (na Disku v4–v6) má splátky jedním seznamem, termín podkladů
+ * dodavatele výtahu z krycího listu a pokutu zhotovitele z pokuty za prodlení
+ * dodávky (výchozí „0" větu vypustí) — v1 má čtyři pevné věty splátek, pevné
+ * datum podkladů a pokutu se sazbou splatnosti. */
+const SOD_V1 = !PREVEDENE.has('sodRealV2');
+console.log('  (SoD realizace: očekávání šablony ' + (SOD_V1 ? 'v1' : 'v2 a novější') + ')');
 
 const vysledek = await p.evaluate(async (sablonyB64) => {
   const buf = s => {
@@ -219,7 +263,7 @@ const vysledek = await p.evaluate(async (sablonyB64) => {
     return { docx: btoa(s), nazevSouboru: res.nazevSouboru };
   };
   strana('sodProj');
-  try { await dokumentVygeneruj('sodProj', buf(sablonyB64.sodProj), ZAK, varianta, JEKLY, 'cz'); out.sodProjStara = ''; }
+  try { await dokumentVygeneruj('sodProj', buf(sablonyB64.sodProjStara), ZAK, varianta, JEKLY, 'cz'); out.sodProjStara = ''; }
   catch (e) { out.sodProjStara = e.message; }
   for (const typ of ['sod', 'sodProj', 'plnaMoc'])
     out[typ] = await docx(typ, sablonyB64[typ === 'sodProj' ? 'sodProjV2' : typ]);
@@ -268,9 +312,15 @@ const docText = async typ => {
   test('K18-N100: záruka a splátky z krycího listu jsou vyplněné (žádný {{SOD_ZARUKA…}} ani {{SOD_SPLATKA…}})',
     !/\{\{SOD_(ZARUKA_MESICU|SPLATKA\d_PROC)\}\}/.test(holy) && /po dobu 60 měsíců/.test(holy),
     (holy.match(/\{\{SOD_(ZARUKA|SPLATKA)[A-Z0-9_]*\}\}/g) || []).join(', '));
-  test('K18-N100: splátky 50 / 40 / 10 %, věta o druhé dílčí platbě (opláštění) zmizela',
+  /* #646: v1 — čtyři pevné věty splátek (třetí zmizí); v2+ — seznam plateb
+   * krycího listu (záloha / po zahájení montáže / zbývajících). */
+  if (SOD_V1) test('K18-N100 (šablona v1): splátky 50 / 40 / 10 %, věta o druhé dílčí platbě (opláštění) zmizela',
     /smlouvy o dílo 50 % z celkové ceny/.test(holy) && /šachty 40 % z celkové ceny/.test(holy)
       && /zbývajících 10 % z celkové ceny/.test(holy) && !/základního opláštění konstrukce a předání/.test(holy));
+  else test('K18-N100 (šablona v2+): splátky 50 / 40 / 10 % ze seznamu plateb krycího listu, věta o opláštění není, {{SOD_PLATEBNI_KALENDAR}} nezůstal',
+    /smlouvy o dílo 50 % z celkové ceny díla/.test(bezNbsp(holy)) && /po zahájení montáže 40 % z celkové ceny díla/.test(bezNbsp(holy))
+      && /zbývajících 10 % z celkové ceny díla/.test(bezNbsp(holy)) && !/základního opláštění konstrukce a předání/.test(holy)
+      && !/SOD_PLATEBNI_KALENDAR/.test(holy), (bezNbsp(holy).match(/.{0,40}% z celkové ceny díla/g) || []).join(' | '));
   test('ve smlouvě není dvojí procento („% %")', !/%\s*%/.test(holy), (holy.match(/.{30}%\s*%.{10}/g) || []).join(' | '));
   /* Rozhodnutí J. V. 1. 10. 2026 k návrhu SoD (Q2–Q4, Q10) nad šablonou v1. */
   const ho = bezNbsp(holy);
@@ -282,18 +332,30 @@ const docText = async typ => {
   test('dokončení díla a osazení šachetních dveří z krycího listu',
     /dokončení a předání díla do 22\.01\.2027 za předpokladu finálního usazení všech šachetních dveří objednatelem do 08\.01\.2027/.test(ho),
     (ho.match(/dokončení a předání díla.{0,140}/) || [''])[0]);
-  test('stavební připravenost z krycího listu; v1 má datum podkladů dodavatele výtahu dál pevné',
+  if (SOD_V1) test('stavební připravenost z krycího listu; v1 má datum podkladů dodavatele výtahu dál pevné',
     /stavební připravenosti nejdéle k 30\.10\.2026/.test(ho) && /na kotvení do 19\.06\.2026/.test(ho),
     (ho.match(/stavební připravenosti.{0,220}/) || [''])[0]);
+  else test('stavební připravenost i podklady dodavatele výtahu z krycího listu (šablona v2+, Q6)',
+    /stavební připravenosti nejdéle k 30\.10\.2026/.test(ho) && /na kotvení do 20\.10\.2026\./.test(ho) && !/19\.06\.2026/.test(ho)
+      && !/\{\{SOD_TERMIN_PODKLADY_VYTAH\}\}/.test(ho), (ho.match(/stavební připravenosti.{0,220}/) || [''])[0]);
   test('místo plnění „bytový dům" na adrese stavby', /Místem provádění díla je bytový dům na adrese Zkušební 11, 100 00 Praha/.test(ho),
     (ho.match(/Místem provádění.{0,80}/) || [''])[0]);
   test('denní pokuta za prodlení zákazníka v obou větách', (ho.match(/ve výši 1 000 Kč (denně|za každý započatý den)/g) || []).length === 2,
     (ho.match(/.{40}1 000 Kč.{30}/g) || []).join(' | '));
   test('žádný symbol termínu, místa plnění ani denní pokuty nezůstal', !/\{\{SOD_(TERMIN_[A-Z_]+|MISTO_PLNENI_DRUH|POKUTA_DENNI)\}\}/.test(ho),
     (ho.match(/\{\{SOD_[A-Z0-9_]+\}\}/g) || []).join(', '));
-  test('v1 beze změny: věta o prodlení zhotovitele dál se sazbou splatnosti (0,05 %)',
+  if (SOD_V1) test('v1 beze změny: věta o prodlení zhotovitele dál se sazbou splatnosti (0,05 %)',
     /Zhotovitel se zavazuje zaplatit objednateli smluvní pokutu ve výši 0,05 % z ceny díla/.test(ho),
     (ho.match(/Zhotovitel se zavazuje zaplatit objednateli.{0,60}/) || [''])[0]);
+  else test('šablona v2+ (Q5): pokuta za prodlení dodávky „0" — věta o prodlení zhotovitele zmizela, o prodlení s placením zůstala',
+    !/Zhotovitel se zavazuje zaplatit objednateli smluvní pokutu/.test(ho)
+      && /prodlení s placením sjednané ceny díla či jejích splátek smluvní pokutu ve výši 0,05 % z dlužné částky/.test(ho),
+    (ho.match(/.{0,40}(Zhotovitel se zavazuje zaplatit objednateli|prodlení s placením).{0,80}/g) || []).join(' | '));
+  /* #646: u syntetických šablon víme, ze které verze dokument vznikl — musí
+   * to být nejvyšší (najdiSablonu), ne první nalezená. */
+  if (SYNTET) test('výběr šablony: smlouva vznikla z nejvyšší verze (Sablona_SOD_REALIZACE_v6)',
+    ho.includes(ZNACKA_VERZE + 'Sablona_SOD_REALIZACE_v6') && !/Sablona_SOD_REALIZACE_v[45]/.test(ho),
+    (ho.match(/Syntetická šablona harnessu — \S+/g) || []).join(', '));
 }
 {
   /* Šablona v2 vyrobená z dodané v1 (nastroje/vyrob_sablony.js --sod-real). */
@@ -317,8 +379,14 @@ const docText = async typ => {
   test('SoD projekce: název souboru SOD_<číslo>-PROJ-… (#533)',
     vysledek.sodProj.nazevSouboru.indexOf('SOD_') === 0 && /-PROJ-/.test(vysledek.sodProj.nazevSouboru), vysledek.sodProj.nazevSouboru);
   test('SoD projekce nese cenu z nabídky PROJ', holy.includes(vysledek.cenaProj), vysledek.cenaProj);
-  test('symboly SODP_* bez hodnoty (pokuta, správní poplatky) zůstaly viditelné',
-    /\{\{SODP_[A-Z0-9_]+\}\}/.test(holy));
+  /* #646: od C3 #584 (11. 11. 2026) dostane nevyplněné místo tečky „……",
+   * symbol {{SODP_…}} ve smlouvě nezůstane. */
+  test('nevyplněná místa SODP_* (pokuta, správní poplatky) mají tečky „……", žádný {{SODP_…}} nezůstal',
+    !/\{\{SODP_[A-Z0-9_]+\}\}/.test(holy) && holy.includes('……'),
+    (holy.match(/\{\{SODP_[A-Z0-9_]+\}\}/g) || []).join(', ') || 'bez teček');
+  if (SYNTET) test('syntetická SoD projekce: tečky právě u správních poplatků a denní pokuty',
+    /poplatky stavebnímu úřadu ve výši …… hradí/.test(bezNbsp(holy)) && /smluvní pokuta …… za každý den/.test(bezNbsp(holy)),
+    (bezNbsp(holy).match(/.{0,30}…….{0,20}/g) || []).join(' | '));
   test('SoD projekce: ve smlouvě není dvojí procento („% %")', !/%\s*%/.test(holy), (holy.match(/.{30}%\s*%.{10}/g) || []).join(' | '));
   const platby = (holy.match(/Platba ve výši [\d\s\u00a0]+,\d\d Kč \+ DPH proběhne/g) || []).length;
   test('SoD projekce (šablona se seznamem plateb): platby z plánu, každá vlastní odrážkou',
@@ -335,7 +403,7 @@ const docText = async typ => {
   }
   /* K40-T1: z převedené šablony (SoD PROJ v2+) starou šablonu s pevnými
    * platbami vyrobit nejde — kontrola se přeskočí, ne FAIL. */
-  if (PREVEDENE.has('sodProjV2'))
+  if (PREVEDENE.has('sodProjV2') && !SYNTET)
     console.log('  – přeskočeno: SoD projekce se starou šablonou (podklad je už převedený, stará šablona není po ruce)');
   else test('SoD projekce se starou šablonou (8 pevných plateb) a plánem, který v ní nejde vyjádřit: smlouva nevznikne a řekne proč',
     /SODP_PLATEBNI_KALENDAR/.test(vysledek.sodProjStara || ''), vysledek.sodProjStara);
@@ -352,7 +420,13 @@ const docText = async typ => {
   test('plná moc: název souboru začíná PLNA-MOC_ (#533)',
     vysledek.plnaMoc.nazevSouboru.indexOf('PLNA-MOC_') === 0, vysledek.plnaMoc.nazevSouboru);
   test('plná moc nese adresu stavby', holy.includes('Zkušební 11, 100 00 Praha'));
-  test('symboly PM_* (zmocnitel) zůstaly viditelné', /\{\{PM_[A-Z0-9_]+\}\}/.test(holy));
+  /* #646: C3 #584 + doplněk J. V. 11. 11. 2026 — tečky i v plné moci. */
+  test('nevyplněné údaje zmocnitele PM_* mají tečky „……", žádný {{PM_…}} nezůstal',
+    !/\{\{PM_[A-Z0-9_]+\}\}/.test(holy) && holy.includes('……'),
+    (holy.match(/\{\{PM_[A-Z0-9_]+\}\}/g) || []).join(', ') || 'bez teček');
+  if (SYNTET) test('syntetická plná moc: tečky u zmocnitele (jméno, narození, bydliště)',
+    /Zmocnitel: ……, narozen ……, bytem ……/.test(bezNbsp(holy)),
+    (bezNbsp(holy).match(/Zmocnitel:.{0,60}/) || [''])[0]);
   test('firemní údaje zmocněnce jsou vyplněné', !/\{\{FIRMA_[A-Z0-9_]+\}\}/.test(holy));
 }
 
