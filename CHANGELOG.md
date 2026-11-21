@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v21.11.1 — DS #648–#650: název šachty v cizím jazyce, texty správy šablon, větev claude/ds-sablony
+## v21.11.3 — DS #648–#650: název šachty v cizím jazyce, texty správy šablon, větev claude/ds-sablony
 
 Nad integrací `cda289e` (v19.11.11). Cenu nemění; mění text cizojazyčné nabídky a SoD (jen název nepřejmenované šachty).
 Verzi přečísluje koordinace.

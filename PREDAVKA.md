@@ -23,7 +23,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/d8-lhuty` | (tato dávka) | v19.11.7 | D8 #677 (pracovní) lhůty PROJ → termíny krycího listu; nad integrací 042fcbc; verzi přečísluje koordinace |
 | `claude/vz-f1` | (tato dávka) | v18.11.8 | VZ-F1 #659 opravy nálezů ruční zkoušky VZ; nad ec5bbac, sloučeno s integrací 41bbe99 |
 | `claude/pg-tisk` | (tato dávka) | v19.11.10 | PG #684–#687 nad integrací 042fcbc; čísla a verzi přečísluje koordinace |
-| `claude/ds-sablony` | (tato dávka) | v21.11.1 | DS #648–#650 nad cda289e; verzi přečísluje koordinace |
+| `claude/ds-sablony` | (tato dávka) | v21.11.3 | DS #648–#650 nad cda289e; verzi přečísluje koordinace |
 
 Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tagu: `python3 nastroje/release_odkaz.py --chybejici`
 (18. 11.: žádná).
@@ -72,7 +72,7 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   dopočet termínů krycího listu PROJ (řetěz, horní mez, 4,3 t/měsíc, ruční přednost, ↺, zdroj u data), lhůty zamrzne
   prodej. Šablona v8 pevné týdny nemá → nová šablona netřeba. Otázky J. V. #678 (pracovní). Kolo VŠE ZELENÉ (427/0/59, 389/0/1, 9/9, SHODA 359/359), mutace [D8] 19/19 + 6/6. HOTOVO.
 
-- **DS** (`claude/ds-sablony`, v21.11.1, nad cda289e): #648 „Šachta N“ v EN/DE/FR nabídce a SoD jako Shaft/Schacht/Gaine N
+- **DS** (`claude/ds-sablony`, v21.11.3, nad cda289e): #648 „Šachta N“ v EN/DE/FR nabídce a SoD jako Shaft/Schacht/Gaine N
   (`vsNazevPreloz`), #649 věta správy šablon po C7, #650 „nevytiskne se“ u smlouvy bez jazykové šablony. Cenu nemění.
 
 ## Čeká na J. V.
