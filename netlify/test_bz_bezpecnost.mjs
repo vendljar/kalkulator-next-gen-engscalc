@@ -18,9 +18,11 @@ process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
 process.env.ADMIN_INIT_HESLO = 'Docasne.Heslo.123';
 
 const pamet = new Map();
+/* Počítadla pokusů s 2 ms zpožděním čtení a zápisu (Blobs je síťové volání) — B233. */
+const cekej = (nazev) => (nazev === 'pokusy' ? new Promise(r => setTimeout(r, 2)) : Promise.resolve());
 globalThis.__TEST_ULOZISTE = (nazev) => ({
-  async cti(k) { return pamet.has(nazev + '/' + k) ? JSON.parse(pamet.get(nazev + '/' + k)) : null; },
-  async zapis(k, v) { pamet.set(nazev + '/' + k, JSON.stringify(v)); },
+  async cti(k) { await cekej(nazev); return pamet.has(nazev + '/' + k) ? JSON.parse(pamet.get(nazev + '/' + k)) : null; },
+  async zapis(k, v) { await cekej(nazev); pamet.set(nazev + '/' + k, JSON.stringify(v)); },
   async seznam(prefix) { return [...pamet.keys()].filter(x => x.startsWith(nazev + '/' + (prefix || ''))).map(x => x.slice(nazev.length + 1)); },
   async smaz(k) { pamet.delete(nazev + '/' + k); },
 });
@@ -30,7 +32,7 @@ import prihlaseni from './functions/prihlaseni.mjs';
 import program from './functions/program.mjs';
 import zakazky from './functions/zakazky.mjs';
 import uzivatele from './functions/uzivatele.mjs';
-import { ADMIN_EMAIL } from './lib/sdilene.mjs';
+import { ADMIN_EMAIL, POKUSY_IP_MAX, pokusyIpKlic } from './lib/sdilene.mjs';
 import { jadro } from './lib/jadro.mjs';
 import { createRequire } from 'node:module';
 
@@ -201,6 +203,21 @@ console.log('\n===== B232: PŘÍSNÉ OVĚŘENÍ VYŽADUJE VŠECHNA ČÍSLA =====
   test('B232: přísné porovnání číslo jen v jednom výsledku počítá', zam.zamekVysledekRozdily(a, b, 5, { prisne: true }).pocet >= 1);
   const c = kopie(a); c.ock.souhrn.x = null;
   test('B232: přísné porovnání číslo proti null počítá', zam.zamekVysledekRozdily(a, c, 5, { prisne: true }).pocet >= 1);
+}
+
+/* ============================================================ */
+console.log('\n===== B233: POČÍTADLA POKUSŮ PŘI SOUBĚHU =====\n');
+{
+  /* PoC poc_AU_soubeh_pocitadla: vlna souběžných pokusů z jedné adresy. */
+  const IP = '198.51.100.233', N = 150;
+  const vlna = await Promise.all(Array.from({ length: N }, (_, i) => post(prihlaseni, 'http://x/api/prihlaseni',
+    { email: 'nikdo' + i + '@priklad.cz', heslo: 'Spatne' + i + 'xx' }, null, { 'x-nf-client-connection-ip': IP })));
+  const stavy = {}; vlna.forEach(r => { stavy[r.status] = (stavy[r.status] || 0) + 1; });
+  const proslo = N - (stavy[429] || 0);
+  test('B233: vlna ' + N + ' souběžných pokusů z jedné adresy — ověřeno nejvýš ' + POKUSY_IP_MAX + ' hesel',
+    proslo <= POKUSY_IP_MAX, JSON.stringify(stavy));
+  const st = JSON.parse(pamet.get('pokusy/' + pokusyIpKlic(IP)) || '{}');
+  test('B233: počítadlo adresy po vlně nese všechny pokusy (žádný ztracený zápis)', st.n === N, 'n=' + st.n);
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
