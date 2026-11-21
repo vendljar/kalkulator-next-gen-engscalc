@@ -497,7 +497,7 @@ const SABLONY = {};
  * mutaceChybi } — nebo null („pokračuj místní cestou"; jen mimo přísný
  * režim) — nebo odmítnutí s českou větou, kterou jde rovnou ukázat. */
 /* ZASTARALÁ JAZYKOVÁ MUTACE (#334, nález K10-N36 z 10. kola, 24. 9. 2026).
- * Mutace EN/DE/FR se vyrábí z české šablony (Nastavení → Šablony) a zveřejní
+ * Mutace EN/DE/FR je přeložený soubor nahraný k české šabloně (od C7 #615 se z češtiny nevyrábí) a zveřejní
  * zvlášť. Když se pak zveřejní novější česká šablona, mutace zůstane stará
  * — v ostré to byla v8 proti české v10: 31 řádků česky a chybějící řádek
  * soklu. Aplikace to nepoznala, protože mutace „existovala".
