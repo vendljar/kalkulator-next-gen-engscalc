@@ -272,6 +272,15 @@ const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 768
     && text.indexOf('Celkem Kč') >= 0 && text.indexOf(nbsp(o.texty.sDph)) >= 0 && /Podpis objednatele/.test(text));
   test('Word: poznámka k termínům bez osiřelé pomlčky', text.indexOf('nemůže zhotovitel z velké části ovlivnit. –') < 0 && text.indexOf('nemůže zhotovitel z velké části ovlivnit.') >= 0);
   test('Word: sloupce jako vzor (J. cena, C. cena, …)', O.OBJ_PROJ_SLOUPCE.every(t => text.indexOf(t) >= 0) && /Součet/.test(text));
+  /* D3-N1: popis dodávky přes celou šířku (gridSpan 7) a čísla na samostatném řádku pod ním. */
+  {
+    const rows = (doc.match(/<w:tr>[\s\S]*?<\/w:tr>/g) || []);
+    const iPopis = rows.findIndex(r => r.indexOf('<w:t xml:space="preserve">' + o.radky[0].nazev + '</w:t>') >= 0 || r.indexOf('>' + o.radky[0].nazev + '<') >= 0);
+    const popis = iPopis >= 0 ? rows[iPopis] : '', cisla = iPopis >= 0 ? rows[iPopis + 1] || '' : '';
+    test('D3-N1 Word: řádek popisu přes celou šířku (gridSpan 7), čísla na řádku pod ním', /<w:gridSpan w:val="7"\/>/.test(popis) && !/Kč/.test(nbsp(popis.replace(/<[^>]+>/g, '')))
+      && nbsp(cisla.replace(/<[^>]+>/g, '')).indexOf(nbsp(o.texty.kc(o.radky[0].celkemSDph))) >= 0 && /<w:cantSplit\/>/.test(cisla)
+      && (doc.match(/<w:gridSpan w:val="7"\/>/g) || []).length === o.radky.length + 1, { iPopis });
+  }
   test('Word: blok Místo určení / Objednatel s adresou akce', text.indexOf('Místo určení / Objednatel') >= 0 && text.indexOf('Místo určení: TEST akce D3, Zkušební 1, Praha') >= 0);
   const zap = pol.find(p => p.nazev === 'word/footer1.xml');
   const zapX = zap ? new TextDecoder().decode(zap.data) : '';
@@ -324,6 +333,13 @@ const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 768
   vm.runInThisContext(ui);
   const zx = zakazka(); zx.zak.objednatel = 'TEST <b>zlý</b>';
   const html = objednavkaProjHtml(obj(zx.zak, zx.v));
+  {
+    const z2 = zakazka(); const oo = obj(z2.zak, z2.v);
+    const h = objednavkaProjHtml(oo);
+    test('D3-N1 náhled: popis dodávky colspan 7 a pod každým řádek čísel', (h.match(/<td class="popis" colspan="7">/g) || []).length === oo.radky.length
+      && (h.match(/<tr class="radek-cisla">/g) || []).length === oo.radky.length
+      && /<td class="popis" colspan="7">[\s\S]*?<\/tr>\s*<tr class="radek-cisla">/.test(h));
+  }
   test('náhled: escapuje text zákazníka', html.indexOf('<b>zlý</b>') < 0 && html.indexOf('&lt;b&gt;zlý') >= 0);
   test('náhled: poznámka k termínům bez osiřelé pomlčky', html.indexOf('ovlivnit. –') < 0 && html.indexOf('ovlivnit.') >= 0);
   test('náhled: číslo dokladu, Celkem Kč, podpis, poznámka', /id="objCislo">2026-OVP-OBJ-0376</.test(html) && /Celkem Kč/.test(html)

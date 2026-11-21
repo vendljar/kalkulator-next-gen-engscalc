@@ -199,7 +199,11 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
    * příplatky za cenou, mizení prázdných řádků a kapitol (pravidla docxgen)
    * a stránkování. Hlídá src/test_np_nahled_word.js (náhled = text Wordu)
    * a src/test_k13_preklad.js (překlad pevných textů). */
-  'nahled_word.js', 'ui/nahled_word_ui.js'];
+  'nahled_word.js', 'ui/nahled_word_ui.js',
+  /* ui/objednavka_proj_ui.js (OP1 D3-N1, 21. 11. 2026): rozvržení náhledu
+   * objednávky PROJ (popis přes celou šířku, čísla pod ním) a lišta kontrol
+   * jen objednávky (D3-N2). Hlídá src/test_objednavka_proj.js. */
+  'ui/objednavka_proj_ui.js'];
 /* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
  * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
  * nastroje/mutace_cast.mjs). */
@@ -851,8 +855,8 @@ const MUTACE = [
     nahrad: '      if (!vs || true) return null;',
     proc: 'nabídka víc šachet v Modelu 1 by odešla s cenou jedné šachty', sady: ['test_vs_kontroly.js'] },
   { nazev: 'VS-E5: zábrana šablony v16 zastaví všechny dokumenty [#570 E5]', soubor: 'kontroly.js',
-    hledej: '    && (!Array.isArray(n.dokumenty) || n.dokumenty.indexOf(zakl) >= 0));',
-    nahrad: '    );',
+    hledej: "    && (!Array.isArray(n.dokumenty) || n.dokumenty.indexOf(zakl) >= 0));\n  if (!zab.length) return '';",
+    nahrad: "    );\n  if (!zab.length) return '';",
     proc: 'stará šablona CN by zbytečně zastavila i krycí list, SoD a náhled', sady: ['test_vs_kontroly.js'] },
   { nazev: 'VS-E5: šablona bez rozpisu šachet projde [#570 E5]', soubor: 'kontroly.js',
     hledej: "      if (!zab) return null;\n      return { uroven: KONTROLY_UROVEN_ZABRANA, dokumenty: ['nabidka'],",
@@ -5585,6 +5589,44 @@ const MUTACE = [
   { nazev: "D3: objednávka bez strany PROJ [D3]", soubor: "kontroly.js",
     hledej: "'sodProj', 'objednavkaProj', 'kryciproj'", nahrad: "'sodProj', 'kryciproj'",
     proc: "objednávka by vznikla i u zakázky s vyřazenou PROJ", sady: ["test_objednavka_proj.js"] },
+  /* [OP1] dávka OP1 (21. 11. 2026): nálezy zkoušek testovacího sezení 19. 11. —
+   * PG-N1, #682, D3-N1, D3-N2. */
+  { nazev: '[OP1] PG-N1: náhled zase zdvojí řádek NENÍ pod DALŠÍ UJEDNÁNÍ', soubor: 'nahled_word.js',
+    hledej: "  const extra = (data.tsExtra || []).filter(e => e && !e.neni);",
+    nahrad: "  const extra = (data.tsExtra || []).filter(e => e);",
+    proc: 'řádek NENÍ by byl v náhledu 2× a jen s řádky NENÍ by svítil pruh DALŠÍ UJEDNÁNÍ, který Word nemá', sady: ['test_np_nahled_word.js'] },
+  { nazev: '[OP1] #682: pruh sekce TS jen podle českých názvů', soubor: 'docxgen.js',
+    hledej: "    [pr.PREKLAD, pr.PREKLAD_ZABUDOVANY].forEach(sl => {",
+    nahrad: "    [].forEach(sl => {",
+    proc: 've Wordu EN/DE/FR by zůstal prázdný přeložený pruh (BRIDGES…)', sady: ['test_docxgen.js'] },
+  { nazev: '[OP1] #682: pruh sekce TS citlivý na velikost písmen', soubor: 'docxgen.js',
+    hledej: "replace(/\\s+/g, ' ').trim().toUpperCase(); }",
+    nahrad: "replace(/\\s+/g, ' ').trim(); }",
+    proc: 'ručně psaný pruh šablony v jiné velikosti písmen by zůstal prázdný', sady: ['test_docxgen.js'] },
+  { nazev: '[OP1] D3-N2: kontroly dokumentu bez filtru strany', soubor: 'kontroly.js',
+    hledej: "  const nalezy = vysl.nalezy.filter(n => (!Array.isArray(n.strany) || n.strany.indexOf(strana) >= 0)\n",
+    nahrad: "  const nalezy = vysl.nalezy.filter(n => true\n",
+    proc: 'okno objednávky by ukázalo i nálezy OCK (SoD OCK)', sady: ['test_objednavka_proj.js'] },
+  { nazev: '[OP1] D3-N2: kontroly dokumentu bez filtru dokumentů nálezu', soubor: 'kontroly.js',
+    hledej: "    && (!Array.isArray(n.dokumenty) || n.dokumenty.indexOf(zakl) >= 0));\n  const zabrany = nalezy.filter(",
+    nahrad: "    && true);\n  const zabrany = nalezy.filter(",
+    proc: 'okno objednávky by ukázalo chybějící údaje SoD PROJ', sady: ['test_objednavka_proj.js'] },
+  { nazev: '[OP1] D3-N2: okno objednávky bez typu dokumentu pro lištu kontrol', soubor: 'ui/objednavka_proj_ui.js',
+    hledej: "tiskListaHtml({ dph: false, kontrolyTyp: 'objednavkaProj', pozn:",
+    nahrad: "tiskListaHtml({ dph: false, pozn:",
+    proc: 'okno objednávky by zase vyjmenovalo všechny kontroly zakázky', sady: ['test_objednavka_proj.js'] },
+  { nazev: '[OP1] D3-N1: Word — popis dodávky jen v jedné buňce', soubor: 'objednavka_proj.js',
+    hledej: "wPopis, { span: SPAN }) + '</w:tr>';",
+    nahrad: "wPopis) + '</w:tr>';",
+    proc: 'Word by měl popis v úzké buňce a tabulka by se rozjela (víc stran)', sady: ['test_objednavka_proj.js'] },
+  { nazev: '[OP1] D3-N1: Word — čísla řádku se smí rozdělit na dvě strany', soubor: 'objednavka_proj.js',
+    hledej: "      V(kc(x.celkemBezDph)), V(x.dphPct + ' %'), V(kc(x.celkemSDph))], '<w:cantSplit/>');",
+    nahrad: "      V(kc(x.celkemBezDph)), V(x.dphPct + ' %'), V(kc(x.celkemSDph))]);",
+    proc: 'řádek čísel by se mohl roztrhnout přes stranu', sady: ['test_objednavka_proj.js'] },
+  { nazev: '[OP1] D3-N1: náhled — popis dodávky zase úzký sloupec', soubor: 'ui/objednavka_proj_ui.js',
+    hledej: '<td class="popis" colspan="7">',
+    nahrad: '<td class="popis">',
+    proc: 'tisk/PDF objednávky by zase přetekl na 3–4 strany', sady: ['test_objednavka_proj.js'] },
 ];
 
 /* ============================================================
