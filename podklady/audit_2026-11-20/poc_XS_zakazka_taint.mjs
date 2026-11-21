@@ -40,7 +40,7 @@ function rozbor(atributy, REG) {
   const js = new Set(), rozbite = new Set();
   for (const [kde, n, v] of atributy) {
     const m = bezRetezcu(v).match(/__x\((\d+)\)/g);
-    if (m) m.forEach(x => js.add(REG[+x.match(/\d+/)[0]] + ' → ' + kde + ':' + n));
+    if (m) m.forEach(x => { const c = +x.match(/\d+/)[0]; js.add((c >= 800000 ? 'odpověď ARES, pole č. ' + (c - 800000) : REG[c]) + ' → ' + kde + ':' + n); });
     else { try { new Function(v); } catch (e) { rozbite.add(kde + ' ' + n + '=' + v.slice(0, 150)); } }
   }
   return { js: [...js], rozbite: [...rozbite] };
@@ -52,6 +52,11 @@ async function beh(popis, { rezim, admin, jazyk, proj, brany }) {
   const chyby = [];
   p.on('pageerror', e => chyby.push('pageerror: ' + e.message.slice(0, 200)));
   p.on('dialog', d => d.dismiss().catch(() => {}));
+  /* ARES (cizí strana → uživatel): odpověď veřejného rejstříku s obarvenými texty; skutečná síť se nevolá. */
+  await p.route('https://ares.gov.cz/**', route => { const P = n => `');__x(${n});//'"></textarea></title></style></scr` + `ipt><img src=x onerror=__x(${n})>`;
+    route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({
+      ico: '81726350', obchodniJmeno: 'Firma' + P(800000), dic: 'CZ1' + P(800001), datumVzniku: '2001-01-01' + P(800002), datumZaniku: '2020-01-01' + P(800003),
+      sidlo: { nazevObce: 'Obec' + P(800004), nazevUlice: 'Ulice' + P(800005), cisloDomovni: '1' + P(800006), psc: '11000' + P(800007), textovaAdresa: 'Adresa' + P(800008), nazevCastiObce: 'Cast' + P(800009), nazevStatu: 'Stat' + P(800010) } }) }); });
   await p.goto(ADRESA);
   await p.waitForFunction(() => typeof NAST !== 'undefined' && typeof render === 'function');
   await p.waitForTimeout(400);
@@ -86,6 +91,11 @@ async function beh(popis, { rezim, admin, jazyk, proj, brany }) {
         zamkniVariantu(v, { kdy: new Date().toISOString(), typ: 'nabidkaProjTisk', vysledek: { proj: vypocetProj(v.data.proj.zadani, v.data.proj.cenik) } });
         v.data.kryciProj.hodnoty.cisloZakazky = 'Z2026-TEST-01'; } catch (e) { /* main: bez objednávky PROJ */ }
     }
+    /* vazba z webhooku Pipedrive a vítěz organizace (texty z CRM / ARES uložené v zakázce) */
+    ZAK.pdDealId = '123';
+    ZAK.pdVazbaWebhook = { deal: '123', stav: 'ceka', kdy: '2026-11-16T10:00:00Z', cislo: 'CN 9940', doplneno: ['nazevAkce', 'objednatel'], ares: 'ok', aresRozdily: ['nazev', 'sidlo'], zanikla: true,
+      nahlaseno: { kdo: 'kdosi@priklad.cz', kdy: '2026-11-16T10:00:00Z' }, strana: 'ock' };
+    ZAK.pdOrgVitez = { stav: 'chyba', duvod: 'Důvod', kdy: '2026-11-16T10:00:00Z', vice: { organizace: [{ id: '1', nazev: 'Org A' }, { id: '2', nazev: 'Org B' }] } };
     syncVarianta();
     /* ---- obarvení ---- */
     const REG = []; const podleHodnoty = {};
@@ -99,7 +109,7 @@ async function beh(popis, { rezim, admin, jazyk, proj, brany }) {
         if ((rezim === 'texty' || rezim === 'volne') && typeof v === 'string') {
           if (/^data:/.test(v)) continue;
           /* „volné“ texty: výčtové a strukturní hodnoty zůstanou, aby prošly kontroly a dokumenty se otevřely jako u běžné zakázky */
-          if (rezim === 'volne' && (/^(key|typ|sazba|rezim|datum|kdy|cislo|ico|dic|jazyk|mena|stav|verze)$/i.test(k) || /typ|profil|zaskl|oplast|kotv|povrch|barva/i.test(k) || /\.profily|\.zamek|\.cenik/.test(c2) || ID_KLIC.test(k))) continue;
+          if (rezim === 'volne' && (/^(key|typ|sazba|rezim|datum|kdy|cislo|ico|dic|jazyk|mena|stav|verze|deal|pdDealId|ares|strana)$/i.test(k) || /typ|profil|zaskl|oplast|kotv|povrch|barva/i.test(k) || /\.profily|\.zamek|\.cenik/.test(c2) || ID_KLIC.test(k))) continue;
           if (ID_KLIC.test(k)) { if (!(v in podleHodnoty)) { podleHodnoty[v] = REG.length; REG.push(c2 + ' (hodnota id)'); } o[k] = v + pay(podleHodnoty[v]); }
           else { REG.push(c2); o[k] = v + pay(REG.length - 1); }
         } else if (rezim === 'cisla' && typeof v === 'number' && k !== 'schema') { REG.push(c2); o[k] = String(v) + pay(REG.length - 1); }
@@ -128,6 +138,13 @@ async function beh(popis, { rezim, admin, jazyk, proj, brany }) {
     try { if (typeof VZ_UI !== 'undefined' && ZAK.dalsiZakaznici && ZAK.dalsiZakaznici[0]) { VZ_UI.otevreny = ZAK.dalsiZakaznici[0].id; syncVarianta();
       for (const t of ['kalk', 'zakazka', 'kryci', 'spec']) { prepniTab(t); render(); await cekej(60); sken(document, 'vz-' + t); } VZ_UI.otevreny = ''; } } catch (e) { chyby.push('vz: ' + e.message.slice(0, 160)); }
     try { if (typeof otevriNastaveni === 'function') { otevriNastaveni(); for (const pn of NAST_PANELY.map(x => x.id)) { try { nastPanel(pn); } catch (e) { chyby.push('nast ' + pn + ': ' + e.message.slice(0, 120)); } await cekej(40); sken(document, 'nast-' + pn); } } } catch (e) { chyby.push('nast: ' + e.message); }
+    /* ARES: hledání z hlavičky (odpověď je obarvená), panel rozdílů, potvrzený přepis do hlavičky */
+    try { document.getElementById('nastaveni-overlay').style.display = 'none'; } catch (e) {}
+    if (typeof aresHledej === 'function') for (const kde of ['ock', 'proj']) {
+      try { ZAK.ico = '81726350'; prepniTab(kde === 'ock' ? 'kalk' : 'proj'); render(); await Promise.race([aresHledej(kde), cekej(3000)]); render(); await cekej(200); sken(document, 'ARES panel ' + kde);
+        if (kde === 'ock' && typeof aresPrepisPotvrd === 'function') { aresPrepisPotvrd('ock'); render(); await cekej(150); for (const t of ['kalk', 'zakazka', 'kryci', 'spec']) { prepniTab(t); render(); await cekej(60); sken(document, 'po přepisu z ARES / ' + t); } }
+      } catch (e) { chyby.push('ares ' + kde + ': ' + String(e && e.message || e).slice(0, 120)); } }
+    const aresStav = (typeof ARES !== 'undefined') ? (ARES.chyba || (ZAK.objednatel || '').slice(0, 12)) : 'bez ARES';
     if (jazykTisku && typeof TISK_JAZYK !== 'undefined') { try { tiskJazykSet(jazykTisku); } catch (e) {} }
     for (const k of OKNA) {
       const pred = okna.length; hlasky.length = 0;
@@ -138,11 +155,11 @@ async function beh(popis, { rezim, admin, jazyk, proj, brany }) {
     }
     await cekej(400);
     okna.forEach(w => { try { w.close(); } catch (e) {} });
-    return { kontrola, hits: [...HITS].map(n => REG[n] || ('?' + n)), atributy, url, REG, chyby, obarveno: REG.length, oken: okna.length };
+    return { kontrola, aresStav, hits: [...HITS].map(n => n >= 800000 ? 'odpověď ARES, pole č. ' + (n - 800000) : (REG[n] || ('?' + n))), atributy, url, REG, chyby, obarveno: REG.length, oken: okna.length };
   }, [ZC.zkusebniCenik(), ZC.zkusebniCenikProj(), rezim, admin, jazyk || '', TABY, OKNA, !!proj, !!brany]);
   await ctx.close();
   const rb = rozbor(r.atributy, r.REG); r.js = rb.js.concat(r.url); r.rozbite = rb.rozbite.slice(0, 15);
-  console.log(`\n== ${popis}: obarveno ${r.obarveno} hodnot, otevřeno oken ${r.oken}, pozitivní kontrola detekce: ${r.kontrola ? 'funguje' : 'NEFUNGUJE'}`);
+  console.log(`\n== ${popis}: obarveno ${r.obarveno} hodnot, otevřeno oken ${r.oken}, pozitivní kontrola detekce: ${r.kontrola ? 'funguje' : 'NEFUNGUJE'}, ARES: ${r.aresStav}`);
   if (!r.kontrola) { console.log('Harness nedetekuje — výsledek je neplatný'); process.exit(2); }
   console.log('   spuštěno (HTML): ' + (r.hits.length ? '\n     ' + r.hits.join('\n     ') : 'nic'));
   console.log('   payload v kódu obsluhy on*: ' + (r.js.length ? '\n     ' + r.js.join('\n     ') : 'nic'));
