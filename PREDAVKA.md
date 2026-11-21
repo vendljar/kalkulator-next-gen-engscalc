@@ -22,6 +22,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/on-online` | (tato dávka) | v19.11.8 | #ON kdo je online (Nastavení → Uživatelé) nad 042fcbc; verzi přečísluje koordinace |
 | `claude/d8-lhuty` | (tato dávka) | v19.11.7 | D8 #677 (pracovní) lhůty PROJ → termíny krycího listu; nad integrací 042fcbc; verzi přečísluje koordinace |
 | `claude/vz-f1` | (tato dávka) | v18.11.8 | VZ-F1 #659 opravy nálezů ruční zkoušky VZ; nad ec5bbac, sloučeno s integrací 41bbe99 |
+| `claude/hn-harnessy` | (tato dávka) | v21.11.1 | HN zpevnění testů kola (#638, #644, #646, #647, #692 prac.) nad cda289e; aplikace beze změny; verzi přečísluje koordinace |
 | `claude/pg-tisk` | (tato dávka) | v19.11.10 | PG #684–#687 nad integrací 042fcbc; čísla a verzi přečísluje koordinace |
 
 Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tagu: `python3 nastroje/release_odkaz.py --chybejici`
@@ -29,6 +30,12 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 
 ## Běžící dávky
 
+- **HN** (`claude/hn-harnessy`, v21.11.1, nad cda289e = v19.11.11): jen testy a nástroje kola. #638 harnessy zobrazení /
+  záporné bez pauz (příčina: `ADMIN_EMAIL` čtený při importu → `nastroje/harness_prostredi.mjs`), #644 test_vz_unik
+  (falešná shoda ceny s razítkem času, ne únik), #646 overit_sod + syntetické šablony (`nastroje/smlouvy_syntet.mjs`),
+  #647 případy `k40:*` v porovnání sestavení (+ `podklady/porovnani/ocekavane_k40n1_main_2026-11-21.txt` pro main × test),
+  #692 (prac.) kolo bez playwrightu = chyba s návodem (`KNG_BEZ_PROHLIZECE=1`), `PRESKOCENO_CAST` v souhrnu.
+  Statické kontroly nově 10. Svěřená HN-T1/T2. Tabulka S7 přesunuta do archivu `2026-11.md`. Výsledek kola v CHANGELOG / zprávě.
 - **PG** (`claude/pg-tisk`, v19.11.10, nad 042fcbc): #684 tlačítka tisku CN OCK (náhled podkladů → Word modře → náhled
   a tisk), #685 vlastní řádek TS v SOUČÁSTÍ DODÁVKY NENÍ (`extra[i].sekce='neni'`), #686 DALŠÍ UJEDNÁNÍ v nabídce PROJ
   (`PJ.dalsiUjednani`, Word přes šablonu PROJ v9 `--proj-v9`, kontrola `dalsiUjednaniWordProj`), #687 číslo stránky: vada šablony CN v9–v17 (pevná „1“ v záhlaví) → `--cn-v18`,
@@ -118,22 +125,3 @@ Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.)
    sloučených mezitím jdou do `podklady/predavky/2026-11.md`, živý stav sem).
 2. J. V. nahraje skill `testovaci-procedura-kng`; skill `kalkulator-next-gen` zkrátit do 25 kB (návrh S7, mimo repo).
 3. Rychlá cesta K40-N1 do `test` (nad integrací) → J. V. ověří rozdíly cen → do `main` jen na jeho pokyn se sloučením testu.
-
-## S7: co bylo přesunuto kam
-
-| co (dřív) | kam (teď) |
-|---|---|
-| `PREDAVKA.md` 557 kB, 202 oddílů (předávky dávek 1. 10.–17. 11. 2026 a stav koordinace 12. 11.) | beze změny textu do `podklady/predavky/2026-11.md` (60 oddílů), `2026-10.md` (143), `2026-09.md` (oddíl „Předchozí stav (30. 9. 2026)“ odtržený od předávky 1. 10.); ověřeno řádek po řádku |
-| předávka S3 #611 (přišla se sloučením integrace dcb1678) | nahoru do archivu `2026-11.md`; navržené pravidlo porovnání → CLAUDE.md, Testy |
-| stav koordinace 12. 11. (integrace v12.11.3–v12.11.7, pokyny 10. a 11. 11., B0 po kole 47) | archiv `2026-11.md`; platné pokyny → `CLAUDE.md` (Větve, Kdo rozhoduje) a `ROZHODNUTI_LOG.md`; otevřené body → tabulka „Čeká na J. V.“ výš |
-| „Pravidla komunikace s integrátorem Pipedrive“ | archiv `2026-11.md` + zkráceně „Trvalé pokyny“ výš + `ROZHODNUTI_LOG.md` |
-| datovaná rozhodnutí J. V. v předávkách | `podklady/ROZHODNUTI_LOG.md` (výtah, plné znění v archivu) |
-| CLAUDE.md: `test-draft` jako integrační a předávací větev | `ROZHODNUTI_LOG.md` (25. 9., nahrazeno); CLAUDE.md: integrace `claude/integrace-…`, `test-draft` se nepoužívá |
-| CLAUDE.md: výjimka `k16-nalezy` (splněno) | `ROZHODNUTI_LOG.md` (25. 9., neplatné) |
-| CLAUDE.md: „do `test` jen na pokyn J. V.“ | nahrazeno schváleným „do `test` posílá koordinace po celém zeleném kole“ (pokyny 10. a 11. 11., návrh S7) |
-| CLAUDE.md: „ke každé verzi, která má dostat tag, odkaz na release“ | „jen stav pro `main`“ (J. V. 18. 11.); postup s `release_odkaz.py`, `&body=`, kontrolou tagu a `--upravit` zůstal v CLAUDE.md |
-| CLAUDE.md: datované závorky (25. 9., 29. 9., 13. 10., 15. 10., W2 20. 10., P2 23. 10., SEC-M1 1. 11., T2 #543 a čísla běhů Actions, K8-W2/W3/W9) | `ROZHODNUTI_LOG.md`; pravidla samotná v CLAUDE.md beze změny |
-| CLAUDE.md: důvod předávky (pád 25. 9., 1,58 M tokenů) | `ROZHODNUTI_LOG.md` (25. 9.) |
-| CLAUDE.md: body 1–4 Předávacího souboru (číst na `test-draft`, přepisovat celou PREDAVKA, limit 60/75 %, WIP) | CLAUDE.md, Předávací soubor body 1–7 (čte se na integraci; předávka dávky do 3 kB a archiv; limit 60/75 % a WIP beze změny) |
-| ponecháno beze změny obsahu | kontrola údajů a hook `pre-push`, zákaz `--no-verify`, mutace po částech, restart kontejneru, N46, mazání větví tlačítkem v Actions, `release_odkaz.py`, pojistka testů, lightweight tagy, 403 z cloudu |
-| nové v CLAUDE.md (schváleno 18. 11.) | Rychlá cesta (podle změny zadání J. V. 18. 11.: do test, ne do main), Kdo rozhoduje (s úpravami J. V.; kolegu jmenuje J. V., jen test), stupně kol, automat z testengscalc jen čte, STAV kol v `podklady/kola/`, `NOVINKY.md` po sloučení do main, limit 4 sezení, poradce, `main` předkem integrace |

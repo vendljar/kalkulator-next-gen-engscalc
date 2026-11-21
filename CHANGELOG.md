@@ -8,6 +8,38 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.11.1 — HN: zpevnění testů kola (#638, #644, #646, #647, #692 prac.), větev claude/hn-harnessy
+
+Nad integrací `cda289e` (v19.11.11). Jen testy, harnessy a nástroje kola — **kód aplikace beze změny**, cena ani
+dokumenty se nemění (porovnání sestavení proti integraci SHODA). Verzi přečísluje koordinace.
+
+- **#638 — nestabilní `overit_zobrazeni.mjs` a `overit_zaporne.mjs`:** „limit přihlášení" byl ve skutečnosti chybějící
+  `ADMIN_EMAIL`: `netlify/lib/sdilene.mjs` ho čte při importu, harness ho nastavoval až v těle modulu (statické importy
+  běží dřív) → přihlášení správce 401, timeout 10 s. V kole to zakrýval export ve `spust_testy.sh`. Nový
+  `nastroje/harness_prostredi.mjs` (importuje se první; i `overit_cenik_prava`, `overit_neulozene`,
+  `netlify/test_prihlaseni`). `harness_cekani.js`: `cekejNaStart`, `prihlasVProhlizeci` (čeká na přihlášení nebo
+  odmítnutí a vypíše hlášku aplikace s návodem). Oba harnessy bez `waitForTimeout` (30 pauz) a pevných limitů — čeká
+  se na klid (dotazy API, akce, odložené samoukládání matice). B168 v `overit_zobrazeni` procházel jen díky časování;
+  scénář „heslo poprvé" se nastaví výslovně (HN-T2). Pojistka: `test_harness_cekani.js` nad cda289e padá, po 46/0;
+  bez `ADMIN_EMAIL` zaporne pád → 15/0, zobrazeni timeout → 159/0, test_prihlaseni 37/30 → 67/0; souběh 6 harnessů zelený.
+- **#644 — občasné selhání `test_vz_unik.js` („výměna řídícího (B)"):** žádný únik. Pětimístná cena varianty v EUR
+  se náhodně shodovala s číslicemi razítka času `v.vytvoreno`/`v.upraveno` v JSON pohledu (např. 10:49:23.2xx ∋ 49232);
+  záleželo na čase dne, ne na posunu hodin. Detektor ceny vynechává ISO časy a id z `Date.now()`; nová pojistka
+  zmrazí hodiny na čas nesoucí cenu (před 2 FAIL, po 0); posuny +400/−30/+1000 dní a 64 zmrazených časů 0 FAIL.
+- **#646 — `overit_sod.mjs` na šablony v4–v6:** očekávání podle verze šablony (SoD realizace v2+), tečky „……" místo
+  `{{SODP_*}}`/`{{PM_*}}` (C3 #584). Nový `nastroje/smlouvy_syntet.mjs` vyrobí smyšlené šablony (SoD realizace v4–v6,
+  SoD PROJ v2–v4, plná moc v1–v2) týmiž nástroji jako `vyrob_sablony.js` — bez `KNG_PODKLADY` harness běží nad nimi
+  a už se nepřeskakuje. Pojistka: starý harness nad syntetickými v6 46/5, nový 51/0; bez podkladů 55/0.
+- **#647 — pevná sada porovnání sestavení:** `porovnani_sada.js` oddíl 3c (`k40:*`), přepnutí typu šachty / zasklení
+  s vyřazeným nebo přepsaným čelním sklem. `origin/main × origin/claude/rychla-k40n1`: stará sada 79/79 SHODA,
+  nová 8 rozdílných (jen `k40:*`); seznam `podklady/porovnani/ocekavane_k40n1_main_2026-11-21.txt` → kód 0.
+- **#692 (prac.) — přeskočení v kole je vidět:** `testovaci_kolo.sh` bez načitatelného playwrightu skončí hned
+  kódem 2 s návodem, přeskočené harnessy = selhání, vědomě `KNG_BEZ_PROHLIZECE=1` → „ZELENÁ BEZ PROHLÍŽEČE".
+  `test_354_mustky.js` si staré jádro dotáhne podle plného SHA, jinak vypíše `PRESKOCENO_CAST:` a `spust_testy.sh`
+  ho přenese do „Přeskočené sady" (v mělkém klonu teď srovnání opravdu běží: 67/0 → 69/0). Nový
+  `nastroje/test_kolo_preskoceni.sh` ve statických kontrolách (10 z 10); pojistka nad původními skripty 8 FAIL, po 10/0.
+  Svěřené rozhodnutí HN-T1.
+
 ## v19.11.11 — D3 #688: Objednávka / Smlouva PROJ z nabídky PROJ, větev claude/d3-objednavka-proj
 
 Nad integrací `042fcbc` (v19.11.5). Nový dokument, cenu ani text nabídky a SoD nemění. Verzi přečísluje koordinace.
