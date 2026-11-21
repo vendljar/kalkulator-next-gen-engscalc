@@ -5551,6 +5551,24 @@ const MUTACE = [
     hledej: "  return `<b class=\"rejstrik-hlavni rejstrik-adresa\">${esc(adresa)}</b>${akce\n    ? `<div class=\"rejstrik-akce\" style=\"font-size:11px;color:#6b7686\">${esc(akce)}</div>` : ''}`;",
     nahrad: "  return `<b class=\"rejstrik-hlavni\">${esc(akce || '—')}</b><div class=\"rejstrik-adresa\" style=\"font-size:11px;color:#6b7686\">${esc(adresa)}</div>`;",
     proc: "seznam nabídek by dál vedl popisem akce místo adresy (D7)", sady: ["test_do_obrazovka.js"] },
+  /* DS #648–#650 (21. 11. 2026): výchozí název šachty v jazyce dokumentu, popisek
+   * chybějící jazykové šablony smlouvy. Hlídá src/test_ds_sachta_nazev.js
+   * a src/test_sablony_online.js. [DS] */
+  { nazev: "DS: uložený „Šachta N“ se nepřekládá [DS]", soubor: "vice_sachet.js",
+    hledej: "  return m ? slovo + ' ' + m[1] : t;", nahrad: "  return t;",
+    proc: "šachta přidaná tlačítkem (+ přidat šachtu) by v EN nabídce zůstala „Šachta 2“ (K49-I6)", sady: ["test_ds_sachta_nazev.js"] },
+  { nazev: "DS: nabídka zase jen s prázdným názvem [DS]", soubor: "nabidka.js",
+    hledej: "    const nazev = VS.vsNazevL(zs, i, o.L || 'cz');",
+    nahrad: "    const nazev = String(zs.nazev || '').trim() || (P('Šachta') + ' ' + (i + 1));",
+    proc: "CN EN by tiskla „Shaft 1“, ale „Šachta 2“", sady: ["test_ds_sachta_nazev.js"] },
+  { nazev: "DS: SoD bez překladu názvu šachty [DS]", soubor: "sod.js",
+    hledej: "  const nazvy = vo.sachty.map(x => NZ(x.nazev, L || 'cz'));",
+    nahrad: "  const nazvy = vo.sachty.map(x => x.nazev);",
+    proc: "SoD EN/DE/FR by v předmětu a rozpisu tiskla „Šachta 1/2“", sady: ["test_ds_sachta_nazev.js"] },
+  { nazev: "DS: smlouva bez jazykové šablony „tiskne se česky“ [DS]", soubor: "ui/sablony_sprava_ui.js",
+    hledej: "SABL_SMLOUVY.includes(typ) ? 'nevytiskne se' : 'tiskne se česky'",
+    nahrad: "'tiskne se česky'",
+    proc: "tabulka šablon by slibovala český tisk smlouvy, kterou sodJazykZabrana nevyrobí (K49-I9)", sady: ["test_sablony_online.js"] },
   /* D3 #688 (19. 11. 2026): Objednávka / Smlouva PROJ. Hlídá src/test_objednavka_proj.js. [D3] */
   { nazev: "D3: číslo OBJ bez náhrady CN [D3]", soubor: "objednavka_proj.js",
     hledej: "  casti[i] = 'OBJ';", nahrad: "",
