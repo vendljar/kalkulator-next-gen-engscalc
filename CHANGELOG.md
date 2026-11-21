@@ -8,6 +8,30 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.11.1 — VZD: drobnosti víc zákazníků a dokumentů (#673, #674, #665, #683, #635), větev claude/vzd-drobnosti
+
+Nad integrací `cda289e` (v19.11.11). Cenu nemění. Mění text dotisku odeslané nabídky („Vypracoval“, #665, rozhodnutí
+J. V.) a krycí list PROJ jen u slevy PROJ 100 % (#683). Verzi a čísla přečísluje koordinace.
+
+- **#673 suchý běh Pipedrive za řídícího zákazníka:** `pdnPodklad` skládá krycí listy OCK i PROJ z pohledu řídícího
+  (`vzTiskPohled` + varianta bez cizích ručních hodnot); ruční pole zákazníka zapsaná u dalšího zákazníka (kopie
+  faktur, podpisy, zmocnitel…) do náhledu ani do budoucího ostrého zápisu (#115) nejdou. Jeden zákazník beze změny.
+- **#674 drobnosti VZ:** (a) `plnaMocData` hlídá `vzTiskHlidej`; (b) IČO s úvodní nulou (`027182818` = `27182818`);
+  (c) hláška „Neuloženo: Neuloženo:“ u 12 hlášek serveru víc zákazníků — předponu přidává jen `zakazka_kontrola.mjs`
+  a nezdvojí ji; (d) řídící zákazník **s písmenem** (stal se řídícím výměnou), kterému odešla nabídka: název, sídlo,
+  IČO a DIČ zmrazené v klientu (hlavička) i na serveru, v uložení výměny i potom — dřív klient pole nechal volné
+  a server odmítl jen v uložení výměny. Řídící z1 beze změny. (e) upozornění u KL PROJ dalšího zákazníka neděláno.
+- **#665 „Vypracoval“ ze snímku zámku:** odeslaná nabídka nese `zamek.zpracovatel` (jméno, titul, funkce, telefon,
+  e-mail; píše ho server z účtu v relaci, drží ho jako `kdo`). Dotisk (Word i online tisk) tiskne zpracovatele z doby
+  odeslání; podpis jen téhož člověka (pod cizí jméno se sken kolegy nevloží). Starší zámky bez snímku jako dřív.
+- **#683 (D8-I1) jedno pravidlo „nabízí činnost“:** `nabidkaProjNabizi` (cena před slevou, jak rozhoduje CN); krycí
+  list PROJ (rozsah činností, termíny D8) se ptá téhož. Liší se jen u slevy PROJ 100 %; SoD beze změny. Zápis
+  v `ROZHODNUTI_LOG` (technické sjednocení). Příčinu z TEST 7650-K29-N50 z dat v repu reprodukovat nešlo.
+- **#635 tlačítko „vlastní varianta“** u upozornění sdílené varianty v krycím listu (`vzVlastniVarianta`).
+- **Testy (pojistka v commitech):** `src/test_vzd_pd_unik.js` 23, `src/test_vzd_drobnosti.js` 19,
+  `netlify/test_vz_server.mjs` +8, `src/test_665_vypracoval.js` 19, `netlify/test_665_vypracoval.mjs` 6,
+  `src/test_683_nabizi_studii.js` 8, `src/test_635_vlastni_varianta.js` 8.
+
 ## v19.11.11 — D3 #688: Objednávka / Smlouva PROJ z nabídky PROJ, větev claude/d3-objednavka-proj
 
 Nad integrací `042fcbc` (v19.11.5). Nový dokument, cenu ani text nabídky a SoD nemění. Verzi přečísluje koordinace.

@@ -22,6 +22,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/on-online` | (tato dávka) | v19.11.8 | #ON kdo je online (Nastavení → Uživatelé) nad 042fcbc; verzi přečísluje koordinace |
 | `claude/d8-lhuty` | (tato dávka) | v19.11.7 | D8 #677 (pracovní) lhůty PROJ → termíny krycího listu; nad integrací 042fcbc; verzi přečísluje koordinace |
 | `claude/vz-f1` | (tato dávka) | v18.11.8 | VZ-F1 #659 opravy nálezů ruční zkoušky VZ; nad ec5bbac, sloučeno s integrací 41bbe99 |
+| `claude/vzd-drobnosti` | (tato dávka) | v21.11.1 | VZD #673 #674 #665 #683 #635 nad cda289e; viz CHANGELOG |
 | `claude/pg-tisk` | (tato dávka) | v19.11.10 | PG #684–#687 nad integrací 042fcbc; čísla a verzi přečísluje koordinace |
 
 Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tagu: `python3 nastroje/release_odkaz.py --chybejici`
@@ -70,6 +71,8 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   čísla v textu termínů nabídky PROJ z tabulky (online i Word, 4 jazyky; s výchozí tabulkou beze změny), po Prodáno
   dopočet termínů krycího listu PROJ (řetěz, horní mez, 4,3 t/měsíc, ruční přednost, ↺, zdroj u data), lhůty zamrzne
   prodej. Šablona v8 pevné týdny nemá → nová šablona netřeba. Otázky J. V. #678 (pracovní). Kolo VŠE ZELENÉ (427/0/59, 389/0/1, 9/9, SHODA 359/359), mutace [D8] 19/19 + 6/6. HOTOVO.
+
+- **VZD** (`claude/vzd-drobnosti`): hotovo, detail v CHANGELOG v21.11.1; #674 d a #665 podpis k potvrzení J. V.
 
 ## Čeká na J. V.
 
