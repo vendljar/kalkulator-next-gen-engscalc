@@ -373,8 +373,10 @@ function kontrolyPotvrd() {
 
 /* Krátká podoba do náhledu dokumentu. Čísla nákladů tam nepatří nikdy –
  * náhled je to, co odchází ven. */
-function kontrolyTiskLista() {
-  const s = kontrolyStavAkt();
+/* `typ` (D3-N2): jen nálezy, které se týkají toho dokumentu (kontrolyProDokument). */
+function kontrolyTiskLista(typ) {
+  let s = kontrolyStavAkt();
+  if (typ && typeof kontrolyProDokument === 'function') s = kontrolyProDokument(s, typ);
   if (!s.varovat) return '';
   const veta = (typeof kontrolyText === 'function') ? kontrolyText(s, { cisla: false }) : '';
   if (!veta) return '';

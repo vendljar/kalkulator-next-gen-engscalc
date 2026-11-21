@@ -212,8 +212,11 @@ function objDocxBunka(inner, w, o) {
 }
 function objDocxOdst(text, o) {
   o = o || {};
-  const x = docxPar(text, Object.assign({ sz: 16, after: 0 }, o));
-  return o.vpravo ? x.replace('<w:pPr>', '<w:pPr><w:jc w:val="right"/>') : x;
+  let x = docxPar(text, Object.assign({ sz: 16, after: 0 }, o));
+  /* keep (D3-N1): odstavec drží s dalším (popis řádku s řádkem čísel) */
+  if (o.vpravo) x = x.replace('<w:pPr>', '<w:pPr><w:jc w:val="right"/>');
+  if (o.keep) x = x.replace(/<w:pPr>/g, '<w:pPr><w:keepNext/>');   // keepNext je v pPr první (pořadí schématu)
+  return x;
 }
 function objDocxTabulka(sirky, radkyXml, okraje) {
   const hr = okraje === false ? 'none' : 'single';
@@ -247,18 +250,33 @@ function objednavkaProjDocxTelo(o) {
     + (o.cisloZakazky ? objDocxOdst('Zakázka: ' + o.cisloZakazky, { vpravo: true, sz: 18 }) : '');
   let body = objDocxTabulka([5600, 4038], '<w:tr>' + objDocxBunka(vlevo, 5600) + objDocxBunka(vpravo, 4038) + '</w:tr>', false);
   body += objDocxOdst('Datum případu: ' + o.datumVystaveni, { sz: 18, after: 100 });
-  const W = [330, 620, 2700, 420, 380, 1000, 1000, 1000, 450, 1738];
-  let tr = '<w:tr>' + OBJ_PROJ_SLOUPCE.map((t, i) => objDocxBunka(B(t, { sz: 14, color: 'FFFFFF', vpravo: i >= 3 }), W[i], { fill: '2B3850' })).join('') + '</w:tr>';
-  const radek = (bunky) => '<w:tr>' + bunky.map((c, i) => objDocxBunka(c, W[i])).join('') + '</w:tr>';
+  /* D3-N1 (19. 11. 2026): jako náhled a vzor účetního systému — řádek
+   * Č. · Označení · popis dodávky přes celou šířku (gridSpan 7), pod ním
+   * řádek čísel (Množ. · MJ · J. cena · C. cena · celkem bez DPH · DPH % ·
+   * celkem s DPH). Popis drží s řádkem čísel (keepNext), řádek čísel se
+   * nedělí (cantSplit), záhlaví se opakuje na další straně (tblHeader). */
+  const W = [330, 620, 800, 500, 1400, 1400, 1500, 700, 2388];
+  const SPAN = W.length - 2, wPopis = W.slice(2).reduce((a, b) => a + b, 0);
+  const S = OBJ_PROJ_SLOUPCE;
+  const H = (t, i) => objDocxBunka(B(t, { sz: 14, color: 'FFFFFF', vpravo: i >= 2 }), W[i], { fill: '2B3850' });
+  const trPr = x => '<w:trPr>' + x + '</w:trPr>';
+  let tr = '<w:tr>' + trPr('<w:tblHeader/><w:cantSplit/>') + H(S[0], 0) + H(S[1], 1)
+    + objDocxBunka(B(S[2], { sz: 14, color: 'FFFFFF' }), wPopis, { span: SPAN, fill: '2B3850' }) + '</w:tr>'
+    + '<w:tr>' + trPr('<w:tblHeader/><w:cantSplit/>') + H('', 0) + H('', 1) + S.slice(3).map((t, i) => H(t, i + 2)).join('') + '</w:tr>';
+  const radek = (bunky, pr) => '<w:tr>' + (pr ? trPr(pr) : '') + bunky.map((c, i) => objDocxBunka(c, W[i])).join('') + '</w:tr>';
   const V = t => objDocxOdst(t, { vpravo: true });
+  const drz = t => objDocxOdst(t, { keep: true });
   o.radky.forEach(x => {
-    tr += radek([objDocxOdst(String(x.c)), objDocxOdst(x.oznaceni), B(x.nazev) + (x.popis.length ? objDocxOdst(x.popis.join('\n'), { sz: 14 }) : ''),
-      V(String(x.mnozstvi)), V(x.mj), V(kc(x.cenaJedn)), V(kc(x.cenaCelkem)), V(kc(x.celkemBezDph)), V(x.dphPct + ' %'), V(kc(x.celkemSDph))]);
+    tr += '<w:tr>' + objDocxBunka(drz(String(x.c)), W[0]) + objDocxBunka(drz(x.oznaceni), W[1])
+      + objDocxBunka(B(x.nazev, { keep: true }) + (x.popis.length ? objDocxOdst(x.popis.join('\n'), { sz: 14, keep: true }) : ''), wPopis, { span: SPAN }) + '</w:tr>';
+    tr += radek([objDocxOdst(''), objDocxOdst(''), V(String(x.mnozstvi)), V(x.mj), V(kc(x.cenaJedn)), V(kc(x.cenaCelkem)),
+      V(kc(x.celkemBezDph)), V(x.dphPct + ' %'), V(kc(x.celkemSDph))], '<w:cantSplit/>');
   });
-  if (o.sleva) tr += radek([objDocxOdst(''), objDocxOdst(''), objDocxOdst('Sleva ' + o.sleva.pct + ' %'), V(''), V(''), V(''),
-    V(kc(o.sleva.bezDph)), V(kc(o.sleva.bezDph)), V(o.souhrn.dphPct + ' %'), V(kc(o.sleva.sDph))]);
-  tr += '<w:tr>' + objDocxBunka(B('Součet', { vpravo: true }), W.slice(0, 6).reduce((a, b) => a + b, 0), { span: 6, fill: 'EEF2F8' })
-    + [o.texty.bezDph, o.texty.bezDph, '', o.texty.sDph].map((t, i) => objDocxBunka(B(t, { vpravo: true }), W[6 + i], { fill: 'EEF2F8' })).join('') + '</w:tr>';
+  if (o.sleva) tr += '<w:tr>' + trPr('<w:cantSplit/>') + objDocxBunka(objDocxOdst(''), W[0]) + objDocxBunka(objDocxOdst(''), W[1])
+    + objDocxBunka(objDocxOdst('Sleva ' + o.sleva.pct + ' %'), W[2] + W[3] + W[4], { span: 3 })
+    + [V(kc(o.sleva.bezDph)), V(kc(o.sleva.bezDph)), V(o.souhrn.dphPct + ' %'), V(kc(o.sleva.sDph))].map((c, i) => objDocxBunka(c, W[5 + i])).join('') + '</w:tr>';
+  tr += '<w:tr>' + trPr('<w:cantSplit/>') + objDocxBunka(B('Součet', { vpravo: true }), W.slice(0, 5).reduce((a, b) => a + b, 0), { span: 5, fill: 'EEF2F8' })
+    + [o.texty.bezDph, o.texty.bezDph, '', o.texty.sDph].map((t, i) => objDocxBunka(B(t, { vpravo: true }), W[5 + i], { fill: 'EEF2F8' })).join('') + '</w:tr>';
   body += objDocxTabulka(W, tr);
   /* Rámeček „Celkem Kč" vpravo pod tabulkou. */
   const R = (t, v, tucne) => '<w:tr>' + objDocxBunka((tucne ? B : objDocxOdst)(t, { vpravo: true, sz: tucne ? 20 : 16 }), 2000)

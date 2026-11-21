@@ -226,8 +226,9 @@ function nwBloky(data, L, o) {
   nwTsSekce(vse, ['STAVEBNÍ A PŘÍPRAVNÉ PRÁCE', 'PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE', 'SOUČÁSTÍ DODÁVKY NENÍ'].map(P), ph, P, T)
     .forEach(r => ts.push(r));
   /* DALŠÍ UJEDNÁNÍ — vlastní řádky specifikace (docxRadkyNavic: řádek s popiskem
-   * se vloží i bez hodnoty, pruh jen když nějaký řádek je) */
-  const extra = data.tsExtra || [];
+   * se vloží i bez hodnoty, pruh jen když nějaký řádek je). Řádky se sekcí
+   * NENÍ (`neni`, PG #2) už stojí na konci SOUČÁSTÍ DODÁVKY NENÍ (PG-N1). */
+  const extra = (data.tsExtra || []).filter(e => e && !e.neni);
   if (extra.length) {
     ts.push({ typ: 'pruh', text: P('DALŠÍ UJEDNÁNÍ') });
     extra.forEach(e => ts.push({ typ: 'radek', siroka: true, bunky: [e.nazev, e.hodnota] }));
