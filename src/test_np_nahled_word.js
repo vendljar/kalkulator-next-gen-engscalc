@@ -22,6 +22,9 @@
  *  D) pojistka srovnávače: starý náhled (nabidkaNahledSekce + příplatky na
  *     konci, bez řádku slevy) se s Wordem NESHODUJE — srovnávač by starý stav
  *     chytil (sleva, pořadí příplatků).
+ *  F) NPT-N1–N3 (#690, #691): řádek světlíků v náhledu není (Word CN v17 ho
+ *     nemá), cena světlíků zůstává v kalkulaci i nabídce; popisky bez CSS
+ *     verzálek; EN/DE hlavička s dvojtečkou jako šablona.
  * Pojistka: na 6092af3 (před NP) modul nahled_word.js neexistuje a sada
  * selže hned na začátku; mutace „bez řádků slevy" a „příplatky až za
  * doložkami" v nahled_word.js shodí A i C — viz zpráva commitu.
@@ -151,7 +154,10 @@ const TS_SACHTA = [
     r2('TYP OPLÁŠTĚNÍ', '{{TS_TYP_OPLASTENI}}'), r2('MATERIÁL OPLÁŠTĚNÍ', '{{TS_MATERIAL_OPLASTENI}}'),
     r2('POVRCHOVÁ ÚPRAVA OPLÁŠTĚNÍ', '{{TS_POVRCH_OPLASTENI}}'), r2('OPLÁŠTĚNÍ ČELA POD NÁSTUPIŠTĚM', '{{TS_OPLASTENI_CELA}}'),
     r2('ROZSAH OPLÁŠTĚNÍ', '{{TS_ROZSAH_OPLASTENI}}'), r2('OPLÁŠTĚNÍ NADSVĚTLÍKŮ', '{{TS_OPLASTENI_NADSVETLIKU}}'),
-    r2('SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ', '{{TS_SVETLIKY_DVERI}}'), r2('VNĚJŠÍ OPLÁŠTĚNÍ ŠACHTY', '{{TS_UMISTENI_OPLASTENI}}'),
+    /* NPT-N1 #690: řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ ({{TS_SVETLIKY_DVERI}}, #375)
+     * Word CN v17 NEMÁ a nedostane (J. V. 21. 11. 2026) — syntetická šablona ho
+     * proto nemá taky; náhled ho vynechá. */
+    r2('VNĚJŠÍ OPLÁŠTĚNÍ ŠACHTY', '{{TS_UMISTENI_OPLASTENI}}'),
     r2('ZPŮSOB KOTVENÍ OPLÁŠTĚNÍ', '{{TS_KOTVENI_OPLASTENI}}'), r2('VZHLED KOTVENÍ ZASKLENÍ', '{{TS_PARAMETRY_KOTVY}}'),
     r2('NAPOJENÍ ŠACHETNÍCH DVEŘÍ', '{{TS_NAPOJENI_DVERI}}')]],
   ['DOPLŇKOVÉ KONSTRUKCE', [
@@ -403,6 +409,41 @@ const sleva = (zak, pct) => { const v = zak.varianty[0]; v.data.sleva = Object.a
     const hodnoty = a => a.filter(x => /\d/.test(x) && !/[{}]/.test(x));
     const rh = rozdil(hodnoty(w), hodnoty(n));
     test('C EN: hodnoty náhledu = hodnoty Wordu (v pořadí), v eurech', !rh && n.some(x => /€|EUR/.test(x)) && !n.some(x => /Kč/.test(x)), rh || n.filter(x => /Kč/.test(x)).slice(0, 3));
+  }
+
+  /* ---------- F) NPT-N1–N3 #690/#691 (J. V. 21. 11. 2026) ---------- */
+  {
+    /* N1: světlíky — řádek v náhledu není (Word CN v17 ho nemá), cena světlíků
+     * se dál počítá v kalkulaci a nabídka ji nese beze změny. */
+    const s = scenar('exteriérová', { nadDvermi: 'sklo', bokyDveri: 'sklo' }, true);
+    const b = scenar('exteriérová', { nadDvermi: 'bez', bokyDveri: 'bez' }, true);
+    const vs = s.varianty[0], vb = b.varianty[0];
+    const ds = nabidkaData(s, vs, J, 'cz');
+    test('F N1: zakázka se světlíky má symbol TS_SVETLIKY_DVERI (data beze změny)', !nwPrazdna(ds.placeholders.TS_SVETLIKY_DVERI), ds.placeholders.TS_SVETLIKY_DVERI);
+    const rs = await shoda('F N1 světlíky nad dveřmi i na bocích', s, vs);
+    if (rs) test('F N1: řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ v náhledu ani ve Wordu není',
+      !rs.n.includes('SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ') && !rs.w.includes('SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ'));
+    const ks = vypocet(vs.data.ock.zadani, vs.data.cenik, J, true), kb = vypocet(vb.data.ock.zadani, vb.data.cenik, J, true);
+    const celk = r => +(r && r.souhrn && r.souhrn.zakladCena) || 0;
+    test('F N1: cena světlíků se počítá v kalkulaci (základní cena se světlíky ≠ bez nich)', celk(ks) > 0 && celk(kb) > 0 && celk(ks) !== celk(kb), { se: celk(ks), bez: celk(kb) });
+    const db = nabidkaData(b, vb, J, 'cz');
+    test('F N1: nabídka nese cenu se světlíky (CENA_S_DPH se liší a je v náhledu)',
+      ds.placeholders.CENA_S_DPH !== db.placeholders.CENA_S_DPH && !!rs && rs.n.includes(String(ds.placeholders.CENA_S_DPH).replace(/[\s\u00a0\u202f]+/g, ' ').trim()),
+      { se: ds.placeholders.CENA_S_DPH, bez: db.placeholders.CENA_S_DPH });
+    for (const L of ['en', 'de']) {
+      const n = nwTextZHtml(nwHtml(nwBloky(nabidkaData(s, vs, J, L), L, {})));
+      const pop = (typeof tr === 'function') ? tr('SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ', L) : 'SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ';
+      test('F N1 ' + L.toUpperCase() + ': řádek světlíků v náhledu není', !n.includes(pop), pop);
+      /* N3: hlavička s dvojtečkou jako šablona („Site address / project:“, „Baustellenadresse / Projekt:“) */
+      const ocek = L === 'en' ? 'Site address / project:' : 'Baustellenadresse / Projekt:';
+      test('F N3 ' + L.toUpperCase() + ': hlavička „' + ocek + '“ s dvojtečkou', n.includes(ocek), n.slice(0, 12));
+    }
+    /* N2: popisky technické části bez CSS verzálek — text náhledu = text Wordu
+     * (vlastní řádky DALŠÍ UJEDNÁNÍ, jednotky [m]/[mm], DE „(inkl. Revisionsbericht)“). */
+    const css = fs.readFileSync(path.join(__dirname, 'ui', 'nahled_word_ui.js'), 'utf8');
+    const pravidla = (css.match(/[^{}]*\{[^{}]*\}/g) || []).filter(r => /\.nw-ts/.test(r.split('{')[0]));
+    test('F N2: žádné pravidlo .nw-ts* nedává text-transform:uppercase', pravidla.length > 3 && !pravidla.some(r => /text-transform\s*:\s*uppercase/.test(r)),
+      pravidla.filter(r => /uppercase/.test(r)));
   }
 
   /* ---------- D) pojistka srovnávače: starý náhled ≠ Word ---------- */

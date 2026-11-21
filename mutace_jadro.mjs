@@ -199,7 +199,9 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
    * příplatky za cenou, mizení prázdných řádků a kapitol (pravidla docxgen)
    * a stránkování. Hlídá src/test_np_nahled_word.js (náhled = text Wordu)
    * a src/test_k13_preklad.js (překlad pevných textů). */
-  'nahled_word.js', 'ui/nahled_word_ui.js'];
+  'nahled_word.js', 'ui/nahled_word_ui.js',
+  /* [DOS] DO-N1 #680: oddíl návrhů mimo číselník (test_do_n1_navrhy.js) */
+  'ui/cenik_ui.js'];
 /* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
  * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
  * nastroje/mutace_cast.mjs). */
@@ -5585,6 +5587,28 @@ const MUTACE = [
   { nazev: "D3: objednávka bez strany PROJ [D3]", soubor: "kontroly.js",
     hledej: "'sodProj', 'objednavkaProj', 'kryciproj'", nahrad: "'sodProj', 'kryciproj'",
     proc: "objednávka by vznikla i u zakázky s vyřazenou PROJ", sady: ["test_objednavka_proj.js"] },
+  /* [DOS] dávka DOS (21. 11. 2026, rozhodnutí J. V.): DO-N1 #680 návrhy k položkám
+   * mimo číselník, NPT-N1–N3 #690/#691 náhled podkladů = Word CN v17. */
+  { nazev: "[DOS] DO-N1: návrhy mimo číselník zase nikde", soubor: "cenik.js",
+    hledej: "  return Object.keys(sber).filter(k => !ma.has(k) && Array.isArray(sber[k]) && sber[k].length)",
+    nahrad: "  return [].filter(k => !ma.has(k) && Array.isArray(sber[k]) && sber[k].length)",
+    proc: "návrh obchodníka k příplatku mimo číselník by správce zase neviděl", sady: ["test_do_n1_navrhy.js"] },
+  { nazev: "[DOS] DO-N1: oddíl mimo zdvojí klíče s řádkem", soubor: "cenik.js",
+    hledej: "  ((cis && cis.radky) || []).forEach(r => ma.add(r.klic));", nahrad: "",
+    proc: "kandidát by stál dvakrát (pod řádkem i v oddílu mimo) a převzetí by se zdvojilo", sady: ["test_do_n1_navrhy.js"] },
+  { nazev: "[DOS] DO-N1: obrazovka oddíl nevykreslí", soubor: "ui/cenik_ui.js",
+    hledej: "        ${osirele}\n        ${mimoHtml}", nahrad: "        ${osirele}",
+    proc: "funkce by návrhy našla, ale číselník by je neukázal", sady: ["test_do_n1_navrhy.js"] },
+  { nazev: "[DOS] NPT-N1: řádek světlíků zase v náhledu", soubor: "nahled_word.js",
+    hledej: "  if (popis === P('SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ')) return null;", nahrad: "",
+    proc: "náhled by ukázal řádek světlíků, který Word CN v17 nemá", sady: ["test_np_nahled_word.js"] },
+  { nazev: "[DOS] NPT-N3: celý odstavec bez koncové dvojtečky", soubor: "nahled_word.js",
+    hledej: "    return nwInterpunkce(t, String(st.text), L);", nahrad: "    return String(st.text);",
+    proc: "EN/DE hlavička by zase byla bez dvojtečky (Site address / project)", sady: ["test_np_nahled_word.js"] },
+  { nazev: "[DOS] NPT-N2: popisky zase verzálkami", soubor: "ui/nahled_word_ui.js",
+    hledej: ".nw-ts-l{background:var(--nw-popisek);font-weight:700;font-size:7.2pt}",
+    nahrad: ".nw-ts-l{background:var(--nw-popisek);font-weight:700;text-transform:uppercase;font-size:7.2pt}",
+    proc: "náhled by psal [M]/[MM] a vlastní řádky verzálkami, Word ne", sady: ["test_np_nahled_word.js"] },
 ];
 
 /* ============================================================

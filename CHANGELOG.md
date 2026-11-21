@@ -8,6 +8,26 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.11.1 — DOS: drobnosti DO-N1 #680 a náhled podkladů NPT-N1–N4 #690/#691, větev claude/dos-drobnosti
+
+Nad integrací `cda289e` (v19.11.11). Cenu ani text Wordu nemění (porovnání sestavení SHODA). Verzi přečísluje koordinace.
+
+- **DO-N1 #680 — návrhy k položkám mimo číselník** (rozhodnutí J. V. 21. 11.): Ceník → číselník dodatkových textů má
+  po „Najít texty v uložených zakázkách“ nový oddíl **„Návrhy k položkám mimo číselník“** se všemi návrhy a texty
+  ze zakázek ke klíčům, které v číselníku řádek nemají (výchozí šachta je nepočítá — např. příplatek
+  „PŘECHODOVÉ PLECHY - NEREZ (MATERIÁL)“). Převzetí stejně jako u ostatních. Kandidáti k osiřelým textům se nově
+  vypisují pod jejich řádkem. `popisyNavrhyMimo` v `src/cenik.js`, `cenikPopisyKarta` v `src/ui/cenik_ui.js`.
+- **NPT-N1 #690 — světlíky v náhledu podkladů:** Word CN v17 řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ nemá a nedostane
+  (J. V. 21. 11.: cena světlíků se počítá v kalkulaci) → náhled řádek vynechá. Kalkulace i cena nabídky beze změny.
+- **NPT-N2 #691:** popisky technické specifikace v náhledu bez CSS verzálek — `[m]`, `[mm]`, vlastní řádky
+  DALŠÍ UJEDNÁNÍ a DE „(inkl. Revisionsbericht)“ jako ve Wordu.
+- **NPT-N3 #691:** EN/DE/FR hlavička náhledu s dvojtečkou jako šablona („Site address / project:“,
+  „Baustellenadresse / Projekt:“); koncová interpunkce podle českého textu i u celých odstavců (`nwInterpunkce`),
+  stejně u „Popis záměru:“ a „Vypracoval:“.
+- **NPT-N4:** beze změny náhledu (IČ/Tel. už překládá); Word přeloží nové šablony v18 v dávce SB.
+- **Testy:** `src/test_do_n1_navrhy.js` (16 OK; před opravou 10 FAIL), `src/test_np_nahled_word.js` oddíl F
+  (syntetická šablona v17 bez řádku světlíků; před opravou 148 FAIL, po 184 OK). Mutace jádra [DOS] 6.
+
 ## v19.11.11 — D3 #688: Objednávka / Smlouva PROJ z nabídky PROJ, větev claude/d3-objednavka-proj
 
 Nad integrací `042fcbc` (v19.11.5). Nový dokument, cenu ani text nabídky a SoD nemění. Verzi přečísluje koordinace.

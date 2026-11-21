@@ -336,6 +336,8 @@ const PROVERENO = {
     'cenikPopisyKandidati(r.klic, admin)': 'hotové HTML kandidátů z uložených zakázek '
       + '(číselník dodatkových textů, 25. 9. 2026) — číslo zakázky, počet i text jdou uvnitř '
       + 'přes esc(), klíč do onclick přes keyAttr(), index přes escJs().',
+    'cenikPopisyKandidati(o.klic, admin)': 'táž funkce pod osiřelým textem číselníku (DO-N1 #680, '
+      + '21. 11. 2026) — hotové HTML, uvnitř esc() / keyAttr() / escJs() jako výš.',
     'cenikPopisJazykyHtml(r.klic, t, admin)': 'hotové HTML polí překladů dodatkového textu '
       + '(#379, K18-N96, 1. 10. 2026) — překlad i kód jazyka jdou uvnitř přes esc(), '
       + 'klíč a jazyk do onchange přes keyAttr().',

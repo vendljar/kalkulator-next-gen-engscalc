@@ -108,7 +108,15 @@ function nwPreloz(text, L) {
   if (!stav) return t;
   /* tr() zapisuje text bez překladu do sběru náhledu (#518) — jako dosavadní náhled */
   const zapis = x => { if (typeof tr === 'function') tr(x, L); };
-  if (!/\{\{/.test(t)) { const st = stav(t, L); if (!(st && st.prelozeno)) zapis(t); return st && st.prelozeno ? String(st.text) : t; }
+  if (!/\{\{/.test(t)) {
+    const st = stav(t, L);
+    if (!(st && st.prelozeno)) { zapis(t); return t; }
+    /* NPT-N3 #691 (21. 11. 2026): slovník drží heslo bez koncové dvojtečky
+     * („Adresa stavby / projekt“ → „Site address / project“), šablona CN ji
+     * v EN i DE má („Site address / project:“). Interpunkce na konci jde
+     * proto podle českého textu — stejně jako u úseků mezi symboly níž. */
+    return nwInterpunkce(t, String(st.text), L);
+  }
   const sym = x => (String(x).match(/\{\{[^{}]*\}\}/g) || []).sort().join('|');
   const cel = stav(t, L);
   if (cel && cel.prelozeno && cel.zdroj !== 'neutrální' && sym(cel.text) === sym(t)) return String(cel.text);
@@ -122,14 +130,18 @@ function nwPreloz(text, L) {
     const st = stav(jadro, L);
     if (st && st.zdroj === 'neutrální') { out += u; continue; }
     if (!st || !st.prelozeno) { zapis(jadro); return t; }
-    let pr = String(st.text);
-    const dvojtecka = /:\s*$/.test(jadro), maDvojtecku = /\s?:\s*$/.test(pr);
-    if (dvojtecka && !maDvojtecku) pr = pr.replace(/\s+$/, '') + (L === 'fr' ? ' :' : ':');
-    else if (!dvojtecka && maDvojtecku) pr = pr.replace(/\s?:\s*$/, '');
-    if (/\.\s*$/.test(jadro) && !/[.!?…]\s*$/.test(pr)) pr += '.';
-    out += pred + pr + za;
+    out += pred + nwInterpunkce(jadro, String(st.text), L) + za;
   }
   return out;
+}
+
+/* Koncová dvojtečka a tečka podle českého textu (slovník je ukládá bez nich). */
+function nwInterpunkce(cz, pr, L) {
+  const dvojtecka = /:\s*$/.test(cz), maDvojtecku = /\s?:\s*$/.test(pr);
+  if (dvojtecka && !maDvojtecku) pr = pr.replace(/\s+$/, '') + (L === 'fr' ? ' :' : ':');
+  else if (!dvojtecka && maDvojtecku) pr = pr.replace(/\s?:\s*$/, '');
+  if (/\.\s*$/.test(cz) && !/[.!?…]\s*$/.test(pr)) pr += '.';
+  return pr;
 }
 
 /* {{SYMBOL}} v pevném textu → hodnota (neznámý symbol zůstane, jako ve Wordu).
@@ -151,6 +163,10 @@ function nwRadky(v) {
 /* Řádek technické části ve tvaru Wordu. Vrací null, když má zmizet. */
 function nwTsRadek(r, ph, P, T) {
   const [popis, hodnota] = r;
+  /* NPT-N1 #690 (J. V. 21. 11. 2026): Word CN v17 řádek světlíků (#375) nemá
+   * a nedostane — cena světlíků se počítá v kalkulaci. Náhled musí odpovídat
+   * Wordu, proto řádek vynechá (nabidkaNahledSekce ho dál vrací pro ostatní). */
+  if (popis === P('SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ')) return null;
   if (popis === P('POČET STANIC / NÁSTUPIŠŤ')) {
     const b = [ph.TS_STANICE, ph.TS_KABINA];
     return b.every(nwPrazdna) ? null : { bunky: [popis].concat(b) };
@@ -436,4 +452,4 @@ function nwVarovani(data, zak, o) {
   return out;
 }
 
-if (typeof module !== 'undefined') module.exports = { NW_TEXT, nwPreloz, nwBloky, nwHtml, nwChrome, nwTextZHtml, nwTextZDocx, nwVarovani, nwDosad, nwPrazdna };
+if (typeof module !== 'undefined') module.exports = { NW_TEXT, nwPreloz, nwBloky, nwHtml, nwChrome, nwTextZHtml, nwTextZDocx, nwVarovani, nwDosad, nwPrazdna, nwInterpunkce };
