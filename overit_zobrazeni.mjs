@@ -32,6 +32,7 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
   },
 });
 
+import './nastroje/harness_prostredi.mjs';   // ADMIN_EMAIL dřív než sdilene.mjs (#638)
 import { createRequire } from 'module';
 import { createServer } from 'http';
 import { readFileSync } from 'fs';
@@ -74,6 +75,7 @@ catch (e) {
   console.error('Playwright není k dispozici. NODE_PATH=$(npm root -g) node overit_zobrazeni.mjs');
   process.exit(2);
 }
+const { casLimit, cekejNaStart, cekejNaKlid, prihlasVProhlizeci } = require('./nastroje/harness_cekani.js');
 
 /* VS #570 E2: klient čte vypínač zkušebních funkcí po přihlášení. */
 const { default: funkceFn } = await import('./netlify/functions/funkce.mjs');
@@ -102,6 +104,8 @@ const ADRESA = 'http://127.0.0.1:' + server.address().port;
 const prohlizec = await chromium.launch({ args: ['--no-sandbox'] });
 const ctx = await prohlizec.newContext({ viewport: { width: 1360, height: 900 } });
 const page = await ctx.newPage();
+page.setDefaultTimeout(casLimit());
+page.setDefaultNavigationTimeout(casLimit(4));
 /* Zveřejnění i předlohy se ptají přes confirm(), odmítnutí přes alert().
  * Dialog se musí odklepnout, jinak stránka zamrzne. Text si pamatujeme. */
 let poslednihlaska = '';
@@ -111,7 +115,12 @@ page.on('pageerror', e => chyby.push(String(e)));
 
 let cookieJar = '';
 const volani = [];          // které cesty aplikace opravdu zavolala
+let apiBezi = 0;            // rozběhnuté dotazy na API (klid() čeká na nulu) — #638
 await page.route('**/api/**', async route => {
+  apiBezi++;
+  try { await obsluzApi(route); } finally { apiBezi--; }
+});
+async function obsluzApi(route) {
   const r = route.request();
   const url = new URL(r.url());
   volani.push(r.method() + ' ' + url.pathname);
@@ -122,30 +131,41 @@ await page.route('**/api/**', async route => {
   const odp = await fn(new Request(r.url(), init));
   const setc = odp.headers.get('set-cookie');
   if (setc) cookieJar = setc.split(';')[0];
-  route.fulfill({ status: odp.status, contentType: 'application/json; charset=utf-8',
+  await route.fulfill({ status: odp.status, contentType: 'application/json; charset=utf-8',
     body: await odp.text() });
-});
+}
 
-const prihlas = async (email, heslo) => {
-  await page.fill('#onlineEmail', email);
-  await page.fill('#onlineHeslo', heslo);
-  await page.click('#prihlaseni-box >> text=Přihlásit');
-  await page.waitForTimeout(600);
-};
-const cekejPrihlasen = () => page.waitForFunction(
-  () => { try { return !!ONLINE_STAV.ja; } catch (e) { return false; } }, null, { timeout: 10000 });
+/* KLID místo pevné pauzy (#638, navazuje na C9 #608): neběží žádný dotaz na
+ * API, žádná sledovaná akce ani uložení (cekejNaKlid) a nečeká odložené
+ * samoukládání matice (ZOBR_ULOZ.cas, prodleva 800 ms). Dvakrát po sobě,
+ * protože doběhlý dotaz může v aplikaci rozběhnout další. */
+async function klid() {
+  const konec = Date.now() + casLimit(2);
+  for (let kolo = 0; kolo < 2; kolo++) {
+    await cekejNaKlid(page, 2);
+    await page.waitForFunction(() => { try { return !ZOBR_ULOZ.cas && ZOBR_ULOZ.stav !== 'uklada'; }
+      catch (e) { return true; } }, null, { timeout: casLimit(2) });
+    while (apiBezi > 0) {
+      if (Date.now() > konec) throw new Error('klid(): dotaz na API neskončil do ' + casLimit(2) + ' ms');
+      await new Promise(h => setTimeout(h, 20));
+    }
+  }
+}
+
+/* Přihlášení čeká na VÝSLEDEK (přihlášen / odmítnut s hláškou), ne na pauzu
+ * a 10 s limit — odmítnutí se vypíše i s návodem (harness_cekani.js, #638). */
+const prihlas = (email, heslo) => prihlasVProhlizeci(page, email, heslo);
+const cekejPrihlasen = () => klid();
 const odhlas = async () => {
   await page.evaluate(() => onlineOdhlas());
   await page.waitForFunction(() => { try { return ONLINE_STAV.ja === null; } catch (e) { return false; } });
   await page.reload();
-  await page.waitForFunction(() => typeof window.render === 'function');
-  await page.waitForTimeout(400);
-await dlgStub(page);
+  await cekejNaStart(page);
+  await dlgStub(page);
 };
 
 await page.goto(ADRESA);
-await page.waitForFunction(() => typeof window.render === 'function');
-await page.waitForTimeout(500);
+await cekejNaStart(page);
 
 await dlgStub(page);
 
@@ -157,7 +177,7 @@ test('po přihlášení se matice zobrazení načetla ze serveru',
   volani.includes('GET /api/zobrazeni'), volani.join(', '));
 
 await page.evaluate(() => { otevriNastaveni(); nastPanel('zobrazeni'); });
-await page.waitForTimeout(300);
+await klid();
 
 test('v liště Nastavení je záložka „Zobrazení"',
   await page.locator('.nast-tabs >> text=Zobrazení').isVisible());
@@ -180,7 +200,7 @@ test('u prvků držených serverem se to i napíše',
 /* ---------- 2) přidělení: obchodník dostane Detail výpočtu ---------- */
 
 await page.evaluate(() => zobrSet('tab.detail', 'Obchodník', true));
-await page.waitForTimeout(200);
+await klid();
 test('zaškrtnutí se propíše do matice v paměti',
   await page.evaluate(() => NAST.zobrazeni['tab.detail']['Obchodník'] === true));
 test('změna se pozná proti dnešnímu stavu',
@@ -189,7 +209,7 @@ test('změna se pozná proti dnešnímu stavu',
 
 /* Prvek držený serverem nesmí jít přidělit ani obchvatem z konzole. */
 await page.evaluate(() => zobrSet('nastaveni.uzivatele', 'Obchodník', true));
-await page.waitForTimeout(150);
+await klid();
 test('prvek držený serverem zůstane nepřidělený i po zásahu z konzole',
   await page.evaluate(() => zobrazeniSmi('Obchodník', 'nastaveni.uzivatele', NAST.zobrazeni) === false));
 
@@ -197,11 +217,19 @@ test('prvek držený serverem zůstane nepřidělený i po zásahu z konzole',
 
 /* B168 (18. 10. 2026): bez hesla správce se matice neuloží a neztratí se
  * potichu — správce dostane hlášku a zaškrtnutí zůstane k dalšímu pokusu. */
+/* #638: zaškrtnutí výše už matici samo uložilo (samoukládání po 800 ms) a ověřené
+ * heslo pak drží paměť stránky ZOBRAZENI_HESLO_MS (B168/B192). Dřív to test
+ * neviděl jen proto, že pevné pauzy (200 + 150 + 400 ms) skončily dřív, než
+ * časovač vystřelil — pod zátěží by test padal. Scénář „heslo se zadává
+ * poprvé" se proto nastaví výslovně: zapomenuté heslo jako po odhlášení
+ * a zápisy se počítají od tohoto bodu. */
+await page.evaluate(() => { ZOBRAZENI_HESLO.h = ''; ZOBRAZENI_HESLO.plati = 0; });
+const zapisyPredB168 = volani.filter(x => x === 'POST /api/zobrazeni').length;
 await page.evaluate(() => { window.__dlgTexty = []; window.__dlgHeslo = null; });
 const b168Zrus = await page.evaluate(() => onlineZverejniZobrazeni());
-await page.waitForTimeout(400);
+await klid();
 test('B168: zrušené heslo — matice se na server neodeslala',
-  b168Zrus === false && !volani.includes('POST /api/zobrazeni'), volani.join(', '));
+  b168Zrus === false && volani.filter(x => x === 'POST /api/zobrazeni').length === zapisyPredB168, volani.join(', '));
 test('B168: zrušené heslo — hláška říká, že se neuložilo a jak to zopakovat',
   await page.evaluate(() => /neuložilo.*Uložit teď/.test(ONLINE_STAV.hlaska || '')),
   await page.evaluate(() => ONLINE_STAV.hlaska));
@@ -211,12 +239,12 @@ await page.evaluate(() => { delete window.__dlgHeslo; });
 
 await page.evaluate(() => { window.__dlgTexty = []; });
 await page.evaluate(() => onlineZverejniZobrazeni());
-await page.waitForTimeout(800);
+await klid();
 const dlgZverejneni = await page.evaluate(() => window.__dlgTexty.slice());
 test('zveřejnění se administrátora nejdřív zeptá', /Zveřejnit/.test(dlgZverejneni[0] || ''), dlgZverejneni);
 test('B168: zveřejnění si vyžádá heslo správce', /Potvrďte ji svým heslem/.test(dlgZverejneni[1] || ''), dlgZverejneni);
 test('zveřejnění poslalo matici na server',
-  volani.includes('POST /api/zobrazeni'), volani.join(', '));
+  volani.filter(x => x === 'POST /api/zobrazeni').length > zapisyPredB168, volani.join(', '));
 test('server matici přijal a vrátil ji zpět',
   await page.evaluate(() => !!(ONLINE_STAV.zobrazeni && ONLINE_STAV.zobrazeni.matice
     && ONLINE_STAV.zobrazeni.matice['tab.detail']['Obchodník'] === true)));
@@ -237,7 +265,7 @@ const pocetZapisu = () => volani.filter(x => x === 'POST /api/zobrazeni').length
  * i když samoukládání fungovalo. */
 const cekejUlozeno = () => page.waitForFunction(
   () => { try { return ZOBR_ULOZ.stav === 'ulozeno'; } catch (e) { return false; } },
-  null, { timeout: 15000 });
+  null, { timeout: casLimit() });
 const predSamoulozenim = pocetZapisu();
 await page.evaluate(() => { ZOBR_ULOZ.stav = ''; zobrSet('tab.kryci', 'Vedoucí', true); });
 await cekejUlozeno();
@@ -258,7 +286,7 @@ await page.evaluate(() => {
   zobrSet('tab.kryciproj', 'Vedoucí', true);
 });
 await cekejUlozeno();
-await page.waitForTimeout(300);   // kdyby se chystal druhý zápis, tady by se projevil
+await klid();   // kdyby se chystal druhý zápis, tady by se projevil
 test('rychlé proklikání víc políček je jeden zápis',
   pocetZapisu() === predDavkou + 1, 'zápisů: ' + (pocetZapisu() - predDavkou));
 test('uložilo se všechno proklikané',
@@ -275,7 +303,7 @@ test('uložilo se všechno proklikané',
  * a oddíl padá; po změně projde. */
 const snimek539 = await page.evaluate(() => JSON.stringify(NAST.zobrazeni));
 await page.evaluate(() => { NAST.panel = 'zobrazeni'; otevriNastaveni(); });
-await page.waitForTimeout(200);
+await klid();
 test('#539 matice má sloupec Administrátor mezi Vedoucí a Doporučení',
   await page.evaluate(() => {
     const th = [...document.querySelectorAll('#nastaveni-panel table.sd-tbl thead tr')][0];
@@ -353,12 +381,12 @@ test('#539 i po skrytí všeho nezamčeného zůstane Nastavení → Zobrazení 
       && nastPanelyViditelne().some(x => x.id === 'uzivatele') && nastPanelyViditelne().some(x => x.id === 'databaze');
   }));
 await page.evaluate(() => zobrPredloha('vychozi'));
-await page.waitForTimeout(150);
+await klid();
 test('#539 „Vrátit na dnešní stav" vrátí administrátorovi všechno',
   await page.evaluate(() => ZOBRAZENI_PRVKY.every(p => smiZobrazit(p.klic))
     && zobrazeniZmeny(NAST.zobrazeni).length === 0));
 await page.evaluate(() => zobrPredloha('navrh'));
-await page.waitForTimeout(150);
+await klid();
 test('#539 „Použít doporučení" vyplní i sloupec Administrátor (složka _DB skrytá, zamčené vidí)',
   await page.evaluate(() => !smiZobrazit('uloziste.slozka') && smiZobrazit('tab.cenik')
     && ZOBRAZENI_PRVKY.filter(p => p.adminZamek).every(p => smiZobrazit(p.klic))));
@@ -421,9 +449,9 @@ test('trvalé položky projekce mají místo v ceníku PROJ',
 
 /* volba se uloží na server okamžitě (žádné potvrzovací okno) */
 await page.evaluate(() => { sekceRezimSet('ock.rezie', 'skryt'); });
-await page.waitForTimeout(400);
+await klid();
 await page.evaluate(() => { sekceRezimSet('proj.zamereni', 'srolovat'); });
-await page.waitForTimeout(400);
+await klid();
 test('volby sekcí odešly na server hned',
   volani.filter(x => x === 'POST /api/zobrazeni').length >= 3, volani.join(', '));
 test('server volby sekcí přijal a vrací je v matici',
@@ -462,7 +490,7 @@ test('a jde rozbalit — po kliknutí jsou řádky zase vidět',
     return /onclick="vlastniAdd\('rezie'\)"/.test(html);
   }));
 await page.evaluate(() => { sekceRezimSet('ock.rezie', 'skryt'); });
-await page.waitForTimeout(400);
+await klid();
 
 /* ---------- režim i u KARET, ne jen u sekcí tabulky (20. 8. 2026) ----------
  * „Příplatkové položky" a „Detail mezivýpočtů" jsou z pohledu obchodníka
@@ -522,9 +550,9 @@ test('administrátorovi skrytá karta zůstane i se štítkem „skrytá ostatn�
     const el = document.getElementById('ock-profily');
     return !!el && el.innerHTML.includes('skrytá ostatním');
   }));
-await page.waitForTimeout(400);
+await klid();
 await page.evaluate(() => { sekceRezimSet('ock.sleva', 'srolovat'); });
-await page.waitForTimeout(400);
+await klid();
 
 /* ---------- tisková tlačítka krycích listů (20. 8. 2026) ----------
  * Přestěhovala se dolů nad smlouvu, Word zmizel z obrazovky (funkce zůstala)
@@ -926,7 +954,7 @@ await page.evaluate(() => {
   vychoziPolozkaSet('ock.haky', true, false);
   vychoziPolozkaSet('proj.studie.Studie', false, true);
 });
-await page.waitForTimeout(500);
+await klid();
 test('výchozí zaškrtnutí odešlo na server a vrátilo se v matici',
   await page.evaluate(() => {
     const v = ONLINE_STAV.zobrazeni && ONLINE_STAV.zobrazeni.matice.vychozi;
@@ -1018,7 +1046,7 @@ test('po odhlášení platí zase výchozí (nejpřísnější) matice',
 
 await prihlas('obchodnik@priklad.cz', 'ObchodniHeslo1');
 await cekejPrihlasen();
-await page.waitForTimeout(700);
+await klid();
 
 const postuPredObchodnikem = volani.filter(x => x === 'POST /api/zobrazeni').length;
 
@@ -1125,7 +1153,7 @@ test('obchodník v PROJ má přidávání vlastní položky (hodinová/fixní), 
 /* Matice je vrstva pohodlí — hranici drží server. Ověříme obojí: */
 poslednihlaska = '';
 await page.evaluate(() => zobrSet('tab.cenik', 'Obchodník', true));
-await page.waitForTimeout(200);
+await klid();
 test('obchodník si sám nic nepřidělí (zobrSet je jen pro administrátora)',
   await page.evaluate(() => tabViditelny('cenik') === false));
 

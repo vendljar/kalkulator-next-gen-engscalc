@@ -24,6 +24,7 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
   async smaz(k) { pamet.delete(nazev + '/' + k); },
 });
 
+import './nastroje/harness_prostredi.mjs';   // ADMIN_EMAIL dřív než sdilene.mjs (#638)
 import { createRequire } from 'module';
 import { createServer } from 'http';
 import { readFileSync } from 'fs';
