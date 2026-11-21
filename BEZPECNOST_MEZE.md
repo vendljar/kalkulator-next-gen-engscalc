@@ -1456,11 +1456,11 @@ nedělá (B-Q4). Model `src/rucni_ceny.js`, server `uloCenikProblemy`
 (`netlify/lib/zakazka_kontrola.mjs`).
 
 **Co se hlídá:** B112 (`uloCenikProblemy`) uvolní jen cestu `C.…`, ke které
-varianta nese záznam `rucniCeny` se **stejnou kladnou hodnotou** a která je
+varianta nese záznam `rucniCeny` se **stejnou nezápornou hodnotou** (nula od #667, v19.11.1) a která je
 položkou s cenou v Kč (`rucniCenaSmi` — ne hodiny, mm, kg, kurz EUR, přirážka,
 DPH, PROJ); každá jiná změna ceníku varianty se odmítne 403 jako dřív. Server
 odmítne 400 záznam, jehož hodnota nesedí s ceníkem varianty, cizí položku,
-nečíselnou nebo nekladnou cenu, text delší než 120 znaků nebo s řídicími
+nečíselnou nebo zápornou cenu, text delší než 120 znaků nebo s řídicími
 znaky a víc než 200 záznamů. Razítko `potvrdil` (jméno, e-mail, čas) píše
 server z relace; klient posílá jen „potvrzeno“ a jeho obsah se zahodí.
 Totéž potvrzení se stejným obsahem (hodnota + zdroj) se při dalším uložení
@@ -1476,12 +1476,20 @@ zámku).
   položky.** Je to rozhodnutí J. V. (B-Q2, B-Q3): stačí potvrzení s dokladem
   (dodavatel, číslo nabídky). Snížení nákladu snižuje prodejní cenu stejně
   jako sleva, ale nejde přes schvalování slev ani cenové výjimky. *Co to
-  hlídá:* cena musí být kladná (nula ani záporná neprojde), každá změna
-  shodí potvrzení, kdo a kdy potvrdil razí server, nový zámek bez potvrzení
-  neprojde a **export controllingu** ukáže zdroj a odchylku od ceníku
-  (Kč/jedn., %, celkem) — tam se zneužití pozná zpětně. *Co to nedělá:*
-  doklad (nabídku dodavatele) aplikace neověřuje a příloha se nenahrává;
-  minimální marže se hlídá jen u platné slevy (#341, B71), ne u ruční ceny.
+  hlídá:* cena nesmí být záporná; **nula je povolená, ale jen se zdrojem**
+  (#667, J. V. 18. 11. 2026; potvrzeno J. V. 21. 11. 2026, dávka BZ, roadmapa
+  #697): ruční cena bez zdroje (dodavatel ani číslo nabídky) je cenová
+  výjimka ke schválení (N3, `vyjimkyObsah` → `bezZdroje`) — nový zámek ji
+  obchodníkovi i vedoucímu odmítne 403, odeslat ji smí jen administrátor
+  (správce, `vyjimkyZamekProblem`). Každá změna shodí potvrzení, kdo a kdy
+  potvrdil razí server, nový zámek bez potvrzení neprojde a **export
+  controllingu** ukáže zdroj a odchylku od ceníku (Kč/jedn., %, celkem) —
+  tam se zneužití pozná zpětně. Hlídá `netlify/test_bz_bezpecnost.mjs`
+  (B195) a mutace [BZ]. *Co to nedělá:* doklad (nabídku dodavatele) aplikace
+  neověřuje a příloha se nenahrává — zdroj o jednom znaku stačí (PoC auditu
+  `poc_AZ_8_rucni_cena_nula`: 68 položek na nulu se zdrojem „x“ = nabídka za
+  14 % ceníku bez schválení; vědomá mez, J. V. 21. 11. 2026); minimální marže
+  se hlídá jen u platné slevy (#341, B71), ne u ruční ceny.
 - **B196 — ceníková sazba v záznamu je vidět v datech zakázky (P12).** Záznam
   nese `zaklad` (sazba platného ceníku v okamžiku potvrzení, razí server)
   kvůli odchylce v controllingu a upozornění „ceník se změnil“. Kalkulace ji
@@ -2130,3 +2138,54 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   v posledních 5 min bez pozdějšího odhlášení) je odhad: otevřená karta bez volání API zhasne po
   5 minutách, a relace ukončená změnou hesla nebo zásahem správce zhasne až po 5 minutách (bez
   záznamu odhlášení). Údaj je pro přehled správce, ne doklad o docházce ani o přítomnosti.
+
+## BZ — opravy bezpečnostního auditu 20. 11. 2026 (dávka BZ, v21.11.1, 21. 11. 2026)
+
+Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md`, rozhodnutí J. V. 21. 11. 2026
+(`podklady/ROZHODNUTI_LOG.md`). Testy `netlify/test_bz_bezpecnost.mjs`, `netlify/test_bz_pipedrive.mjs`,
+`netlify/test_prava.mjs` (B232, B234), mutace [BZ] (21). PoC auditu před opravou ZRANITELNÉ, po ODOLNÉ.
+Roadmapa #692–#700 (pracovní čísla).
+
+- **B231 — strana zakázky po zámku — OPRAVENO.** Příznaky `jenProj` / `jenOck` se u zakázky se zamčenou
+  variantou nemění: server změnu odmítne 403 pro každou roli (`zamekStranaZmena`, zámek z ULOŽENÉ verze;
+  varianta odemčená správcem v témže uložení se nepočítá). Nový zámek nese snímek `zamek.strana`
+  (`jenProj`, `jenOck`, vyřazená strana) — razítko mimo klíč, píše a drží ho server (`uloZamekRazitkaDrz`).
+  Klient zmrazí `ZAK.jenProj` / `ZAK.jenOck` (`zamekZakCestaZmrazena`). Dotisk dokumentu nové strany hlídá
+  i nepotvrzenou ruční cenu (`rucniCenyZamekProblem`) — pro zakázky z doby před BZ. *Mez:* obnova ze zálohy
+  příznak bere jako doklad; strana se dál mění i **číslem nabídky** (vedoucí strana podle čísla OCK / PROJ,
+  `zakazkaVedouciStrana`) — číslo odeslané nabídky mění jen administrátor (B56), PROJ číslo u zámku OCK
+  ne vždy; otázka pro J. V. #700 (3).
+- **B232 — přísné ověření zmrazeného výsledku — OPRAVENO.** Nový zámek: číslo jen v jednom z výsledků
+  (vypuštěné, přidané, číslo proti `null`) je rozdíl → razítko „nesouhlasi“ a varování po uložení.
+  Tolerance P6 (jiná verze stránky) platí jen pro texty, příznaky a klíče bez čísel. *Mez:* nesouhlas
+  uložení neodmítá (B59 — rozpor je zapsaný v zámku a hlášený), controlling a dokumenty čtou zmrazený
+  výsledek dál; zda nový zámek s „nesouhlasi“ odmítat, rozhodne J. V. (#700 (2)).
+- **B233 — počítadla pokusů o přihlášení při souběhu — OPRAVENO V INSTANCI.** Čtení–změna–zápis počítadel
+  (e-mail i adresa) běží ve výhradním úseku nad klíčem (`vyhradne`, vzor B158). *Mez:* Netlify Blobs
+  8.2.0 nemá podmíněný zápis — dvě různé instance funkce se navzájem nevidí, souběh mezi nimi může
+  zápis ztratit (zbytek B4/B158; úplná oprava = novější `@netlify/blobs` s `onlyIfMatch`, roadmapa #699).
+- **B234 — karta zákazníka — OPRAVENO.** Kartu ZALOŽÍ kdokoli přihlášený, MĚNÍ jen její autor
+  a administrátor (`zakaznikSmiMenit`). Úprava od jiného se uloží jako **návrh změny** na kartě
+  (`navrhy`, nejvýš 20; drží je server, klient je nepřepíše ani nesmaže); převezme / zamítne ho autor
+  nebo administrátor (`akce: navrhPrijmout | navrhZamitnout`, jinak 403). Každá změna karty uloží
+  předchozí verzi do **historie** `zakaznici/h/<klíč>` (nejvýš 50; čte každý přihlášený jako kartu;
+  záloha celé úložiště, obnova touž očistou). *Mez:* karta bez autora (data před B29) mění jen
+  administrátor; mazání dál jen administrátor; strop počtu karet a pole `zalozen` (B244) zůstávají
+  k pozdější dávce (#698).
+- **B235 / B236 — zápis do Pipedrive — OPRAVENO, ZÁPIS VYPNUTÝ.** Jednotný vypínač dřív neexistoval
+  (zrušení vazby a odkaz z webhooku šly ven s pouhým tokenem). Teď `pdZavolej` — jediné místo, kde se
+  sahá na síť — odmítne každé volání jiné než GET do skutečného Pipedrive bez proměnné Netlify
+  **`PIPEDRIVE_ZAPIS` = „ano“** (503, žádný požadavek); výchozí stav = vypnuto (J. V. 21. 11. 2026:
+  do opravy vypnuto; zapnout smí jen J. V., #700 (1)). Simulátor (#536) ven nejde, vypínač ho nehlídá.
+  Statická pojistka v testu: každé zápisové volání jde přes `pdZavolej`. Před prvním zápisem poznámky
+  do dealu (B235) a před přepojením organizace akcí `vitez` (B236) server ověří, že **deal patří
+  zakázce** (`lib/pd_overeni.mjs`): živá vazba z webhooku, pole „Odkaz na kalkulaci“ míří na zakázku,
+  nebo číslo nabídky v dealu (pole CN, jinak z názvu) sedí s číslem zakázky (pravidlo webhooku
+  `pdWebhookCisloSedi`, obě čísla neprázdná) — jinak stav „neovereno“ a nic se nezapíše. Strop prvních
+  zápisů poznámek do nového dealu **na uživatele** 30/h (vedle 20/h na deal). *Mez:* poznámka, kterou
+  server do téhož dealu už zapsal, se dál upravuje bez nového ověření; dvě zakázky s různým číslem
+  na jednom dealu — píše jen ta s číslem dealu; oprava firmy (`akce: zapis`, B209) vazbu dealu
+  neověřuje (#700 (4)).
+- **B195 — nulová ruční cena — UPRAVENO (text meze).** Viz oddíl RC #561 výš: nula jen se zdrojem,
+  bez zdroje jen administrátor.
+

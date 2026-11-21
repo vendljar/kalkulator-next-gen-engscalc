@@ -311,6 +311,16 @@ async function pasSchvaleny(nazev) {
     const st = d0(a).ock.zadani.oplasteni.steny.A; st.pasy[0].doM = '1'; st.odM = '0';
     const r = await uloz(zamkni(a), cO, razitko);
     test('B155: beze změny rozsahu, zápis „1" místo 1 — zámek se schválením (200)', r.status === 200, r); } }
+/* B231 (dávka BZ, J. V. 21. 11. 2026): příznak strany se po zámku uložením
+ * nezmění (403). Scénáře B153/B155 hlídají dotisk u zakázky z doby PŘED B231,
+ * kdy vypnutí prošlo — stav se proto zapíše přímo do úložiště. Vrací tvar
+ * odpovědi uložení (status 200 = stav připraven), `b231` = status pokusu uložením. */
+async function vypnutiJenProj(g1, soubor, razitko) {
+  const r = await uloz(g1, cO, razitko);
+  const ul = JSON.parse(pamet.get('zakazky/z/' + soubor)); ul.jenProj = false; pamet.set('zakazky/z/' + soubor, JSON.stringify(ul));
+  test('B231: vypnutí jenProj po zámku uložením → 403 (stav před B231 zapsán přímo)', r.status === 403 && /strana zakázky/.test(r.chyba || ''), r);
+  return { status: 200, razitko: ul.uloRazitko, b231: r.status };
+}
 { /* B153 + B155: pás roztažený po schválení, zámek PROJ pod jenProj
    * (OCK se neposuzuje), vypnutí, dotisk nabídky OCK → 403. */
   const dotisk = async (nazev, roztahni) => {
@@ -320,7 +330,7 @@ async function pasSchvaleny(nazev) {
     g0.jenProj = true; zamkni(g0, 'nabidkaProj');
     const r1 = await uloz(g0, cO, (await nacti(soubor, cO)).uloRazitko);
     const g1 = zk.importZakazka(kopie(await nacti(soubor, cO))); g1.jenProj = false;
-    const r2 = await uloz(g1, cO, r1.razitko);
+    const r2 = await vypnutiJenProj(g1, soubor, r1.razitko);
     const g2 = await nacti(soubor, cO);
     const r3 = await uloz(pripis(zk.importZakazka(kopie(g2)), 'nabidka'), cO, g2.uloRazitko);
     test('B155 příprava (' + nazev + '): zámek PROJ s jenProj a vypnutí (200)', r1.status === 200 && r2.status === 200, [r1, r2]);
@@ -464,7 +474,7 @@ async function jenProjZamekVypnuti(nazev, priprav) {
   zamkni(g0, 'nabidkaProj');
   const r1 = await uloz(g0, cO, razitko);
   const g1 = zk.importZakazka(kopie(await nacti(s.soubor, cO))); g1.jenProj = false;
-  const r2 = await uloz(g1, cO, r1.razitko);
+  const r2 = await vypnutiJenProj(g1, s.soubor, r1.razitko);
   const g2raw = await nacti(s.soubor, cO);
   return { r1, r2, h: pripis(zk.importZakazka(kopie(g2raw)), 'nabidka'), razitko: g2raw.uloRazitko, soubor: s.soubor };
 }
@@ -497,7 +507,7 @@ async function jenProjZamekVypnuti(nazev, priprav) {
   zamkni(z, 'nabidkaProj');
   const r1 = await uloz(z, cO);
   const g1 = zk.importZakazka(kopie(await nacti(r1.soubor, cO))); g1.jenProj = false;
-  const r2 = await uloz(g1, cO, r1.razitko);
+  const r2 = await vypnutiJenProj(g1, r1.soubor, r1.razitko);
   test('B153 příprava: zámek PROJ se slevou OCK pod jenProj (200), vypnutí (200)', r1.status === 200 && r2.status === 200
     && slevaPlatiT(d0(g1).sleva), [r1, r2, d0(g1).sleva]);
   const g2 = await nacti(r1.soubor, cO);

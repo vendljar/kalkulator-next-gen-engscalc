@@ -207,6 +207,31 @@ console.log('\n===== B232: PŘÍSNÉ OVĚŘENÍ VYŽADUJE VŠECHNA ČÍSLA =====
 }
 
 /* ============================================================ */
+console.log('\n===== B195: NULOVÁ RUČNÍ CENA JEN SE ZDROJEM =====\n');
+{
+  /* J. V. 21. 11. 2026: nula z nabídky dodavatele je povolená, ale jen se zdrojem
+   * (dodavatel nebo číslo nabídky) a potvrzením; bez zdroje neprojde nikomu
+   * kromě správce (ruční cena bez zdroje = cenová výjimka ke schválení, N3). */
+  const cesta = 'C.montazniNosnik';
+  const pokus = async (c, zdroj) => {
+    const z = nova('B195'); const v = z.varianty[0];
+    v.data.cenik.montazniNosnik = 0;
+    v.data.rucniCeny = { [cesta]: { hodnota: 0, dodavatel: zdroj, cislo: '', datum: '', platnostDo: '', zaklad: null,
+      potvrdil: { jmeno: 'klient', email: 'klient', kdy: new Date().toISOString() } } };
+    zamkni(z, v, 'nabidka');
+    return uloz(z, c);
+  };
+  const o1 = await pokus(cO, '');
+  test('B195: obchodník nulovou ruční cenu BEZ zdroje neodešle (403)', o1.status === 403 && /bez zdroje/.test(o1.chyba || ''), o1.status + ' ' + (o1.chyba || ''));
+  const v1 = await pokus(cV, '');
+  test('B195: ani vedoucí ne (403)', v1.status === 403, String(v1.status));
+  const o2 = await pokus(cO, 'Dodavatel TEST');
+  test('B195: obchodník nulovou ruční cenu SE zdrojem a potvrzením odešle (200)', o2.status === 200, o2.status + ' ' + (o2.chyba || ''));
+  const a1 = await pokus(cA, '');
+  test('B195: správce nulovou ruční cenu bez zdroje odeslat smí (200)', a1.status === 200, a1.status + ' ' + (a1.chyba || ''));
+}
+
+/* ============================================================ */
 console.log('\n===== B233: POČÍTADLA POKUSŮ PŘI SOUBĚHU =====\n');
 {
   /* PoC poc_AU_soubeh_pocitadla: vlna souběžných pokusů z jedné adresy. */

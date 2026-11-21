@@ -431,10 +431,22 @@ console.log('===== Nezávislá revize #398 (12. 10. 2026): N1 jenZahr, N2 nepoci
    * má přednost před číslem — OCK vede), takže dotisk OCK zámek strany
    * pustí; nová strana OCK se pak musí posoudit jako nový zámek — nulové
    * rozměry → 400. */
+  /* B231 (dávka BZ, J. V. 21. 11. 2026): příznak strany se po zámku už nemění
+   * — přepnutí s dotiskem odmítne server 403 dřív, než dojde na dotisk. */
+  const gB = await nacti(r0.soubor, cO);
+  const aB = zk.importZakazka(kopie(gB)); aB.jenOck = true; zamkni(aB, 'nabidka');
+  const rB = await uloz(aB, cO, gB.uloRazitko);
+  test('B231: přepnutí na „jen realizace" po zámku PROJ (i s dotiskem OCK) → 403', rB.status === 403 && /strana zakázky/.test(rB.chyba || ''), rB);
+  /* N4 dál platí pro zakázku z doby před B231 (příznak přepnutý po zámku už
+   * v databázi): nová strana OCK z dotisku se posoudí jako nový zámek → 400. */
+  { const klic = [...pamet.keys()].find(k => k.startsWith('zakazky/') && k.endsWith(r0.soubor));
+    const ul = JSON.parse(pamet.get(klic)); ul.jenOck = true; pamet.set(klic, JSON.stringify(ul)); }
   const gN = await nacti(r0.soubor, cO);
-  const aN = zk.importZakazka(kopie(gN)); aN.jenOck = true; zamkni(aN, 'nabidka');
+  const aN = zk.importZakazka(kopie(gN)); zamkni(aN, 'nabidka');
   const rN = await uloz(aN, cO, gN.uloRazitko);
   test('N4: dotisk nabídky OCK k zámku PROJ z nulových rozměrů → 400', rN.status === 400 && /dotisk/.test(rN.chyba || ''), rN);
+  { const klic = [...pamet.keys()].find(k => k.startsWith('zakazky/') && k.endsWith(r0.soubor));
+    const ul = JSON.parse(pamet.get(klic)); ul.jenOck = false; pamet.set(klic, JSON.stringify(ul)); }
   const g2 = await nacti(r0.soubor, cO);   // čerstvě — před opravou dotisk OCK výš prošel a změnil razítko
   const b = zk.importZakazka(kopie(g2)); zamkni(b, 'nabidkaProj');
   const r2 = await uloz(b, cO, g2.uloRazitko);
