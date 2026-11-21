@@ -769,6 +769,15 @@ function zamekKdyProblem(kdy, ted) {
   return '';
 }
 
+/* #665: snímek zpracovatele nabídky pro zámek (blok „Vypracoval") z profilu
+ * — prohlížeč: přihlášený (zpracovatelAktualni), server: relace (profilZUctu).
+ * Bez podpisu (sken je velký a leží stranou účtu). Bez e-mailu → null. */
+function zamekZpracovatelSnimek(profil) {
+  const t = x => String(x == null ? '' : x).replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 200);
+  if (!profil || typeof profil !== 'object' || !t(profil.email)) return null;
+  return { email: t(profil.email), jmeno: t(profil.jmeno), titul: t(profil.titul), funkce: t(profil.funkce), telefon: t(profil.telefon) };
+}
+
 function zamkniVariantu(v, info) {
   if (!v) return null;
   info = info || {};
@@ -794,7 +803,7 @@ function zamkniVariantu(v, info) {
    * objednatel, ico } jen u zakázky s víc zákazníky (vzRazitkoSnimek);
    * s jedním zákazníkem klíč chybí. Server si snímek složí sám. */
   if (info.zakaznik && typeof info.zakaznik === 'object') zaznam.zakaznik = info.zakaznik;
-  if (variantaUzamcena(v)) {
+  if (variantaUzamcena(v)) {   // další tisk: snímek zpracovatele zůstává z prvního (#665)
     if (!Array.isArray(v.zamek.tisky)) v.zamek.tisky = [];
     v.zamek.tisky.push(zaznam);
     return v.zamek;
@@ -835,6 +844,10 @@ function zamkniVariantu(v, info) {
     snimek: info.snimek || null,
     tisky: [zaznam],
   };
+  /* #665: blok „Vypracoval" z doby odeslání (zamekZpracovatelSnimek). Mimo klíč
+   * zámku — server ho u nového zámku zapíše z relace a dál drží uložený
+   * (uloZamekRazitkaDrz), klientovi nevěří. Bez profilu klíč chybí. */
+  if (info.zpracovatel && typeof info.zpracovatel === 'object') v.zamek.zpracovatel = info.zpracovatel;
   return v.zamek;
 }
 
@@ -1326,7 +1339,7 @@ function listaZakazkyRozhodni(zak, zaloha, ja, prava, ctx) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { zamekZakVzOdeslano, variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, ZAMEK_PRODANO_TERMINY, zamekProdanoTerminVolny, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
+  module.exports = { zamekZpracovatelSnimek, zamekZakVzOdeslano, variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, ZAMEK_PRODANO_TERMINY, zamekProdanoTerminVolny, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
                      zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, ZAMEK_OVERENI_JADRO, ZAMEK_OVERENI_JADRO_PRISNE, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
                      zamekCteniSmiOdemknout, zamekCteniDuvod, priponaPrvniNalez, priponaPrvniOprav,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,

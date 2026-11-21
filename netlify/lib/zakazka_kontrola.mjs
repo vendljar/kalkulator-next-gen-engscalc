@@ -810,6 +810,10 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
       return odmitni(400, 'Neuloženo: odeslaná nabídka nese ' + ULO.uloIdProblemyText(rozmerProblem)
         + '. Doplňte rozměry šachty a nabídku vytiskněte znovu.');
     v.zamek.kdo = razitkoKdo(relace);   // B95
+    /* #665: blok „Vypracoval" odeslané nabídky = profil účtu z RELACE (ne od
+     * klienta); dál ho drží uloZamekRazitkaDrz. Bez e-mailu klíč pryč. */
+    { const zs = typeof globalThis.zamekZpracovatelSnimek === 'function' ? globalThis.zamekZpracovatelSnimek(relace) : null;
+      if (zs) v.zamek.zpracovatel = zs; else delete v.zamek.zpracovatel; }
     /* K40-S1 (#580): čas PRVNÍHO přijetí zámku serverem — dolní mez data
      * prodeje; příchozí hodnota se zahodí (píše ho jen server). */
     v.zamek.prijato = tedServer;

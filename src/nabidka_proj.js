@@ -1206,7 +1206,7 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
   /* Zpracovatel nabídky (#146) – u projekce platí totéž co u OCK. */
   if (typeof zpracovatelPlaceholders === 'function')
     Object.assign(placeholders, zpracovatelPlaceholders(
-      typeof firmaAktualni === 'function' ? firmaAktualni() : null));
+      typeof firmaAktualni === 'function' ? firmaAktualni() : null, varianta));   // #665: dotisk ze snímku zámku
 
   /* Smluvní a platební podmínky PROJ (#147) – tytéž symboly {{PODM_…}} jako
    * u OCK, jen ze druhého krycího listu. */
@@ -1270,7 +1270,7 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
      * PROJ nemá kam dát, nic se nestane — obrázek se vymění jen tam, kde
      * je pro něj tvar. */
     obrazky: Object.assign({},
-      typeof zpracovatelObrazky === 'function' ? zpracovatelObrazky() : {},
+      typeof zpracovatelObrazky === 'function' ? zpracovatelObrazky(varianta) : {},
       typeof uvodniFotoObrazky === 'function' ? uvodniFotoObrazky(zak, 'proj') : {}),
     souhrn: { bezDph: celkemBezDph, bezDphPred: soucetSekci, zaokrKc: 0,
               soucetSekci, slevaPct: slevaPodilProj, slevaKc: slevaKcNum,

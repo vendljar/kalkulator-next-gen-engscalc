@@ -2708,11 +2708,13 @@ function neprelozenoSkript(L, nepr, rucne) {
  * na šířku) na pokyn J. V.: razítko s podpisem bylo v tisku tak malé, že se
  * text v razítku nedal přečíst. Jsou to STROPY, ne rozměry — sken s jiným
  * poměrem stran se pořád vejde a nedeformuje se. */
-function dokPodpisHtml(prekl) {
+/* #665: `varianta` = tištěná varianta; zamčená se snímkem tiskne zpracovatele
+ * z doby odeslání (zpracovatelZeZamku). */
+function dokPodpisHtml(prekl, varianta) {
   const P = typeof prekl === 'function' ? prekl : (t => t);
   const f = (typeof firmaAktualni === 'function') ? firmaAktualni() : null;
-  const p = (typeof zpracovatelPlaceholders === 'function') ? zpracovatelPlaceholders(f) : {};
-  const obr = (typeof zpracovatelObrazky === 'function') ? zpracovatelObrazky() : {};
+  const p = (typeof zpracovatelPlaceholders === 'function') ? zpracovatelPlaceholders(f, varianta) : {};
+  const obr = (typeof zpracovatelObrazky === 'function') ? zpracovatelObrazky(varianta) : {};
   if (!p.ZPRAC_JMENO && !obr.ZPRAC_PODPIS) return '';
   const kontakt = [p.ZPRAC_FUNKCE, p.ZPRAC_TEL, p.ZPRAC_EMAIL].filter(Boolean).join(' · ');
   return `<div class="podpis-blok" style="margin:28px 0 10px;page-break-inside:avoid">

@@ -375,7 +375,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
 
   if (typeof zpracovatelPlaceholders === 'function')
     Object.assign(placeholders, zpracovatelPlaceholders(
-      typeof firmaAktualni === 'function' ? firmaAktualni() : null));
+      typeof firmaAktualni === 'function' ? firmaAktualni() : null, varianta));   // #665: dotisk ze snímku zámku
 
   /* Smluvní a platební podmínky (#147) – symboly {{PODM_…}}. Do 5. 8. 2026
    * byla procenta splátek a splatnost natvrdo v šabloně, takže se přepis
@@ -594,7 +594,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
            ceny: { bezDph: cenaBezDphNum, dphSazba: +Cv.dph || 0 },
            /* sken podpisu s razítkem (#146) + úvodní fotka stavby */
            obrazky: Object.assign({},
-             typeof zpracovatelObrazky === 'function' ? zpracovatelObrazky() : {},
+             typeof zpracovatelObrazky === 'function' ? zpracovatelObrazky(varianta) : {},
              typeof uvodniFotoObrazky === 'function' ? uvodniFotoObrazky(zak) : {}),
            nazevSouboru: nazevSouboru.replace(/[\\/:*?"<>|]+/g, '-') };
 }
