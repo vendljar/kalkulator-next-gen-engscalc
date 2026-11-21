@@ -150,9 +150,24 @@ const PRED = { zaklad: null };
     blizko(r.strecha.mustekM2, 1.5 * 0.9), r.strecha.mustekM2);
   PRED.zaklad = r.souhrn.zakladCena; PRED.vysledek = r;
   /* Pojistka proti jádru před změnou (je-li v repozitáři historie). */
+  /* MĚLKÝ KLON (HN, 21. 11. 2026): kolo DO propustilo regresi, protože v mělkém
+   * klonu (cloudové sezení, CI) 9484ef4 chybí a srovnání se tiše přeskočilo jen
+   * s INFO. Teď se staré jádro dotáhne podle PLNÉHO SHA (git fetch --depth=1
+   * jde i v mělkém klonu; KNG_BEZ_DOTAZENI=1 ho vypne) a když ani to nejde,
+   * vypíše se značka PRESKOCENO_CAST — spust_testy.sh ji přenese do seznamu
+   * přeskočených a testovaci_kolo.sh do souhrnu „Přeskočené sady". */
+  const STARE_SHA = '9484ef460a289e6a8ad53ec16b6f90938b1ca8b5';
+  const git = (args) => execFileSync('git', args, { cwd: path.join(__dirname, '..'), stdio: ['ignore', 'pipe', 'ignore'], timeout: 90000 }).toString();
+  const stareJadro = () => {
+    try { return git(['show', STARE_SHA + ':src/engine.js']); } catch (e) { /* není v klonu */ }
+    if (process.env.KNG_BEZ_DOTAZENI === '1') return null;
+    try { git(['fetch', '-q', '--depth=1', 'origin', STARE_SHA]); return git(['show', STARE_SHA + ':src/engine.js']); }
+    catch (e) { return null; }
+  };
   let stary = null;
   try {
-    const kod = execFileSync('git', ['show', '9484ef4:src/engine.js'], { cwd: path.join(__dirname, '..'), stdio: ['ignore', 'pipe', 'ignore'] }).toString();
+    const kod = stareJadro();
+    if (kod === null) throw new Error('staré jádro není po ruce');
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kng354-'));
     fs.writeFileSync(path.join(dir, 'engine.js'), kod);
     stary = require(path.join(dir, 'engine.js'));
@@ -178,7 +193,7 @@ const PRED = { zaklad: null };
       E.vypocet(zadani({ mustkyKs: 2, mustekHloubkaMm: 700, mustekSirkaMm: 1500, nastupiste: 3 }), kop(STARY), J, true));
     test('starý ceník: nová zakázka do zveřejnění ceníku = jako dřív (střecha i cena)',
       JSON.stringify([a.souhrn, a.sekce]) === JSON.stringify([b.souhrn, b.sekce]) && blizko(a.strecha.mustekM2, b.strecha.mustekM2));
-  } else console.log('INFO jádro před #354 (git 9484ef4) není po ruce — srovnání bajt po bajtu přeskočeno');
+  } else console.log('PRESKOCENO_CAST: srovnání bajt po bajtu s jádrem před #354 (git 9484ef4 není v klonu a nešlo dotáhnout — mělký klon bez sítě?)');
   /* Pevné číslo (platí i bez gitu): zakladCena zamčené varianty před #354. */
   test('starý ceník: základní cena zamčené varianty = ' + ZAKLAD_PRED + ' Kč (spočteno jádrem před #354)',
     PRED.zaklad === ZAKLAD_PRED, PRED.zaklad);
