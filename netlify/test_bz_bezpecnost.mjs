@@ -32,6 +32,7 @@ import prihlaseni from './functions/prihlaseni.mjs';
 import program from './functions/program.mjs';
 import zakazky from './functions/zakazky.mjs';
 import uzivatele from './functions/uzivatele.mjs';
+import zakaznici from './functions/zakaznici.mjs';
 import { ADMIN_EMAIL, POKUSY_IP_MAX, pokusyIpKlic } from './lib/sdilene.mjs';
 import { jadro } from './lib/jadro.mjs';
 import { createRequire } from 'node:module';
@@ -218,6 +219,55 @@ console.log('\n===== B233: POČÍTADLA POKUSŮ PŘI SOUBĚHU =====\n');
     proslo <= POKUSY_IP_MAX, JSON.stringify(stavy));
   const st = JSON.parse(pamet.get('pokusy/' + pokusyIpKlic(IP)) || '{}');
   test('B233: počítadlo adresy po vlně nese všechny pokusy (žádný ztracený zápis)', st.n === N, 'n=' + st.n);
+}
+
+/* ============================================================ */
+console.log('\n===== B234: KARTA ZÁKAZNÍKA — MĚNÍ AUTOR A SPRÁVCE, HISTORIE =====\n');
+{
+  const zk1 = async (telo, c) => { const r = await post(zakaznici, 'http://x/api/zakaznici', telo, c); return { status: r.status, ...(await r.json()) }; };
+  const karta = { nazev: 'TEST – KARTA BZ s.r.o.', ico: '99999234', ucet: '111-1/0100', smluvniEmail: 'smluvni@priklad.cz' };
+  const r1 = await zk1({ zakaznik: karta }, cO);
+  test('B234: obchodník založí novou kartu (autor z relace)', r1.status === 200 && r1.zakaznik.autor === 'bz.obch1@priklad.cz', JSON.stringify(r1).slice(0, 200));
+  /* PoC poc_AD_zakaznici AD-1: cizí obchodník přepíše číslo účtu. */
+  const r2 = await zk1({ zakaznik: Object.assign({}, r1.zakaznik, { ucet: '999-UTOCNIK/0100' }) }, cO2);
+  const ulozena = JSON.parse(pamet.get('zakaznici/z/' + r1.klic));
+  test('B234: cizí obchodník kartu NEpřepíše (číslo účtu zůstává)', ulozena.ucet === '111-1/0100', ulozena.ucet);
+  test('B234: jeho úprava se uloží jako návrh změny', r2.status === 200 && r2.navrh === true
+    && Array.isArray(ulozena.navrhy) && ulozena.navrhy.length === 1 && ulozena.navrhy[0].zmeny.ucet === '999-UTOCNIK/0100'
+    && ulozena.navrhy[0].kdo === 'bz.obch2@priklad.cz', JSON.stringify(ulozena.navrhy));
+  const r2b = await zk1({ akce: 'navrhPrijmout', klic: r1.klic, id: ((ulozena.navrhy || [])[0] || {}).id }, cO2);
+  test('B234: navrhovatel si vlastní návrh NEpřevezme (403)', r2b.status === 403, String(r2b.status));
+  const r2c = await zk1({ zakaznik: Object.assign({}, ulozena, { ucet: '111-1/0100', navrhy: [] }) }, cV);
+  test('B234: ani vedoucí kartu nepřepíše (beze změny polí = žádný návrh)', r2c.status === 200 && r2c.navrh === false
+    && JSON.parse(pamet.get('zakaznici/z/' + r1.klic)).navrhy.length === 1, JSON.stringify(r2c).slice(0, 160));
+  /* Autor kartu změní a návrhy mu klient nesmaže; předchozí verze jde do historie. */
+  const r3 = await zk1({ zakaznik: Object.assign({}, r1.zakaznik, { smluvniEmail: 'novy@priklad.cz', navrhy: [] }) }, cO);
+  const po3 = JSON.parse(pamet.get('zakaznici/z/' + r1.klic));
+  test('B234: autor kartu změní', r3.status === 200 && !r3.navrh && po3.smluvniEmail === 'novy@priklad.cz', JSON.stringify(r3).slice(0, 160));
+  test('B234: návrhy drží server (klient je prázdným polem nesmaže)', Array.isArray(po3.navrhy) && po3.navrhy.length === 1);
+  let h = JSON.parse(pamet.get('zakaznici/h/' + r1.klic) || '[]');
+  test('B234: změna autora uložila předchozí verzi do historie', h.length === 1 && h[0].verze.smluvniEmail === 'smluvni@priklad.cz'
+    && h[0].kdo === 'bz.obch1@priklad.cz', JSON.stringify(h).slice(0, 200));
+  /* Autor převezme návrh. */
+  const r4 = await zk1({ akce: 'navrhPrijmout', klic: r1.klic, id: ((po3.navrhy || [])[0] || {}).id }, cO);
+  const po4 = JSON.parse(pamet.get('zakaznici/z/' + r1.klic));
+  test('B234: autor převezme návrh změny', r4.status === 200 && po4.ucet === '999-UTOCNIK/0100' && !po4.navrhy && po4.autor === 'bz.obch1@priklad.cz',
+    JSON.stringify(r4).slice(0, 160));
+  h = JSON.parse(pamet.get('zakaznici/h/' + r1.klic) || '[]');
+  test('B234: převzetí návrhu přidá verzi do historie', h.length === 2 && h[1].verze.ucet === '111-1/0100', String(h.length));
+  /* Správce kartu změní a zamítne návrh. */
+  await zk1({ zakaznik: Object.assign({}, po4, { banka: 'Banka X' }) }, cO2);
+  const po5 = JSON.parse(pamet.get('zakaznici/z/' + r1.klic));
+  const r5 = await zk1({ akce: 'navrhZamitnout', klic: r1.klic, id: ((po5.navrhy || [])[0] || {}).id }, cA);
+  const r6 = await zk1({ zakaznik: Object.assign({}, po4, { ucet: '222-2/0100' }) }, cA);
+  const po6 = JSON.parse(pamet.get('zakaznici/z/' + r1.klic));
+  test('B234: správce návrh zamítne a kartu změní', r5.status === 200 && r6.status === 200 && !r6.navrh
+    && po6.ucet === '222-2/0100' && !po6.banka && !po6.navrhy, JSON.stringify(po6).slice(0, 200));
+  const rh = await (await get(zakaznici, 'http://x/api/zakaznici?klic=' + encodeURIComponent(r1.klic) + '&historie=1', cO2)).json();
+  test('B234: historie verzí jde přečíst (GET …&historie=1)', rh.ok && Array.isArray(rh.historie) && rh.historie.length === 3, JSON.stringify(rh).slice(0, 120));
+  /* Podvržený návrh v těle od autora se neuloží (návrhy drží server). */
+  await zk1({ zakaznik: Object.assign({}, po6, { navrhy: [{ id: 'x', kdo: 'podvrh@priklad.cz', kdy: '', zmeny: { ucet: '1' } }] }) }, cO);
+  test('B234: podvržený návrh v těle se neuloží', !JSON.parse(pamet.get('zakaznici/z/' + r1.klic)).navrhy);
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);

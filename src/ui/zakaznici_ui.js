@@ -19,6 +19,7 @@ const ZAK_DB = {
   hlaska: '',
   pracuje: false,
   kontaktVolba: '',     // v které hlavičce ('ock'/'proj') čeká výběr kontaktní osoby
+  historie: null,       // B234: načtená historie verzí otevřené karty (null = nenačteno)
 };
 
 /* ---------- našeptávání v poli „Zákazník" (22. 8. 2026, zadání J. V.) -------
@@ -202,7 +203,7 @@ function zakaznikOtevri(klic) {
   const z = ZAK_DB.seznam.find(x => zakaznikKlic(x) === klic);
   if (!z) return;
   ZAK_DB.otevreny = JSON.parse(JSON.stringify(z));   // kopie: zavření = zahození změn
-  ZAK_DB.novy = false; ZAK_DB.hlaska = ''; render();
+  ZAK_DB.novy = false; ZAK_DB.hlaska = ''; ZAK_DB.historie = null; render();
 }
 
 function zakaznikZavri() { ZAK_DB.otevreny = null; ZAK_DB.novy = false; render(); }
@@ -250,7 +251,9 @@ async function zakaznikUloz() {
       ZAK_DB.seznam = ZAK_DB.seznam.filter(x => zakaznikKlic(x) !== klic).concat([o.zakaznik]);
       ZAK_DB.otevreny = JSON.parse(JSON.stringify(o.zakaznik));
       ZAK_DB.novy = false;
-      ZAK_DB.hlaska = 'Uloženo.';
+      /* B234: cizí kartu server nepřepíše — úprava čeká jako návrh změny. */
+      ZAK_DB.hlaska = o.navrh ? (o.zprava || 'Úprava se uložila jako návrh změny.')
+        + ' Převezme ji autor karty nebo administrátor.' : 'Uloženo.';
       render(); return true;
     })
     .catch(e => { ZAK_DB.pracuje = false; ZAK_DB.hlaska = 'Neuloženo: ' + e.message; render(); return false; });
@@ -268,6 +271,63 @@ async function zakaznikSmaz() {
       ZAK_DB.otevreny = null; ZAK_DB.hlaska = 'Karta smazána.'; render();
     })
     .catch(e => { ZAK_DB.hlaska = 'Nesmazáno: ' + e.message; render(); });
+}
+
+/* ---------- návrhy změn a historie karty (B234, 21. 11. 2026) ---------- */
+function zakaznikJaSmi(z) {
+  const ja = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.ja) || null;
+  return typeof zakaznikSmiMenit === 'function' ? zakaznikSmiMenit(ZAK_DB.novy ? null : z, ja || {}) : true;
+}
+function zakaznikNavrhRozhodni(id, prijmout) {
+  const z = ZAK_DB.otevreny;
+  if (!z) return Promise.resolve(false);
+  const klic = zakaznikKlic(z);
+  ZAK_DB.pracuje = true; render();
+  return onlineApi('/api/zakaznici', { akce: prijmout ? 'navrhPrijmout' : 'navrhZamitnout', klic, id })
+    .then(o => {
+      ZAK_DB.pracuje = false;
+      ZAK_DB.seznam = ZAK_DB.seznam.filter(x => zakaznikKlic(x) !== o.klic).concat([o.zakaznik]);
+      ZAK_DB.otevreny = JSON.parse(JSON.stringify(o.zakaznik));
+      ZAK_DB.historie = null;
+      ZAK_DB.hlaska = prijmout ? 'Návrh změny převzat do karty.' : 'Návrh změny zamítnut.';
+      render(); return true;
+    })
+    .catch(e => { ZAK_DB.pracuje = false; ZAK_DB.hlaska = 'Neprovedeno: ' + e.message; render(); return false; });
+}
+function zakaznikHistorieUI() {
+  const z = ZAK_DB.otevreny;
+  if (!z || ZAK_DB.novy) return Promise.resolve(false);
+  return onlineApi('/api/zakaznici?klic=' + encodeURIComponent(zakaznikKlic(z)) + '&historie=1')
+    .then(o => { ZAK_DB.historie = Array.isArray(o.historie) ? o.historie : []; render(); return true; })
+    .catch(e => { ZAK_DB.hlaska = 'Historii se nepodařilo načíst: ' + e.message; render(); return false; });
+}
+function zakaznikPolePopis(id) {
+  const p = ZAKAZNIK_POLE.find(x => x.id === id);
+  return p ? p.label : (id === 'poznamka' ? 'Interní poznámka' : id);
+}
+function zakaznikNavrhyHtml(z) {
+  const n = (typeof zakaznikNavrhyOciste === 'function') ? zakaznikNavrhyOciste(z && z.navrhy) : [];
+  const smi = zakaznikJaSmi(z);
+  const radky = n.map(x => '<li style="margin:4px 0">' + esc(x.jmeno || x.kdo) + ' (' + esc(String(x.kdy).slice(0, 16).replace('T', ' ')) + '): '
+    + Object.keys(x.zmeny).map(k => esc(zakaznikPolePopis(k)) + ' → „' + esc(x.zmeny[k]) + '“').join('; ')
+    + (smi ? ' <button class="mini" onclick="zakaznikNavrhRozhodni(\'' + escJs(x.id) + '\', true)">Převzít</button>'
+      + ' <button class="mini" onclick="zakaznikNavrhRozhodni(\'' + escJs(x.id) + '\', false)">Zamítnout</button>' : '')
+    + '</li>').join('');
+  const kdo = smi ? '' : '<div class="note">Kartu mění jen její autor' + (z && z.autor ? ' (' + esc(z.autor) + ')' : '')
+    + ' a administrátor. Vaše úprava se po uložení zapíše jako návrh změny.</div>';
+  return kdo + (n.length ? '<h3>Návrhy změn (' + n.length + ')</h3><ul style="margin:0;padding-left:20px;font-size:13px">' + radky + '</ul>' : '');
+}
+function zakaznikHistorieHtml() {
+  const h = ZAK_DB.historie;
+  if (!Array.isArray(h)) return '';
+  if (!h.length) return '<h3>Historie verzí</h3><div class="note">Karta zatím nemá uloženou starší verzi.</div>';
+  const rozdil = (a, b) => (typeof zakaznikZmenyPole === 'function' ? Object.keys(zakaznikZmenyPole(a, b)) : []).map(zakaznikPolePopis).join(', ');
+  const radky = h.slice().reverse().map((x, i, arr) => {
+    const novejsi = i === 0 ? ZAK_DB.otevreny : arr[i - 1].verze;
+    return '<li style="margin:4px 0">' + esc(String(x.kdy || '').slice(0, 16).replace('T', ' ')) + ' · ' + esc(x.kdo || '?')
+      + (x.proc ? ' (' + esc(x.proc) + ')' : '') + ' — změněno: ' + esc(rozdil(x.verze, novejsi) || '—') + '</li>';
+  }).join('');
+  return '<h3>Historie verzí (' + h.length + ')</h3><ul style="margin:0;padding-left:20px;font-size:13px">' + radky + '</ul>';
 }
 
 /* ---------- karta → otevřená zakázka ---------- */
@@ -440,7 +500,10 @@ function zakaznikKartaHtml() {
         onclick="zakaznikDoZakazkyUI('${escJs(klic)}')">${typeof vzZakaznikKartaPopis === 'function' ? esc(vzZakaznikKartaPopis()) : 'Přenést do otevřené zakázky'}</button>
       ${(!ZAK_DB.novy && typeof jeAdminOnline === 'function' && jeAdminOnline())
         ? `<button class="mini" onclick="zakaznikSmaz()">Smazat kartu…</button>` : ''}
+      ${!ZAK_DB.novy ? `<button class="mini" onclick="zakaznikHistorieUI()">Historie verzí</button>` : ''}
     </div>
+    ${zakaznikNavrhyHtml(z)}
+    ${zakaznikHistorieHtml()}
     <div class="note" style="margin-top:6px">Klíč záznamu: <code>${esc(klic || '—')}</code>
       ${z.autor ? ' · založil ' + esc(z.autor) : ''}${z.upraven ? ' · upraveno ' + esc(String(z.upraven).slice(0, 10)) : ''}.
       Prázdné pole karty nikdy nic v zakázce nepřepíše.</div>
