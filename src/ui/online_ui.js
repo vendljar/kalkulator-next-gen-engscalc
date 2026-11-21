@@ -3539,6 +3539,7 @@ const OBNOVA_CASTI = [
   ['sablony', 'Šablony dokumentů'],
   ['zakaznici', 'Kartotéka zákazníků'],
   ['podpisy', 'Podpisy a razítka'],
+  ['pripominky', 'Připomínky z aplikace (bez snímků obrazovky)'],
 ];
 
 function onlineObnovaStav() {
@@ -3666,7 +3667,7 @@ function onlineObnovaDavky(zaloha, casti) {
     d[k] = v; velikost += s;
   }
   uzavri();
-  for (const k of ['zakazky', 'zakaznici', 'sablony', 'podpisy'].filter(k => casti.includes(k))) {
+  for (const k of ['zakazky', 'zakaznici', 'sablony', 'podpisy', 'pripominky'].filter(k => casti.includes(k))) {
     const mapa = zaloha[k];
     if (!mapa || typeof mapa !== 'object' || Array.isArray(mapa)) { d[k] = mapa === undefined ? null : mapa; uzavri(); continue; }
     let pocet = 0;

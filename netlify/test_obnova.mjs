@@ -1167,6 +1167,25 @@ console.log('\n===== B100-zbytek: firma, zákazníci, zobrazení =====');
   test('B100: zákazník s klíčem mimo tvar z/<klíč> se nezapíše',
     oZ.casti.zakaznici.duvody.some(d => d.klic === 'nesmysl') && (await ulz('zakaznici').cti('nesmysl')) === null, oZ.casti.zakaznici);
 
+  /* PR (21. 11. 2026, B231): připomínky ze zálohy projdou očistou jako nové;
+   * jiný klíč (např. podvržený hash klíče koordinace) se neobnoví.
+   * Pojistka: před dávkou PR část `pripominky` neznámá → 400. */
+  podvrh.pripominky = {
+    'p/P-0005': { id: 'P-0005', typ: 'chyba', text: 'Obnovená připomínka ze zálohy.', autor: 'obchodnik@priklad.cz', kdy: '2026-11-01T00:00:00Z',
+      stav: 'resi', roadmapa: '712', zdroj: 'test', snimek: true, skript: '<script>x</script>', kontext: { obrazovka: 'Kalkulace OCK', navic: 1 } },
+    'p/P-0006': { id: 'P-0006', typ: 'xss', text: 'Neznámý typ se neobnoví.', stav: 'nova' },
+    'klic': { hash: 'a'.repeat(64) },
+    'nastaveni': { zapnuto: true, limitDen: 99999, role: ['Obchodník', 'Hacker'] },
+  };
+  const oP = await obnovJson({ zdroj: { soubor: podvrh }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['pripominky'] }, cookie);
+  const pz = await ulz('pripominky').cti('p/P-0005');
+  test('PR: připomínka ze zálohy projde očistou (bez cizích polí, bez snímku, roadmapa #712)',
+    oP.ok === true && !!pz && pz.stav === 'resi' && pz.roadmapa === '#712' && pz.snimek === false && !('skript' in pz) && !('navic' in pz.kontext), oP.casti || oP);
+  test('PR: neznámý typ ani klíč „klic" se neobnoví', oP.ok === true && (await ulz('pripominky').cti('p/P-0006')) === null
+    && (await ulz('pripominky').cti('klic')) === null && oP.casti.pripominky.duvody.some(d => d.klic === 'klic'), oP.casti && oP.casti.pripominky);
+  const nz = await ulz('pripominky').cti('nastaveni');
+  test('PR: nastavení připomínek ze zálohy očištěné (limit strop, role jen známé)', !!nz && nz.limitDen === 200 && nz.role.join() === 'Obchodník', nz);
+
   podvrh.zobrazeni = { matice: { cizi: { 'Obchodník': true }, sekce: 'x' }, kdo: 'spravce', kdy: '2026-10-12' };
   const oM = await obnovJson({ zdroj: { soubor: podvrh }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zobrazeni'], hesloSpravce: 'Docasne.Heslo.123' }, cookie);   // B188: matice jen s heslem
   const mz = await ulz('program').cti('zobrazeni');

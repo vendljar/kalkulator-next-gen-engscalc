@@ -78,6 +78,7 @@ import pdVazbaFn from './functions/pd_vazba.mjs';
 import pdOrganizaceFn from './functions/pd_organizace.mjs';
 import zalohaDiskFn from './functions/zaloha_disk.mjs';
 import pdStavFn from './functions/pd_stav.mjs';
+import pripominkyFn from './functions/pripominky.mjs';
 import { config as configNocni } from './functions/zaloha_nocni.mjs';
 import { ADMIN_EMAIL, ROLE, POKUSY_MAX, POKUSY_IP_MAX, zpozdeniMs, pokusyReset,
          uloziste, PODPIS_ULOZISTE, aktivitaDobehni } from './lib/sdilene.mjs';
@@ -633,6 +634,46 @@ const MATICE = [
     proc: 'měkký režim vypíná záruku „nikdo netiskne ze staré verze" — jen administrátor',
     prava: JEN_ADMIN },
 
+  /* Připomínky z aplikace (dávka PR, 21. 11. 2026, B231). Funkce je
+   * výchozí VYPNUTÁ — odeslání vrací přihlášeným 403 (kod vypnuto), dokud ji
+   * správce nezapne. Čtení: autor svoje, správce vše. Stav mění jen správce
+   * (nebo klíč koordinace — ten relace nenahradí: cookie žádné role na čtení
+   * pro koordinaci nestačí). Podrobnosti netlify/test_pripominky.mjs. */
+  { fn: pripominkyFn, soubor: 'pripominky.mjs', nazev: 'připomínky — seznam (GET /api/pripominky)',
+    metoda: 'GET', url: 'http://x/api/pripominky',
+    proc: 'autor vidí svoje připomínky a odpovědi, správce všechny',
+    prava: PRIHLASENY_OK },
+  { fn: pripominkyFn, nazev: 'připomínky — nastavení (GET ?nastaveni=1)',
+    metoda: 'GET', url: 'http://x/api/pripominky?nastaveni=1',
+    proc: 'klient musí vědět, jestli má ukázat tlačítko Připomínka',
+    prava: PRIHLASENY_OK },
+  { fn: pripominkyFn, nazev: 'připomínky — snímek obrazovky (GET ?snimek=)',
+    metoda: 'GET', url: 'http://x/api/pripominky?snimek=P-0001',
+    proc: 'snímek může nést ceny a osobní údaje — vidí ho jen správce (404 = připomínka neexistuje)',
+    prava: { 'nepřihlášený': 401, 'Obchodník': 403, 'Vedoucí': 403, 'Administrátor': 404 } },
+  { fn: pripominkyFn, nazev: 'připomínky — čtení pro koordinaci (GET ?pro=koordinace)',
+    metoda: 'GET', url: 'http://x/api/pripominky?pro=koordinace',
+    proc: 'jen klíčem koordinace v hlavičce Authorization; s cookie relace 400, bez ní 401',
+    prava: { 'nepřihlášený': 401, 'Obchodník': 400, 'Vedoucí': 400, 'Administrátor': 400 } },
+  { fn: pripominkyFn, nazev: 'připomínky — nová (POST, funkce výchozí vypnutá)',
+    metoda: 'POST', url: 'http://x/api/pripominky',
+    telo: () => ({ typ: 'chyba', text: 'Zkušební připomínka z matice práv.' }),
+    proc: 'odesílá každý přihlášený s povolenou rolí, až správce funkci zapne',
+    prava: { 'nepřihlášený': 401, 'Obchodník': 403, 'Vedoucí': 403, 'Administrátor': 403 } },
+  { fn: pripominkyFn, nazev: 'připomínky — nastavení (POST akce=nastaveni)',
+    metoda: 'POST', url: 'http://x/api/pripominky',
+    telo: () => ({ akce: 'nastaveni', nastaveni: { zapnuto: false } }),
+    proc: 'vypínač funkce, role, limity — rozhodnutí správce',
+    prava: JEN_ADMIN },
+  { fn: pripominkyFn, nazev: 'připomínky — klíč koordinace (POST akce=klic)',
+    metoda: 'POST', url: 'http://x/api/pripominky', telo: () => ({ akce: 'klic' }),
+    proc: 'klíč vydává jen správce a jen s vlastním heslem (bez hesla 401 kod hesloSpravce)',
+    prava: { 'nepřihlášený': 401, 'Obchodník': 403, 'Vedoucí': 403, 'Administrátor': 401 } },
+  { fn: pripominkyFn, nazev: 'připomínky — změna stavu (PATCH)',
+    metoda: 'PATCH', url: 'http://x/api/pripominky', telo: () => ({ id: 'P-0999', akce: 'fronta' }),
+    proc: 'stav a odpověď mění jen správce (404 = připomínka neexistuje)',
+    prava: { 'nepřihlášený': 401, 'Obchodník': 403, 'Vedoucí': 403, 'Administrátor': 404 } },
+
   { fn: analytikaFn, soubor: 'analytika.mjs', nazev: 'analytika — stav sběru (GET ?akce=rezim)',
     metoda: 'GET', url: 'http://x/api/analytika?akce=rezim',
     proc: 'klient musí vědět, jestli má sbírat, dřív než cokoli pošle',
@@ -668,6 +709,8 @@ for (const radek of MATICE) {
       ? await get(radek.fn, radek.url, c)
       : radek.metoda === 'DELETE'
         ? await radek.fn(new Request(radek.url, { method: 'DELETE', headers: c ? { cookie: c } : {} }))
+      : radek.metoda === 'PATCH'   /* PR (21. 11. 2026): změna stavu připomínky */
+        ? await radek.fn(new Request(radek.url, { method: 'PATCH', headers: c ? { cookie: c } : {}, body: JSON.stringify(radek.telo ? radek.telo(role) : {}) }))
         : await post(radek.fn, radek.url, radek.telo ? radek.telo(role) : {}, c);
     const cekano = radek.prava[role];
     const stav = odpoved.status;

@@ -72,6 +72,10 @@ export async function zalohaDoplnky() {
    * bez ní by po obnově z nulové databáze zmizela jediná stopa po smazání
    * a obnova by neměla podle čeho odmítnout oživení smazaného účtu. */
   const smazani = await ctiCele(await uloziste(SMAZANI_ULOZISTE));
+  /* PŘIPOMÍNKY Z APLIKACE (dávka PR, 21. 11. 2026): záznamy, nastavení
+   * a počítadlo čísel. Snímky obrazovky (pripominky_snimky) a hash klíče
+   * koordinace (program/pripominky_klic) do zálohy NEJDOU — B231. */
+  const pripominky = await ctiCele(await uloziste('pripominky'));
   return { zobrazeni: zobrazeni || null,
            smazani: Object.keys(smazani).length ? smazani : null,
            popisy: popisy || null,
@@ -84,7 +88,8 @@ export async function zalohaDoplnky() {
             * NEPŘEPISUJE (není v OBNOVA_CASTI; stopa v databázi zůstává). */
            controllingExporty: controllingExporty || null,
            zakaznici: Object.keys(zakaznici).length ? zakaznici : null,
-           podpisy: Object.keys(podpisy).length ? podpisy : null };
+           podpisy: Object.keys(podpisy).length ? podpisy : null,
+           pripominky: Object.keys(pripominky).length ? pripominky : null };
 }
 
 /* Klíč otisku před obnovou (7. 9. 2026). Otisk pořízený těsně před obnovou
@@ -345,6 +350,7 @@ export const OTISK_SEKCE = [
   { nazev: 'zakaznici', ul: 'zakaznici' },                   // B9
   { nazev: 'podpisy', ul: 'podpisy' },                       // B9
   { nazev: 'smazani', ul: SMAZANI_ULOZISTE },                // kniha smazaných účtů (B58)
+  { nazev: 'pripominky', ul: 'pripominky' },                 // připomínky z aplikace (PR, B231): bez snímků a klíče
 ];
 const SEKCE_PODLE = Object.fromEntries(OTISK_SEKCE.map(x => [x.nazev, x]));
 export const jeOtiskPoCastech = (o) => !!o && typeof o === 'object' && o.format === OTISK_FORMAT;
@@ -1100,7 +1106,8 @@ export function obnovaTokenVyprsel(z, ted) {
  * (= stav 20. 10. 2026); novou část je třeba dopsat sem (test_zalohy N6
  * hlídá, že každá část zálohy je tu, nebo ji test vědomě vynechá). */
 export const KOPIE_DISK_CASTI = ['porizena', 'zdroj', 'kdo', 'program', 'firma', 'rejstrik', 'zakazky', 'uzivatele',
-  'sablony', 'zobrazeni', 'smazani', 'popisy', 'slovnik', 'controlling', 'controllingExporty', 'zakaznici', 'podpisy'];
+  'sablony', 'zobrazeni', 'smazani', 'popisy', 'slovnik', 'controlling', 'controllingExporty', 'zakaznici', 'podpisy',
+  'pripominky'];   // PR (21. 11. 2026): záznamy připomínek, bez snímků a bez klíče koordinace (B231)
 export function otiskProDisk(o) {
   if (!o || typeof o !== 'object') return null;
   const out = {};

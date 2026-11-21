@@ -13,7 +13,7 @@
  *   rezim:      'doplnit' (zapíše jen to, co na serveru chybí)
  *               | 'prepsat' (zapíše všechno ze zálohy přes stávající),
  *   casti:      ['program','firma','zobrazeni','popisy','slovnik','controlling','zakazky','uzivatele',
- *                'sablony','zakaznici','podpisy']   — nepovinné = všechny,
+ *                'sablony','zakaznici','podpisy','pripominky']   — nepovinné = všechny,
  *   nahled:     true  → NIC nezapíše, jen vrátí, co by se stalo,
  *   potvrzeni:  'OBNOVIT' → bez něj se ostrá obnova odmítne (428)
  * } → { ok, nahled, zdroj: { typ, klic, porizena, web }, casti: { <část>:
@@ -88,11 +88,12 @@ import { potvrdHesloSpravce, uloziste, vyzadujRoli, json, ADMIN_EMAIL, ROLE, hos
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { zakazkaPrijmi, zakazkaServerKontrola, zakazkaBezPrototypovychKlicu } from '../lib/zakazka_kontrola.mjs';
 import { funkceCti } from '../lib/funkce.mjs';
+import PR from '../lib/pripominky_modul.cjs';
 import { porizOtiskKrok, klicPredObnovou, OTISK_KLIC, OTISK_ROZPOCET, ctiOtisk, ctiOtiskCast, otiskVyrez,
   ctiPoDavkach, OBNOVA_TOKEN_PREDPONA, OBNOVA_TOKEN_PLATNOST_MS as TOKEN_PLATNOST_MS, OTISK_ROZPRACOVANY, OTISK_CASTI } from '../lib/zalohovani.mjs';
 
 export const OBNOVA_CASTI = ['program', 'firma', 'zobrazeni', 'popisy', 'slovnik', 'controlling', 'zakazky', 'uzivatele',
-                             'sablony', 'zakaznici', 'podpisy'];
+                             'sablony', 'zakaznici', 'podpisy', 'pripominky'];
 export const OBNOVA_REZIMY = ['doplnit', 'prepsat'];
 export const OBNOVA_POTVRZENI = 'OBNOVIT';
 /* Předpona a platnost tokenu žijí v lib/zalohovani.mjs — retence podle
@@ -865,7 +866,7 @@ async function obsluha(req, uvolnit) {
   }
 
   /* Mapy: šablony, kartotéka zákazníků, podpisy (klíče přesně jako v úložišti). */
-  const mapy = { sablony: 'sablony', zakaznici: 'zakaznici', podpisy: 'podpisy' };
+  const mapy = { sablony: 'sablony', zakaznici: 'zakaznici', podpisy: 'podpisy', pripominky: 'pripominky' };
   for (const cast of Object.keys(mapy)) {
     if (!casti.includes(cast) || !maVlastni(zaloha, cast)) continue;
     const b = bilance();
@@ -896,6 +897,25 @@ async function obsluha(req, uvolnit) {
         z.autor = obnovaTxt(v.autor, 200); z.zalozen = obnovaTxt(v.zalozen, 40);
         if (!/^z\/[^/]+$/.test(k) || !globalThis.zakaznikKlic(z)) return 'nepřijatelný klíč nebo zákazník bez IČO i názvu';
         return { hodnota: z };
+      };
+    }
+    if (cast === 'pripominky') {
+      /* PŘIPOMÍNKY (dávka PR, B231): záznam projde touž očistou jako nový
+       * (pripominkaObnovaOciste), nastavení očistou nastavení, počítadlo jen
+       * jako celé číslo. Jiný klíč se neobnoví (hash klíče koordinace v tomto
+       * úložišti není a ze zálohy se nikdy nevrací — správce vydá nový). */
+      overeni = (k, v) => {
+        const mp = /^p\/(P-\d{4,6})$/.exec(k);
+        if (mp) {
+          const p = PR.pripominkaObnovaOciste(v);
+          return p && p.id === mp[1] ? { hodnota: p } : 'připomínka v nepřijatelném tvaru';
+        }
+        if (k === 'nastaveni') return { hodnota: PR.pripominkyNastaveniOciste(v) };
+        if (k === 'citac') {
+          const n = Math.floor(+(v && v.n));
+          return Number.isFinite(n) && n >= 0 && n < 1000000 ? { hodnota: { n } } : 'počítadlo v nepřijatelném tvaru';
+        }
+        return 'neznámý klíč v úložišti připomínek';
       };
     }
     if (cast === 'podpisy') {
