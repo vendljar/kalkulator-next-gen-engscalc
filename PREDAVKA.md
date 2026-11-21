@@ -31,7 +31,7 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 ## Běžící dávky
 
 - **DOS** (`claude/dos-drobnosti`, v21.11.1, nad cda289e): #680 návrhy mimo číselník; #690 náhled bez světlíků;
-  #691 bez verzálek, EN/DE dvojtečka; N4 → šablony v18 (SB). Detail v CHANGELOG.
+  #691 bez verzálek, EN/DE dvojtečka; N4 → šablony v18 (SB). Kolo VŠE ZELENÉ, SHODA 359/359, mutace [DOS] 6/6. HOTOVO.
 - **PG** (`claude/pg-tisk`, v19.11.10, nad 042fcbc): #684 tlačítka tisku CN OCK (náhled podkladů → Word modře → náhled
   a tisk), #685 vlastní řádek TS v SOUČÁSTÍ DODÁVKY NENÍ (`extra[i].sekce='neni'`), #686 DALŠÍ UJEDNÁNÍ v nabídce PROJ
   (`PJ.dalsiUjednani`, Word přes šablonu PROJ v9 `--proj-v9`, kontrola `dalsiUjednaniWordProj`), #687 číslo stránky: vada šablony CN v9–v17 (pevná „1“ v záhlaví) → `--cn-v18`,

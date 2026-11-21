@@ -26,7 +26,9 @@ Nad integrací `cda289e` (v19.11.11). Cenu ani text Wordu nemění (porovnání 
   stejně u „Popis záměru:“ a „Vypracoval:“.
 - **NPT-N4:** beze změny náhledu (IČ/Tel. už překládá); Word přeloží nové šablony v18 v dávce SB.
 - **Testy:** `src/test_do_n1_navrhy.js` (16 OK; před opravou 10 FAIL), `src/test_np_nahled_word.js` oddíl F
-  (syntetická šablona v17 bez řádku světlíků; před opravou 148 FAIL, po 184 OK). Mutace jádra [DOS] 6.
+  (syntetická šablona v17 bez řádku světlíků; před opravou 148 FAIL, po 184 OK). Mutace jádra [DOS] 6/6.
+- **Kolo** `--bez-mutaci --proti origin/claude/integrace-16-10`: VŠE ZELENÉ (sady 496/0/7, hodiny 402/0/1,
+  statické 9/9, porovnání sestavení SHODA 359/359).
 
 ## v19.11.11 — D3 #688: Objednávka / Smlouva PROJ z nabídky PROJ, větev claude/d3-objednavka-proj
 
