@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v21.11.1 — OP1 drobnosti ze zkoušek testovacího sezení (PG-N1, #682, D3-N1, D3-N2), větev claude/op1-drobnosti
+## v21.11.2 — OP1 drobnosti ze zkoušek testovacího sezení (PG-N1, #682, D3-N1, D3-N2), větev claude/op1-drobnosti
 
 Nad integrací `cda289e` (v19.11.11). Cenu nemění; mění vzhled náhledu podkladů OCK, Word CN v EN/DE/FR (prázdný
 pruh pryč) a rozvržení objednávky PROJ. Verzi a pracovní čísla roadmapy (#692–#694) přečísluje koordinace.
