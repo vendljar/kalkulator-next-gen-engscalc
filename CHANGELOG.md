@@ -27,6 +27,12 @@ pruh pryč) a rozvržení objednávky PROJ. Verzi a pracovní čísla roadmapy (
 - **Testy (s pojistkou):** `test_np_nahled_word.js` C2 (před opravou 9 FAIL → 183/0), `test_docxgen.js` (d2) (4 FAIL
   → vše OK), `test_objednavka_proj.js` D3-N2 (2 FAIL → 78/0), nový harness `overit_objednavka_strany.mjs`
   (6/6 FAIL → 6/6 OK; PDF z Chromia, Word orientačně přes LibreOffice).
+## v21.11.1 — SB: šablony CN v18 a PROJ v9 (nástroj), větev claude/sb-sablony
+
+Nad integrací `cda289e` (v19.11.11). Rozhodnutí J. V. 21. 11. 2026 (NPT-N4 #691). Cenu ani aplikaci nemění — jen nástroj výroby šablon.
+
+- `nastroje/vyrob_sablony.js --cn-v18`: v EN/DE/FR šabloně CN přeloží v bloku „Kancelář“ popisky IČ/Tel. ze slovníku náhledu (jako „Kompletní náhled podkladů“); CZ beze změny, řádek SVĚTLÍKY se nepřidává (J. V.: ve Wordu ho nepotřebuje). Test `src/test_sb_kancelar.js` 25/25 (pojistka: s popiskem česky 20 FAIL), mutace [SB] 2/2.
+- Šablony CN v18 (CZ/EN/DE/FR) a PROJ v9 (CZ/EN/DE/FR) vyrobeny z test v17/v8 a předány J. V. (mimo repo) — nahrát na test až po odeslání do main. Číslo stránky v CN v18 ověřit ve Wordu (LibreOffice pole ve VML textovém poli nepřepočítává).
 
 ## v19.11.11 — D3 #688: Objednávka / Smlouva PROJ z nabídky PROJ, větev claude/d3-objednavka-proj
 

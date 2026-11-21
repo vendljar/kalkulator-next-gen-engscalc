@@ -7,11 +7,11 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "329b3ecf",
+  "sha": "cda289e2",
   "verze": "v19.11.11",
   "datum": "19. 11. 2026"
  },
- "test_navic_commitu": 362,
+ "test_navic_commitu": 363,
  "v_testu_ne_v_main": [
   {
    "id": "689",
@@ -649,15 +649,6 @@
    "cekaNa": "rozhodnout, zda vypsat návrhy i k položkám mimo řádky číselníku"
   },
   {
-   "id": "682",
-   "typ": "ukol",
-   "nazev": "Word CN v EN/DE/FR nechává prázdný pruh sekce technické části (MŮSTKY bez řádků)",
-   "alias": [
-    "NP-N1"
-   ],
-   "cekaNa": "rozhodnout opravu (rychlá cesta, text dokumentu)"
-  },
-  {
    "id": "690",
    "typ": "nalez",
    "nazev": "NPT-N1: řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ je v náhledu podkladů, ale Word CN v17 ho nemá",
@@ -665,26 +656,15 @@
     "NPT-N1"
    ],
    "cekaNa": "doplnit {{TS_SVETLIKY_DVERI}} do šablony CN (v18), nebo řádek v náhledu vynechat"
-  },
-  {
-   "id": "691",
-   "typ": "nalez",
-   "nazev": "NPT-N2–N4: drobné odchylky náhledu od Wordu (verzálky jednotek, dvojtečka EN/DE, IČ/Tel. v bloku Kancelář)",
-   "alias": [
-    "NPT-N2",
-    "NPT-N3",
-    "NPT-N4"
-   ],
-   "cekaNa": "NPT-N4 — přeložit IČ/Tel. i v cizojazyčné šabloně, nebo nechat česky"
   }
  ],
  "ceka_na_jv_odlozene": 12,
  "nehotove_podle_kdo": {
-  "J. V.": 44,
+  "J. V.": 42,
   "kolega": 5,
   "koordinace": 12,
-  "dávka": 3,
+  "dávka": 4,
   "integrátor": 2
  },
- "nehotovych": 66
+ "nehotovych": 65
 }
