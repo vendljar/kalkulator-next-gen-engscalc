@@ -3,7 +3,8 @@
 Dávka PG #4 (hlášení J. V. 19. 11. 2026: všechny stránky vytištěné CN mají číslo „1"; větev `claude/pg-tisk`).
 Předchozí krok: `SABLONA_CN_V17_11_11.md`.
 
-> **v18 = v17 + číslo stránky v záhlaví jako pole PAGE, nic jiného.** Šablonu vyrobí a nahraje **J. V.** (firemní
+> **v18 = v17 + číslo stránky v záhlaví jako pole PAGE; v EN/DE/FR navíc přeložené popisky „IČ:" a „Tel.:" v bloku
+> Kancelář (dávka SB, 21. 11. 2026, oddíl 7). Nic jiného.** Šablonu vyrobí a nahraje **J. V.** (firemní
 > šablony v repozitáři nejsou). v18 nevyžaduje novou verzi aplikace — dá se nahrát na test i na main hned;
 > upozornění v průvodci šablon (bod 4) přijde s verzí aplikace s dávkou PG.
 
@@ -58,6 +59,34 @@ zveřejnit. Funkce `docxCisloStranky` / `docxCisloStrankyVarovani` (`src/docxgen
 2. Jazykové verze: nahrát `…_v18_EN/_DE/_FR.docx` → **Zveřejnit**.
 3. Tabulka šablon: CN v18 a EN/DE/FR „✓ z v18", nic „zastaralá".
 4. Zkouška: nabídka OCK s víc stránkami → Word CZ + EN → stránky 1, 2, 3… v záhlaví (ve Wordu i v PDF z Wordu).
+
+## 7. EN/DE/FR: popisky IČ a Tel. v bloku Kancelář (dávka SB, 21. 11. 2026, NPT-N4 #691)
+
+Rozhodnutí J. V.: jazyková CN měla v podpisovém bloku Kancelář pevný český text „IČ: …" a „Tel.: …", náhled je
+překládá. `--cn-v18` je v EN/DE/FR přeloží **stejně jako náhled** — popisek se bere z `NW_TEXT.kIco/kTel` přes
+`nwPreloz` (`src/nahled_word.js`, slovník `src/preklad.js`), ne natvrdo:
+
+| jazyk | IČ | Tel. |
+|---|---|---|
+| EN | Company ID (IČ): | Phone: |
+| DE | Identifikationsnummer (IČ): | Tel.: (beze změny) |
+| FR | Numéro d’identification (IČ) : | Tél. : |
+
+- Mění se jen úvodní popisek v prvním běhu dvou odstavců za nadpisem bloku (Office: / Büro: / Bureau :, rovněž ze
+  slovníku) až do prvního prázdného odstavce; číslo, telefon, písmo, `w14:paraId` i zbytek těla zůstanou. Česká
+  v18 se nemění. Výpis: „Kancelář: IČ: → Company ID (IČ):, Tel.: → Phone:".
+- Nástroj nic nehádá: chybí nadpis bloku, popisek je dvakrát, je rozdělený mezi běhy nebo už přeložený = chyba.
+- Řádek SVĚTLÍKY se do Wordu **nepřidává** (J. V.: nepotřebuje ho).
+- Funkce `cnV18Kancelar` / `cnV18Soubor(bajty, popis, L)`, test `src/test_sb_kancelar.js`, mutace [SB].
+
+## 8. Kontrola v PDF z LibreOffice (dávka SB)
+
+Záhlaví CN v17 (test, všechny jazyky) má číslo stránky v **textovém poli VML** (`w:pict`/`v:textbox`, bez kopie wps).
+LibreOffice pole v takovém textovém poli **nepřepočítá** a vytiskne uložený výsledek („1" na každé stránce) —
+ověřeno podvrženým výsledkem „9", který LibreOffice vytiskl na všech stránkách. Word pole PAGE v textovém poli
+přepočítá (stejně jsou postavená vestavěná čísla stránek Wordu „Okraje stránky"). Číslování v18 proto ověřuje
+**Word** (bod 5.4: Word a PDF z Wordu); PDF z LibreOffice tady není doklad. Šablona PROJ (textové pole wps) čísluje
+1, 2, 3… i v LibreOffice.
 
 ## 6. Vlastní řádek v SOUČÁSTÍ DODÁVKY NENÍ (PG #2)
 
