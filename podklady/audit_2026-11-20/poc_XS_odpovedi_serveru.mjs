@@ -81,7 +81,7 @@ async function beh(popis, cfg) {
   await page.waitForFunction(() => typeof window.render === 'function');
   await page.waitForTimeout(400);
   await page.fill('#onlineEmail', process.env.ADMIN_EMAIL); await page.fill('#onlineHeslo', process.env.ADMIN_INIT_HESLO);
-  await page.click('#prihlaseni-box >> text=Přihlásit');
+  await page.evaluate(() => onlinePrihlas());   // ne kliknutím: u staršího sestavení (main) leží přes formulář lišta „nová verze“
   await page.waitForFunction(() => { try { return !!(ONLINE_STAV.ja && ONLINE_STAV.ja.email); } catch (x) { return false; } });
   await page.waitForTimeout(500);
   /* ---- data bez obarvení ---- */
