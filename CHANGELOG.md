@@ -8,6 +8,33 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.11.1 — BZ: opravy bezpečnostního auditu 20. 11. 2026 (B231–B236, B195), větev claude/bz-bezpecnost
+
+Nad integrací `cda289e` (v19.11.11). Rozhodnutí J. V. 21. 11. 2026 (přes koordinaci). Mění bezpečnostní meze a chování
+zámků, ceny ani text dokumentů nemění. Před sloučením revize poradce (Fable). Verzi přečísluje koordinace.
+
+- **B231 (vysoká) — strana zakázky po zámku zmrazená:** příznaky `jenProj` / `jenOck` u zakázky se zamčenou variantou
+  server nezmění (403 pro každou roli; ven = odemčení správcem). Nový zámek nese snímek `zamek.strana` (píše a drží
+  server), zaškrtávátka v Kalkulaci PROJ / OCK po zámku hlásí důvod. Dotisk dokumentu nové strany nově hlídá
+  i nepotvrzenou ruční cenu (zakázky z doby před BZ). Controlling a hodnota dealu prodané zakázky se už nepřepnou.
+- **B232 — ověření zmrazeného výsledku:** přísné porovnání nového zámku počítá chybějící i přidané číslo → „nesouhlasí“
+  s varováním (dřív „shoda“ i výsledku bez 782 čísel).
+- **B233 — přihlášení:** počítadla pokusů (e-mail i adresa) se počítají ve výhradním úseku — souběžná vlna z jedné
+  adresy limit 60/15 min neobejde (PoC 400 souběžných → 390× 429). Zbytek mezi instancemi funkce = mez (#699).
+- **B234 — karta zákazníka:** mění jen autor a administrátor; ostatním se úprava uloží jako **návrh změny** (převezme
+  nebo zamítne autor / administrátor, tlačítka na kartě). **Historie verzí** karty (tlačítko „Historie verzí“,
+  50 verzí, v záloze i obnově).
+- **B235/B236 — Pipedrive:** nový **vypínač zápisu** — bez proměnné Netlify `PIPEDRIVE_ZAPIS` = „ano“ nejde do
+  skutečného Pipedrive žádný zápis (výchozí vypnuto; dřív zrušení vazby a odkaz z webhooku šly ven s tokenem).
+  Poznámka do dealu a přepojení organizace (vítěz) jen u dealu, který zakázce patří (vazba z webhooku, odkaz na
+  kalkulaci nebo číslo nabídky v dealu); strop nových dealů pro poznámky 30/h na uživatele.
+- **B195 — nulová ruční cena:** ověřeno, že bez zdroje neprojde (obchodník, vedoucí 403; správce smí); text meze opraven.
+- **Testy:** `netlify/test_bz_bezpecnost.mjs` (42; před opravou 14+2+13 selhání podle nálezu),
+  `netlify/test_bz_pipedrive.mjs` (20; před opravou 13 selhání), `test_prava.mjs` (B232, B234), upravené přípravky
+  `test_koncova_cena` N4, `test_vyjimky` B153/B155 (stav před B231 zapsán přímo), Pipedrive sady (deal nese číslo
+  nabídky zakázky). Mutace [BZ] 21. PoC auditu B231 (2×), B232, B233, B234, B235, B236: před ZRANITELNÉ, po ODOLNÉ.
+- **Roadmapa:** #692–#700 (pracovní čísla); #698 souhrn nízkých nálezů B237–B256, #699 zbytek B233, #700 otázky J. V.
+
 ## v19.11.11 — D3 #688: Objednávka / Smlouva PROJ z nabídky PROJ, větev claude/d3-objednavka-proj
 
 Nad integrací `042fcbc` (v19.11.5). Nový dokument, cenu ani text nabídky a SoD nemění. Verzi přečísluje koordinace.
