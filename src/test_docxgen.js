@@ -105,6 +105,33 @@ const pocetRadku = x => (x.match(/<w:tr[\s>]/g) || []).length;
     const out = odstranPrazdneTsRadky(xml, { TS_TYP_OPLASTENI: ' -', TS_ODVETRANI: 'přirozené' });
     test('(d) prázdná sekce i s pruhem zmizí', !out.includes('OPLÁŠTĚNÍ ŠACHTY') && out.includes('DOPLŇKOVÉ KONSTRUKCE') && out.includes('TS_ODVETRANI'));
   }
+  // (d2) #682: prázdný pruh sekce v PŘELOŽENÉ šabloně (EN/DE/FR) zmizí taky.
+  // Pojistka: s porovnáním jen proti českým názvům (TS_SEKCE_NAZVY) zůstane
+  // pruh BRIDGES… / BRÜCKEN… / PASSERELLES… ve Wordu prázdný → 4× FAIL.
+  {
+    const pr = require('./preklad.js');
+    const MUST = { TS_MUSTKY: ' -', TS_MUSTKY_ROZMER: '', TS_ODVETRANI: 'natural' };
+    [['en', 0], ['de', 1], ['fr', 2]].forEach(([L, i]) => {
+      const sek = n => pr.PREKLAD[n][i];
+      const xml = '<w:tbl>'
+        + bunka(sek('DOPLŇKOVÉ KONSTRUKCE')) + bunka('VENT {{TS_ODVETRANI}}')
+        + bunka(sek('MŮSTKY MEZI BUDOVOU A OCK')) + bunka('BR {{TS_MUSTKY}}') + bunka('SIZE {{TS_MUSTKY_ROZMER}}')
+        + bunka(sek('STAVEBNÍ A PŘÍPRAVNÉ PRÁCE')) + bunka('X {{TS_ODVETRANI}}')
+        + '</w:tbl>';
+      const out = odstranPrazdneTsRadky(xml, MUST);
+      test('(d2) #682 ' + L + ': prázdný přeložený pruh můstků zmizí, ostatní pruhy zůstávají',
+        !out.includes(sek('MŮSTKY MEZI BUDOVOU A OCK')) && out.includes(sek('DOPLŇKOVÉ KONSTRUKCE')) && out.includes(sek('STAVEBNÍ A PŘÍPRAVNÉ PRÁCE')));
+    });
+    // přeložený pruh na konci tabulky, jiná velikost písmen (šablona psaná ručně)
+    const xml = '<w:tbl>' + bunka('VENT {{TS_ODVETRANI}}') + bunka('Bridges between the building and the steel structure')
+      + bunka('BR {{TS_MUSTKY}}') + '</w:tbl>';
+    test('(d2) #682 en: pruh v jiné velikosti písmen na konci tabulky zmizí',
+      !/Bridges between/.test(odstranPrazdneTsRadky(xml, MUST)));
+    // vyplněná sekce s přeloženým pruhem zůstává
+    const xml2 = '<w:tbl>' + bunka(pr.PREKLAD['MŮSTKY MEZI BUDOVOU A OCK'][0]) + bunka('BR {{TS_MUSTKY}}') + '</w:tbl>';
+    test('(d2) #682 en: vyplněná sekce můstků i s pruhem zůstává',
+      odstranPrazdneTsRadky(xml2, { TS_MUSTKY: '2 pcs' }) === xml2);
+  }
   // (e) neprázdné řádky i hlavička zůstávají beze změny
   {
     const xml = '<w:tbl>' + bunka('OBJEDNATEL {{OBJEDNATEL}}') + bunka('UMÍSTĚNÍ {{TS_UMISTENI}}') + '</w:tbl>';
