@@ -14,6 +14,7 @@ import { pdStavPripoj, pdStavUlozeni } from '../lib/pd_stav.mjs';
 import { funkceCti } from '../lib/funkce.mjs';
 import { pdPoznamkyUlozeni } from '../lib/pd_poznamka.mjs';
 import { pdPoleMapa } from './pd_pole.mjs';
+import { pdWebhookOdkaz } from '../lib/pd_webhook.mjs';
 
 /* Jméno k e-mailu z účtů (P7 / K16-N87) — jen pro hlášku o kolizi verzí
  * u zakázek uložených dřív, než se jméno začalo zapisovat. Jedno čtení,
@@ -194,7 +195,8 @@ export default async (req) => {
    * (vypínač viceZakazniku, pole pdPoznamkaZakaznici) — společný časový
    * rozpočet, šachty první; třetí čtení níž jedno pro obě. */
   const pdPoznamky = await pdPoznamkyUlozeni(zak, stara, { viceSachet, viceZakazniku, relace, matice: (zobr && zobr.matice) || null,
-    poleMapa: () => pdPoleMapa() });   // VZ T1 (N3): IČ organizace dealu
+    poleMapa: () => pdPoleMapa(),   // VZ T1 (N3): IČ organizace dealu
+    odkaz: pdWebhookOdkaz(jmeno, req) });   // B235: ověření vazby dealu na zakázku (pd_overeni.mjs)
   const pdPoznamka = pdPoznamky.sachty, pdPoznamkaZak = pdPoznamky.zakaznici;
   /* N1 (revize Fable 12. 11. 2026): volání Pipedrive trvá až sekundy —
    * okno mezi druhým čtením a zápisem by se roztáhlo. Po návratu z

@@ -81,6 +81,12 @@ const login = async (e, h) => ((await post(prihlaseni, 'http://x/api/prihlaseni'
 const kopie = x => JSON.parse(JSON.stringify(x));
 const zakazka = (soubor) => JSON.parse(pamet.get('zakazky/z/' + soubor) || 'null');
 const zapis = (soubor, z) => pamet.set('zakazky/z/' + soubor, JSON.stringify(z));
+
+/* B235/B236 (dávka BZ): server zapisuje jen do dealu, který zakázce patří
+ * (pd_overeni.mjs) — přípravek dá dealu v simulátoru číslo nabídky zakázky. */
+const BZ_CN = SIM.pdSimStav().data.pole.deal.find(p => p.field_name === 'Číslo nabídky (CN)').field_code;
+const dealPatri = (id, cislo) => { const d = SIM.pdSimStav().data.dealy.find(x => String(x.id) === String(id)); if (d) d.custom_fields[BZ_CN] = cislo; };
+
 const D = () => SIM.pdSimStav().data;
 const poz = () => SIM.pdSimStav().pozadavky;
 const HASH_IC = pdHashZNazvu('IČ');
@@ -112,7 +118,7 @@ let cisloN = 9800, sN = 0;
 function prodana(deal, ico, { nazev = 'TEST – VÍTĚZ s.r.o.', autor = 'obch.autor@priklad.cz', prodal = 'obch.prodal@priklad.cz', vz = true, prod = true } = {}) {
   const z = zk.novaZakazka(); z.cislo = '2026 - OPR - CN - ' + (cisloN++) + ' - TEST'; z.nazevAkce = 'TEST VZ-E5b';
   z.objednatel = nazev; z.adresaObjednatele = 'Vítězná 1, 110 00 Vzorov'; z.ico = ico; z.dic = ico ? 'CZ' + ico : '';
-  z.autor = autor; z.pdDealId = String(deal.id);
+  z.autor = autor; z.pdDealId = String(deal.id); dealPatri(deal.id, z.cislo);
   if (vz) { const p = G.vzPridej(z, { objednatel: 'TEST – PORAŽENÝ a.s.', adresaObjednatele: 'Jinde 2', ico: '', dic: '', kontakt: '' }, { kdo: 'Test', kdy: '2026-11-16T10:00:00.000Z' });
     if (!p.ok) throw new Error('vzPridej ' + JSON.stringify(p)); }
   const v = z.varianty[0];
