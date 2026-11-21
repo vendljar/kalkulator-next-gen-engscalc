@@ -569,8 +569,49 @@ function zamekZakStav(zak) {
            sod: zam.some(v => zamekSodHlavicky(v, zak)) };
 }
 
+/* STRANA ZAKÁZKY PO ZÁMKU (B231, audit 20. 11. 2026; J. V. 21. 11. 2026).
+ * Příznaky `jenProj` / `jenOck` určují, která strana (OCK / PROJ) se počítá,
+ * tiskne, jde do controllingu a do hodnoty dealu (zakazkaVyrazenaStrana).
+ * Dřív je obyčejné uložení přepnulo i po zámku a po Prodáno — strana
+ * neposouzená při zámku (ruční cena, výjimka, marže) se tak dostala do
+ * prodané zakázky bez schválení a cizí obchodník přepnul, co jde do
+ * controllingu. Od B231 jsou příznaky zmrazené, dokud zakázka nese zamčenou
+ * variantu: server zapíše stav příznaků do zámku (`zamek.strana`, razítko
+ * mimo klíč, drží ho uloZamekRazitkaDrz) a změnu odmítne (403) — pro každou
+ * roli; cesta ven je odemčení (administrátor) nebo nová zakázka. */
+const ZAMEK_STRANA_CESTY = ['ZAK.jenProj', 'ZAK.jenOck'];
+function zamekStranaZnak(zak) {
+  return { jenProj: !!(zak && zak.jenProj === true), jenOck: !!(zak && zak.jenOck === true) };
+}
+const ZAMEK_STRANA_HLASKA = 'Zakázka má odeslanou (uzamčenou) nabídku — strana zakázky (jen projekce / jen realizace) '
+  + 'se už nemění, rozhoduje o ceně, controllingu i hodnotě dealu. Pokračujte novou zakázkou, nebo požádejte '
+  + 'administrátora o odemčení.';
+/* Serverová pojistka: změnil se příznak strany zakázky se zamčenou variantou?
+ * Zámek se bere z ULOŽENÉ verze; varianta, kterou v témže uložení odemkl
+ * správce, se nepočítá (jako zamekZakZmeny). Vrací důvod nebo ''. */
+function zamekStranaZmena(stara, nova) {
+  const nove = (nova && nova.varianty) || [];
+  const zamcene = ((stara && stara.varianty) || []).filter(sv => {
+    const nv = nove.find(x => x && sv && x.id === sv.id);
+    return variantaUzamcena(sv) && (!nv || variantaUzamcena(nv));
+  });
+  if (!zamcene.length) return '';
+  const a = zamekStranaZnak(stara), b = zamekStranaZnak(nova);
+  if (a.jenProj === b.jenProj && a.jenOck === b.jenOck) return '';
+  return ZAMEK_STRANA_HLASKA;
+}
+/* Snímek příznaků strany do NOVÉHO zámku (píše jen server). */
+function zamekStranaSnimek(zak) {
+  const z = zamekStranaZnak(zak);
+  return { jenProj: z.jenProj, jenOck: z.jenOck,
+    vyrazena: (typeof zakazkaVyrazenaStrana === 'function' ? zakazkaVyrazenaStrana(zak) : '') || '' };
+}
+
 /* Důvod, proč se cesta hlavičky nesmí změnit, nebo ''. */
 function zamekZakCestaZmrazena(zak, cesta) {
+  /* B231: příznak strany zmrazí kterákoli zamčená varianta. */
+  if (ZAMEK_STRANA_CESTY.indexOf(cesta) >= 0)
+    return ((zak && zak.varianty) || []).some(v => variantaUzamcena(v)) ? ZAMEK_STRANA_HLASKA : '';
   const st = zamekZakStav(zak);
   if (!st.cn && !st.sod) return '';
   const c = zamekZakCesty();
@@ -918,7 +959,20 @@ function zamekVysledekRozdily(klient, server, max, opts) {
     for (const x of pole) { const id = idRadku(x); if (!id || m.has(id)) return null; m.set(id, x); }
     return m;
   };
+  /* B232 (audit 20. 11. 2026): v přísném porovnání nesmí číslo chybět ani
+   * přebývat — klíč (nebo hodnota null) jen na jedné straně, pod kterým je
+   * číslo, je rozdíl. Dřív prošel výsledek, ze kterého klient vypustil 782
+   * z ~790 čísel (controlling pak ukázal náklad 0) nebo do něj číslo přidal
+   * (řádek můstků v dokumentu). Volné porovnání (starší zámky, obnova) beze změny. */
+  const maCislo = (x, h) => {
+    if (cislo(x)) return true;
+    if (!x || typeof x !== 'object' || (h || 0) > 40) return false;
+    return Object.keys(x).some(k => maCislo(x[k], (h || 0) + 1));
+  };
   const projdi = (a, b, c) => {
+    if (prisne && (a === undefined || a === null) !== (b === undefined || b === null)) {
+      if (maCislo(a === undefined || a === null ? b : a)) { pridej(c); return; }
+    }
     /* B146 (audit 12. 10. 2026): v přísném porovnání je pole řádků proti
      * čemukoli jinému (objekt, null, chybějící klíč) rozdíl — tatáž verze
      * dává týž tvar; podvržené řádky (ock.priplatky) se změnou tvaru
@@ -946,10 +1000,10 @@ function zamekVysledekRozdily(klient, server, max, opts) {
     }
     Object.keys(a).forEach(k => {
       if (Object.prototype.hasOwnProperty.call(b, k)) projdi(a[k], b[k], c + '.' + k);
-      else if (prisne && Array.isArray(a[k])) pridej(c + '.' + k);              // pole jen v zámku (B146)
+      else if (prisne && (Array.isArray(a[k]) || maCislo(a[k]))) pridej(c + '.' + k);   // pole (B146) / číslo navíc (B232)
     });
     if (prisne) Object.keys(b).forEach(k => {
-      if (!Object.prototype.hasOwnProperty.call(a, k) && Array.isArray(b[k])) pridej(c + '.' + k);   // vynechané pole (B146)
+      if (!Object.prototype.hasOwnProperty.call(a, k) && (Array.isArray(b[k]) || maCislo(b[k]))) pridej(c + '.' + k);   // vynechané pole (B146) / číslo (B232)
     });
   };
   ZAMEK_OVERENI_CASTI.forEach(k => projdi(klient ? klient[k] : undefined, server ? server[k] : undefined, k));
@@ -1330,4 +1384,4 @@ if (typeof module !== 'undefined')
                      zamekKryciPoleVNabidce, zamekKryciPoleVolne, zamekKryciPolePlnaMoc, zamekDataPorovnani, zamekJsonKanon, zamekDataRozdilCesta,
                      ZAMEK_KRYCI_PO_CN, zamekKryciPoleStav, zamekKryciPoleZname, zamekSnimekSpocti, zamekSnimek,
                      zamekDphVolna, zamekNabidkaPohled, zamekZakCesty, zamekSodHlavicky, zamekZakStav, zamekZakCestaZmrazena, zamekZakZmeny, zamekZakHlavickaOznac,
-                     zamekZakRidici, ZAMEK_KRYCI_PO_SOD_VOLNE };
+                     zamekZakRidici, ZAMEK_KRYCI_PO_SOD_VOLNE, ZAMEK_STRANA_CESTY, zamekStranaZnak, zamekStranaZmena, zamekStranaSnimek };

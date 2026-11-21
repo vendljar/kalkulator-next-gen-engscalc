@@ -1275,9 +1275,11 @@ const nactiB59 = async (soubor) => (await (await get(zakazky,
    * který starší verze neměla, jiný text položky. Do opravy to server
    * razítkoval „nesouhlasí" a lišta zámku strašila u každého, kdo nabídku
    * otevřel. */
+  /* B232 (dávka BZ, J. V. 21. 11. 2026): přísné ověření nového zámku vyžaduje
+   * všechna čísla — klíč s ČÍSLEM jen na jedné straně je od BZ rozdíl (test
+   * níž). Tolerance P6 dál platí pro texty, příznaky a klíče bez čísel. */
   const z = odesliB59(zakazkaSCeny('2026 - OPR - CN - 0854'), (r) => {
-    r.ock.klicZeStarsiVerze = { poznamka: 'jen ve starší verzi', pocet: 3 };
-    delete r.ock.odvozene;
+    r.ock.klicZeStarsiVerze = { poznamka: 'jen ve starší verzi', priznak: true };
     const sekce = Object.keys(r.ock.sekce).find(k => Array.isArray(r.ock.sekce[k]) && r.ock.sekce[k].length);
     r.ock.sekce[sekce][0].popisNabidka = 'Dodatkový text z jiné verze';
   });
@@ -1285,6 +1287,18 @@ const nactiB59 = async (soubor) => (await (await get(zakazky,
   const ov = (await nactiB59('2026-OPR-CN-0854.json')).varianty[0].zamek.overeni;
   test('P6: jiný tvar výsledku při stejných číslech = shoda (bez varování)',
     odp.ok === true && !odp.varovani && ov && ov.stav === 'shoda', JSON.stringify({ odp, ov }));
+}
+{
+  /* B232: číslo navíc / vypuštěná čísla (odvozené rozměry) = nesouhlasí. */
+  const z = odesliB59(zakazkaSCeny('2026 - OPR - CN - 0857'), (r) => {
+    r.ock.klicZeStarsiVerze = { pocet: 3 };
+    delete r.ock.odvozene;
+  });
+  const odp = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: z }, cObch)).json();
+  const ov = (await nactiB59('2026-OPR-CN-0857.json')).varianty[0].zamek.overeni;
+  test('B232: číslo jen v jednom výsledku nového zámku = nesouhlasí (s varováním)',
+    odp.ok === true && !!odp.varovani && ov && ov.stav === 'nesouhlasi'
+      && ov.cesty.indexOf('ock.klicZeStarsiVerze') >= 0 && ov.cesty.indexOf('ock.odvozene') >= 0, JSON.stringify(ov));
 }
 {
   /* …ale podvrh, který jádro dokumentu vynechá, shodu nedostane. */
