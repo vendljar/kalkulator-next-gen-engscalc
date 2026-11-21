@@ -378,7 +378,11 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   const odmitni = (status, chyba) => ({ ok: false, status, chyba });
   /* Věta odmítnutí: obchodníkovi „Neuloženo: … Pokračujte klonem varianty.",
    * do přehledu obnovy jen důvod. */
-  const veta = (duvod, klon) => (obnova ? duvod : 'Neuloženo: ' + duvod + (klon ? '. Pokračujte klonem varianty.' : ''));
+  /* #674 c: důvod s vlastní předponou („Neuloženo: …") ji nezdvojí. */
+  const veta = (duvod, klon) => {
+    const d = String(duvod == null ? '' : duvod).replace(/^Neuloženo:\s*/, '');
+    return obnova ? d : 'Neuloženo: ' + d + (klon ? '. Pokračujte klonem varianty.' : '');
+  };
   const zamcena = (v) => !!(globalThis.variantaUzamcena && globalThis.variantaUzamcena(v));
   const cisloVarianty = (z, v) => String((globalThis.variantaCislo && globalThis.variantaCislo(z, v)) || '');
 

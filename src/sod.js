@@ -721,6 +721,9 @@ function sodProjPlatby(d, sablona, lang) {
  * konkrétní kalkulaci. Adresa stavby jde z hlavičky PROJ; když ji projekce
  * nemá, spadne na adresu z hlavičky OCK — objekt je jeden. */
 function plnaMocData(zak, varianta, sablona) {
+  /* #674 a: jako nabidkaData / sodData (přes nabídku) — jen z pohledu zákazníka;
+   * se surovou zakázkou by krycí list PROJ vrátil cizí ruční hodnoty (zmocnitel). */
+  if (typeof vzTiskHlidej === 'function') vzTiskHlidej(zak);
   const h = (typeof projHlavicka === 'function' ? projHlavicka(zak) : (zak.projHlavicka || {})) || {};
   const placeholders = Object.assign({},
     typeof firmaPlaceholders === 'function'

@@ -571,6 +571,14 @@ function zamekZakStav(zak) {
 
 /* Důvod, proč se cesta hlavičky nesmí změnit, nebo ''. */
 function zamekZakCestaZmrazena(zak, cesta) {
+  /* #674 d: řídící zákazník s písmenem (stal se řídícím výměnou), kterému
+   * odešla nabídka — název, sídlo, IČO a DIČ v hlavičce zmrazené (jako
+   * u dalšího zákazníka; server vzServerZakaznici § 5). */
+  const mz = /^ZAK\.(objednatel|adresaObjednatele|ico|dic)$/.exec(String(cesta));
+  if (mz && typeof vzZakaznikPoleZmrazeno === 'function' && typeof vzRidiciId === 'function') {
+    const d = vzZakaznikPoleZmrazeno(zak, vzRidiciId(zak), mz[1]);
+    if (d) return d;
+  }
   const st = zamekZakStav(zak);
   if (!st.cn && !st.sod) return '';
   const c = zamekZakCesty();
