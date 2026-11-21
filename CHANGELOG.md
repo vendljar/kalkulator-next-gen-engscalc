@@ -8,6 +8,24 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.11.1 — DS #648–#650: název šachty v cizím jazyce, texty správy šablon, větev claude/ds-sablony
+
+Nad integrací `cda289e` (v19.11.11). Cenu nemění; mění text cizojazyčné nabídky a SoD (jen název nepřejmenované šachty).
+Verzi přečísluje koordinace.
+
+- **#648 (K49-I6): výchozí název šachty v jazyce dokumentu.** Nepřejmenovaná šachta — prázdný název i uložený
+  výchozí tvar „Šachta N“, který zapisuje tlačítko „+ přidat šachtu“ — se v EN/DE/FR nabídce (Word, smyčka šachet,
+  online náhled, náhled podkladů) i ve smlouvě o dílo (předmět a rozpis šachet) tiskne jako **Shaft N / Schacht N /
+  Gaine N**. Dřív CN EN tiskla „Shaft 1“, ale „Šachta 2“ a SoD EN/DE „Šachta 1/2“. Ručně zadaný název zůstává beze
+  změny; česky beze změny. `vsNazevPreloz` / `vsNazevL` v `vice_sachet.js`.
+- **#649 (K49-I8): úvodní věta správy šablon po C7.** Místo „Česká šablona je zdroj, ze kterého se vyrábějí jazykové
+  verze“ říká, že se jazykové verze nahrávají jako přeložené soubory a smlouva z víc než 20 % česky nejde zveřejnit
+  ani vytisknout; totéž ve větě průvodce a v manuálu správce.
+- **#650 (K49-I9): popisek chybějící jazykové šablony.** U smluv (SoD realizace, SoD projekce, plná moc) „chybí —
+  nevytiskne se“ (shodně se zábranou `sodJazykZabrana`), u nabídek dál „chybí — tiskne se česky“.
+- **Testy:** `src/test_ds_sachta_nazev.js` (30 OK; před opravou 15 FAIL), `src/test_sablony_online.js` +10 (před
+  opravou 6 FAIL).
+
 ## v19.11.11 — D3 #688: Objednávka / Smlouva PROJ z nabídky PROJ, větev claude/d3-objednavka-proj
 
 Nad integrací `042fcbc` (v19.11.5). Nový dokument, cenu ani text nabídky a SoD nemění. Verzi přečísluje koordinace.

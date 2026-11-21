@@ -370,7 +370,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
    * nese šachty (obal vypocetZakazkyOck: Model 2 a víc šachet nebo ks > 1);
    * jedna šachta nedostane ani jeden nový symbol (zlatá sada VS-E0 — symboly
    * přebírá i smlouva o dílo). */
-  const vs = nabidkaVsData(d, r, sablona, { P, kc, cenaPredSlevou, cenaBezDphNum, tsSymbolySachty });
+  const vs = nabidkaVsData(d, r, sablona, { P, kc, cenaPredSlevou, cenaBezDphNum, tsSymbolySachty, L });
   if (vs.sachty) Object.assign(placeholders, vs.placeholders);
 
   if (typeof zpracovatelPlaceholders === 'function')
@@ -618,7 +618,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
  * šachet tisk zastaví (vsSablonaZabrana). */
 function nabidkaVsData(d, r, sablona, o) {
   const VS = (typeof sachtyZ === 'function')
-    ? { sachtyZ, rozpocetSachet, vsSablonaUmiSachty, VS_SABLONA_ZABRANA } : require('./vice_sachet.js');
+    ? { sachtyZ, rozpocetSachet, vsSablonaUmiSachty, VS_SABLONA_ZABRANA, vsNazevL } : require('./vice_sachet.js');
   const prazdna = { SACHTA_NAZEV: '', SACHTA_KS: '', SACHTA_POPIS: '', SACHTA_CENA_BEZ_DPH: '', SACHTA_TS_NAZEV: '' };
   if (!(r && Array.isArray(r.sachty) && r.sachty.length))
     return { sachty: null, placeholders: {}, word: { polozky: [prazdna], spolecne: { SACHTY_CELKEM_POPIS: '' } } };
@@ -635,8 +635,9 @@ function nabidkaVsData(d, r, sablona, o) {
     const ri = s.vysl || r;
     const mSk = !!(ri.mustky && ri.mustky.skladebny && +(ri.souhrn || {}).mustkyCena > 0);
     const mustky = mSk || tsMu(Zi) > 0;
-    /* Nepojmenovaná šachta má v jazyce dokumentu „Šachta N" (vsNazev je česky). */
-    const nazev = String(zs.nazev || '').trim() || (P('Šachta') + ' ' + (i + 1));
+    /* Nepojmenovaná šachta má v jazyce dokumentu „Šachta N" (vsNazev je česky).
+     * #648: i uložený výchozí tvar „Šachta N" (+ přidat šachtu) — Shaft/Schacht/Gaine N. */
+    const nazev = VS.vsNazevL(zs, i, o.L || 'cz');
     const ks = +s.ks || 1;
     const tsI = o.tsSymbolySachty(tsSach(d, i), ri, Zi, mSk);
     if (sablona && sablona.symboly && !sablona.symboly.has('TS_USAZENI_LEVA')) tsI.TS_USAZENI_BOCNI = usazeniBocniSloucene(tsI, P);
