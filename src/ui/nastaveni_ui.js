@@ -31,6 +31,11 @@ const NAST_PANELY = [
   { id: 'obecne', nazev: 'Obecné', telo: () => nastObecne() },
   { id: 'firma', nazev: 'Firma', klic: 'nastaveni.firma', telo: () => nastFirma() },
   { id: 'uzivatele', nazev: 'Uživatelé', klic: 'nastaveni.uzivatele', telo: () => nastUzivatele() },
+  /* Připomínky z aplikace (dávka PR, 21. 11. 2026) — JEN administrátor,
+   * natvrdo (snímky a kontext vidí jen správce); hranici drží /api/pripominky.
+   * Název nese počet nepřečtených, proto getter. Kreslí ui/pripominky_ui.js. */
+  { id: 'pripominky', get nazev() { return typeof pripominkyZalozkaNazev === 'function' ? pripominkyZalozkaNazev() : '💬 Připomínky'; },
+    jenAdmin: true, telo: () => nastPripominky() },
   /* Databáze (21. 8. 2026 večer, zadání J. V.: „Online databáze přesuň do nové
    * záložky v nastavení s názvem Databáze"). Karta stála na začátku Přehledu
    * cenových nabídek, kde se pletla do cesty práci s nabídkami — je to

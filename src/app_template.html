@@ -1116,6 +1116,83 @@
     .spec-row input[type=text], .spec-row select, .kl-row input, .kl-row textarea { border:none; padding:2px 0; -webkit-appearance:none; appearance:none; }
     .modal-overlay { display:none !important; }
   }
+
+  /* ---------- Připomínky z aplikace (dávka PR, 21. 11. 2026) ---------- */
+  .prip-fab { position:fixed; right:22px; bottom:22px; z-index:60; display:flex; align-items:center; gap:8px;
+    background:#0B2E6B; color:#fff; border:none; border-radius:28px; padding:11px 18px; font-weight:700; font-size:14px;
+    box-shadow:0 8px 24px rgba(11,46,107,.35); cursor:pointer; }
+  .prip-fab:hover { filter:brightness(1.12); }
+  .prip-fab-pocet, .prip-pocet { display:inline-block; min-width:18px; padding:0 5px; border-radius:10px; background:#dc2626;
+    color:#fff; font-size:11px; line-height:18px; text-align:center; font-weight:700; }
+  .prip-fab-pocet { position:absolute; top:-6px; right:-4px; }
+  .modal.prip-panel { position:fixed; top:0; right:0; bottom:0; width:430px; max-width:100vw; z-index:61; border-radius:0;
+    overflow-y:auto; box-shadow:-12px 0 40px rgba(0,0,0,.25); }
+  .modal.prip-panel h2 { position:sticky; top:0; background:#fff; z-index:1; }
+  .prip-typy { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .prip-typ { display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:10px 12px; border:1.5px solid var(--line);
+    border-radius:10px; background:#fff; text-align:left; cursor:pointer; font-size:12px; color:var(--mut); }
+  .prip-typ b { color:var(--ink); font-size:14px; }
+  .prip-typ-ikona { font-size:20px; }
+  .prip-typ.act { border-color:#0B2E6B; background:#eef3fc; box-shadow:0 0 0 2px #c3d3fb; }
+  .prip-panel textarea, .prip-sp-detail textarea { width:100%; box-sizing:border-box; font:inherit; padding:8px; border:1px solid var(--line); border-radius:8px; }
+  .prip-cip { display:inline-flex; align-items:center; gap:6px; background:#fff7ed; border:1px solid #fdba74; color:#9a3412;
+    border-radius:16px; padding:3px 6px 3px 10px; font-size:12.5px; }
+  .prip-cip button { border:none; background:transparent; color:#9a3412; font-size:15px; cursor:pointer; padding:0 4px; }
+  .prip-auto { background:#f3f5f8; border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin:14px 0 12px; }
+  .prip-auto-nadpis { font-size:12px; font-weight:700; color:var(--mut); margin-bottom:8px; }
+  .prip-auto-obsah { display:flex; gap:10px; align-items:flex-start; }
+  .prip-miniatura { width:132px; height:82px; object-fit:cover; object-position:top left; border:1px solid var(--line); border-radius:6px;
+    background:#fff; flex:0 0 auto; }
+  .prip-miniatura.prazdna { display:flex; align-items:center; justify-content:center; text-align:center; font-size:11px; color:var(--mut); padding:4px; box-sizing:border-box; }
+  .prip-chk { display:inline-flex; align-items:center; gap:6px; margin-top:8px; font-size:13px; }
+  .prip-odeslat { width:100%; padding:11px; font-size:14px; }
+  .prip-odeslat:disabled { opacity:.45; cursor:not-allowed; }
+  .prip-chyba { background:#fef2f2; border:1px solid #fca5a5; color:#991b1b; border-radius:8px; padding:7px 10px; margin:8px 0; font-size:13px; }
+  .prip-ok { background:#ecfdf5; border:1px solid #86efac; color:#166534; border-radius:8px; padding:7px 10px; margin:8px 0; font-size:13px; }
+  .prip-dekujeme { text-align:center; padding:18px 0 6px; }
+  .prip-dekujeme h3 { margin:10px 0 4px; }
+  .prip-fajfka { width:56px; height:56px; margin:0 auto; border-radius:50%; background:#16a34a; color:#fff; font-size:32px; line-height:56px; font-weight:700; }
+  .prip-dal { padding-left:20px; font-size:13px; } .prip-dal li { margin:6px 0; }
+  .prip-karta { margin:0 0 10px; } .prip-karta .body { padding:10px 12px; }
+  .prip-karta.prip-nova { border:2px solid #0B2E6B; box-shadow:0 0 0 3px #dbe6fb; }
+  .prip-karta-hlava { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
+  .prip-text { white-space:pre-wrap; word-break:break-word; font-size:13.5px; margin:4px 0 8px; }
+  .prip-prubeh { display:flex; align-items:center; gap:4px; flex-wrap:wrap; font-size:11.5px; margin:6px 0; }
+  .prip-krok { padding:2px 8px; border-radius:12px; background:#eef0f4; color:var(--mut); }
+  .prip-krok.hotovy { background:#dcfce7; color:#166534; font-weight:700; }
+  .prip-krok-sip { color:#b6bfcc; }
+  .prip-odpoved { background:#eef3fc; border-left:3px solid #0B2E6B; padding:7px 10px; border-radius:6px; font-size:13px; white-space:pre-wrap; margin-top:6px; }
+  .prip-odpoved.oranzova { background:#fff7ed; border-left-color:#ea580c; color:#7c2d12; }
+  .prip-nova-stitek { color:#0B2E6B; font-weight:700; }
+  .stav-pill.prip-stav-nova { background:#dbeafe; color:#1e40af; border:1px solid #93c5fd; }
+  .stav-pill.prip-stav-fronta, .stav-pill.prip-stav-resi, .stav-pill.prip-stav-test { background:#fef3c7; color:#92400e; border:1px solid #fcd34d; }
+  .stav-pill.prip-stav-hotovo { background:#dcfce7; color:#166534; border:1px solid #86efac; }
+  .stav-pill.prip-stav-odlozeno, .stav-pill.prip-stav-zamitnuto, .stav-pill.prip-stav-duplicitni { background:#ffedd5; color:#9a3412; border:1px solid #fdba74; }
+  .prip-vyber-lista { position:fixed; top:0; left:0; right:0; z-index:62; background:#0B2E6B; color:#fff; padding:10px 16px;
+    display:flex; align-items:center; justify-content:center; gap:14px; font-weight:700; box-shadow:0 4px 16px rgba(0,0,0,.3); }
+  .prip-vyber-ram { position:fixed; z-index:62; pointer-events:none; border:2px dashed #f97316; background:rgba(249,115,22,.08); border-radius:3px; }
+  .prip-filtry { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:8px 0; }
+  .prip-filtry input[type=search] { flex:1; min-width:180px; padding:4px 8px; }
+  button.mini.prip-cip-filtr { border-radius:14px; }
+  .prip-sp-mrizka { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:14px; align-items:start; }
+  .prip-tabulka { width:100%; font-size:12.5px; border-collapse:collapse; }
+  .prip-tabulka th, .prip-tabulka td { text-align:left; padding:5px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .modal .tab-scroll > table.prip-tabulka { min-width:560px; }
+  .prip-tabulka tr.prip-neprectena td { font-weight:700; background:#f5f8ff; }
+  .prip-tabulka tr.prip-vybrana td { background:#e0eaff; }
+  .prip-bunka-text { max-width:240px; overflow:hidden; text-overflow:ellipsis; }
+  .prip-sp-detail { border:1px solid var(--line); border-radius:10px; padding:12px; background:#fff; }
+  .prip-kontext { width:100%; font-size:12.5px; table-layout:fixed; } .prip-kontext td { word-break:break-word; overflow-wrap:anywhere; padding:3px 0; vertical-align:top; } .prip-kontext th { text-align:left; color:var(--mut); width:34%; vertical-align:top; padding:3px 6px 3px 0; }
+  .prip-snimek { position:relative; border:1px solid var(--line); border-radius:6px; overflow:hidden; }
+  .prip-snimek img { display:block; width:100%; }
+  .prip-snimek-ram { position:absolute; border:2px dashed #f97316; background:rgba(249,115,22,.12); pointer-events:none; }
+  .prip-osa { margin:0; padding-left:18px; font-size:12.5px; } .prip-osa li { margin:4px 0; }
+  .prip-akce { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .prip-dup { display:inline-flex; gap:4px; align-items:center; }
+  .prip-nast > div, .prip-nast > label { margin:6px 0; }
+  .prip-klic { background:#fefce8; border:1px solid #fde047; border-radius:8px; padding:8px 10px; margin:8px 0; word-break:break-all; }
+  @media (max-width: 980px) { .prip-sp-mrizka { grid-template-columns:1fr; } }
+  @media print { .prip-fab, .prip-panel, .prip-vyber-lista, .prip-vyber-ram { display:none !important; } }
 </style>
 </head>
 <body>

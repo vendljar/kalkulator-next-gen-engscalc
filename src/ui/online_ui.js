@@ -376,6 +376,8 @@ function onlinePoPrihlaseni(ja, hesloPrihlaseni) {
   return Promise.all([onlineNactiProgram(), onlineNactiFirmu(), onlineNactiZobrazeni(), onlineNactiRejstrik(),
                       onlineNactiFunkce(),
                       onlineNactiSablony(),
+                      /* připomínky z aplikace (PR) — chybu spolknou samy */
+                      typeof pripominkyPoPrihlaseni === 'function' ? pripominkyPoPrihlaseni() : Promise.resolve(),
                       /* zveřejněný slovník překladů (#401) — na ceníku nezávisí */
                       onlineNactiSlovnik(),
                       /* controlling (#447) — jen administrátor; chyba načtení
@@ -3094,6 +3096,7 @@ const IKONA_OKO = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="
 function renderOnlineLista() {
   const el = document.getElementById('onlineLista');
   if (!el) return;
+  if (typeof pripFabKresli === 'function') pripFabKresli();   // PR: plovoucí tlačítko Připomínka (mimo překreslovaný strom)
   if (!onlineMozne()) { el.innerHTML = ''; return; }
   if (!ONLINE_STAV.ja) {
     /* Tlačítko svítí VŽDY, když nikdo není přihlášený – ne jen v nouzovém
@@ -3139,7 +3142,8 @@ function renderOnlineLista() {
   const kc = jeAdminOnline() && !nahled && ONLINE_STAV.kopieDiskCeka;
   const kopieTl = kc ? `<button class="mini" id="online-lista-kopie-disk" onclick="onlineKopieDiskTed()"
        title="${esc(kc.text)}" style="border-color:#fbbf24;color:#fbbf24">⚠ Zkopírovat zálohu na Disk teď</button>` : '';
-  el.innerHTML = jmenoHtml + nahledMenuHtml() + kopieTl + `
+  const pripTl = typeof pripominkyListaTlacitko === 'function' ? pripominkyListaTlacitko() : '';   // PR: jen správce
+  el.innerHTML = jmenoHtml + nahledMenuHtml() + kopieTl + pripTl + `
     <button class="mini" onclick="otevriMujProfil()">Můj profil</button>
     <button class="mini" onclick="otevriZmenaHesla()">Změnit heslo</button>
     ${typeof heatPrepinacHtml === 'function' ? heatPrepinacHtml() : ''}
