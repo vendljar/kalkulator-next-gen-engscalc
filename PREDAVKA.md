@@ -44,7 +44,7 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
   bez zdroje = nepotvrzená (zábrana, 403). Svěřené LAK-1/LAK-2, otázky #716. Testy `test_666_lakovani` (53 + 31), revize Fable L1/L2 opraveny,
   `overit_lakovani` 13, mutace [LAK] 10/10 + 12/12, kolo proti 36e2681 VŠE ZELENÉ, SHODA 367/367. PG blok přesunut (je v archivu 2026-11).
 - **JT #713** (`claude/jt-jazyk-tisku`, prac.): HOTOVO, detail `podklady/predavky/JT_jazyk_tisku.md`.
-- **NN** (`claude/nn-nizke-nalezy`, v22.11.10, nad 6d3f3b4): #702 B237–B256, #703 mez, #705, #708, #711, #712, N1, PR-T1/T2; revize Fable R2–R5 (R2 mez → #721), nové #718–#720. Kolo viz CHANGELOG. Detail MEZE oddíl NN.
+- **NN** (`claude/nn-nizke-nalezy`, v22.11.10, nad ae0b542): #702 B237–B256, #703 mez, #705, #708, #711, #712, N1, PR-T1/T2; revize Fable R2–R5 (R2 mez → #722), nové #719–#721. Kolo viz CHANGELOG. Detail MEZE oddíl NN.
 - **PR #707** (`claude/pr-pripominky`, v22.11.5): Připomínky z aplikace, mez B257, HOTOVO; revize poradce před sloučením. Detail a bezpečnostní rozhodnutí: `podklady/predavky/PR_pripominky.md`.
 - **BZ** (`claude/bz-bezpecnost`, v22.11.3, nad cda289e): opravy auditu 20. 11. (rozhodnutí J. V. 21. 11.), #696–#704
   prac. Testy `netlify/test_bz_bezpecnost.mjs`, `test_bz_pipedrive.mjs`, mutace [BZ] 21. **Před sloučením revize Fable.**

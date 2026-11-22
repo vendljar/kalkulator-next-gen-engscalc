@@ -2399,7 +2399,7 @@ Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md` (tabulka �
   a prodaná varianta pak termíny počítá z aktuální tabulky Firmy (stav před D8). Odmítnout to nejde:
   skutečný klient snímek v cestě „Prodáno po neuloženém tisku klonu“ neposílá (`overit_klon_tisk` #555)
   a server ho doplnit nemůže — rozbil by snímek zámku spočítaný klientem. Podvržený (nesedící) snímek
-  u nového zámku se odmítne 409. Úplná oprava = klient pošle snímek vždy (#721).
+  u nového zámku se odmítne 409. Úplná oprava = klient pošle snímek vždy (#722).
 - **#711 — počítadla klíče koordinace — OPRAVENO.** Viz B257.
 - **#712 — připomínky při VYP — OPRAVENO.** Přihlášení a `/api/ja` nesou `pripominky {zapnuto,
   smiOdesilat}`; při vypnuté funkci klient nic nenačítá a tlačítko do stránky nevkládá.
