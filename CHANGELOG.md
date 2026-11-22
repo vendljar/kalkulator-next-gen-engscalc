@@ -8,6 +8,16 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.11.4 — BZ Z2: nestabilní kontrola rejstříku výjimek (test_vyjimky), větev claude/bz-bezpecnost
+
+Nad integrací `fe747c6` (v22.11.3). Jen test, kód aplikace beze změny.
+
+- **Z2 (revize Fable 2. kolo):** `test_vyjimky` „rejstřík: čekající výjimka“ hledal sazbu i v razítku `pozadalKdy` —
+  s hodinami s milisekundami 100 padal. Kontroluje se jen hodnoty části výjimky bez časových razítek (`*Kdy`).
+  Pojistka: hodiny s ms = 100 (`Date` s pevnými milisekundami) před opravou 83/1, po opravě 84/0.
+- **Roadmapa:** #704 otázka (7) pro J. V. — pravidlo „číslo nabídky sedí“ pustí zápis do cizího dealu přes novou
+  zakázku s číslem dealu (rozhodnout před zapnutím `PIPEDRIVE_ZAPIS`); #706 statická kontrola značek konfliktu v kole.
+
 ## v22.11.3 — BZ: opravy bezpečnostního auditu 20. 11. 2026 (B231–B236, B195), větev claude/bz-bezpecnost
 
 Nad integrací `cda289e` (v19.11.11), sloučeno s integrací `cedb857` (v22.11.2). Rozhodnutí J. V. 21. 11. 2026 (přes koordinaci). Mění bezpečnostní meze a chování

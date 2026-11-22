@@ -153,9 +153,11 @@ console.log('===== směs ceníku: žádost, schválení, zámek =====');
   const zad = (rj.zadosti || []).find(x => x.cast === 'vyjimka' && x.cislo === s.a.cislo);
   test('rejstřík: čekající výjimka je v přehledu (počet položek, bez obsahu a hodnot)',
     !!zad && zad.vyjimka.polozek === 2 && !('obsah' in zad.vyjimka) && !('otisk' in zad.vyjimka)
-    /* BZ (revize Fable, bod 4): sazba se hledá jen v části výjimky — v celém záznamu ji
-     * občas „našlo“ ms razítko nebo base36 id (~0,3 % pádů). */
-    && !JSON.stringify(zad.vyjimka).includes(String(V1.profilasKgKc)), zad);
+    /* BZ (revize Fable, bod 4; Z2): sazba se hledá jen v hodnotách části výjimky BEZ
+     * časových razítek (*Kdy) — v celém záznamu i v `pozadalKdy` ji „našlo“ ms razítko
+     * (hodiny s ms = 100) nebo base36 id. */
+    && !JSON.stringify(Object.entries(zad.vyjimka).filter(([k]) => !/kdy$/i.test(k)).map(([, h]) => h))
+      .includes(String(V1.profilasKgKc)), zad);
   test('rejstřík: klient pole výjimky zná (žádné neznámé klíče)', SCHV.schvalovaniRejstrikNeznameKlice(rj.zadosti).length === 0,
     SCHV.schvalovaniRejstrikNeznameKlice(rj.zadosti));
   const zr = SCHV.schvalovaniSeznamRejstrik(rj.zadosti).find(x => x.cast === 'vyjimka');
