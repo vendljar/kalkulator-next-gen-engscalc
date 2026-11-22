@@ -67,7 +67,8 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 - **DS** (`claude/ds-sablony`, v21.11.3, nad cda289e): #648 „Šachta N“ v EN/DE/FR nabídce a SoD jako Shaft/Schacht/Gaine N
   (`vsNazevPreloz`), #649 věta správy šablon po C7, #650 „nevytiskne se“ u smlouvy bez jazykové šablony. Cenu nemění.
 
-- **VZD** (`claude/vzd-drobnosti`): hotovo, detail v CHANGELOG v22.11.1; #674 d a #665 podpis k potvrzení J. V.
+- **VZD** (`claude/vzd-drobnosti`, v22.11.1, s integrací 885577e): HOTOVO. Kolo VŠE ZELENÉ (505/0/7, hodiny 410/0/1, 9/9, SHODA 359/359),
+  mutace [VZD] jádro 16/16, server 4/4. #674 d a podpis u #665 k potvrzení J. V. Detail v CHANGELOG.
 
 ## Čeká na J. V.
 
