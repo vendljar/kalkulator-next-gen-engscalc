@@ -8,7 +8,6 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-<<<<<<< HEAD
 ## v22.11.2 — HN: zpevnění testů kola (#638, #644, #646, #647, #695), větev claude/hn-harnessy
 
 Nad integrací `cda289e` (v19.11.11). Jen testy, harnessy a nástroje kola — **kód aplikace beze změny**, cena ani
@@ -47,7 +46,6 @@ dokumenty se nemění (porovnání sestavení proti integraci SHODA). Verzi pře
 Kolo `--bez-mutaci --proti origin/claude/integrace-16-10` (porovnání proběhlo už proti nové integraci 885577e, v21.11.4):
 **VŠE ZELENÉ** — sady 496/0/6, hodiny 401/0/1, statické 10/10, porovnání SHODA 367/367 (nově i `k40:*`). Přeskočené jen
 test.js a 5 harnessů bez `KNG_PODKLADY` (`overit_sod.mjs` už ne). Mutace nespuštěny — dávka nesahá do jádra ani serveru.
-=======
 ## v22.11.1 — VZD: drobnosti víc zákazníků a dokumentů (#673, #674, #665, #683, #635), větev claude/vzd-drobnosti
 
 Nad integrací `cda289e` (v19.11.11), sloučeno s integrací `885577e` (v21.11.4). Cenu nemění. Mění text dotisku odeslané nabídky („Vypracoval“, #665, rozhodnutí
@@ -134,7 +132,6 @@ Nad integrací `cda289e` (v19.11.11). Rozhodnutí J. V. 21. 11. 2026 (NPT-N4 #69
 
 - `nastroje/vyrob_sablony.js --cn-v18`: v EN/DE/FR šabloně CN přeloží v bloku „Kancelář“ popisky IČ/Tel. ze slovníku náhledu (jako „Kompletní náhled podkladů“); CZ beze změny, řádek SVĚTLÍKY se nepřidává (J. V.: ve Wordu ho nepotřebuje). Test `src/test_sb_kancelar.js` 25/25 (pojistka: s popiskem česky 20 FAIL), mutace [SB] 2/2.
 - Šablony CN v18 (CZ/EN/DE/FR) a PROJ v9 (CZ/EN/DE/FR) vyrobeny z test v17/v8 a předány J. V. (mimo repo) — nahrát na test až po odeslání do main. Číslo stránky v CN v18 ověřit ve Wordu (LibreOffice pole ve VML textovém poli nepřepočítává).
->>>>>>> origin/claude/integrace-16-10
 
 ## v19.11.11 — D3 #688: Objednávka / Smlouva PROJ z nabídky PROJ, větev claude/d3-objednavka-proj
 
