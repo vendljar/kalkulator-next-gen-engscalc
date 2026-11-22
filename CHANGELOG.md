@@ -20,7 +20,7 @@ Nad integrací `6d3f3b4` (v22.11.9). Roadmapa #719 (R2) a otázka #718 (R1) — 
   před webhookem nesmí potvrdit její autor (jen správce nebo jiný uživatel), případně potvrzení dokládat z CRM.
 - **Testy:** `test_bz_pipedrive` R2 (webhook naváže předem založenou zakázku → autor vazbu zruší → odkaz vrácen do dealu
   → deal znovu připojen; + starší data bez seznamu odmítnutých, odmítnutý deal bez vazby). Mutace [RJ] 22/22 (R2 ×2).
-  Kolo `--bez-mutaci --proti 60086f7` (= kód 6d3f3b4): VŠE ZELENÉ (sady 517/0/6, hodiny 418/0/1, statické 11/11, SHODA 367/367).
+  Kolo `--bez-mutaci --proti 6d3f3b4`: VŠE ZELENÉ (sady 517/0/6, hodiny 418/0/1, statické 11/11, SHODA 367/367).
 
 ## v22.11.9 — RJ revize (koordinace 22. 11.): N1, N2, I3, větev claude/rj-rozhodnuti
 
