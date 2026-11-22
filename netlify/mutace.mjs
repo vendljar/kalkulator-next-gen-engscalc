@@ -47,7 +47,9 @@ if (!process.env.ADMIN_EMAIL) process.env.ADMIN_EMAIL = 'spravce@priklad.cz';
  * je soubor zmutovaný. Běžný běh ji nenastavuje. */
 const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
-  : [/* PR (21. 11. 2026): připomínky z aplikace — API, klíč koordinace, limity (rychlá sada). */
+  : [/* RJ (22. 11. 2026): rozhodnutí J. V. — zámek „nesouhlasi“ 409, strana, podpis původního zpracovatele (rychlá sada). */
+     'test_rj_rozhodnuti.mjs',
+     /* PR (21. 11. 2026): připomínky z aplikace — API, klíč koordinace, limity (rychlá sada). */
      'test_pripominky.mjs', '../src/test_pripominky.js',
      /* BZ (21. 11. 2026): opravy bezpečnostního auditu B231–B236, B195 (rychlé sady). */
      'test_bz_bezpecnost.mjs', 'test_bz_pipedrive.mjs',
@@ -266,7 +268,8 @@ const filtr = filtrZArgv(process.argv.slice(2));
 const MUTACE = [
   /* RJ (22. 11. 2026): rozhodnutí J. V. — #704 (2)(4)(6)(7), #665 podpis původního zpracovatele,
    * #710-4 koordinace a uzavřené připomínky. Hlídají test_rj_rozhodnuti.mjs, test_bz_pipedrive.mjs,
-   * test_vsd_pd_poznamka.mjs, test_pripominky.mjs. [RJ] */
+   * test_vsd_pd_poznamka.mjs, test_pripominky.mjs. Přepis kopie podpisu týmž obsahem (klíč = otisk
+   * obsahu) je ekvivalentní mutace, proto tu není. [RJ] */
   { nazev: "RJ #704-7: číslo nabídky zase dokládá vazbu dealu [RJ]", soubor: "lib/pd_overeni.mjs",
     hledej: "  if (odkaz && mapa.odkazKalkulace && pdHodnota(cf[mapa.odkazKalkulace]).trim() === odkaz) return { ok: true, zdroj: 'odkaz' };\n",
     nahrad: "  if (odkaz && mapa.odkazKalkulace && pdHodnota(cf[mapa.odkazKalkulace]).trim() === odkaz) return { ok: true, zdroj: 'odkaz' };\n  if (String(zak.cislo || '').trim() && String(cf[mapa.cisloNabidky] || d.title || '').includes(String(zak.cislo).trim())) return { ok: true, zdroj: 'cislo' };\n",
@@ -307,10 +310,6 @@ const MUTACE = [
     hledej: "    return o && podpisOtisk(o) === otisk ? o : '';",
     nahrad: "    return o;",
     proc: "upravená záloha by pod odeslanou nabídku vložila jiný obrázek", sady: ["test_rj_rozhodnuti.mjs"] },
-  { nazev: "RJ #665: výměna podpisu v účtu přepíše kopii [RJ]", soubor: "lib/sdilene.mjs",
-    hledej: "    if (!(await p.cti(PODPIS_ZAMKU_PREDPONA + otisk)))\n      await p.zapis(",
-    nahrad: "    await p.zapis(",
-    proc: "ekvivalentní při stejném obsahu — hlídá, že klíč je otisk obsahu (jiný sken = jiný klíč)", sady: ["test_rj_rozhodnuti.mjs"] },
   { nazev: "RJ #710-4: koordinace mění i uzavřenou správcem [RJ]", soubor: "../src/pripominky.js",
     hledej: "    if (pripominkaUzavrelSpravce(p) && (z.stav !== undefined || z.odpoved !== undefined))",
     nahrad: "    if (false && pripominkaUzavrelSpravce(p))",
