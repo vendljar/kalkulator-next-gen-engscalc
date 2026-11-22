@@ -43,6 +43,16 @@ Větev `claude/pr-pripominky` nad integrací `cda289e`. Pracovní čísla roadma
 6. Meze: počítadla řazená jen v jedné instanci (jako B158); text píše obchodník volně → koordinace ho
    nesmí kopírovat doslova do repa ani kokpitu.
 
+## Revize (Fable, 22. 11. 2026) — SLOUČIT PO OPRAVĚ, opraveno
+
+- N1 STŘEDNÍ: místo ke koordinaci jen z popisu prvku (label/aria/title/placeholder, bez číslic a @), nikdy obsah
+  stránky ani nadpis okna; koordinace dostane obrazovku a selektor. Klient značí `misto.zdroj`.
+- N2 STŘEDNÍ: `pripominkyReset()` při odhlášení a přihlášení (text, náhled snímku, stav správce, klíč); nový klíč
+  zmizí po opuštění záložky nebo zavření Nastavení.
+- N3 NÍZKÁ: cesta klíče jen pro `Bearer` nebo `?pro=koordinace`. N6 NÍZKÁ: čerstvý snímek při odeslání.
+- I2 text CSP opraven, I3 mez přečíslována B231 → B257. N4, I1 do roadmapy (prac. #696, #697), N5 otázka v #695.
+- Pojistky: jádro 7 FAIL → 72/0, server 3 FAIL → 76/0, harness N1/N2/N6 FAIL → 55/0; mutace [PR] +4.
+
 ## Výsledky
 
 - `src/test_pripominky.js` 66/0, `netlify/test_pripominky.mjs` 74/0, `test_prava` 1039/0 (+8 řádků, PATCH),

@@ -19,6 +19,8 @@ Nad integrací `cda289e`. Cenu ani dokumenty nemění (porovnání sestavení SH
   (do fronty oprav, odpovědět a uzavřít, odložit, zamítnout, duplicitní), nastavení a klíč pro koordinaci.
 - **Server:** `/api/pripominky`, záloha a obnova bez snímků, mez B257. Testy `test_pripominky` (jádro 66, server 74),
   `overit_pripominky` 47, mutace `[PR]` 23/23.
+- **Revize (22. 11.):** označené místo ke koordinaci jen z popisu prvku (bez cen a jmen), úplné vynulování stavu
+  připomínek po odhlášení, klíč jen se schématem Bearer, čerstvý snímek při odeslání; mez přečíslována na B257.
 - **Nález #693 (prac.):** useknutá bublina „Opláštit i prohlubeň“ (rovná uvozovka v title) — neopraveno, mimo rozsah.
 
 ## v19.11.11 — D3 #688: Objednávka / Smlouva PROJ z nabídky PROJ, větev claude/d3-objednavka-proj
