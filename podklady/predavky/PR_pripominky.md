@@ -15,7 +15,7 @@ Větev `claude/pr-pripominky` nad integrací `cda289e`. Pracovní čísla roadma
   (oranžově u odložení/zamítnutí), nové zvýrazněné a po otevření přečtené. Panel žije mimo překreslovaný
   strom (render() rozepsaný text nesmaže).
 - **Snímek obrazovky — rozhodnutí:** serializace viditelné části DOM do SVG `<foreignObject>` → `<canvas>`
-  → JPEG (≤ 1280 px, ≤ 700 kB). Bez knihoven (CSP `script-src 'self'`). V Chromiu ověřeno (plátno se
+  → JPEG (≤ 1280 px, ≤ 700 kB). Bez knihoven (CSP `script-src 'self' 'unsafe-inline'` nepustí CDN, aplikace je jeden soubor). V Chromiu ověřeno (plátno se
   nezašpiní). Neplatná jména atributů se z klonu odfiltrují (nález #693 rozbíjel XML). Hesla se nevkládají.
   Selhání nebo > 4 s = odeslat bez snímku; strukturovaný kontext jde vždy.
 - **Správce**: Nastavení → „💬 Připomínky (N)“ hned za Uživateli (jen admin, natvrdo jako Analytika),
@@ -26,7 +26,7 @@ Větev `claude/pr-pripominky` nad integrací `cda289e`. Pracovní čísla roadma
 - **Server** `netlify/functions/pripominky.mjs` + `src/pripominky.js` (přes `lib/pripominky_modul.cjs`).
   Záloha: `pripominky` v otisku, ruční záloze, kopii na Disk a obnově (s očistou); `pripominky_snimky`,
   `pripominky_limit` a `program/pripominky_klic` mimo zálohu (N4 výjimky).
-- **Dokumentace**: B231 v `BEZPECNOST_MEZE.md`, příručka obchodníka kap. 34, správce A16 (+ snímky
+- **Dokumentace**: B257 v `BEZPECNOST_MEZE.md`, příručka obchodníka kap. 34, správce A16 (+ snímky
   v generátorech), provozní příloha (API, úložiště).
 
 ## Bezpečnostní rozhodnutí (pro poradce)

@@ -30,7 +30,7 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 
 ## Běžící dávky
 
-- **PR #692** (`claude/pr-pripominky`): Připomínky z aplikace, mez B231, HOTOVO; revize poradce před sloučením. Detail a bezpečnostní rozhodnutí: `podklady/predavky/PR_pripominky.md`.
+- **PR #692** (`claude/pr-pripominky`): Připomínky z aplikace, mez B257, HOTOVO; revize poradce před sloučením. Detail a bezpečnostní rozhodnutí: `podklady/predavky/PR_pripominky.md`.
 - **PG** (`claude/pg-tisk`, v19.11.10, nad 042fcbc): #684 tlačítka tisku CN OCK (náhled podkladů → Word modře → náhled
   a tisk), #685 vlastní řádek TS v SOUČÁSTÍ DODÁVKY NENÍ (`extra[i].sekce='neni'`), #686 DALŠÍ UJEDNÁNÍ v nabídce PROJ
   (`PJ.dalsiUjednani`, Word přes šablonu PROJ v9 `--proj-v9`, kontrola `dalsiUjednaniWordProj`), #687 číslo stránky: vada šablony CN v9–v17 (pevná „1“ v záhlaví) → `--cn-v18`,

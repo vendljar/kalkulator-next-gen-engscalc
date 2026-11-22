@@ -109,8 +109,26 @@ test('autor: průběh bez „kdo" a textu', pa.prubeh.every(x => Object.keys(x).
 const pk = P.pripominkaProKoordinaci(k1.pripominka);
 test('koordinace: bez autora, zakázky, polí a snímku', !('autor' in pk) && !('autorJmeno' in pk) && !('snimek' in pk)
   && JSON.stringify(pk).indexOf('2026 - OPR') < 0 && JSON.stringify(pk).indexOf('Pole 1') < 0, pk);
-test('koordinace: obrazovka, místo a verze ano', pk.kontext.obrazovka === 'Kalkulace OCK' && pk.kontext.misto === 'Šachta › Výška'
+test('koordinace: obrazovka a verze ano, místo z obsahu ne', pk.kontext.obrazovka === 'Kalkulace OCK' && pk.kontext.misto === ''
   && pk.kontext.verze === '21.11.1', pk.kontext);
+
+/* 6b) N1 revize (22. 11. 2026): „označené místo“ nesmí ke koordinaci nést obsah
+ * stránky (cenu, jméno zákazníka). Popisek z popisů prvku (label, aria, title,
+ * placeholder) jde, jen bez číslic a zavináče; obsah prvku a nadpis okna ne.
+ * Pojistka: před opravou koordinace dostala „sekce › popisek“ i z obsahu. */
+const kOb = P.pripominkaKontextOciste({ obrazovka: 'Kalkulace OCK', misto: { sekce: 'Zákazník Novák s.r.o.', popisek: 'Celkem 1 250 000 Kč',
+  zdroj: 'obsah', selektor: '#kalk-nabidka > td' } });
+test('N1: kontext drží původ popisku (obsah)', kOb.misto && kOb.misto.zdroj === 'obsah', kOb.misto);
+test('N1: neznámý původ = obsah (bezpečná strana)', P.pripominkaKontextOciste({ misto: { popisek: 'x', zdroj: 'cokoli' } }).misto.zdroj === 'obsah');
+const pOb = P.pripominkaProKoordinaci(Object.assign({}, p1, { kontext: kOb }));
+test('N1: koordinace z obsahu prvku nedostane popisek ani sekci', !/Novák|1 250|Celkem/.test(JSON.stringify(pOb)), pOb.kontext);
+test('N1: koordinace dostane obrazovku a selektor', pOb.kontext.obrazovka === 'Kalkulace OCK' && pOb.kontext.selektor === '#kalk-nabidka > td', pOb.kontext);
+const kPo = P.pripominkaKontextOciste({ misto: { sekce: 'Zákazník Novák s.r.o.', popisek: 'Výška šachty', zdroj: 'popis' } });
+const pPo = P.pripominkaProKoordinaci(Object.assign({}, p1, { kontext: kPo }));
+test('N1: popisek z popisu prvku jde, nadpis okna ne', pPo.kontext.misto === 'Výška šachty' && !/Novák/.test(JSON.stringify(pPo)), pPo.kontext);
+const pPc = P.pripominkaProKoordinaci(Object.assign({}, p1, { kontext: P.pripominkaKontextOciste({ misto: { popisek: 'Cena 12 000 Kč', zdroj: 'popis' } }) }));
+test('N1: popis s číslicí nebo zavináčem ke koordinaci nejde', pPc.kontext.misto === ''
+  && P.pripominkaProKoordinaci(Object.assign({}, p1, { kontext: P.pripominkaKontextOciste({ misto: { popisek: 'jan@priklad.cz', zdroj: 'popis' } }) })).kontext.misto === '');
 
 /* 7) průběh, filtry, počty, uchovávání */
 test('kroky: Přijato → Řeší se → Testuje se → Hotovo', P.PRIPOMINKA_KROKY.join('|') === 'Přijato|Řeší se|Testuje se|Hotovo');

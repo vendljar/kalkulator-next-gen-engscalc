@@ -10,8 +10,9 @@
  * SPRÁVCE: Nastavení → „💬 Připomínky (N)" hned za Uživateli a tlačítko
  * „💬 Připomínky N" v horní liště. Tabulka + detail, akce, nastavení, klíč.
  *
- * SNÍMEK OBRAZOVKY (rozhodnutí dávky, zdůvodnění v BEZPECNOST_MEZE.md B231):
- * CSP je script-src 'self' — žádná knihovna (html2canvas apod.). Snímek se
+ * SNÍMEK OBRAZOVKY (rozhodnutí dávky, zdůvodnění v BEZPECNOST_MEZE.md B257):
+ * CSP povoluje skripty jen z vlastní domény (`script-src 'self' 'unsafe-inline'`,
+ * žádné CDN) a aplikace je jeden soubor — žádná knihovna (html2canvas apod.). Snímek se
  * dělá serializací viditelné části DOM do SVG <foreignObject>, vykreslí se
  * do <canvas> a odešle jako JPEG (max. šířka 1280 px). Když prohlížeč
  * vykreslení odmítne (zašpiněné plátno, chyba, víc než 4 s), připomínka
@@ -35,10 +36,34 @@ function pripPrihlasen() { return typeof ONLINE_STAV !== 'undefined' && !!ONLINE
 function pripJeSpravce() { return typeof jeAdminOnline === 'function' && jeAdminOnline(); }
 function pripSmiOdesilat() { return pripPrihlasen() && !!(PRIP.nastaveni && PRIP.nastaveni.smiOdesilat); }
 
+/* ---------- úplný reset (N2 revize 22. 11. 2026) ----------
+ * Odhlášení i nové přihlášení vynuluje CELÝ stav: rozepsaný text, náhled
+ * snímku (plný snímek předchozího uživatele), seznam a snímky správce,
+ * záznam a nový klíč koordinace. Panel a výběr místa se zavřou. */
+function pripominkyReset() {
+  if (PRIP.vybira && typeof pripMistoKonec === 'function') { try { pripMistoKonec(null); } catch (e) { /* nic */ } }
+  Object.assign(PRIP, { nastaveni: null, moje: [], novych: 0, mojeNacteno: false, panel: false, zalozka: 'nova',
+    typ: '', text: '', misto: null, snimekPrilozit: true, nahled: '', nahledBezi: false,
+    odesilam: false, odeslano: null, hlaska: '', zvyraznit: [], vybira: false,
+    sp: { seznam: [], pocty: {}, neprectenych: 0, nacteno: false, nacita: false, filtr: 'nove', zdroj: 'oba', hledej: '',
+      vybrana: '', odpoved: '', dupS: '', snimky: {}, nastaveni: null, klic: null, zaznam: [], novyKlic: '', hlaska: '', hlaskaTyp: '' } });
+  if (typeof document !== 'undefined') {
+    [PRIP_PANEL_ID, PRIP_LISTA_ID, PRIP_RAM_ID].forEach(id => { const e = document.getElementById(id); if (e) { e.style.display = 'none'; if (id === PRIP_PANEL_ID) e.innerHTML = ''; } });
+    pripFabKresli();
+  }
+}
+/* Nový klíč se ukazuje jen dokud správce nezavře záložku Připomínky (N2). */
+function pripominkyOpustit() { PRIP.sp.novyKlic = ''; }
+
 /* ---------- načtení po přihlášení ---------- */
 function pripominkyPoPrihlaseni() {
-  PRIP.nastaveni = null; PRIP.moje = []; PRIP.novych = 0; PRIP.mojeNacteno = false;
-  PRIP.sp.nacteno = false; PRIP.sp.seznam = []; PRIP.sp.neprectenych = 0;
+  pripominkyReset();
+  return pripominkyNactiZnovu();
+}
+/* Načte nastavení, svoje připomínky a (správce) seznam — bez resetu stavu
+ * (volá ho i uložení nastavení, které nesmí smazat hlášku ani výběr). */
+function pripominkyNactiZnovu() {
+  PRIP.nastaveni = null;
   return onlineApi('/api/pripominky?nastaveni=1').then(n => {
     PRIP.nastaveni = n;
     if (n.nastaveni) { PRIP.sp.nastaveni = n.nastaveni; PRIP.sp.klic = n.klic; PRIP.sp.zaznam = n.zaznam || []; }
@@ -92,7 +117,7 @@ function pripPanelOtevri(zalozka) {
   pripPanelKresli(); pripFabKresli();
 }
 function pripPanelZavri() {
-  PRIP.panel = false;
+  PRIP.panel = false; PRIP.nahled = '';   // N6: po návratu se snímek pořídí znovu
   const p = document.getElementById(PRIP_PANEL_ID); if (p) p.style.display = 'none';
   pripFabKresli();
 }
@@ -156,7 +181,9 @@ function pripKontext() {
 function pripOdeslat() {
   if (!pripominkaLzeOdeslat(PRIP.typ, PRIP.text) || PRIP.odesilam) return;
   PRIP.odesilam = true; PRIP.hlaska = ''; pripPanelKresli();
-  const snimek = PRIP.snimekPrilozit ? Promise.resolve(PRIP.nahled || pripSnimekPoriz()) : Promise.resolve('');
+  /* N6 revize (22. 11. 2026): snímek se pořizuje ČERSTVÝ při odeslání — ten
+   * z otevření panelu mohl být z jiné obrazovky. Selže-li, použije se náhled. */
+  const snimek = PRIP.snimekPrilozit ? pripSnimekPoriz().then(d => d || PRIP.nahled) : Promise.resolve('');
   snimek.catch(() => '').then(obr => {
     const sn = pripominkaSnimekZkontroluj(obr || '');
     return onlineApi('/api/pripominky', { typ: PRIP.typ, text: PRIP.text, kontext: pripKontext(), snimek: sn.ok ? sn.obrazek : '' });
@@ -299,7 +326,7 @@ function pripMistoKonec(t) {
 function pripMistoZrus() { PRIP.misto = null; PRIP.nahled = ''; if (PRIP.snimekPrilozit) pripNahledObnov(); pripPanelKresli(); }
 /* Popis místa: sekce (nadpis karty / záložka), popisek prvku, selektor,
  * obdélník vůči oknu (správce ho vyznačí ve snímku). Hodnota pole jen
- * u polí, která nejsou cenová (ceny ke koordinaci nesmí — B231). */
+ * u polí, která nejsou cenová (ceny ke koordinaci nesmí — B257). */
 const PRIP_CENOVE = /cen|kč|kc\b|eur|přirážk|prirazk|marž|marz|slev|dph|náklad|naklad|sazb|částk|castk/i;
 function pripMistoPopis(t) {
   const txt = s => String(s || '').replace(/\s+/g, ' ').trim();
@@ -307,14 +334,18 @@ function pripMistoPopis(t) {
   const h = karta && karta.querySelector('h2');
   let sekce = h ? txt(h.textContent) : '';
   if (!sekce) { const m = t.closest('.modal'); const mh = m && m.querySelector('h2'); sekce = mh ? txt(mh.textContent) : pripObrazovkaNazev(); }
-  let popisek = '';
+  /* `zdroj` popisku (N1 revize 22. 11. 2026): 'popis' = popis prvku (label,
+   * aria-label, title, placeholder), 'obsah' = text ze stránky (první buňka
+   * řádku, text prvku) — ten může nést cenu nebo jméno, ke koordinaci nejde. */
+  let popisek = '', zdroj = 'popis';
   const lab = t.closest('label') || (t.id && document.querySelector('label[for="' + CSS.escape(t.id) + '"]'));
   if (lab) popisek = txt(lab.textContent);
+  if (!popisek) popisek = txt(t.getAttribute('aria-label') || t.getAttribute('title') || t.getAttribute('placeholder'));
   if (!popisek && t.closest('td,th')) {
     const tr = t.closest('tr'); const prvni = tr && tr.cells && tr.cells[0];
-    popisek = txt(prvni ? prvni.textContent : '');
+    popisek = txt(prvni ? prvni.textContent : ''); zdroj = 'obsah';
   }
-  if (!popisek) popisek = txt(t.getAttribute('aria-label') || t.getAttribute('title') || t.getAttribute('placeholder') || t.textContent);
+  if (!popisek) { popisek = txt(t.textContent); zdroj = 'obsah'; }
   popisek = popisek.slice(0, 80);
   const r = t.getBoundingClientRect();
   const cesta = [];
@@ -326,7 +357,7 @@ function pripMistoPopis(t) {
   }
   const jePole = /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName) && t.type !== 'password';
   const hodnota = jePole && !PRIP_CENOVE.test(popisek + ' ' + (t.id || '') + ' ' + (t.name || '')) ? txt(t.value).slice(0, 120) : '';
-  return { sekce: sekce.slice(0, 100), popisek, selektor: cesta.join(' > ').slice(0, 300), hodnota,
+  return { sekce: sekce.slice(0, 100), popisek, zdroj, selektor: cesta.join(' > ').slice(0, 300), hodnota,
     rect: { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height), vw: window.innerWidth, vh: window.innerHeight } };
 }
 
@@ -553,7 +584,7 @@ function pripSpUlozNastaveni() {
     intervalKoordinace: h('prip-n-interval').value, limitDen: +h('prip-n-limit').value, uchovatDni: +h('prip-n-dni').value };
   onlineApi('/api/pripominky', { akce: 'nastaveni', nastaveni: n }).then(d => {
     PRIP.sp.nastaveni = d.nastaveni; PRIP.sp.hlaska = 'Nastavení připomínek uloženo.'; PRIP.sp.hlaskaTyp = 'ok';
-    return pripominkyPoPrihlaseni();
+    return pripominkyNactiZnovu();
   }).catch(e => { PRIP.sp.hlaska = e.message; PRIP.sp.hlaskaTyp = 'chyba'; }).then(() => pripSpravcePrekresli());
 }
 async function pripSpKlic(akce) {

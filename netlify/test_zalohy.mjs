@@ -211,10 +211,10 @@ const ULOZISTE = {
   program: 'klice', zakazky: 'klice',
   uzivatele: 'cele', sablony: 'cele', zakaznici: 'cele', podpisy: 'cele', smazani: 'cele',
   /* PR (21. 11. 2026): připomínky z aplikace — záznamy celé; snímky a počítadla
-   * limitů jsou výjimka (B231, k vědomí J. V. v předávce dávky PR). */
+   * limitů jsou výjimka (B257, k vědomí J. V. v předávce dávky PR). */
   pripominky: 'cele',
-  pripominky_snimky: 'výjimka: snímky obrazovky k připomínkám (PR, B231) — velké, nesou ceny; po obnově záznam zůstane bez snímku',
-  pripominky_limit: 'výjimka: počítadla limitů a záznam použití klíče koordinace (PR, B231), provozní stopa',
+  pripominky_snimky: 'výjimka: snímky obrazovky k připomínkám (PR, B257) — velké, nesou ceny; po obnově záznam zůstane bez snímku',
+  pripominky_limit: 'výjimka: počítadla limitů a záznam použití klíče koordinace (PR, B257), provozní stopa',
   analytika: 'výjimka: statistiky použití, po havárii začnou od nuly (podklad #151, oddíl 3)',
   pd_cache: 'výjimka: cache Pipedrive s osobními daty, maže se po 30 dnech',
   pd_stav: 'výjimka: poslední známý stav dealu (P1) — při uložení se zapisuje i do zakázky, ta se zálohuje; jinak se znovu načte z Pipedrive',
@@ -257,7 +257,7 @@ const KLICE = {
   'spatne:': ['disk_kopie', false],                // #577: počítadlo špatných tokenů na adresu, ne data
   'p/': ['pripominky', true], nastaveni: ['pripominky', true], citac: ['pripominky', true],   // PR: připomínky
   klic_zaznam: ['pripominky_limit', false],        // PR: záznam použití klíče koordinace, ne data
-  pripominky_klic: ['program', 'výjimka: hash klíče koordinace připomínek (PR, B231) — po obnově vydá správce nový'],
+  pripominky_klic: ['program', 'výjimka: hash klíče koordinace připomínek (PR, B257) — po obnově vydá správce nový'],
   'a/': ['aktivita', false],                       // #ON: čas poslední aktivity, ne data
   'o/': ['aktivita', false],                       // #ON: čas odhlášení, ne data
 };

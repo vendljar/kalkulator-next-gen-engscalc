@@ -17,7 +17,7 @@ Nad integrací `cda289e`. Cenu ani dokumenty nemění (porovnání sestavení SH
   Moje připomínky s průběhem a odpověďmi.
 - **Nové — správce:** Nastavení → „💬 Připomínky (N)“ a tlačítko v liště; filtry, detail se snímkem, akce
   (do fronty oprav, odpovědět a uzavřít, odložit, zamítnout, duplicitní), nastavení a klíč pro koordinaci.
-- **Server:** `/api/pripominky`, záloha a obnova bez snímků, mez B231. Testy `test_pripominky` (jádro 66, server 74),
+- **Server:** `/api/pripominky`, záloha a obnova bez snímků, mez B257. Testy `test_pripominky` (jádro 66, server 74),
   `overit_pripominky` 47, mutace `[PR]` 23/23.
 - **Nález #693 (prac.):** useknutá bublina „Opláštit i prohlubeň“ (rovná uvozovka v title) — neopraveno, mimo rozsah.
 

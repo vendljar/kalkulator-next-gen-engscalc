@@ -16,7 +16,7 @@
  *     odpověď, průběh). Kontext a snímek obrazovky vidí jen správce.
  *  3. Koordinace (klíč) dostane jen to, co potřebuje k opravě: číslo, typ,
  *     text, stav, obrazovku, označené místo a verzi. Ne autora, ne zakázku,
- *     ne snímek, ne hodnoty polí (B231).
+ *     ne snímek, ne hodnoty polí (B257).
  *  4. Odložení a zamítnutí bez zdůvodnění neexistuje — autor ho vidí vždy
  *     (rozhodnutí J. V. 21. 11. 2026).
  * ============================================================ */
@@ -64,7 +64,7 @@ const PRIPOMINKA_ZDROJE = [
 ];
 const PRIPOMINKA_ROLE = ['Obchodník', 'Vedoucí', 'Administrátor'];
 
-/* Meze (B231). Snímek je datový zápis JPEG/PNG v base64. */
+/* Meze (B257). Snímek je datový zápis JPEG/PNG v base64. */
 const PRIPOMINKA_TEXT_MIN = 10;
 const PRIPOMINKA_TEXT_MAX = 4000;
 const PRIPOMINKA_ODPOVED_MAX = 4000;
@@ -157,7 +157,12 @@ function pripominkaKontextOciste(v) {
   };
   if (m) {
     const r = m.rect && typeof m.rect === 'object' ? m.rect : {};
-    k.misto = { sekce: _ptxt(m.sekce, 120), popisek: _ptxt(m.popisek, 160), selektor: _ptxt(m.selektor, 300),
+    /* `zdroj` popisku (N1 revize 22. 11. 2026): 'popis' = z popisu prvku
+     * (label, aria-label, title, placeholder), 'obsah' = z obsahu stránky
+     * (text prvku, první buňka řádku — může nést cenu nebo jméno). Neznámé
+     * = 'obsah' (bezpečná strana). Ke koordinaci jde jen 'popis'. */
+    k.misto = { sekce: _ptxt(m.sekce, 120), popisek: _ptxt(m.popisek, 160), zdroj: m.zdroj === 'popis' ? 'popis' : 'obsah',
+      selektor: _ptxt(m.selektor, 300),
       rect: { x: _pcislo(r.x, -20000, 20000), y: _pcislo(r.y, -20000, 20000), w: _pcislo(r.w, 0, 20000), h: _pcislo(r.h, 0, 20000),
         vw: _pcislo(r.vw, 0, 20000), vh: _pcislo(r.vh, 0, 20000) } };
     if (!k.misto.sekce && !k.misto.popisek) k.misto = null;
@@ -269,13 +274,22 @@ function pripominkaProAutora(p) {
     duplicitniS: p.duplicitniS || '',
     prubeh: (p.prubeh || []).map(x => ({ kdy: x.kdy, stav: x.stav })) };
 }
-/* Co smí vidět koordinace (B231): žádný autor, zakázka, pole ani snímek. */
+/* Označené místo pro koordinaci (N1 revize 22. 11. 2026): nadpis okna ani
+ * obsah prvku ne (cena, jméno zákazníka) — jen popisek z popisu prvku a jen
+ * bez číslic a zavináče. Jinak prázdno; zbývá obrazovka a selektor. */
+function pripominkaMistoProKoordinaci(m) {
+  if (!m || m.zdroj !== 'popis') return '';
+  const t = _ptxt(m.popisek, 160);
+  return /[0-9@]/.test(t) ? '' : t;
+}
+/* Co smí vidět koordinace (B257): žádný autor, zakázka, pole ani snímek. */
 function pripominkaProKoordinaci(p) {
   if (!p) return null;
   const k = p.kontext || {};
   return { id: p.id, typ: p.typ, text: p.text, kdy: p.kdy, zmeneno: p.zmeneno, zdroj: p.zdroj, stav: p.stav,
     roadmapa: p.roadmapa || '', odpoved: p.odpoved || '', duplicitniS: p.duplicitniS || '',
-    kontext: { obrazovka: k.obrazovka || '', misto: pripominkaMistoPopis(k.misto), verze: k.verze || '' },
+    kontext: { obrazovka: k.obrazovka || '', misto: pripominkaMistoProKoordinaci(k.misto),
+      selektor: (k.misto && k.misto.selektor) || '', verze: k.verze || '' },
     prubeh: (p.prubeh || []).map(x => ({ kdy: x.kdy, stav: x.stav })) };
 }
 function pripominkaKrok(stav) { const s = pripominkaStav(stav); return s ? s.krok : 0; }
@@ -351,6 +365,6 @@ if (typeof module !== 'undefined')
     PRIPOMINKA_ID_TVAR, PRIPOMINKA_STAVY_KOORDINACE,
     pripominkaTyp, pripominkaStav, pripominkaCislo, pripominkaIdPlatne, pripominkaTextStaci, pripominkaLzeOdeslat,
     pripominkyNastaveniVychozi, pripominkyNastaveniOciste, pripominkySmiOdesilat, pripominkaSnimekZkontroluj,
-    pripominkaKontextOciste, pripominkaMistoPopis, pripominkaNova, pripominkaZmen, pripominkaProAutora,
+    pripominkaKontextOciste, pripominkaMistoPopis, pripominkaMistoProKoordinaci, pripominkaNova, pripominkaZmen, pripominkaProAutora,
     pripominkaProKoordinaci, pripominkaKrok, pripominkaOranzove, pripominkyNovychOdpovedi, pripominkyNeprectenych,
     pripominkyFiltruj, pripominkyPocty, pripominkyKSmazani, pripominkaObnovaOciste, pripominkaEmailText };

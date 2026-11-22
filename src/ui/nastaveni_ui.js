@@ -9,7 +9,8 @@
  * bude skutečné úložiště. */
 
 function otevriNastaveni() { renderNastaveni(); document.getElementById('nastaveni-overlay').style.display = 'flex'; }
-function zavriNastaveni() { document.getElementById('nastaveni-overlay').style.display = 'none'; }
+function zavriNastaveni() { document.getElementById('nastaveni-overlay').style.display = 'none';
+  if (typeof pripominkyOpustit === 'function') pripominkyOpustit(); }   // PR N2: nový klíč jen na záložce
 function nastOtevreno() { const o = document.getElementById('nastaveni-overlay'); return o && o.style.display !== 'none'; }
 function nastRefresh() {
   // změna v Nastavení = důvod zapsat do složky (se zpožděním, viz ui/nastaveni_db_ui.js)
@@ -80,6 +81,7 @@ function nastPanelAktivni() {
 function nastPanel(p) {
   const obnovUcty = p === 'uzivatele' && NAST.panel !== 'uzivatele' && typeof ONLINE_STAV !== 'undefined'
     && ONLINE_STAV.uzivateleNacteno && ONLINE_STAV.bezi && typeof jeAdminOnline === 'function' && jeAdminOnline();
+  if (p !== 'pripominky' && typeof pripominkyOpustit === 'function') pripominkyOpustit();   // PR N2
   NAST.panel = p; renderNastaveni();
   if (obnovUcty) onlineUzivateleNacti().then(() => {
     if (nastOtevreno() && NAST.panel === 'uzivatele') renderNastaveni(); });

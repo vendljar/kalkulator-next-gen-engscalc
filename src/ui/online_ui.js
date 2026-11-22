@@ -481,6 +481,8 @@ function onlineOdhlas() {
     onlinePoslednizapamatuj('');   // po odhlášení se nikam nevracíme
     ONLINE_STAV.kdyUlozeno = null;
     ONLINE_STAV.uzivatele = []; ONLINE_STAV.uzivateleNacteno = false; ONLINE_STAV.formHeslo = '';
+    /* Připomínky (N2 revize PR): rozepsaný text, snímek i klíč nesmí přežít odhlášení. */
+    if (typeof pripominkyReset === 'function') pripominkyReset();
     /* Náhled cizího uživatele se odhlášením ruší — po přihlášení nikdy
      * nikdo nesmí zdědit cizí pohled po předchozím sezení (20. 8. 2026). */
     if (typeof nahledVypni === 'function' && NAST.nahledUzivatel) { NAST.nahledUzivatel = null; NAST.nahledRole = ''; NAST.nahledMenu = false; }

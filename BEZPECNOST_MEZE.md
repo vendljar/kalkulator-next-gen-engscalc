@@ -2131,9 +2131,9 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   5 minutách, a relace ukončená změnou hesla nebo zásahem správce zhasne až po 5 minutách (bez
   záznamu odhlášení). Údaj je pro přehled správce, ne doklad o docházce ani o přítomnosti.
 
-## PR — připomínky z aplikace (dávka PR, 21. 11. 2026) — B231
+## PR — připomínky z aplikace (dávka PR, 21. 11. 2026) — B257
 
-- **B231 — připomínky z aplikace: klíč koordinace, snímky obrazovky, osobní údaje.**
+- **B257 — připomínky z aplikace: klíč koordinace, snímky obrazovky, osobní údaje.**
   *Co to dělá:* `/api/pripominky` (funkce `netlify/functions/pripominky.mjs`, logika `src/pripominky.js`).
   Odesílá jen přihlášený s rolí povolenou v nastavení a jen při zapnuté funkci (výchozí VYPNUTO → 403
   `kod: vypnuto`); autor, čas, zdroj (ostrý / test podle `PROSTREDI`), stav `nova` a číslo `P-…` píše
@@ -2141,7 +2141,8 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   ≤ 8 kB, text 10–4000 znaků), tělo nad 800 kB → 413, nejvýš `limitDen` připomínek za den na účet
   (výchozí 20, strop 200; → 429). HTML se nikde neukládá „hotové“ — escapuje až UI (`esc`/`escJs`,
   hlídá `test_escape.js`); XSS v textu ověřuje `overit_pripominky.mjs` u správce i u autora.
-  *Snímek obrazovky:* bez knihoven (CSP `script-src 'self'`): klient serializuje viditelnou část DOM do
+  *Snímek obrazovky:* bez knihoven (CSP `script-src 'self' 'unsafe-inline'` nepustí žádné CDN a aplikace je
+  jeden soubor): klient serializuje viditelnou část DOM do
   SVG `<foreignObject>`, vykreslí do `<canvas>` a pošle **JPEG** (šířka ≤ 1280 px, ≤ 700 kB). Server
   přijme jen `data:image/jpeg|png;base64` (žádné SVG — umí nést skript —, žádný odkaz). Hesla se do
   snímku neberou (pole `password` vyprázdněna), soubory a skripty se odstraní. Když prohlížeč vykreslení
@@ -2163,10 +2164,18 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   do fronty (stav ≠ `nova`), a dostane jen číslo, typ, text, stav, roadmapu, odpověď, obrazovku, označené
   místo a verzi — **ne autora, zakázku, hodnoty polí ani snímek** (`pripominkaProKoordinaci`). Mění jen
   stav (fronta/řeší se/test/hotovo/odloženo/zamítnuto), odpověď a číslo roadmapy, nikdy u nové
-  připomínky. Porovnání v konstantním čase (`tajneShodne`). Zneužití: špatný klíč se počítá na adresu
+  připomínky. Porovnání v konstantním čase (`tajneShodne`). Cesta klíče se volí jen podle schématu `Bearer`
+  nebo `?pro=koordinace` — hlavička `Authorization: Basic` (heslo webu, proxy) jde běžnou cestou relace
+  (revize N3, 22. 11. 2026). **Označené místo** jde ke koordinaci jen jako popisek z POPISU prvku (label,
+  aria-label, title, placeholder; klient ho značí `zdroj: 'popis'`) a jen bez číslic a zavináče; text ze
+  stránky (obsah prvku, první buňka řádku — může nést cenu nebo jméno zákazníka) ani nadpis okna ke
+  koordinaci nejdou, jen obrazovka a selektor (`pripominkaMistoProKoordinaci`, revize N1). Zneužití: špatný klíč se počítá na adresu
   (10 za 15 min → 429), správný klíč nejvýš 300 požadavků za hodinu (→ 429); obojí jde do záznamu
   `pripominky_limit/klic_zaznam` (čas, událost, klíč počítadla adresy — bez obsahu, bez klíče), který
   vidí správce v Nastavení. Zrušení klíče okamžitě zastaví čtení.
+  *Stav v prohlížeči:* odhlášení i nové přihlášení vynuluje celý stav připomínek (rozepsaný text, náhled
+  snímku, seznam a snímky správce, záznam klíče); nově vydaný klíč se ukazuje jen dokud správce neopustí
+  záložku Připomínky (revize N2). Snímek se pořizuje čerstvý při odeslání (revize N6).
   *Zálohy:* úložiště `pripominky` (záznamy, nastavení, počítadlo) je v nočním otisku, ruční záloze,
   kopii na Disk i obnově (obnova záznam znovu očistí `pripominkaObnovaOciste`, cizí klíče přeskočí);
   `pripominky_snimky` a `pripominky_limit` jsou výjimky (`test_zalohy.mjs` N4).
@@ -2181,4 +2190,6 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   kokpitu doslova**, jen shrnutí bez cen a osobních údajů. Každý web má vlastní databázi; „zdroj“ filtru
   u správce rozlišuje jen záznamy uložené v tomto webu, obě databáze čte koordinace zvlášť (dvěma klíči).
   Snímek je obraz DOM v prohlížeči autora: obrázky z jiných domén, `<canvas>` a některé styly se v něm
-  nemusí vykreslit; je to diagnostika, ne doklad.
+  nemusí vykreslit; je to diagnostika, ne doklad. Počítadla v `pripominky_limit` (`spatne:`, `hodina/`,
+  `den/`) plní i anonym a nikdo je neuklízí; 100 špatných pokusů vytlačí ze záznamu i událost „klíč vydán“
+  (roadmapa: úklid a oddělený záznam správce, revize N4).

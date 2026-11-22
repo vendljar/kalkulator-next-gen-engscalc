@@ -634,7 +634,7 @@ const MATICE = [
     proc: 'měkký režim vypíná záruku „nikdo netiskne ze staré verze" — jen administrátor',
     prava: JEN_ADMIN },
 
-  /* Připomínky z aplikace (dávka PR, 21. 11. 2026, B231). Funkce je
+  /* Připomínky z aplikace (dávka PR, 21. 11. 2026, B257). Funkce je
    * výchozí VYPNUTÁ — odeslání vrací přihlášeným 403 (kod vypnuto), dokud ji
    * správce nezapne. Čtení: autor svoje, správce vše. Stav mění jen správce
    * (nebo klíč koordinace — ten relace nenahradí: cookie žádné role na čtení

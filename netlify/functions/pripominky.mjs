@@ -20,13 +20,13 @@
  *   GET   /api/pripominky?pro=koordinace&od=<ISO>[&stav=fronta,resi]
  *                                          → připomínky puštěné správcem do fronty
  *                                            (stav ≠ nova), změněné od `od`; bez autora,
- *                                            zakázky, polí a snímku (B231)
+ *                                            zakázky, polí a snímku (B257)
  *   PATCH { id, stav, odpoved, roadmapa }  → jen stav / odpověď / číslo roadmapy
  * Klíč neplatí nikde jinde (žádná jiná funkce ho nezná). Špatný klíč: počítadlo
  * na adresu (10 / 15 min → 429) a záznam; správný klíč: nejvýš 300 požadavků
  * za hodinu (→ 429 a záznam). Klíč v adrese = 400.
  *
- * Bezpečnostní rozbor: BEZPECNOST_MEZE.md, B231. Logika (očista, pohledy,
+ * Bezpečnostní rozbor: BEZPECNOST_MEZE.md, B257. Logika (očista, pohledy,
  * přechody stavů): src/pripominky.js přes lib/pripominky_modul.cjs.
  */
 import { createHash, randomBytes } from 'node:crypto';
@@ -39,7 +39,7 @@ export const PR_SNIMKY = 'pripominky_snimky';
 export const PR_LIMIT = 'pripominky_limit';
 /* Hash klíče koordinace leží MIMO úložiště připomínek (program/pripominky_klic):
  * úložiště `pripominky` jde do zálohy i do kopie na Disk a nemá nést nic, co
- * souvisí s tajemstvím. Po obnově ze zálohy vydá správce nový klíč (B231). */
+ * souvisí s tajemstvím. Po obnově ze zálohy vydá správce nový klíč (B257). */
 export const PR_KLIC_KLIC = 'pripominky_klic';
 const klicUloziste = () => uloziste('program');
 export const PR_TELO_MAX = 800000;
@@ -59,7 +59,7 @@ function bearer(req) {
 }
 async function nastaveniCti(s) { return P.pripominkyNastaveniOciste(await s.cti('nastaveni')); }
 
-/* Záznam o použití klíče (B231: „při zneužití limit a záznam"). Bez obsahu
+/* Záznam o použití klíče (B257: „při zneužití limit a záznam"). Bez obsahu
  * požadavku — jen čas, událost a klíč počítadla adresy. Úložiště limitů,
  * ne záloha (provozní stopa). */
 async function zaznamPridej(req, udalost) {
@@ -142,7 +142,9 @@ export default async (req) => {
   const s = await uloziste(PR_ULOZISTE);
 
   /* ---------- KOORDINACE (klíč) ---------- */
-  if (req.headers.get('authorization') || q.get('pro') === 'koordinace') {
+  /* Cesta klíče jen pro schéma Bearer nebo ?pro=koordinace (N3 revize
+   * 22. 11. 2026): Basic od hesla webu či proxy jde běžnou cestou relace. */
+  if (/^\s*bearer\b/i.test(req.headers.get('authorization') || '') || q.get('pro') === 'koordinace') {
     if (req.method !== 'GET' && req.method !== 'PATCH')
       return json({ ok: false, chyba: 'Klíč koordinace smí jen číst (GET) a měnit stav (PATCH).' }, 405);
     if (req.method === 'GET' && q.get('pro') !== 'koordinace')

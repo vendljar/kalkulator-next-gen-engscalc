@@ -900,7 +900,7 @@ async function obsluha(req, uvolnit) {
       };
     }
     if (cast === 'pripominky') {
-      /* PŘIPOMÍNKY (dávka PR, B231): záznam projde touž očistou jako nový
+      /* PŘIPOMÍNKY (dávka PR, B257): záznam projde touž očistou jako nový
        * (pripominkaObnovaOciste), nastavení očistou nastavení, počítadlo jen
        * jako celé číslo. Jiný klíč se neobnoví (hash klíče koordinace v tomto
        * úložišti není a ze zálohy se nikdy nevrací — správce vydá nový). */

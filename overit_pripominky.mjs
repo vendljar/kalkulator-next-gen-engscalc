@@ -190,13 +190,19 @@ test('čip „📍 … › Kalkulace PROJ" s křížkem', /📍/.test(cip) && /�
 await page.waitForFunction(() => !PRIP.nahledBezi, null, { timeout: 6000 });
 if (SNIMKY) await page.screenshot({ path: CIL + '03_obchodnik_misto.png' });
 /* XSS: druhou připomínku pošleme přes API (text s HTML) — UI ji musí escapovat */
+/* N6 revize: snímek se při odeslání pořizuje znovu (ne ten z otevření panelu). */
+await page.evaluate(() => { window.__snimku = 0; const p = window.pripSnimekPoriz;
+  window.pripSnimekPoriz = function () { window.__snimku++; return p.apply(this, arguments); }; });
 await page.click('#prip-odeslat');
 await page.waitForSelector('.prip-dekujeme', { timeout: 8000 });
+test('N6: při odeslání se pořídil čerstvý snímek', await page.evaluate(() => window.__snimku) >= 1);
 const dek = await page.locator('#prip-panel').innerText();
 test('po odeslání: fajfka, „Děkujeme…", P-0001, Co bude dál ve 3 krocích', /Děkujeme, připomínka je odeslaná/.test(dek) && /P-0001/.test(dek)
   && /Co bude dál/i.test(dek) && (await page.locator('.prip-dal li').count()) === 3 && (await page.locator('.prip-fajfka').count()) === 1, dek.slice(0, 200));
 if (SNIMKY) await page.screenshot({ path: CIL + '04_obchodnik_odeslano.png' });
 const ulozena = JSON.parse(pamet.get('pripominky/p/P-0001') || 'null');
+test('N1: popisek z textu tlačítka má původ „obsah“ (ke koordinaci nejde)', ulozena && ulozena.kontext.misto && ulozena.kontext.misto.zdroj === 'obsah',
+  ulozena && ulozena.kontext.misto);
 test('server: místo, obrazovka, verze a snímek uložené', ulozena && ulozena.kontext.misto && /Kalkulace PROJ/.test(ulozena.kontext.misto.popisek)
   && ulozena.kontext.obrazovka === 'Kalkulace OCK' && ulozena.snimek === true && pamet.has('pripominky_snimky/P-0001'), ulozena && ulozena.kontext);
 const xss = await page.evaluate(() => onlineApi('/api/pripominky', { typ: 'dotaz', text: '<img src=x onerror="window.__xss=1"> Jak přidám šachtu?', kontext: {} }).then(d => d.id));
@@ -248,6 +254,16 @@ test('zamítnout se zdůvodněním projde', JSON.parse(pamet.get('pripominky/p/P
 test('Nastavení připomínek: role, snímek, e-mail, zdroj, interval, limit, uchovávání, klíč',
   await page.evaluate(() => ['Kdo vidí tlačítko', 'Snímek obrazovky přiložit', 'E-mail správci', 'Zdroj pro frontu oprav', 'Interval čtení koordinací',
     'Limit za den', 'Uchovávat vyřízené', 'Klíč pro koordinaci'].every(t => document.getElementById('nastaveni-panel').textContent.includes(t))));
+/* N2 revize: nový klíč se ukáže jen na záložce; po opuštění záložky zmizí. */
+await page.evaluate(() => { window.onlineHesloSpravce = async () => 'Zkusebni.Heslo.123'; });
+await page.click('text=Vydat klíč');
+await page.waitForSelector('#prip-novy-klic', { timeout: 5000 }).catch(() => {});
+const klicText = await page.locator('#prip-novy-klic').innerText().catch(() => '');
+test('správce: klíč vydán a ukázán jednou', /^kngpr_/.test(klicText), klicText.slice(0, 10));
+await page.evaluate(() => nastPanel('firma')); await page.waitForTimeout(200);
+await page.evaluate(() => nastPanel('pripominky')); await page.waitForTimeout(300);
+test('N2: po opuštění záložky se klíč už neukáže', (await page.locator('#prip-novy-klic').count()) === 0
+  && await page.evaluate(() => PRIP.sp.novyKlic) === '');
 if (SNIMKY) await page.locator('.prip-nast').screenshot({ path: CIL + '06_spravce_nastaveni.png' });
 await odhlas();
 
@@ -274,6 +290,26 @@ test('po otevření přečteno: číslo na tlačítku zmizí, server bez novinek
 await page.evaluate(() => render());
 await page.waitForTimeout(200);
 test('překreslení aplikace panel nezavře ani nesmaže', await viditelny('#prip-panel'));
+
+/* N2 revize: rozepsaný text, náhled snímku ani stav správce nepřežijí odhlášení. */
+await page.evaluate(() => pripZalozka('nova'));
+await page.waitForTimeout(300);
+await page.click('.prip-typ[data-typ="navrh"]');
+await page.fill('#prip-text', 'Rozepsaný návrh, který se nesmí ukázat dalšímu uživateli.');
+await page.waitForFunction(() => !PRIP.nahledBezi, null, { timeout: 6000 });
+test('N2 příprava: rozepsaný text a náhled snímku v paměti', await page.evaluate(() => PRIP.text.length > 10 && PRIP.nahled.length > 100));
+await odhlas();
+const poOdhl = await page.evaluate(() => ({ text: PRIP.text, nahled: PRIP.nahled, panel: PRIP.panel, typ: PRIP.typ,
+  vid: (document.getElementById('prip-panel') || {}).innerHTML || '' }));
+test('N2: po odhlášení je stav připomínek prázdný (text, typ, náhled, panel)', poOdhl.text === '' && poOdhl.typ === '' && poOdhl.nahled === ''
+  && !poOdhl.panel && !/Rozepsaný návrh/.test(poOdhl.vid), poOdhl);
+await prihlas(process.env.ADMIN_EMAIL, 'Zkusebni.Heslo.123');
+await page.waitForTimeout(300);
+await page.evaluate(() => pripPanelOtevri('nova'));
+await page.waitForTimeout(300);
+test('N2: další uživatel v témže okně nevidí cizí rozepsaný text', (await page.inputValue('#prip-text')) === '');
+await page.evaluate(() => pripPanelZavri());
+test('N6: zavření panelu zahodí náhled snímku', await page.evaluate(() => PRIP.nahled) === '');
 
 test('za celý průchod nevznikla nečekaná chyba v konzoli', chyby.length === 0, chyby);
 await prohlizec.close();

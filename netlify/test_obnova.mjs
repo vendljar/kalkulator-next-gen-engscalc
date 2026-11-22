@@ -1167,7 +1167,7 @@ console.log('\n===== B100-zbytek: firma, zákazníci, zobrazení =====');
   test('B100: zákazník s klíčem mimo tvar z/<klíč> se nezapíše',
     oZ.casti.zakaznici.duvody.some(d => d.klic === 'nesmysl') && (await ulz('zakaznici').cti('nesmysl')) === null, oZ.casti.zakaznici);
 
-  /* PR (21. 11. 2026, B231): připomínky ze zálohy projdou očistou jako nové;
+  /* PR (21. 11. 2026, B257): připomínky ze zálohy projdou očistou jako nové;
    * jiný klíč (např. podvržený hash klíče koordinace) se neobnoví.
    * Pojistka: před dávkou PR část `pripominky` neznámá → 400. */
   podvrh.pripominky = {

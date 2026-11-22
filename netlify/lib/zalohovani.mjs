@@ -74,7 +74,7 @@ export async function zalohaDoplnky() {
   const smazani = await ctiCele(await uloziste(SMAZANI_ULOZISTE));
   /* PŘIPOMÍNKY Z APLIKACE (dávka PR, 21. 11. 2026): záznamy, nastavení
    * a počítadlo čísel. Snímky obrazovky (pripominky_snimky) a hash klíče
-   * koordinace (program/pripominky_klic) do zálohy NEJDOU — B231. */
+   * koordinace (program/pripominky_klic) do zálohy NEJDOU — B257. */
   const pripominky = await ctiCele(await uloziste('pripominky'));
   return { zobrazeni: zobrazeni || null,
            smazani: Object.keys(smazani).length ? smazani : null,
@@ -350,7 +350,7 @@ export const OTISK_SEKCE = [
   { nazev: 'zakaznici', ul: 'zakaznici' },                   // B9
   { nazev: 'podpisy', ul: 'podpisy' },                       // B9
   { nazev: 'smazani', ul: SMAZANI_ULOZISTE },                // kniha smazaných účtů (B58)
-  { nazev: 'pripominky', ul: 'pripominky' },                 // připomínky z aplikace (PR, B231): bez snímků a klíče
+  { nazev: 'pripominky', ul: 'pripominky' },                 // připomínky z aplikace (PR, B257): bez snímků a klíče
 ];
 const SEKCE_PODLE = Object.fromEntries(OTISK_SEKCE.map(x => [x.nazev, x]));
 export const jeOtiskPoCastech = (o) => !!o && typeof o === 'object' && o.format === OTISK_FORMAT;
@@ -1107,7 +1107,7 @@ export function obnovaTokenVyprsel(z, ted) {
  * hlídá, že každá část zálohy je tu, nebo ji test vědomě vynechá). */
 export const KOPIE_DISK_CASTI = ['porizena', 'zdroj', 'kdo', 'program', 'firma', 'rejstrik', 'zakazky', 'uzivatele',
   'sablony', 'zobrazeni', 'smazani', 'popisy', 'slovnik', 'controlling', 'controllingExporty', 'zakaznici', 'podpisy',
-  'pripominky'];   // PR (21. 11. 2026): záznamy připomínek, bez snímků a bez klíče koordinace (B231)
+  'pripominky'];   // PR (21. 11. 2026): záznamy připomínek, bez snímků a bez klíče koordinace (B257)
 export function otiskProDisk(o) {
   if (!o || typeof o !== 'object') return null;
   const out = {};

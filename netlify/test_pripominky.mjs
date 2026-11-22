@@ -63,7 +63,7 @@ const cVed = await prihlas('vedouci.pr@priklad.cz', HESLO);
 
 const NOVA = { typ: 'chyba', text: 'Po kliknutí na Uložit zakázku se nic nestalo.',
   kontext: { obrazovka: 'Kalkulace OCK', zalozka: 'kalk', verze: '21.11.1', zakazka: { cislo: '2026 - OPR - CN - 9', varianta: 'V1' },
-    misto: { sekce: 'Šachta', popisek: 'Výška šachty', rect: { x: 1, y: 2, w: 3, h: 4, vw: 1280, vh: 800 } },
+    misto: { sekce: 'Šachta', popisek: 'Výška šachty', zdroj: 'popis', rect: { x: 1, y: 2, w: 3, h: 4, vw: 1280, vh: 800 } },
     pole: [{ popisek: 'Výška šachty', hodnota: '12 000' }] },
   snimek: 'data:image/jpeg;base64,' + 'QUJD'.repeat(500) };
 
@@ -159,7 +159,8 @@ test('nastavení klíč znovu neukáže', nA2.klic.nastaven === true && !JSON.st
 const kc = await get(K, undefined, B(KLIC));
 test('koordinace čte: jen puštěné (bez nové P-0003)', kc.status === 200 && kc.pripominky.map(p => p.id).sort().join() === 'P-0001,P-0002,P-0004', kc);
 test('koordinace: bez autora, zakázky, polí a snímku', !/obchodnik\.pr|2026 - OPR|12 000|QUJD|autor"/.test(JSON.stringify(kc)), JSON.stringify(kc).slice(0, 300));
-test('koordinace: obrazovka a místo ano', kc.pripominky.find(p => p.id === 'P-0001').kontext.misto === 'Šachta › Výška šachty');
+test('koordinace: obrazovka a místo z popisu prvku (bez sekce) ano', kc.pripominky.find(p => p.id === 'P-0001').kontext.misto === 'Výška šachty'
+  && kc.pripominky.find(p => p.id === 'P-0001').kontext.obrazovka === 'Kalkulace OCK', kc.pripominky.find(p => p.id === 'P-0001').kontext);
 const kOd = await get(K + '&od=2999-01-01T00:00:00Z', undefined, B(KLIC));
 test('koordinace ?od v budoucnu = nic', kOd.status === 200 && kOd.pripominky.length === 0);
 test('koordinace ?od nesmysl 400', (await get(K + '&od=zitra', undefined, B(KLIC))).status === 400);
@@ -169,6 +170,13 @@ test('koordinace: Řeší se + #712', kp.status === 200 && kp.pripominka.stav ==
 test('koordinace: na novou P-0003 nesáhne (403)', (await patch({ id: 'P-0003', stav: 'resi' }, undefined, B(KLIC))).status === 403);
 test('koordinace: akce správce 403', (await patch({ id: 'P-0001', akce: 'duplicitni', duplicitniS: 'P-0002' }, undefined, B(KLIC))).status === 403);
 test('koordinace: zamítnout bez zdůvodnění 400', (await patch({ id: 'P-0001', stav: 'zamitnuto' }, undefined, B(KLIC))).status === 400);
+/* N3 revize (22. 11. 2026): hlavička Authorization jiného schématu (Basic od
+ * hesla webu nebo proxy) nesmí běžný požadavek přesměrovat na cestu klíče.
+ * Pojistka: před opravou GET se správcovou cookie a Basic → 400. */
+const basic = { authorization: 'Basic ' + Buffer.from('web:heslo').toString('base64') };
+const sBasic = await get(U, cAdmin, basic);
+test('N3: Basic + cookie správce = běžný seznam (200)', sBasic.status === 200 && Array.isArray(sBasic.pripominky), sBasic.status);
+test('N3: Basic bez cookie = nepřihlášen (401), ne cesta klíče', (await get(U, undefined, basic)).status === 401);
 test('koordinace: POST nesmí (405)', (await post(NOVA, undefined, B(KLIC))).status === 405);
 test('koordinace: GET bez ?pro 400', (await get(U, undefined, B(KLIC))).status === 400);
 test('koordinace: klíč s cookie 400', (await get(K, cAdmin, B(KLIC))).status === 400);
