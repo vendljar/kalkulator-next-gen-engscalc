@@ -78,6 +78,11 @@ import { pdOrgVitezDrz, pdOrgDealuDrz } from './pd_org_vitez.mjs';
 import { razitkoKdo } from './sdilene.mjs';
 
 export const CISLO_MAX = 60;
+/* NN B239 (22. 11. 2026): strop počtu variant zakázky a délky názvu varianty.
+ * Dřív neomezeno (PoC AZ-5: 401 variant, název 300 000 znaků). Skutečné
+ * zakázky mají jednotky variant; 50 je pojistka proti zahlcení, ne provozní mez. */
+export const ZAKAZKA_VARIANT_MAX = 50;
+export const VARIANTA_NAZEV_MAX = 300;
 
 /* Značky ukázkového a prázdného ceníku se do databáze neukládají (P2, nálezy
  * N2/N3, 21. 9. 2026). Čistí se OBĚ strany porovnání zamčených variant —
@@ -124,6 +129,10 @@ export function zakazkaPrijmi(telo, ULO) {
     if (slozene(telo.cislo)) return { ok: false, status: 400, chyba: 'Číslo nabídky musí být text.' };
     if (Array.isArray(telo.varianty) && telo.varianty.some(v => v && typeof v === 'object' && (slozene(v.nazev) || slozene(v.id))))
       return { ok: false, status: 400, chyba: 'Název a označení varianty musí být text.' };
+    if (Array.isArray(telo.varianty) && telo.varianty.length > ZAKAZKA_VARIANT_MAX)
+      return { ok: false, status: 400, chyba: 'Zakázka má příliš mnoho variant (nejvýš ' + ZAKAZKA_VARIANT_MAX + ').' };
+    if (Array.isArray(telo.varianty) && telo.varianty.some(v => v && typeof v === 'object' && String(v.nazev == null ? '' : v.nazev).length > VARIANTA_NAZEV_MAX))
+      return { ok: false, status: 400, chyba: 'Název varianty je příliš dlouhý (nejvýš ' + VARIANTA_NAZEV_MAX + ' znaků).' };
   }
   let zak;
   try { zak = globalThis.importZakazka(telo || {}); }

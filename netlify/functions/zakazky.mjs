@@ -136,10 +136,15 @@ export default async (req) => {
    * které vyšel (`ocekavaneRazitko`). Když v databázi leží jiná verze —
    * kolega mezitím uložil, nebo jde o cizí zakázku pod stejným číslem — server
    * odmítne 409 a nic nepřepíše. Vědomé přepsání jde s `prepsat: true`
-   * (klient se zeptá). Starší klient bez pole posílá undefined: pak se
-   * kontrola neuplatní, aby nasazení nezastavilo rozdělanou práci. */
-  if (stara && typeof t.ocekavaneRazitko === 'string' && t.prepsat !== true) {
-    const kol = ULO.uloKolize(stara, t.ocekavaneRazitko);
+   * (klient se zeptá).
+   * NN B237 (22. 11. 2026): razítko už není dobrovolné. Tělo BEZ pole se
+   * bere jako prázdné razítko („tuhle zakázku jsem nenačetl") — nad
+   * existující zakázkou 409. Výjimka „starší klient bez pole" z 22. 8. 2026
+   * propadla: všichni klienti od B10 pole posílají. `prepsat: true` zůstává
+   * (vědomé přepsání po dotazu) — práva nerozšiřuje, zakázku smí uložit každý,
+   * kdo ji smí načíst (mez v BEZPECNOST_MEZE, NN B237). */
+  if (stara && t.prepsat !== true) {
+    const kol = ULO.uloKolize(stara, typeof t.ocekavaneRazitko === 'string' ? t.ocekavaneRazitko : '');
     if (kol.kolize) {
       /* KOLIZE JMENUJE ČLOVĚKA, NE E-MAIL (P7 / K16-N87, 25. 9. 2026).
        * Do té doby hláška zněla „Zakázku mezitím uložil jan@firma.cz" —

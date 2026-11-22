@@ -20,7 +20,11 @@
  * Očistu vstupu dělá `zakaznikOciste` ze src/zakaznici.js — týž kód, jaký
  * si čistí prohlížeč. Server nikdy neuloží, co mu kdo pošle.
  */
-import { uloziste, vyzadujRoli, json, klicZAdresyPlatny, hloubkaChyba } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, klicZAdresyPlatny, hloubkaChyba, vyhradne } from '../lib/sdilene.mjs';
+
+/* NN B244 (22. 11. 2026): strop počtu karet. Karet jsou desítky; 2 000 je
+ * pojistka proti zahlcení číselníku (seznam se čte kartu po kartě). */
+export const ZAKAZNICI_MAX = 2000;
 /* SCHVÁLNĚ ne `jadro()`: to natáhne celé jádro (engine, preklad, docxgen…)
  * a při studeném startu se na prázdný seznam čekaly vteřiny (nález J. V.
  * 21. 8. 2026). Tady stačí jeden malý modul bez závislostí — proč jde přes
@@ -88,10 +92,14 @@ export default async (req) => {
     await s.zapis('h/' + klic, hist.slice(-g.ZAKAZNIK_HISTORIE_MAX));
   };
 
-  /* B234: převzetí / zamítnutí návrhu změny — jen autor karty a administrátor. */
+  /* B234: převzetí / zamítnutí návrhu změny — jen autor karty a administrátor.
+   * NN #705 (revize BZ R7): čtení karty, historie a zápis v jednom výhradním
+   * úseku nad klíčem karty (vzor B158) — souběžné návrhy a úpravy se dřív
+   * navzájem přepsaly. Mez: jen v rámci jedné instance funkce (jako B233). */
   if (t.akce === 'navrhPrijmout' || t.akce === 'navrhZamitnout') {
     const klic = String(t.klic || '');
     if (!klicZAdresyPlatny(klic)) return json({ ok: false, chyba: 'Neplatný klíč zákazníka.' }, 400);
+    return vyhradne('zakaznici/' + klic, async () => {
     const stary = await s.cti('z/' + klic);
     if (!stary) return json({ ok: false, chyba: 'Zákazník nenalezen: ' + klic }, 404);
     if (!g.zakaznikSmiMenit(stary, relace))
@@ -115,12 +123,23 @@ export default async (req) => {
     }
     await s.zapis('z/' + klic, nova);
     return json({ ok: true, klic, zakaznik: nova });
+    });
   }
 
+  /* NN B243: karta jako objekt a pole karty jako jednoduché hodnoty — objekt
+   * místo textu (`{"toString":1}`) dřív shodil očistu výjimkou (500). */
+  { const k = t.zakaznik;
+    if (k !== undefined && (!k || typeof k !== 'object' || Array.isArray(k)))
+      return json({ ok: false, chyba: 'Karta zákazníka musí být objekt.' }, 400);
+    /* Jen pole, která očista čte — karta z klienta nese i `navrhy` (pole) a ty
+     * server stejně zahodí. */
+    if (k && g.zakaznikPoleObsahu().concat(['zalozen', 'autor']).some(x => k[x] !== null && typeof k[x] === 'object'))
+      return json({ ok: false, chyba: 'Pole karty zákazníka musí být text.' }, 400); }
   const z = g.zakaznikOciste(t.zakaznik || {}, relace.email, ted);
   const klic = g.zakaznikKlic(z);
   if (!klic)
     return json({ ok: false, chyba: 'Zákazník musí mít vyplněné IČO nebo aspoň název.' }, 400);
+  return vyhradne('zakaznici/' + klic, async () => {
   /* Zápis nesmí přepsat, kdo kartu založil — autor se drží z uloženého
    * záznamu, ne z toho, co přišlo od klienta. */
   const stary = await s.cti('z/' + klic);
@@ -140,9 +159,45 @@ export default async (req) => {
     if (navrhy.length) z.navrhy = navrhy;   // návrhy drží server, klient je nepřepíše
     if (Object.keys(g.zakaznikZmenyPole(stary, z)).length) await doHistorie(klic, stary, relace.email, 'úprava');
   }
-  else z.autor = relace.email;   // nová karta: autora píše server z relace (audit 23. 8. 2026, B29)
+  else {
+    z.autor = relace.email;   // nová karta: autora píše server z relace (audit 23. 8. 2026, B29)
+    z.zalozen = ted;          // NN B244: čas založení píše server, ne klient
+    const klice = await s.seznam('z/');
+    /* NN B244: strop počtu karet. */
+    if (klice.length >= ZAKAZNICI_MAX)
+      return json({ ok: false, chyba: 'Číselník zákazníků je plný (nejvýš ' + ZAKAZNICI_MAX + ' karet). Napište správci.' }, 400);
+    /* NN #705 (revize BZ R6): DVOJČE KARTY. Klíč je IČO, bez IČO název
+     * (`n-…`). Kdo nesmí měnit kartu firmy, založil by dřív tutéž firmu znovu
+     * pod druhým klíčem (s IČO × bez IČO) a obešel tak autora. Nová karta, jejíž
+     * IČO nebo název už má cizí karta, se odmítne 409 — úpravu pošle jako návrh
+     * na původní kartu. Autor dvojčete a administrátor kartu založit smějí. */
+    const dvojce = await dvojceKarty(s, klice, z, klic);
+    if (dvojce && !g.zakaznikSmiMenit(dvojce.karta, relace))
+      return json({ ok: false, dvojce: dvojce.klic, chyba: 'Tento zákazník už má kartu (' + (dvojce.karta.nazev || dvojce.klic)
+        + ', autor ' + (dvojce.karta.autor || '—') + '). Upravte tu — změna se uloží jako návrh pro jejího autora.' }, 409);
+  }
   await s.zapis('z/' + klic, z);
   return json({ ok: true, klic, zakaznik: z });
+  });
 };
 
-export const config = { path: '/api/zakaznici' };
+/* NN #705: karta téže firmy pod JINÝM klíčem — shodné IČO, nebo shodný název
+ * (klíč z názvu). Vrací { klic, karta } nebo null. Čte se jen při zakládání
+ * nové karty (karet jsou desítky). */
+async function dvojceKarty(s, klice, z, klic) {
+  /* Shodný název se počítá jen tam, kde jedné ze dvou karet IČO chybí — dvě
+   * firmy se stejným jménem a RŮZNÝM IČO dvojčata nejsou. */
+  const icoTvar = (x) => { const i = String(x || '').replace(/[\s.]/g, ''); return /^\d{6,10}$/.test(i) ? i : ''; };
+  const ico = icoTvar(z.ico);
+  const nKlic = g.zakaznikKlic({ nazev: z.nazev });
+  for (const k of klice) {
+    const kk = k.slice(2);
+    if (kk === klic) continue;
+    const karta = await s.cti(k);
+    if (!karta) continue;
+    const icoK = icoTvar(karta.ico);
+    if (ico && icoK === ico) return { klic: kk, karta };
+    if (nKlic && (!ico || !icoK) && g.zakaznikKlic({ nazev: karta.nazev }) === nKlic) return { klic: kk, karta };
+  }
+  return null;
+}

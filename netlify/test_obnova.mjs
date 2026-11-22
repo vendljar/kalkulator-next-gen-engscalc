@@ -56,8 +56,10 @@ const zamkniJakoAplikace = (z, v, info) => zm.zamkniVariantu(v,
 
 let ok = 0, fail = 0;
 const test = (n, cond, info) => { if (cond) { ok++; console.log('OK  ' + n); } else { fail++; console.log('FAIL ' + n, info === undefined ? '' : (typeof info === 'string' ? info : JSON.stringify(info))); } };
+/* NN B237: razítko verze jako skutečný klient (netlify/pomoc_razitko.mjs). */
+import { doplnRazitko } from './pomoc_razitko.mjs';
 const post = (fn, url, telo, cookie) => fn(new Request(url, { method: 'POST',
-  headers: cookie ? { cookie } : {}, body: JSON.stringify(telo) }));
+  headers: cookie ? { cookie } : {}, body: JSON.stringify(doplnRazitko(url, telo, pamet)) }));
 const get = (fn, url, cookie) => fn(new Request(url, { headers: cookie ? { cookie } : {} }));
 const ulz = (n) => globalThis.__TEST_ULOZISTE(n);
 /* #522: otisk je od v26.10.8 manifest + části — test čte otisk složený (ctiOtisk). */

@@ -60,7 +60,9 @@ function zakaznikNovy() {
   return z;
 }
 
-function _txt(v) { return String(v == null ? '' : v).trim(); }
+/* NN B243 (22. 11. 2026): objekt nebo pole místo textu (`{"toString":1}`)
+ * dřív shodilo String() výjimkou a server vrátil 500 — teď prázdný text. */
+function _txt(v) { return v == null || typeof v === 'object' || typeof v === 'function' ? '' : String(v).trim(); }
 
 /* Klíč záznamu. IČO je osm číslic; mezery a tečky se zahazují, aby
  * „248 348 82" a „24834882" nebyly dvě různé firmy. Bez IČO se klíč skládá
@@ -262,7 +264,9 @@ function zakaznikOciste(vstup, kdo, kdy) {
    * byly dvě karty pro jednu firmu (klíč se počítá z očištěné podoby). */
   if (/^[\d\s.]+$/.test(z.ico)) z.ico = z.ico.replace(/[\s.]/g, '');
   z.poznamka = _txt(v.poznamka).slice(0, 2000);
-  z.zalozen = _txt(v.zalozen) || _txt(kdy);
+  /* NN B244: `zalozen` je čas (ISO) — strop 40 znaků; dřív bez stropu a s každou
+   * změnou karty se násobil v historii (revize BZ R7, #705). */
+  z.zalozen = _txt(v.zalozen).slice(0, 40) || _txt(kdy);
   z.upraven = _txt(kdy);
   z.autor = _txt(v.autor) || _txt(kdo);
   z.upravil = _txt(kdo);

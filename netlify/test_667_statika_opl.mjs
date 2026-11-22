@@ -51,7 +51,9 @@ const ZC = require(R + 'src/zkusebni_cenik.js');
 let ok = 0, fail = 0;
 const test = (n, cond, info) => { if (cond) { ok++; console.log('OK   ' + n); }
   else { fail++; console.log('FAIL ' + n + '  ' + JSON.stringify(info === undefined ? '' : info).slice(0, 500)); } };
-const post = (fn, url, telo, cookie) => fn(new Request(url, { method: 'POST', headers: cookie ? { cookie } : {}, body: JSON.stringify(telo) }));
+/* NN B237: razítko verze jako skutečný klient (netlify/pomoc_razitko.mjs). */
+import { doplnRazitko } from './pomoc_razitko.mjs';
+const post = (fn, url, telo, cookie) => fn(new Request(url, { method: 'POST', headers: cookie ? { cookie } : {}, body: JSON.stringify(doplnRazitko(url, telo, pamet)) }));
 const kopie = x => JSON.parse(JSON.stringify(x));
 async function prihlas(e, h) {
   const r = await post(prihlaseni, 'http://x/api/prihlaseni', { email: e, heslo: h });

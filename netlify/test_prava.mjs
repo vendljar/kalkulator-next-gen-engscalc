@@ -112,8 +112,10 @@ const test = (n, cond, info) => {
   else { fail++; selhalo.push(n); console.log('FAIL ' + n, info === undefined ? '' : info); }
 };
 
+/* NN B237: razítko verze jako skutečný klient (netlify/pomoc_razitko.mjs). */
+import { doplnRazitko } from './pomoc_razitko.mjs';
 const post = (fn, url, telo, cookie) => fn(new Request(url, {
-  method: 'POST', headers: cookie ? { cookie } : {}, body: JSON.stringify(telo) }));
+  method: 'POST', headers: cookie ? { cookie } : {}, body: JSON.stringify(doplnRazitko(url, telo, pamet)) }));
 const get = (fn, url, cookie) => fn(new Request(url, { headers: cookie ? { cookie } : {} }));
 const smaz = (fn, url, cookie) => fn(new Request(url,
   { method: 'DELETE', headers: cookie ? { cookie } : {} }));
@@ -3864,6 +3866,7 @@ console.log('\n===== AUDIT B26 / B29: KID TRVALÝCH POLOŽEK A DUPLICITNÍ ID ==
   zam.zamkniVariantu(starsi.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv' });
   starsi.varianty[0].zamek.cislo = '';
   delete starsi.varianty[0].zamek.cisloPapir;
+  starsi.uloRazitko = '2026-09-18T08:00:00.000Z';   // NN B237: klient pošle razítko načtené verze
   pamet.set('zakazky/z/2026-OPR-CN-0992.json', JSON.stringify(starsi));
   test('B56: zámek bez razítka čísla se ukládá dál (starší zakázky)',
     (await post(zakazky, 'http://x/api/zakazky', { zakazka: JSON.parse(JSON.stringify(starsi)) }, cObch)).status === 200);
@@ -3950,6 +3953,7 @@ console.log('\n===== AUDIT B26 / B29: KID TRVALÝCH POLOŽEK A DUPLICITNÍ ID ==
                kdo: 'Matice práv', cislo: '2026 - OPR - CN - 0860.1', otisk: null,
                tisky: [{ kdy: '2026-09-18T08:00:00.000Z', typ: 'nabidka' }] };
   /* Zakázka s tímhle zámkem už v databázi je (uložená před #320). */
+  legacy.uloRazitko = '2026-09-18T08:00:00.000Z';   // NN B237: klient pošle razítko načtené verze
   pamet.set('zakazky/z/2026-OPR-CN-0860.json', JSON.stringify(legacy));
   const odpL = await post(zakazky, 'http://x/api/zakazky', { zakazka: legacy }, cObch);
   test('#320: stará zakázka se starým zámkem (.1) se po přečíslování uloží (žádné 403)',

@@ -162,6 +162,9 @@ function analytikaUzivatele(den) {
 const ANALYTIKA_MAX_KLIC_ZNAKU = 120;
 const ANALYTIKA_MAX_HODNOTA = 1e6;                // za dávku; víc není měření, ale útok
 function analytikaCislo(n) {
+  /* NN B243: jen číslo nebo text — objekt (`{"valueOf":1,"toString":1}`) dřív
+   * shodil převod `+n` výjimkou a funkce vrátila 500. */
+  if (typeof n !== 'number' && typeof n !== 'string') return 0;
   const x = Math.round(+n);
   if (!isFinite(x) || x <= 0) return 0;
   return Math.min(x, ANALYTIKA_MAX_HODNOTA);
