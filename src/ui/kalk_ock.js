@@ -1991,7 +1991,7 @@ function rcStitek(r) {
       h += ` <span class="pill ok noprint rc-bez-dokladu" title="starší vlastní cena příplatku dle nabídky — bere se jako potvrzená bez dokladu">✓ potvrzeno bez dokladu</span>`;
   }
   if (!zamceno && !RC_UI.otevrene.has(cesta))
-    h += ` <button class="mini noprint rc-otevri" title="${r.cenaPath ? 'zadat nákupní cenu z nabídky dodavatele' : 'zadat částku řádku z nabídky lakovny'}" onclick="rcOtevri('${rcCestaJs(cesta)}')">✎ cena z nabídky</button>`;
+    h += ` <button class="mini noprint rc-otevri" title="${r.cenaPath ? 'zadat nákupní cenu z nabídky dodavatele' : 'zadat částku řádku z nabídky lakovny'}" onclick="rcOtevri('${escJs(cesta)}')">✎ cena z nabídky</button>`;
   return h;
 }
 function rcRadekPod(r, NC) {

@@ -8,6 +8,24 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.11.6 — LAK #666: lakování — cena z nabídky lakovny jako částka řádku, větev claude/lak-lakovani
+
+Nad integrací `05a496d` (v22.11.5). Pracovní verze, číslo přidělí koordinace. Rozhodnutí J. V. 18. 11. 2026 (audit #668, bod B2);
+vzor #667 / #561. Bez ruční částky se cena nemění (porovnání sestavení SHODA).
+
+- **Nové — obchodník:** u souhrnného řádku LAKOVÁNÍ (ŠACHTA, PLECHY, ZASKLENÍ, OPLECHOVÁNÍ) tlačítko „✎ cena z nabídky“:
+  částka z nabídky lakovny (za šachtu, Kč) se zdrojem (dodavatel / č. nabídky) a potvrzením. Nahradí výpočet lakování
+  z ceníku (režim lakovna / lakovna B); vlastní položky lakování se přičítají dál; lak sloupů můstků beze změny.
+- **Data:** cesta `C.lak.nabidkaKc` v ceníku varianty, mimo ceník a Nastavení (vzor ceníku ji nenese, import ji nedoplní);
+  záznam `rucniCeny` jako u #561. „↺ vrátit na ceník“ klíč smaže.
+- **Server:** B112 pustí částku jen se záznamem (bez něj 403), razítko z relace, ověření zámku přepočtem.
+  Částka **bez zdroje = nepotvrzená**: zábrana tisku a 403 u nového zámku s větou, co doplnit (ceník částku nezná,
+  schválení jako směs ceníků nejde) — svěřené LAK-1, čeká na potvrzení J. V.
+- **Controlling:** řádek lakování (klíč `C.lak.*`, skupina beze změny) nese zdroj a odchylku od výpočtu z ceníku.
+  Detail výpočtu ukazuje „Cena z nabídky lakovny“. Word, náhled a krycí list berou částku z řádku výsledku.
+- **Testy:** `src/test_666_lakovani.js` (43), `netlify/test_666_lakovani.mjs` (19), `overit_lakovani.mjs` (13);
+  pojistky proti 05a496d v commitech. Mutace `[LAK]` jádro 10, server 11.
+
 ## v22.11.5 — PR #707: Připomínky z aplikace, větev claude/pr-pripominky
 
 Nad integrací `cda289e`, sloučeno s integrací `6fa67af` (v22.11.4). Cenu ani dokumenty nemění (porovnání sestavení SHODA). Funkce je výchozí VYPNUTÁ.
