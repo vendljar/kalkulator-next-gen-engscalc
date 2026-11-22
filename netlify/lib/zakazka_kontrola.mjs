@@ -378,7 +378,11 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   const odmitni = (status, chyba) => ({ ok: false, status, chyba });
   /* Věta odmítnutí: obchodníkovi „Neuloženo: … Pokračujte klonem varianty.",
    * do přehledu obnovy jen důvod. */
-  const veta = (duvod, klon) => (obnova ? duvod : 'Neuloženo: ' + duvod + (klon ? '. Pokračujte klonem varianty.' : ''));
+  /* #674 c: důvod s vlastní předponou („Neuloženo: …") ji nezdvojí. */
+  const veta = (duvod, klon) => {
+    const d = String(duvod == null ? '' : duvod).replace(/^Neuloženo:\s*/, '');
+    return obnova ? d : 'Neuloženo: ' + d + (klon ? '. Pokračujte klonem varianty.' : '');
+  };
   const zamcena = (v) => !!(globalThis.variantaUzamcena && globalThis.variantaUzamcena(v));
   const cisloVarianty = (z, v) => String((globalThis.variantaCislo && globalThis.variantaCislo(z, v)) || '');
 
@@ -516,6 +520,11 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
     return odmitni(400, veta('rozměr profilu není v katalogu jeklů (' + nezname.join('; ')
       + '). Vyberte v zadání šachty platný rozměr'));
 
+  /* Revize Fable R1 (B231): příznaky strany se ukládají jen jako pravda /
+   * nepravda — pravdivá nebooleovská hodnota (1, "ano", {}) jinak stranu
+   * přepnula a porovnání ji mohlo přehlédnout. */
+  for (const k of ['jenProj', 'jenOck']) if (zak && Object.prototype.hasOwnProperty.call(zak, k)) zak[k] = !!zak[k];
+
   ocistiZnacky(zak);
   ocistiZnacky(stara);
 
@@ -595,6 +604,14 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
      * a adresa stavby po tisku CN, pole krycích listů v hlavičce po tisku
      * SoD — zámek z ULOŽENÉ verze (zamekZakZmeny v zamek.js, klient hlídá
      * totéž v set()). */
+    /* STRANA ZAKÁZKY PO ZÁMKU (B231, J. V. 21. 11. 2026): příznaky jenProj /
+     * jenOck se u zakázky se zamčenou variantou nemění — pro žádnou roli
+     * (zamekStranaZmena v zamek.js, klient hlídá totéž v set()). Obnova bere
+     * zakázku ze zálohy jako doklad. */
+    if (!obnova && typeof globalThis.zamekStranaZmena === 'function') {
+      const strana = globalThis.zamekStranaZmena(staraPorovnani, zak);
+      if (strana) return odmitni(403, 'Neuloženo: ' + strana);
+    }
     const zmenyZak = typeof globalThis.zamekZakZmeny === 'function' ? globalThis.zamekZakZmeny(staraPorovnani, zak) : [];
     if (zmenyZak.length)
       return odmitni(409, (obnova ? 'změnila by se hlavička zakázky s odeslanou nabídkou' : 'Neuloženo: zakázka má odeslanou nabídku, a hlavička')
@@ -737,6 +754,12 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
            * se proto posoudí i tady (data zamčené varianty se už nezmění,
            * takže schválení muselo vzniknout před zámkem). */
           const noveStrany = [...new Set(nove.map(strana))];
+          /* B231: i nepotvrzená ruční cena (dřív jen u nového zámku) — strana
+           * vyřazená při zámku z doby před B231 by jinak dotiskem odešla bez potvrzení. */
+          if ((noveStrany.includes('ock') || noveStrany.includes('?')) && typeof globalThis.rucniCenyZamekProblem === 'function') {
+            const rcDotisk = globalThis.rucniCenyZamekProblem(zak, pseudo);
+            if (rcDotisk) return odmitni(403, 'Neuloženo: dotisk dokumentu odeslané nabídky — ' + rcDotisk + '.');
+          }
           const vyjDotisk = globalThis.vyjimkyZamekProblem(zak, pseudo, relace,
             { matice: ctx.matice, program: ctx.program, strany: noveStrany, jekly: JEKLY });
           if (vyjDotisk) return odmitni(403, 'Neuloženo: dotisk dokumentu odeslané nabídky — ' + vyjDotisk + '. Pokračujte klonem varianty.');
@@ -806,6 +829,12 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
       return odmitni(400, 'Neuloženo: odeslaná nabídka nese ' + ULO.uloIdProblemyText(rozmerProblem)
         + '. Doplňte rozměry šachty a nabídku vytiskněte znovu.');
     v.zamek.kdo = razitkoKdo(relace);   // B95
+    /* B231: stav příznaků strany v okamžiku zámku (doklad; píše jen server). */
+    if (typeof globalThis.zamekStranaSnimek === 'function') v.zamek.strana = globalThis.zamekStranaSnimek(zak);
+    /* #665: blok „Vypracoval" odeslané nabídky = profil účtu z RELACE (ne od
+     * klienta); dál ho drží uloZamekRazitkaDrz. Bez e-mailu klíč pryč. */
+    { const zs = typeof globalThis.zamekZpracovatelSnimek === 'function' ? globalThis.zamekZpracovatelSnimek(relace) : null;
+      if (zs) v.zamek.zpracovatel = zs; else delete v.zamek.zpracovatel; }
     /* K40-S1 (#580): čas PRVNÍHO přijetí zámku serverem — dolní mez data
      * prodeje; příchozí hodnota se zahodí (píše ho jen server). */
     v.zamek.prijato = tedServer;

@@ -269,7 +269,58 @@ function zakaznikOciste(vstup, kdo, kdy) {
   return z;
 }
 
+/* ---------- kdo kartu mění, návrhy změn a historie (B234, J. V. 21. 11. 2026) ----------
+ * Do BZ kartu tiše přepsal kterýkoli obchodník (číslo účtu, e-maily, zástupce)
+ * a karta předvyplňuje zakázky všem. Teď: kartu MĚNÍ jen její autor
+ * a administrátor (správce); ostatní ji čtou a jejich úprava se uloží jako
+ * NÁVRH ZMĚNY na kartě (vzor `popisyNavrhy`: navrhne kdokoli, převezme
+ * oprávněný). Každý zápis autora nebo správce uloží předchozí verzi do
+ * historie karty (server, úložiště `zakaznici`, klíč `h/<klíč karty>`). */
+const ZAKAZNIK_NAVRHY_MAX = 20;
+const ZAKAZNIK_HISTORIE_MAX = 50;
+/* Pole, která návrh i historie porovnávají (karta bez razítek). */
+function zakaznikPoleObsahu() { return ZAKAZNIK_POLE.map(p => p.id).concat(['poznamka']); }
+function zakaznikSmiMenit(karta, relace) {
+  const r = relace || {};
+  if (!karta) return true;                                   // nová karta: založí kdokoli přihlášený
+  if (r.role === 'Administrátor') return true;
+  return !!karta.autor && !!r.email && String(karta.autor).toLowerCase() === String(r.email).toLowerCase();
+}
+/* { pole: nová hodnota } pro pole, ve kterých se `novy` liší od `stary`. */
+function zakaznikZmenyPole(stary, novy) {
+  const out = {};
+  zakaznikPoleObsahu().forEach(id => {
+    const a = _txt(stary && stary[id]), b = _txt(novy && novy[id]);
+    if (a !== b) out[id] = b;
+  });
+  return out;
+}
+/* Návrhy z uloženého záznamu (klientovi se nevěří — drží je server). */
+function zakaznikNavrhyOciste(n) {
+  if (!Array.isArray(n)) return [];
+  const pole = zakaznikPoleObsahu();
+  return n.filter(x => x && typeof x === 'object' && x.zmeny && typeof x.zmeny === 'object').slice(-ZAKAZNIK_NAVRHY_MAX).map(x => {
+    const zmeny = {};
+    Object.keys(x.zmeny).forEach(k => { if (pole.indexOf(k) >= 0) zmeny[k] = _txt(x.zmeny[k]).slice(0, k === 'poznamka' ? 2000 : 300); });
+    return { id: _txt(x.id).slice(0, 40), kdo: _txt(x.kdo).slice(0, 200), jmeno: _txt(x.jmeno).slice(0, 200), kdy: _txt(x.kdy).slice(0, 40), zmeny };
+  });
+}
+/* Přidá (nebo nahradí návrh téhož člověka) návrh změny do karty. Vrací kartu. */
+function zakaznikNavrhPridej(karta, zmeny, kdo, jmeno, kdy, id) {
+  const n = zakaznikNavrhyOciste(karta.navrhy).filter(x => x.kdo.toLowerCase() !== _txt(kdo).toLowerCase());
+  n.push({ id: _txt(id) || (_txt(kdy) + '-' + n.length), kdo: _txt(kdo), jmeno: _txt(jmeno), kdy: _txt(kdy), zmeny });
+  karta.navrhy = zakaznikNavrhyOciste(n);
+  return karta;
+}
+/* Verze karty pro historii (bez návrhů). */
+function zakaznikVerze(karta) {
+  const k = JSON.parse(JSON.stringify(karta || {}));
+  delete k.navrhy;
+  return k;
+}
+
 if (typeof module !== 'undefined')
-  module.exports = { ZAKAZNIK_KONTAKTY, zakaznikKontakty, zakaznikPredvypln, ZAKAZNIK_SCHEMA, ZAKAZNIK_POLE, zakaznikNovy, zakaznikKlic,
+  module.exports = { ZAKAZNIK_NAVRHY_MAX, ZAKAZNIK_HISTORIE_MAX, zakaznikPoleObsahu, zakaznikSmiMenit, zakaznikZmenyPole,
+    zakaznikNavrhyOciste, zakaznikNavrhPridej, zakaznikVerze, ZAKAZNIK_KONTAKTY, zakaznikKontakty, zakaznikPredvypln, ZAKAZNIK_SCHEMA, ZAKAZNIK_POLE, zakaznikNovy, zakaznikKlic,
     zakaznikNormNazev, zakazniciPodobni, zakazniciHledej, zakaznikZeZakazky,
     zakaznikDoZakazky, zakaznikRozdily, zakaznikPrevezmi, zakaznikOciste };

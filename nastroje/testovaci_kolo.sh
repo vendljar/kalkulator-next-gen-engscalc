@@ -8,7 +8,10 @@
 # Tenhle skript pouští VŠECHNO v pevném pořadí a končí jedním souhrnem
 # s počty — a nenulovým návratovým kódem, když cokoli selhalo. Přeskočené
 # sady (chybí playwright, firemní podklad mimo repozitář, skutečný ceník) se
-# hlásí jako PŘESKOČENÉ, nikdy jako prošlé.
+# hlásí jako PŘESKOČENÉ, nikdy jako prošlé. Sada, která prošla jen zčásti,
+# to hlásí řádkem „PRESKOCENO_CAST:" a objeví se v souhrnu „Přeskočené sady"
+# taky. Chybějící playwright (krok sady) = chyba s návodem hned na začátku;
+# vědomě bez prohlížeče KNG_BEZ_PROHLIZECE=1 → „ZELENÁ BEZ PROHLÍŽEČE" (HN).
 #
 # Pořadí kroků:
 #   build          kontrola verze (build.py --kontrola-verze — špatná verze padne hned,
@@ -28,6 +31,7 @@
 #                  výběr sloučených větví ke smazání (nastroje/test_sloucene_vetve.sh),
 #                  hook pre-push s kontrolou údajů (nastroje/test_pre_push.sh, SEC-M1),
 #                  test nástroje porovnání sestavení (nastroje/test_porovnej_sestaveni.sh, S3),
+#                  přeskočení v kole je vidět (nastroje/test_kolo_preskoceni.sh, HN),
 #                  PREDAVKA.md do 15 kB (chyba), main předkem HEAD (upozornění; S7),
 #                  evidence roadmap.json podle schématu S6 a PREHLED.md (vyrobit jde = jinak chyba;
 #                  neodpovídá stavu = upozornění; nastroje/prehled_stavu.py --kontrola, S8)
@@ -83,7 +87,7 @@ while [ $# -gt 0 ]; do
     --proti=*) PROTI="${1#--proti=}"; PRIDAT_POROVNANI=1 ;;
     --ocekavane) shift; KNG_POROVNANI_OCEKAVANE="${1:-}" ;;
     --ocekavane=*) KNG_POROVNANI_OCEKAVANE="${1#--ocekavane=}" ;;
-    -h|--help) sed -n '2,53p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,59p' "$0"; exit 0 ;;
     *) echo "neznámá volba: $1 (viz --help)"; exit 2 ;;
   esac
   shift
@@ -131,6 +135,9 @@ build() {
 }
 
 sady() {
+  # Zkušební háček pro nastroje/test_kolo_preskoceni.sh: místo sad vypíše
+  # připravený výpis (souhrn spust_testy.sh) a skončí jeho kódem.
+  if [ -n "${KNG_KOLO_SADY_VZOR:-}" ]; then cat "$KNG_KOLO_SADY_VZOR"; return "${KNG_KOLO_SADY_KOD:-0}"; fi
   bash ./spust_testy.sh --smoke
 }
 # K37-N5 (2. 11. 2026): tytéž Node sady o 400 dní později. Bomba (pevné
@@ -191,11 +198,13 @@ staticke() {
   bash nastroje/test_porovnej_sestaveni.sh || chyb=$((chyb + 1))
   echo "— únik mezi zákazníky: generátory dokumentů bez dalsiZakaznici (nastroje/kontrola_vz_unik.sh, VZ-E2 #601)"
   { bash nastroje/kontrola_vz_unik.sh && bash nastroje/kontrola_vz_unik.sh --pojistka; } || chyb=$((chyb + 1))
+  echo "— přeskočení v kole je vidět: playwright, PRESKOCENO_CAST (nastroje/test_kolo_preskoceni.sh, HN)"
+  bash nastroje/test_kolo_preskoceni.sh || chyb=$((chyb + 1))
   echo "— startovní podklady: PREDAVKA.md do 15 kB, main předkem HEAD (nastroje/kontrola_podkladu.sh, S7)"
   { bash nastroje/kontrola_podkladu.sh && bash nastroje/kontrola_podkladu.sh --pojistka; } || chyb=$((chyb + 1))
   echo "— evidence a přehled: roadmap.json podle schématu S6, PREHLED.md jde vyrobit a odpovídá stavu (S6/S8 #613)"
   { python3 roadmapa/roadmapa.py --kontrola && python3 nastroje/prehled_stavu.py --kontrola; } || chyb=$((chyb + 1))
-  echo "STATICKE_KONTROLY: $((9 - chyb)) z 9 prošly"
+  echo "STATICKE_KONTROLY: $((10 - chyb)) z 10 prošly"
   return "$chyb"
 }
 # S3 (18. 11. 2026): pevná sada kalkulací nad <ref> × pracovní kopie (.).
@@ -209,6 +218,32 @@ poznamka_porovnani() {
   printf '%s' "${r:+proti $PROTI: $r}"; [ -n "$r" ] || printf 'proti %s: bez souhrnu' "$PROTI"
 }
 poznamka_staticke() { grep -o 'STATICKE_KONTROLY: [0-9]* z [0-9]* prošly' "$1" | tail -1 | sed 's/^STATICKE_KONTROLY: //'; }
+
+# ---------- prohlížečové harnessy potřebují playwright (HN, 21. 11. 2026) ----------
+# Koordinace 19. 11.: kolo hlásilo VŠE ZELENÉ, i když bez node_modules/playwright
+# přeskočilo 58 harnessů — přeskočené byly vidět jen v seznamu pod souhrnem.
+# Teď se to pozná HNED na začátku (žádných 20 minut zbytečných sad) a kolo
+# skončí chybou s návodem. Vědomý běh bez prohlížeče: KNG_BEZ_PROHLIZECE=1 —
+# pak výsledek zní „ZELENÁ BEZ PROHLÍŽEČE", nikdy „VŠE ZELENÉ".
+NAVOD_PLAYWRIGHT="Návod: v kořeni repozitáře  mkdir -p node_modules && ln -sfn \"\$(npm root -g)/playwright\" node_modules/playwright
+  (v cloudovém sezení: ln -sfn /opt/node-tools/node_modules/playwright node_modules/playwright; necommitovat),
+  nebo npm i playwright. Vědomě bez prohlížeče: KNG_BEZ_PROHLIZECE=1 (výsledek pak zní „ZELENÁ BEZ PROHLÍŽEČE“)."
+playwright_chybi() {
+  case "${KNG_KOLO_PLAYWRIGHT:-}" in chybi) return 0 ;; je) return 1 ;; esac
+  ! node -e "import('playwright').then(() => process.exit(0), () => process.exit(1))" >/dev/null 2>&1
+}
+bez_prohlizece=0
+if chce sady && playwright_chybi; then
+  if [ "${KNG_BEZ_PROHLIZECE:-}" = "1" ]; then
+    bez_prohlizece=1
+    echo "UPOZORNĚNÍ: playwright se nenačetl — prohlížečové harnessy se přeskočí (KNG_BEZ_PROHLIZECE=1)."
+  else
+    echo "CHYBA: playwright se z kořene repozitáře nenačte — prohlížečové harnessy (overit_*.mjs) by se přeskočily"
+    echo "  a kolo by NIC v prohlížeči neověřilo."
+    echo "  $NAVOD_PLAYWRIGHT"
+    exit 2
+  fi
+fi
 
 # ---------- běh ----------
 echo "TESTOVACÍ KOLO — kroky: $KROKY   (logy: $LOGY)"
@@ -237,12 +272,27 @@ if [ "${#preskocene[@]}" -gt 0 ]; then
     echo "::warning title=Přeskočené sady (nic neověřily)::${preskocene[*]}"
   fi
 fi
+# Harnessy přeskočené pro chybějící playwright: bez KNG_BEZ_PROHLIZECE=1 je to
+# selhání kola (i kdyby kontrola na začátku playwright našla a harness ho přesto
+# nenačetl), s ním jen „ZELENÁ BEZ PROHLÍŽEČE".
+bez_pw=0
+for l in "${preskocene[@]}"; do case "$l" in *"(chybí playwright)"*) bez_pw=$((bez_pw + 1)) ;; esac; done
+if [ "$bez_pw" -gt 0 ]; then
+  if [ "${KNG_BEZ_PROHLIZECE:-}" = "1" ]; then bez_prohlizece=1
+  else
+    selhalo=$((selhalo + 1))
+    echo "✗ $bez_pw prohlížečových harnessů se přeskočilo pro chybějící playwright — kolo NENÍ zelené."
+    echo "  $NAVOD_PLAYWRIGHT"
+  fi
+fi
 cast_mutaci=""
 if { chce mutace-jadro || chce mutace-server; } && [ -n "${KNG_MUTACE_CAST:-}${KNG_MUTACE_OD:-}" ]; then
   cast_mutaci="${KNG_MUTACE_CAST:+část $KNG_MUTACE_CAST}${KNG_MUTACE_CAST:+${KNG_MUTACE_OD:+, }}${KNG_MUTACE_OD:+od $KNG_MUTACE_OD.}"
 fi
 if [ "$selhalo" -eq 0 ] && [ -n "$cast_mutaci" ]; then
   echo "Výsledek: ZELENÁ ČÁST (mutace: $cast_mutaci) — ne celé kolo."
+elif [ "$selhalo" -eq 0 ] && [ "$bez_prohlizece" -eq 1 ]; then
+  echo "Výsledek: ZELENÁ BEZ PROHLÍŽEČE (KNG_BEZ_PROHLIZECE=1, přeskočeno harnessů: $bez_pw) — ne celé kolo."
 elif [ "$selhalo" -eq 0 ]; then
   echo "Výsledek: VŠE ZELENÉ."
 else

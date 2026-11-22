@@ -61,7 +61,7 @@ function pdnStranaOck(zak, v, jekly) {
    * poznámky dealu (`sachty`; náhled — poznámku do Pipedrive píše server
    * při uložení zakázky z uložených dat, VSD lib/pd_poznamka.mjs; tenhle
    * text se nikam nezapisuje). Jedna šachta = podklad beze změny. */
-  const out = { hodnoty, rucne: Object.assign({}, kl.hodnoty || {}),
+  const out = { hodnoty, rucne: pdnRucne(kl, zak),
     atyp: vo ? vsAtyp(v.data && v.data.ock) : !!zad.atyp, mena: 'CZK' };
   if (cena !== null) out.cena = cena;
   if (vo) out.sachty = 'Šachty v nabídce: ' + vsPredmetText(vo);
@@ -92,8 +92,35 @@ function pdnStranaProj(zak, v) {
     if (typeof nabidkaProjPlatby === 'function' && typeof planPdKalendar === 'function')
       kalendar = pdnText(planPdKalendar(nabidkaProjPlatby(zak, v, 'cz')));
   } catch (e) { kalendar = ''; }
-  const out = { hodnoty, rucne: Object.assign({}, kl.hodnoty || {}), kalendar, mena: 'CZK' };
+  const out = { hodnoty, rucne: pdnRucne(kl, zak), kalendar, mena: 'CZK' };
   if (cena !== null) out.cena = cena;
+  return out;
+}
+
+/* #673 (VZ-F2-R1): krycí listy pro Pipedrive vždy ZA ŘÍDÍCÍHO zákazníka.
+ * Ruční pole zákazníka (zástupci, podpisy, kopie faktur, zmocnitel) zapsaná
+ * u dalšího zákazníka leží v téže variantě (`kl.hodnoty` + `vzVlastnik`,
+ * `hodnotyZakaznika`) — ze surové zakázky by je krycí list ukázal jako údaje
+ * řídícího. Proto pohled řídícího (vzTiskPohled) a jeho kopie varianty bez
+ * cizích ručních hodnot (vzVariantaBezCizichKl). Platí pro suchý běh i pro
+ * budoucí ostrý zápis (#115) — obojí skládá tenhle podklad. Zakázka
+ * s jedním zákazníkem → tytéž objekty (beze změny). */
+function pdnPohledRidiciho(zak, v) {
+  if (typeof vzRezim !== 'function' || !vzRezim(zak)) return { zak, v };
+  const rid = vzRidiciId(zak);
+  const p = vzTiskPohled(zak, rid, v);
+  const vv = (p && vzTiskVarianta(p, v)) || vzVariantaBezCizichKl(v, rid);
+  return { zak: p || zak, v: vv };
+}
+/* Ruční hodnoty krycího listu pro převod: jeden zákazník = `kl.hodnoty`;
+ * v pohledu zákazníka navíc jeho `hodnotyZakaznika[id]` (cizí hodnoty už
+ * vyjmula vzVariantaBezCizichKl). */
+function pdnRucne(kl, zak) {
+  const out = Object.assign({}, (kl && kl.hodnoty) || {});
+  const p = zak && zak.vzPohledZakaznika;
+  const hz = kl && kl.hodnotyZakaznika;
+  const moje = (p && hz && typeof hz === 'object') ? hz[String(p.id)] : null;
+  if (moje && typeof moje === 'object') Object.keys(moje).forEach(k => { if (moje[k] !== undefined && moje[k] !== '') out[k] = moje[k]; });
   return out;
 }
 
@@ -108,12 +135,13 @@ function pdnPodklad(zak, jekly, volby) {
   const v = (typeof ridiciVarianta === 'function') ? ridiciVarianta(zak) : zak.varianty[0];
   const vedouci = (typeof zakazkaVedouciStrana === 'function') ? zakazkaVedouciStrana(zak) : '';
   const strany = {}, zdroje = {}, upozorneni = [];
+  const zr = pdnPohledRidiciho(zak, v);
   if (vedouci !== 'proj') {
-    strany.ock = pdnStranaOck(zak, v, jekly);
+    strany.ock = pdnStranaOck(zr.zak, zr.v, jekly);
     zdroje.ock = pdnPopisky(KRYCI_SEKCE, 'Krycí list OCK');
   }
   if (vedouci !== 'ock') {
-    strany.proj = pdnStranaProj(zak, v);
+    strany.proj = pdnStranaProj(zr.zak, zr.v);
     zdroje.proj = pdnPopisky(KRYCI_PROJ_SEKCE, 'Krycí list PROJ');
   }
   if (!vedouci) upozorneni.push('Zakázka nemá číslo nabídky OCK ani PROJ — v Pipedrive se OCK a PROJ evidují zvlášť '
@@ -190,4 +218,4 @@ function pdnCsv(vysledek, meta) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { PDN_STAVY, pdnPopisky, pdnPodklad, pdnZakaznici, pdnTelo, pdnStranaOck, pdnStranaProj, pdnNazevSouboru, pdnCsv };
+  module.exports = { PDN_STAVY, pdnPopisky, pdnPodklad, pdnPohledRidiciho, pdnRucne, pdnZakaznici, pdnTelo, pdnStranaOck, pdnStranaProj, pdnNazevSouboru, pdnCsv };

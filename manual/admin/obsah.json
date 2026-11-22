@@ -480,7 +480,7 @@
         },
         {
           "typ": "text",
-          "text": "**Šablony dokumentů** (.docx): česká šablona je zdroj, jazykové verze (EN, DE, FR) se z ní vyrábějí tlačítkem **Vyrobit z češtiny** nebo se nahraje doladěný soubor; *Nepřeložené fráze (CSV)* vypíše, co slovník neumí. Každá verze se zveřejňuje na server a z ní tisknou všichni přihlášení; historie verzí zůstává. **Režim centrálních šablon**: *Přísný* (doporučeno) — bez serverové šablony dokument nevznikne; *Měkký* — při výpadku serveru lze tisknout z místního souboru a tisk se zapíše do zámku varianty jako „místní šablona“."
+          "text": "**Šablony dokumentů** (.docx): jazykové verze (EN, DE, FR) se k české šabloně nahrávají jako **přeložené soubory** (tlačítko *Nahrát přeložený soubor*) — z češtiny se nevyrábějí; smlouvu, která je z víc než 20 % česky, nejde zveřejnit ani vytisknout. Chybí-li jazyková verze, tabulka u nabídky píše *tiskne se česky*, u smlouvy *nevytiskne se*. *Nepřeložené fráze (CSV)* vypíše, co slovník neumí. Každá verze se zveřejňuje na server a z ní tisknou všichni přihlášení; historie verzí zůstává. **Režim centrálních šablon**: *Přísný* (doporučeno) — bez serverové šablony dokument nevznikne; *Měkký* — při výpadku serveru lze tisknout z místního souboru a tisk se zapíše do zámku varianty jako „místní šablona“."
         },
         {
           "typ": "kroky",

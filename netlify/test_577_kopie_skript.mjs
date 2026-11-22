@@ -52,7 +52,13 @@ const { default: zalohaVynuceno } = await import('./functions/zaloha_vynuceno.mj
 let ok = 0, fail = 0;
 const test = (n, cond, info) => { if (cond) { ok++; console.log('OK  ' + n); }
   else { fail++; console.log('FAIL ' + n, info === undefined ? '' : JSON.stringify(info).slice(0, 600)); } };
-const TOKEN = 'k'.repeat(20) + randomBytes(24).toString('base64url');
+const TOKEN = process.env.KNG_577_TOKEN || ('k'.repeat(20) + randomBytes(24).toString('base64url'));
+/* ŠPATNÝ TOKEN SE NESMÍ SHODOVAT SE SPRÁVNÝM (HN, 21. 11. 2026; #638 „T4 v mutacích").
+ * Dřív `TOKEN.slice(0, -1) + 'X'` — TOKEN končí náhodným znakem base64url a
+ * končil-li na „X" (1 : 64), byl „špatný" token správný, server vrátil 200
+ * a T4 padl (kolo HN, sady). Poslední znak se teď vždy ZMĚNÍ. Reprodukce
+ * dřívější vady: KNG_577_TOKEN=<token končící X>. */
+const pokazToken = (t) => t.slice(0, -1) + (t.slice(-1) === 'X' ? 'Y' : 'X');
 const WEB = 'engscalc.netlify.app';
 const H = (extra) => ({ authorization: 'Bearer ' + TOKEN, host: WEB, 'x-nf-client-connection-ip': '203.0.113.7', ...(extra || {}) });
 const volej = async (cesta, opt = {}) => {
@@ -105,7 +111,9 @@ try {
   process.env.KNG_DISK_TOKEN = TOKEN;
   r = await volej('/api/zaloha_disk', { headers: H({ authorization: '' }) });
   test('T3 bez hlavičky Authorization 403', r.status === 403, r);
-  r = await volej('/api/zaloha_disk', { headers: H({ authorization: 'Bearer ' + TOKEN.slice(0, -1) + 'X' }) });
+  test('T4a pokažený token se vždy liší od správného (i když správný končí „X")',
+    pokazToken(TOKEN) !== TOKEN && [...'ABCXYZabcxyz0189-_'].every(c => pokazToken('k'.repeat(40) + c) !== 'k'.repeat(40) + c));
+  r = await volej('/api/zaloha_disk', { headers: H({ authorization: 'Bearer ' + pokazToken(TOKEN) }) });
   test('T4 špatný token 403 se stejným textem jako vypnutá cesta (bez úniku)', r.status === 403 && r.telo.chyba === textVypnuto
     && !JSON.stringify(r.telo).includes(TOKEN.slice(0, 8)) && Object.keys(r.telo).sort().join() === 'chyba,ok', r.telo);
   r = await volej('/api/zaloha_disk', { headers: H({ authorization: 'Basic ' + TOKEN }) });

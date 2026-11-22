@@ -71,6 +71,12 @@ async function uloz(zak) {
   if (t.razitko) zak.uloRazitko = t.razitko;
   return t;
 }
+
+/* B235/B236 (dávka BZ): server zapisuje jen do dealu, který zakázce patří
+ * (pd_overeni.mjs) — přípravek dá dealu v simulátoru číslo nabídky zakázky. */
+const BZ_CN = SIM.pdSimStav().data.pole.deal.find(p => p.field_name === 'Číslo nabídky (CN)').field_code;
+const dealPatri = (id, cislo) => { const d = SIM.pdSimStav().data.dealy.find(x => String(x.id) === String(id)); if (d) d.custom_fields[BZ_CN] = cislo; };
+
 const D = SIM.pdSimStav().data;
 const dealy = D.dealy.filter(d => d.status !== 'deleted').map(d => d.id);
 const notes = () => (SIM.pdSimStav().data.poznamky || []).filter(p => p.active_flag !== false);
@@ -87,7 +93,7 @@ function nova(viceSachet, dealId) {
     v.data.ock.nazev = 'Výtah A';
     v.data.ock.dalsi = [{ id: 's_b1', nazev: 'Výtah B', ks: 2, zadani: Object.assign(kopie(v.data.ock.zadani), { zdvih: 12 }) }];
   }
-  if (dealId) z.pdDealId = String(dealId);
+  if (dealId) { z.pdDealId = String(dealId); dealPatri(dealId, z.cislo); }
   return z;
 }
 const soubor = (t) => t.soubor;
@@ -214,7 +220,7 @@ let Z2, ID2;
   const z = nova(true, dealy[6]);
   const t3 = await uloz(z);
   const id1 = ulozeno(soubor(t3)).pdPoznamkaSachty.id;
-  z.pdDealId = String(dealy[7]);
+  z.pdDealId = String(dealy[7]); dealPatri(dealy[7], z.cislo);   // BZ: nový deal téže zakázky
   const t4 = await uloz(z);
   const ul = ulozeno(soubor(t4));
   test('5 změna dealu: nová poznámka u nového dealu, stará nedotčená', t4.pdPoznamka === 'zalozeno' && ul.pdPoznamkaSachty.deal === String(dealy[7])
@@ -258,10 +264,13 @@ let Z2, ID2;
 /* 7) Pipedrive selže → uložení projde s varováním, zápis se zopakuje */
 {
   const z = nova(true, dealy[9]);
-  const postPred = pozadavkyNotes().length;
+  /* BZ (B235): první zápis do dealu nejdřív deal přečte (ověření vazby,
+   * pd_overeni.mjs) — při výpadku selže už to čtení. Počítají se proto všechny
+   * požadavky do Pipedrive: pořád jediný, bez opakování. */
+  const postPred = SIM.pdSimStav().pozadavky.length;
   SIM.pdSimNastav({ scenar: 'vypadek' });
   const t = await uloz(z);
-  const postVypadek = pozadavkyNotes().length - postPred;
+  const postVypadek = SIM.pdSimStav().pozadavky.length - postPred;
   SIM.pdSimNastav({ scenar: '' });
   test('7 výpadek: zakázka uložena, varování, bez id', t.status === 200 && t.pdPoznamka === 'chyba' && /poznámky dealu/.test(t.varovani || '')
     && ulozeno(soubor(t)).pdPoznamkaSachty === undefined, t);
@@ -325,21 +334,23 @@ let Z2, ID2;
 
 /* 10) N3 — dvě zakázky na jednom dealu: dvě poznámky; ztracené id se převezme podle značky */
 {
-  const a = nova(true, dealy[12]), b = nova(true, dealy[12]);
+  /* BZ (B235, J. V. 21. 11. 2026): deal nese jedno číslo nabídky — zakázka
+   * s jiným číslem na témž dealu do něj nepíše (stav „neovereno"). Dřív tu
+   * vznikly dvě poznámky (N3). */
+  const b = nova(true, dealy[12]), a = nova(true, dealy[12]);   // deal nese číslo `a` (dealPatri posledního)
   b.varianty[0].data.ock.dalsi[0].nazev = 'Výtah Z';
   const ta = await uloz(a), tb = await uloz(b);
   const p = notes().filter(x => x.deal_id === dealy[12]);
-  test('10 N3: dvě zakázky na dealu = dvě poznámky se svou značkou', ta.pdPoznamka === 'zalozeno' && tb.pdPoznamka === 'zalozeno' && p.length === 2
-    && p.some(x => x.content.endsWith(' — nabídka ' + a.cislo)) && p.some(x => x.content.endsWith(' — nabídka ' + b.cislo)), p.map(x => x.content));
+  test('10 N3+B235: zakázka s číslem dealu zapíše, cizí číslo na témž dealu ne', ta.pdPoznamka === 'zalozeno' && tb.pdPoznamka === 'neovereno' && p.length === 1
+    && p.some(x => x.content.endsWith(' — nabídka ' + a.cislo)) && /nepatří/.test(tb.varovani || ''), { a: ta.pdPoznamka, b: tb.pdPoznamka, p: p.map(x => x.content) });
   /* ztracené id (např. kolize) — server poznámku najde a neduplikuje */
   const sa = soubor(ta); const raw = ulozeno(sa); const idA = raw.pdPoznamkaSachty.id;
   delete raw.pdPoznamkaSachty; pamet.set('zakazky/z/' + sa, JSON.stringify(raw)); a.uloRazitko = raw.uloRazitko;
   a.varianty[0].data.ock.dalsi[0].nazev = 'Výtah Y';
   const ta2 = await uloz(a);
   const p2 = notes().filter(x => x.deal_id === dealy[12]);
-  test('10 N3: bez id se převezme vlastní poznámka (GET ?deal_id), žádná třetí', ta2.pdPoznamka === 'upraveno' && p2.length === 2
-    && ulozeno(sa).pdPoznamkaSachty.id === idA && /Výtah Y/.test(p2.find(x => x.id === idA).content)
-    && /Výtah Z/.test(p2.find(x => x.id !== idA).content), { s: ta2.pdPoznamka, p2: p2.map(x => [x.id, x.content]) });
+  test('10 N3: bez id se převezme vlastní poznámka (GET ?deal_id), žádná druhá', ta2.pdPoznamka === 'upraveno' && p2.length === 1
+    && ulozeno(sa).pdPoznamkaSachty.id === idA && /Výtah Y/.test(p2.find(x => x.id === idA).content), { s: ta2.pdPoznamka, p2: p2.map(x => [x.id, x.content]) });
   test('10 N3: značka v obsahu (Pipedrive obalí do <p>) se pozná', PP.pdPoznamkaJeNase('<p>' + PP.pdPoznamkaEsc(PP.pdPoznamkaText(a)) + '</p>', a)
     && !PP.pdPoznamkaJeNase(PP.pdPoznamkaEsc(PP.pdPoznamkaText(a)), b) && !PP.pdPoznamkaJeNase('Jiná poznámka — nabídka ' + a.cislo, a));
 }
@@ -366,7 +377,7 @@ let Z2, ID2;
   const t0 = await ulozO(z);
   if (t0.status !== 200) throw new Error('obchodník ' + JSON.stringify(t0).slice(0, 200));
   await vypinac(false);
-  const za = JSON.parse(pamet.get('zakazky/z/' + soubor(t0))); za.pdDealId = String(dealy[13]);
+  const za = JSON.parse(pamet.get('zakazky/z/' + soubor(t0))); za.pdDealId = String(dealy[13]); dealPatri(dealy[13], za.cislo);
   const ta = await uloz(za);
   if (ta.status !== 200) throw new Error('správce ' + JSON.stringify(ta).slice(0, 200));
   await vypinac(true);

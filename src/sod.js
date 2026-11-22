@@ -298,7 +298,10 @@ function sodSachtySymboly(d, zak, varianta, jekly, L, sablona) {
   const k = vo.variant;
   const druh = k === 1 ? 'varianta šachty' : (k >= 2 && k <= 4 ? 'varianty šachet' : 'variant šachet');
   const ks = ' ' + P('ks');
-  const seznam = vo.sachty.map(x => x.nazev + ' ' + x.ks + ks).join(', ');
+  /* #648: výchozí název „Šachta N" v jazyce smlouvy (Shaft / Schacht / Gaine N) */
+  const NZ = (typeof vsNazevPreloz === 'function') ? vsNazevPreloz : require('./vice_sachet.js').vsNazevPreloz;
+  const nazvy = vo.sachty.map(x => NZ(x.nazev, L || 'cz'));
+  const seznam = vo.sachty.map((x, i) => nazvy[i] + ' ' + x.ks + ks).join(', ');
   d.placeholders.SACHTY_SOD_PREDMET = k + ' ' + P(druh) + ', ' + P('celkem') + ' ' + vo.celkem + ks + ' (' + seznam + ')';
   /* Ceny šachet ve měně dokumentu. L3 (rozhodnutí J. V. 18. 11. 2026: „šachty
    * počítat jako nabídka"): v eurech rozpočet ceny před slevou do šachet
@@ -313,7 +316,7 @@ function sodSachtySymboly(d, zak, varianta, jekly, L, sablona) {
     const rs = (typeof rozpocetSachet === 'function') ? rozpocetSachet : require('./vice_sachet.js').rozpocetSachet;
     if (vahy.some(v => v > 0)) castky = rs(+predSl.cena, vahy);
   }
-  const radky = vo.sachty.map((x, i) => x.nazev + (x.mustky ? ', ' + P('vč. můstků') : '')
+  const radky = vo.sachty.map((x, i) => nazvy[i] + (x.mustky ? ', ' + P('vč. můstků') : '')
     + ' – ' + x.ks + ks + ' – ' + kc(castky[i]));
   const vyr = sodRozpisVyrovnani(d, castky, predSl);
   /* L4: znaménko zvlášť jako řádek slevy nabídky („− 292 700,00 Kč", U+2212) */
@@ -721,6 +724,9 @@ function sodProjPlatby(d, sablona, lang) {
  * konkrétní kalkulaci. Adresa stavby jde z hlavičky PROJ; když ji projekce
  * nemá, spadne na adresu z hlavičky OCK — objekt je jeden. */
 function plnaMocData(zak, varianta, sablona) {
+  /* #674 a: jako nabidkaData / sodData (přes nabídku) — jen z pohledu zákazníka;
+   * se surovou zakázkou by krycí list PROJ vrátil cizí ruční hodnoty (zmocnitel). */
+  if (typeof vzTiskHlidej === 'function') vzTiskHlidej(zak);
   const h = (typeof projHlavicka === 'function' ? projHlavicka(zak) : (zak.projHlavicka || {})) || {};
   const placeholders = Object.assign({},
     typeof firmaPlaceholders === 'function'

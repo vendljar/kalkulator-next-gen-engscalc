@@ -892,10 +892,24 @@ async function obsluha(req, uvolnit) {
        * 12. 10. 2026): pole se stropem délky, IČO bez mezer, nic navíc.
        * Razítka (kdo kartu založil a upravil) se drží ze zálohy. Klíč musí
        * mít tvar z/<klíč> jako při běžném zápisu. */
-      overeni = (k, v) => {
+      const karta = (v) => {
         const z = globalThis.zakaznikOciste(v, obnovaTxt(v.upravil, 200), obnovaTxt(v.upraven, 40));
         z.autor = obnovaTxt(v.autor, 200); z.zalozen = obnovaTxt(v.zalozen, 40);
+        return z;
+      };
+      overeni = (k, v) => {
+        /* B234 (dávka BZ): historie verzí karty `h/<klíč>` — pole verzí touž očistou. */
+        if (/^h\/[^/]+$/.test(k)) {
+          if (!Array.isArray(v)) return 'historie karty zákazníka nemá tvar pole';
+          return { hodnota: v.filter(x => x && typeof x === 'object' && !Array.isArray(x)).slice(-globalThis.ZAKAZNIK_HISTORIE_MAX)
+            .map(x => ({ kdy: obnovaTxt(x.kdy, 40), kdo: obnovaTxt(x.kdo, 200), proc: obnovaTxt(x.proc, 200),
+              verze: karta(x.verze && typeof x.verze === 'object' && !Array.isArray(x.verze) ? x.verze : {}) })) };
+        }
+        if (!v || typeof v !== 'object' || Array.isArray(v)) return 'karta zákazníka nemá tvar objektu';
+        const z = karta(v);
         if (!/^z\/[^/]+$/.test(k) || !globalThis.zakaznikKlic(z)) return 'nepřijatelný klíč nebo zákazník bez IČO i názvu';
+        const navrhy = globalThis.zakaznikNavrhyOciste(v.navrhy);   // B234: návrhy změn karty
+        if (navrhy.length) z.navrhy = navrhy;
         return { hodnota: z };
       };
     }

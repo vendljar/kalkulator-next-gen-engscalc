@@ -478,6 +478,29 @@ for (const [jm, fn] of [['název', a => { a.dalsiZakaznici[0].hlavicka.objednate
   const r = await opakuj({ g }, fn);
   test('E3 zmrazení: ' + jm + ' B po odeslané nabídce → 409, úložiště beze změny',
     r.status === 409 && /už odešla nabídka/.test(r.chyba || '') && ulozeno(zakB.soubor) === pred, { status: r.status, chyba: r.chyba });
+  /* #674 c: předponu „Neuloženo:" přidá jen volající — jednou. */
+  test('#674 c: ' + jm + ' — hláška začíná „Neuloženo:" právě jednou', /^Neuloženo: (?!Neuloženo)/.test(r.chyba || ''), r.chyba);
+}
+/* #674 d: B (s písmenem), kterému odešla CN, se stává řídícím — jeho název,
+ * sídlo, IČO a DIČ zůstávají zmrazené v uložení výměny I POTOM (klient je
+ * zamyká totéž: vzZakaznikPoleZmrazeno, zamekZakCestaZmrazena). Pojistka:
+ * před opravou druhé uložení (B už řídící) změnu názvu pustilo (200). */
+{ const o = await sOdeslanouB('674d výměna + název', cO);
+  const vymen = a => { const v = G.vzVymenRidiciho(a, 'z2'); if (!v.ok) throw new Error(v.chyba); };
+  const r1 = await opakuj(o, a => { vymen(a); a.objednatel = 'TEST – DRUHÝ ODBĚRATEL PŘEJMENOVANÝ s.r.o.'; });
+  test('#674 d: výměna na B + nový název v jednom uložení → 409 (jednou „Neuloženo:")',
+    r1.status === 409 && /^Neuloženo: zákazníkovi/.test(r1.chyba || ''), { status: r1.status, chyba: r1.chyba });
+  const r2 = await opakuj(o, vymen);
+  test('#674 d: samotná výměna na B → 200', r2.status === 200, { status: r2.status, chyba: r2.chyba });
+  const g = await nacti(o.soubor, cO);
+  const pred = ulozeno(o.soubor);
+  for (const [jm, fn] of [['název', a => { a.objednatel = 'TEST – DRUHÝ ODBĚRATEL PŘEJMENOVANÝ s.r.o.'; }], ['IČO', a => { a.ico = '11112222'; }]]) {
+    const r = await opakuj({ g }, fn);
+    test('#674 d: B už řídící — ' + jm + ' v hlavičce → 409, úložiště beze změny',
+      r.status === 409 && /už odešla nabídka/.test(r.chyba || '') && ulozeno(o.soubor) === pred, { status: r.status, chyba: r.chyba });
+  }
+  const r3 = await opakuj({ g }, a => { a.kontakt = 'Nová kontaktní osoba B'; });
+  test('#674 d: B už řídící — kontaktní osoba se změnit smí → 200', r3.status === 200, { status: r3.status, chyba: r3.chyba });
 }
 { const g = await nacti(zakB.soubor, cO);
   const r = await opakuj({ g }, a => { a.dalsiZakaznici[0].hlavicka.kontakt = 'Nová kontaktní osoba'; a.dalsiZakaznici[1].hlavicka.objednatel = 'TEST – TŘETÍ PŘEJMENOVANÝ s.r.o.'; });

@@ -25,6 +25,7 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
   async smaz(k) { pamet.delete(nazev + '/' + k); },
 });
 
+import './nastroje/harness_prostredi.mjs';   // ADMIN_EMAIL dřív než sdilene.mjs (#638)
 import { createRequire } from 'module';
 import { createServer } from 'http';
 import { readFileSync } from 'fs';
@@ -49,6 +50,7 @@ catch (e) {
   process.exit(2);
 }
 const ZC = require(path.resolve('src/zkusebni_cenik.js'));
+const { casLimit, cekejNaStart, cekejNaKlid, prihlasVProhlizeci } = require('./nastroje/harness_cekani.js');
 
 /* VS #570 E2: klient čte vypínač zkušebních funkcí po přihlášení. */
 const { default: funkceFn } = await import('./netlify/functions/funkce.mjs');
@@ -83,6 +85,8 @@ const ADRESA = 'http://127.0.0.1:' + server.address().port;
 
 const prohlizec = await chromium.launch({ args: ['--no-sandbox'] });
 const page = await (await prohlizec.newContext({ viewport: { width: 1360, height: 900 } })).newPage();
+page.setDefaultTimeout(casLimit());
+page.setDefaultNavigationTimeout(casLimit(4));
 const chyby = [];
 page.on('pageerror', e => chyby.push(String(e)));
 let cookieJar = '';
@@ -111,14 +115,10 @@ const dlgStub = () => page.evaluate(() => {
 const dlgTexty = () => page.evaluate(() => (window.__dlgTexty || []).join(' | '));
 
 await page.goto(ADRESA);
-await page.waitForFunction(() => typeof window.render === 'function');
-await page.waitForTimeout(400);
+await cekejNaStart(page);
 await dlgStub();
-await page.fill('#onlineEmail', 'obchodnik.b111@priklad.cz');
-await page.fill('#onlineHeslo', 'ObchodniHeslo1');
-await page.click('#prihlaseni-box >> text=Přihlásit');
-await page.waitForFunction(() => { try { return !!ONLINE_STAV.ja; } catch (e) { return false; } }, null, { timeout: 10000 });
-await page.waitForTimeout(500);
+await prihlasVProhlizeci(page, 'obchodnik.b111@priklad.cz', 'ObchodniHeslo1');
+await cekejNaKlid(page);
 
 /* Zakázka jako v 21. kole: šachta 1,6 × 1,8 m, zdvih 9 m, zkušební ceník. */
 await page.evaluate(([c, cp]) => {
@@ -129,7 +129,6 @@ await page.evaluate(([c, cp]) => {
   ZAK.cislo = '2026 - OPR - CN - 9801 - TEST'; ZAK.nazevAkce = 'TEST B111'; ZAK.objednatel = 'TEST – TESTOVACÍ ODBĚRATEL s.r.o.';
   prepniTab('kalk'); render();
 }, [ZC.zkusebniCenik(), ZC.zkusebniCenikProj()]);
-await page.waitForTimeout(300);
 test('prohlížeč je v roli obchodníka', await page.evaluate(() => NAST.jeAdmin === false && zobrazeniRole() === 'Obchodník'));
 const cenaOck = () => page.evaluate(() => vypocetAkt().souhrn.zakladCena);
 const cenaPred = await cenaOck();
@@ -137,7 +136,6 @@ test('výchozí cena OCK zkušební zakázky je 980 000 Kč', cenaPred === 98000
 
 /* ---------- OCK: „+ přidat položku" a záporná cena ---------- */
 await page.evaluate(() => vlastniAdd('hrubaOck'));
-await page.waitForTimeout(200);
 const pole = page.locator(`input[onchange^="vlastniSet('hrubaOck', 0, 'cena'"]`).first();
 test('pole ceny vlastní položky je vidět obchodníkovi', await pole.count() === 1);
 test('pole ceny vlastní položky má min="0"', (await pole.getAttribute('min')) === '0', await pole.getAttribute('min'));
@@ -145,27 +143,27 @@ const poleMn = page.locator(`input[onchange^="vlastniSet('hrubaOck', 0, 'mnozstv
 test('pole množství vlastní položky má min="0"', (await poleMn.count()) === 1 && (await poleMn.getAttribute('min')) === '0');
 await pole.fill('-302167');
 await pole.dispatchEvent('change');
-await page.waitForTimeout(250);
+await page.waitForFunction(() => (window.__dlgTexty || []).length > 0).catch(() => {});
 const texty1 = await dlgTexty();
 test('záporná cena → hláška, že částka nesmí být záporná (a odkaz na slevu)', /nemohou být záporné/.test(texty1) && /slev/.test(texty1), texty1);
 test('cena vlastní položky zůstala 0', await page.evaluate(() => vlastniPolozkyArr('hrubaOck')[0].cena === 0));
 test('cena nabídky OCK zůstala 980 000 Kč', (await cenaOck()) === 980000, await cenaOck());
-await poleMn.fill('-1'); await poleMn.dispatchEvent('change'); await page.waitForTimeout(200);
+await poleMn.fill('-1'); await poleMn.dispatchEvent('change'); await cekejNaKlid(page);
 test('záporné množství vlastní položky se také odmítne', await page.evaluate(() => vlastniPolozkyArr('hrubaOck')[0].mnozstvi === 1));
 /* kladná částka dál jde (oprava neblokuje běžnou práci) */
-await pole.fill('5000'); await pole.dispatchEvent('change'); await page.waitForTimeout(200);
+await pole.fill('5000'); await pole.dispatchEvent('change'); await cekejNaKlid(page);
 test('kladná částka vlastní položky se zapíše', await page.evaluate(() => vlastniPolozkyArr('hrubaOck')[0].cena === 5000));
 
 /* ---------- PROJ: „+ přidat fixní položku" a záporná částka ---------- */
 await page.evaluate(() => { prepniTab('proj'); pjPolozkaAdd(0, 'fix'); render(); });
-await page.waitForTimeout(250);
 const j = await page.evaluate(() => PJ.sekce[0].polozky.length - 1);
 const cenaProj = () => page.evaluate(() => vypocetProjAkt().souhrn.celkem);
 const projPred = await cenaProj();
 const poleP = page.locator(`input[onchange^="pjSet(0, 'polozky.${j}.cena'"]`).first();
 test('pole částky vlastní položky PROJ je vidět a má min="0"', (await poleP.count()) === 1 && (await poleP.getAttribute('min')) === '0');
 await page.evaluate(() => { window.__dlgTexty = []; });
-await poleP.fill('-90400'); await poleP.dispatchEvent('change'); await page.waitForTimeout(250);
+await poleP.fill('-90400'); await poleP.dispatchEvent('change');
+await page.waitForFunction(() => (window.__dlgTexty || []).length > 0).catch(() => {});
 test('záporná částka PROJ → hláška a cena PROJ beze změny',
   /záporné/.test(await dlgTexty()) && (await cenaProj()) === projPred, { texty: await dlgTexty(), pred: projPred, po: await cenaProj() });
 
@@ -173,7 +171,7 @@ test('záporná částka PROJ → hláška a cena PROJ beze změny',
 await page.evaluate(() => { prepniTab('kalk'); vlastniPolozkyArr('hrubaOck')[0].cena = -302167; render(); });
 await page.evaluate(() => { window.__dlgTexty = []; });
 const vysl = await page.evaluate(() => zakUlozUI().then(v => v, e => 'chyba: ' + e.message));
-await page.waitForTimeout(500);
+await cekejNaKlid(page);
 const ulozeno = [...pamet.keys()].some(k => k.startsWith('zakazky/z/') && k.includes('9801'));
 const vidi = await page.evaluate(() => document.body.innerText + ' ' + (window.__dlgTexty || []).join(' '));
 test('podvrh záporné ceny z konzole: server zakázku neuloží', !ulozeno, { vysl });

@@ -73,12 +73,18 @@ async function uloz(zak) {
   if (t.razitko) zak.uloRazitko = t.razitko;
   return t;
 }
+
+/* B235/B236 (dávka BZ): server zapisuje jen do dealu, který zakázce patří
+ * (pd_overeni.mjs) — přípravek dá dealu v simulátoru číslo nabídky zakázky. */
+const BZ_CN = SIM.pdSimStav().data.pole.deal.find(p => p.field_name === 'Číslo nabídky (CN)').field_code;
+const dealPatri = (id, cislo) => { const d = SIM.pdSimStav().data.dealy.find(x => String(x.id) === String(id)); if (d) d.custom_fields[BZ_CN] = cislo; };
+
 const notes = () => (SIM.pdSimStav().data.poznamky || []).filter(p => p.active_flag !== false);
 const deal = SIM.pdSimStav().data.dealy.filter(d => d.status !== 'deleted').map(d => d.id).slice(-3)[0];
 
 const A = 'TEST – ALFA ODBĚRATEL s.r.o.', B = 'TEST – BETA ODBĚRATEL s.r.o.', C = 'TEST – GAMA ODBĚRATEL s.r.o.';
 const z = zk.novaZakazka();
-z.cislo = '2026 - OPR - CN - 9790 - TEST'; z.nazevAkce = 'TEST VZ-E6 šachty × zákazníci'; z.objednatel = A; z.pdDealId = String(deal);
+z.cislo = '2026 - OPR - CN - 9790 - TEST'; z.nazevAkce = 'TEST VZ-E6 šachty × zákazníci'; z.objednatel = A; z.pdDealId = String(deal); dealPatri(deal, z.cislo);
 const v1 = z.varianty[0];
 Object.assign(v1.data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2, nastupiste: 4 });
 v1.data.ock.fixes = true;

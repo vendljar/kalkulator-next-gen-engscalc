@@ -569,8 +569,64 @@ function zamekZakStav(zak) {
            sod: zam.some(v => zamekSodHlavicky(v, zak)) };
 }
 
+/* STRANA ZAKÁZKY PO ZÁMKU (B231, audit 20. 11. 2026; J. V. 21. 11. 2026).
+ * Příznaky `jenProj` / `jenOck` určují, která strana (OCK / PROJ) se počítá,
+ * tiskne, jde do controllingu a do hodnoty dealu (zakazkaVyrazenaStrana).
+ * Dřív je obyčejné uložení přepnulo i po zámku a po Prodáno — strana
+ * neposouzená při zámku (ruční cena, výjimka, marže) se tak dostala do
+ * prodané zakázky bez schválení a cizí obchodník přepnul, co jde do
+ * controllingu. Od B231 jsou příznaky zmrazené, dokud zakázka nese zamčenou
+ * variantu: server zapíše stav příznaků do zámku (`zamek.strana`, razítko
+ * mimo klíč, drží ho uloZamekRazitkaDrz) a změnu odmítne (403) — pro každou
+ * roli; cesta ven je odemčení (administrátor) nebo nová zakázka. */
+const ZAMEK_STRANA_CESTY = ['ZAK.jenProj', 'ZAK.jenOck'];
+/* Pravdivost příznaku = totéž pravidlo jako zakazkaVedouciStrana (jakákoli
+ * pravdivá hodnota, revize Fable R1: `jenProj: 1` / "ano" / {} se dřív
+ * neporovnávalo, a přitom stranu přepnulo). */
+function zamekStranaZnak(zak) {
+  return { jenProj: !!(zak && zak.jenProj), jenOck: !!(zak && zak.jenOck) };
+}
+const ZAMEK_STRANA_HLASKA = 'Zakázka má odeslanou (uzamčenou) nabídku — strana zakázky (jen projekce / jen realizace, '
+  + 'vedoucí strana podle čísla nabídky) se už nemění, rozhoduje o ceně, controllingu i hodnotě dealu. '
+  + 'Pokračujte novou zakázkou, nebo požádejte administrátora o odemčení.';
+/* Serverová pojistka: změnil se příznak strany zakázky se zamčenou variantou?
+ * Zámek se bere z ULOŽENÉ verze; varianta, kterou v témže uložení odemkl
+ * správce, se nepočítá (jako zamekZakZmeny). Vrací důvod nebo ''. */
+function zamekStranaZmena(stara, nova) {
+  const nove = (nova && nova.varianty) || [];
+  const zamcene = ((stara && stara.varianty) || []).filter(sv => {
+    const nv = nove.find(x => x && sv && x.id === sv.id);
+    return variantaUzamcena(sv) && (!nv || variantaUzamcena(nv));
+  });
+  if (!zamcene.length) return '';
+  const a = zamekStranaZnak(stara), b = zamekStranaZnak(nova);
+  /* Revize Fable R2: zmrazí se i VÝSLEDEK — počítaná (vyřazená) strana, kterou
+   * bez příznaků určuje číslo nabídky (doplněné číslo OCK u zakázky jen
+   * s PROJ by jinak stranu přepnulo). Snímek zamek.strana je doklad téhož. */
+  const vyr = (z) => (typeof zakazkaVyrazenaStrana === 'function' ? zakazkaVyrazenaStrana(z) : '') || '';
+  if (a.jenProj === b.jenProj && a.jenOck === b.jenOck && vyr(stara) === vyr(nova)) return '';
+  return ZAMEK_STRANA_HLASKA;
+}
+/* Snímek příznaků strany do NOVÉHO zámku (píše jen server). */
+function zamekStranaSnimek(zak) {
+  const z = zamekStranaZnak(zak);
+  return { jenProj: z.jenProj, jenOck: z.jenOck,
+    vyrazena: (typeof zakazkaVyrazenaStrana === 'function' ? zakazkaVyrazenaStrana(zak) : '') || '' };
+}
+
 /* Důvod, proč se cesta hlavičky nesmí změnit, nebo ''. */
 function zamekZakCestaZmrazena(zak, cesta) {
+  /* B231: příznak strany zmrazí kterákoli zamčená varianta. */
+  if (ZAMEK_STRANA_CESTY.indexOf(cesta) >= 0)
+    return ((zak && zak.varianty) || []).some(v => variantaUzamcena(v)) ? ZAMEK_STRANA_HLASKA : '';
+  /* #674 d: řídící zákazník s písmenem (stal se řídícím výměnou), kterému
+   * odešla nabídka — název, sídlo, IČO a DIČ v hlavičce zmrazené (jako
+   * u dalšího zákazníka; server vzServerZakaznici § 5). */
+  const mz = /^ZAK\.(objednatel|adresaObjednatele|ico|dic)$/.exec(String(cesta));
+  if (mz && typeof vzZakaznikPoleZmrazeno === 'function' && typeof vzRidiciId === 'function') {
+    const d = vzZakaznikPoleZmrazeno(zak, vzRidiciId(zak), mz[1]);
+    if (d) return d;
+  }
   const st = zamekZakStav(zak);
   if (!st.cn && !st.sod) return '';
   const c = zamekZakCesty();
@@ -761,6 +817,15 @@ function zamekKdyProblem(kdy, ted) {
   return '';
 }
 
+/* #665: snímek zpracovatele nabídky pro zámek (blok „Vypracoval") z profilu
+ * — prohlížeč: přihlášený (zpracovatelAktualni), server: relace (profilZUctu).
+ * Bez podpisu (sken je velký a leží stranou účtu). Bez e-mailu → null. */
+function zamekZpracovatelSnimek(profil) {
+  const t = x => String(x == null ? '' : x).replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 200);
+  if (!profil || typeof profil !== 'object' || !t(profil.email)) return null;
+  return { email: t(profil.email), jmeno: t(profil.jmeno), titul: t(profil.titul), funkce: t(profil.funkce), telefon: t(profil.telefon) };
+}
+
 function zamkniVariantu(v, info) {
   if (!v) return null;
   info = info || {};
@@ -786,7 +851,7 @@ function zamkniVariantu(v, info) {
    * objednatel, ico } jen u zakázky s víc zákazníky (vzRazitkoSnimek);
    * s jedním zákazníkem klíč chybí. Server si snímek složí sám. */
   if (info.zakaznik && typeof info.zakaznik === 'object') zaznam.zakaznik = info.zakaznik;
-  if (variantaUzamcena(v)) {
+  if (variantaUzamcena(v)) {   // další tisk: snímek zpracovatele zůstává z prvního (#665)
     if (!Array.isArray(v.zamek.tisky)) v.zamek.tisky = [];
     v.zamek.tisky.push(zaznam);
     return v.zamek;
@@ -827,6 +892,10 @@ function zamkniVariantu(v, info) {
     snimek: info.snimek || null,
     tisky: [zaznam],
   };
+  /* #665: blok „Vypracoval" z doby odeslání (zamekZpracovatelSnimek). Mimo klíč
+   * zámku — server ho u nového zámku zapíše z relace a dál drží uložený
+   * (uloZamekRazitkaDrz), klientovi nevěří. Bez profilu klíč chybí. */
+  if (info.zpracovatel && typeof info.zpracovatel === 'object') v.zamek.zpracovatel = info.zpracovatel;
   return v.zamek;
 }
 
@@ -918,6 +987,16 @@ function zamekVysledekRozdily(klient, server, max, opts) {
     for (const x of pole) { const id = idRadku(x); if (!id || m.has(id)) return null; m.set(id, x); }
     return m;
   };
+  /* B232 (audit 20. 11. 2026): v přísném porovnání nesmí číslo chybět ani
+   * přebývat — klíč (nebo hodnota null) jen na jedné straně, pod kterým je
+   * číslo, je rozdíl. Dřív prošel výsledek, ze kterého klient vypustil 782
+   * z ~790 čísel (controlling pak ukázal náklad 0) nebo do něj číslo přidal
+   * (řádek můstků v dokumentu). Volné porovnání (starší zámky, obnova) beze změny. */
+  const maCislo = (x, h) => {
+    if (cislo(x)) return true;
+    if (!x || typeof x !== 'object' || (h || 0) > 40) return false;
+    return Object.keys(x).some(k => maCislo(x[k], (h || 0) + 1));
+  };
   const projdi = (a, b, c) => {
     /* B146 (audit 12. 10. 2026): v přísném porovnání je pole řádků proti
      * čemukoli jinému (objekt, null, chybějící klíč) rozdíl — tatáž verze
@@ -926,6 +1005,10 @@ function zamekVysledekRozdily(klient, server, max, opts) {
     if (prisne && Array.isArray(a) !== Array.isArray(b)) { pridej(c); return; }
     if (a === undefined || b === undefined) return;          // klíč jen v jednom výsledku
     if (cislo(a) || cislo(b)) { if (!(cislo(a) && cislo(b) && stejneCislo(a, b))) pridej(c); return; }
+    /* Revize Fable R3: v přísném porovnání je objekt / pole s číslem proti
+     * čemukoli, co objekt není (null, text, true…), rozdíl — dřív se podstrom
+     * s čísly zaměnil za "x" a razítko bylo „shoda“ (B232). */
+    if (prisne && (!!a && typeof a === 'object') !== (!!b && typeof b === 'object') && (maCislo(a) || maCislo(b))) { pridej(c); return; }
     if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return;   // texty, příznaky, null
     if (Array.isArray(a) !== Array.isArray(b)) return;       // jiný tvar = jiná verze, ne jiná čísla
     if (Array.isArray(a)) {
@@ -946,10 +1029,10 @@ function zamekVysledekRozdily(klient, server, max, opts) {
     }
     Object.keys(a).forEach(k => {
       if (Object.prototype.hasOwnProperty.call(b, k)) projdi(a[k], b[k], c + '.' + k);
-      else if (prisne && Array.isArray(a[k])) pridej(c + '.' + k);              // pole jen v zámku (B146)
+      else if (prisne && (Array.isArray(a[k]) || maCislo(a[k]))) pridej(c + '.' + k);   // pole (B146) / číslo navíc (B232)
     });
     if (prisne) Object.keys(b).forEach(k => {
-      if (!Object.prototype.hasOwnProperty.call(a, k) && Array.isArray(b[k])) pridej(c + '.' + k);   // vynechané pole (B146)
+      if (!Object.prototype.hasOwnProperty.call(a, k) && (Array.isArray(b[k]) || maCislo(b[k]))) pridej(c + '.' + k);   // vynechané pole (B146) / číslo (B232)
     });
   };
   ZAMEK_OVERENI_CASTI.forEach(k => projdi(klient ? klient[k] : undefined, server ? server[k] : undefined, k));
@@ -1318,7 +1401,7 @@ function listaZakazkyRozhodni(zak, zaloha, ja, prava, ctx) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { zamekZakVzOdeslano, variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, ZAMEK_PRODANO_TERMINY, zamekProdanoTerminVolny, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
+  module.exports = { zamekZpracovatelSnimek, zamekZakVzOdeslano, variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, ZAMEK_PRODANO_TERMINY, zamekProdanoTerminVolny, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
                      zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, ZAMEK_OVERENI_JADRO, ZAMEK_OVERENI_JADRO_PRISNE, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
                      zamekCteniSmiOdemknout, zamekCteniDuvod, priponaPrvniNalez, priponaPrvniOprav,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,
@@ -1330,4 +1413,4 @@ if (typeof module !== 'undefined')
                      zamekKryciPoleVNabidce, zamekKryciPoleVolne, zamekKryciPolePlnaMoc, zamekDataPorovnani, zamekJsonKanon, zamekDataRozdilCesta,
                      ZAMEK_KRYCI_PO_CN, zamekKryciPoleStav, zamekKryciPoleZname, zamekSnimekSpocti, zamekSnimek,
                      zamekDphVolna, zamekNabidkaPohled, zamekZakCesty, zamekSodHlavicky, zamekZakStav, zamekZakCestaZmrazena, zamekZakZmeny, zamekZakHlavickaOznac,
-                     zamekZakRidici, ZAMEK_KRYCI_PO_SOD_VOLNE };
+                     zamekZakRidici, ZAMEK_KRYCI_PO_SOD_VOLNE, ZAMEK_STRANA_CESTY, zamekStranaZnak, zamekStranaZmena, zamekStranaSnimek };

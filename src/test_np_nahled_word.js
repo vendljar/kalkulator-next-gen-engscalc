@@ -22,6 +22,9 @@
  *  D) pojistka srovnávače: starý náhled (nabidkaNahledSekce + příplatky na
  *     konci, bez řádku slevy) se s Wordem NESHODUJE — srovnávač by starý stav
  *     chytil (sleva, pořadí příplatků).
+ *  F) NPT-N1–N3 (#690, #691): řádek světlíků v náhledu není (Word CN v17 ho
+ *     nemá), cena světlíků zůstává v kalkulaci i nabídce; popisky bez CSS
+ *     verzálek; EN/DE hlavička s dvojtečkou jako šablona.
  * Pojistka: na 6092af3 (před NP) modul nahled_word.js neexistuje a sada
  * selže hned na začátku; mutace „bez řádků slevy" a „příplatky až za
  * doložkami" v nahled_word.js shodí A i C — viz zpráva commitu.
@@ -151,7 +154,10 @@ const TS_SACHTA = [
     r2('TYP OPLÁŠTĚNÍ', '{{TS_TYP_OPLASTENI}}'), r2('MATERIÁL OPLÁŠTĚNÍ', '{{TS_MATERIAL_OPLASTENI}}'),
     r2('POVRCHOVÁ ÚPRAVA OPLÁŠTĚNÍ', '{{TS_POVRCH_OPLASTENI}}'), r2('OPLÁŠTĚNÍ ČELA POD NÁSTUPIŠTĚM', '{{TS_OPLASTENI_CELA}}'),
     r2('ROZSAH OPLÁŠTĚNÍ', '{{TS_ROZSAH_OPLASTENI}}'), r2('OPLÁŠTĚNÍ NADSVĚTLÍKŮ', '{{TS_OPLASTENI_NADSVETLIKU}}'),
-    r2('SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ', '{{TS_SVETLIKY_DVERI}}'), r2('VNĚJŠÍ OPLÁŠTĚNÍ ŠACHTY', '{{TS_UMISTENI_OPLASTENI}}'),
+    /* NPT-N1 #690: řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ ({{TS_SVETLIKY_DVERI}}, #375)
+     * Word CN v17 NEMÁ a nedostane (J. V. 21. 11. 2026) — syntetická šablona ho
+     * proto nemá taky; náhled ho vynechá. */
+    r2('VNĚJŠÍ OPLÁŠTĚNÍ ŠACHTY', '{{TS_UMISTENI_OPLASTENI}}'),
     r2('ZPŮSOB KOTVENÍ OPLÁŠTĚNÍ', '{{TS_KOTVENI_OPLASTENI}}'), r2('VZHLED KOTVENÍ ZASKLENÍ', '{{TS_PARAMETRY_KOTVY}}'),
     r2('NAPOJENÍ ŠACHETNÍCH DVEŘÍ', '{{TS_NAPOJENI_DVERI}}')]],
   ['DOPLŇKOVÉ KONSTRUKCE', [
@@ -405,6 +411,41 @@ const sleva = (zak, pct) => { const v = zak.varianty[0]; v.data.sleva = Object.a
     test('C EN: hodnoty náhledu = hodnoty Wordu (v pořadí), v eurech', !rh && n.some(x => /€|EUR/.test(x)) && !n.some(x => /Kč/.test(x)), rh || n.filter(x => /Kč/.test(x)).slice(0, 3));
   }
 
+  /* ---------- F) NPT-N1–N3 #690/#691 (J. V. 21. 11. 2026) ---------- */
+  {
+    /* N1: světlíky — řádek v náhledu není (Word CN v17 ho nemá), cena světlíků
+     * se dál počítá v kalkulaci a nabídka ji nese beze změny. */
+    const s = scenar('exteriérová', { nadDvermi: 'sklo', bokyDveri: 'sklo' }, true);
+    const b = scenar('exteriérová', { nadDvermi: 'bez', bokyDveri: 'bez' }, true);
+    const vs = s.varianty[0], vb = b.varianty[0];
+    const ds = nabidkaData(s, vs, J, 'cz');
+    test('F N1: zakázka se světlíky má symbol TS_SVETLIKY_DVERI (data beze změny)', !nwPrazdna(ds.placeholders.TS_SVETLIKY_DVERI), ds.placeholders.TS_SVETLIKY_DVERI);
+    const rs = await shoda('F N1 světlíky nad dveřmi i na bocích', s, vs);
+    if (rs) test('F N1: řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ v náhledu ani ve Wordu není',
+      !rs.n.includes('SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ') && !rs.w.includes('SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ'));
+    const ks = vypocet(vs.data.ock.zadani, vs.data.cenik, J, true), kb = vypocet(vb.data.ock.zadani, vb.data.cenik, J, true);
+    const celk = r => +(r && r.souhrn && r.souhrn.zakladCena) || 0;
+    test('F N1: cena světlíků se počítá v kalkulaci (základní cena se světlíky ≠ bez nich)', celk(ks) > 0 && celk(kb) > 0 && celk(ks) !== celk(kb), { se: celk(ks), bez: celk(kb) });
+    const db = nabidkaData(b, vb, J, 'cz');
+    test('F N1: nabídka nese cenu se světlíky (CENA_S_DPH se liší a je v náhledu)',
+      ds.placeholders.CENA_S_DPH !== db.placeholders.CENA_S_DPH && !!rs && rs.n.includes(String(ds.placeholders.CENA_S_DPH).replace(/[\s\u00a0\u202f]+/g, ' ').trim()),
+      { se: ds.placeholders.CENA_S_DPH, bez: db.placeholders.CENA_S_DPH });
+    for (const L of ['en', 'de']) {
+      const n = nwTextZHtml(nwHtml(nwBloky(nabidkaData(s, vs, J, L), L, {})));
+      const pop = (typeof tr === 'function') ? tr('SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ', L) : 'SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ';
+      test('F N1 ' + L.toUpperCase() + ': řádek světlíků v náhledu není', !n.includes(pop), pop);
+      /* N3: hlavička s dvojtečkou jako šablona („Site address / project:“, „Baustellenadresse / Projekt:“) */
+      const ocek = L === 'en' ? 'Site address / project:' : 'Baustellenadresse / Projekt:';
+      test('F N3 ' + L.toUpperCase() + ': hlavička „' + ocek + '“ s dvojtečkou', n.includes(ocek), n.slice(0, 12));
+    }
+    /* N2: popisky technické části bez CSS verzálek — text náhledu = text Wordu
+     * (vlastní řádky DALŠÍ UJEDNÁNÍ, jednotky [m]/[mm], DE „(inkl. Revisionsbericht)“). */
+    const css = fs.readFileSync(path.join(__dirname, 'ui', 'nahled_word_ui.js'), 'utf8');
+    const pravidla = (css.match(/[^{}]*\{[^{}]*\}/g) || []).filter(r => /\.nw-ts/.test(r.split('{')[0]));
+    test('F N2: žádné pravidlo .nw-ts* nedává text-transform:uppercase', pravidla.length > 3 && !pravidla.some(r => /text-transform\s*:\s*uppercase/.test(r)),
+      pravidla.filter(r => /uppercase/.test(r)));
+  }
+
   /* ---------- D) pojistka srovnávače: starý náhled ≠ Word ---------- */
   {
     const zak = sleva(scenar('exteriérová', {}, true), 3);
@@ -421,6 +462,43 @@ const sleva = (zak, pct) => { const v = zak.varianty[0]; v.data.sleva = Object.a
     test('D starý náhled nemá řádek slevy, Word ano', !stary.includes(T.sleva) && w.includes(T.sleva));
     const iPw = w.indexOf(T.priplatky), iIIIw = w.indexOf(T.kapIII), iPs = stary.indexOf('II. ROZŠÍŘENÍ CENOVÉ NABÍDKY – PŘÍPLATKY');
     test('D starý náhled má příplatky až za kapitolami, Word hned za cenou', iPw < iIIIw && iPs > stary.indexOf('III. PLATEBNÍ PODMÍNKY'), { iPw, iIIIw, iPs });
+  }
+
+  /* ---------- C2) PG-N1: vlastní řádky se sekcí NENÍ ----------
+   * Řádek přepnutý na SOUČÁSTÍ DODÁVKY NENÍ (sekce 'neni') má v náhledu být
+   * JEDNOU (na konci NENÍ), ne podruhé pod DALŠÍ UJEDNÁNÍ; jen s řádky NENÍ
+   * pruh DALŠÍ UJEDNÁNÍ chybí (jako Word). Pojistka: bez filtru `!e.neni`
+   * v nwBloky selže všech pět testů (řádek 2×, pruh navíc, náhled ≠ Word). */
+  {
+    const pocet = (n, t) => n.filter(x => x === t).length;
+    const NENI = { label: 'Odvoz suti (TEST NENÍ)', hodnota: 'zajistí objednatel (TEST)', sekce: 'neni' };
+    const DALSI = { label: 'Vlastní ujednání (TEST)', hodnota: 'Předání dokumentace do 14 dnů (TEST)' };
+    const s1 = scenar('exteriérová', {}, true);
+    s1.varianty[0].data.techspec = Object.assign(s1.varianty[0].data.techspec || {}, { extra: [kop(NENI)] });
+    const r1 = await shoda('C2 jen řádek NENÍ', s1, s1.varianty[0]);
+    if (r1) {
+      test('C2 jen NENÍ: řádek 1× a za SOUČÁSTÍ DODÁVKY NENÍ', pocet(r1.n, NENI.label) === 1 && r1.n.indexOf(NENI.label) > r1.n.indexOf('SOUČÁSTÍ DODÁVKY NENÍ'), pocet(r1.n, NENI.label));
+      test('C2 jen NENÍ: bez pruhu DALŠÍ UJEDNÁNÍ', !r1.n.includes('DALŠÍ UJEDNÁNÍ'));
+    }
+    const s2 = scenar('interiérová', {}, false);
+    s2.varianty[0].data.techspec = Object.assign(s2.varianty[0].data.techspec || {}, { extra: [kop(NENI), kop(DALSI)] });
+    const r2_ = await shoda('C2 NENÍ + DALŠÍ', s2, s2.varianty[0]);
+    if (r2_) {
+      const n = r2_.n, iN = n.indexOf(NENI.label), iD = n.indexOf('DALŠÍ UJEDNÁNÍ');
+      test('C2 NENÍ + DALŠÍ: řádek NENÍ 1× před pruhem DALŠÍ UJEDNÁNÍ, pod pruhem jen řádek DALŠÍ',
+        pocet(n, NENI.label) === 1 && iN < iD && n.indexOf(DALSI.label) > iD, { iN, iD, x: pocet(n, NENI.label) });
+    }
+    const s3 = viceSachet({ mustky: true });
+    s3.varianty[0].data.techspec = Object.assign(s3.varianty[0].data.techspec || {}, { extra: [kop(NENI), kop(DALSI)] });
+    const r3_ = await shoda('C2 víc šachet NENÍ + DALŠÍ', s3, s3.varianty[0]);
+    if (r3_) test('C2 víc šachet: řádek NENÍ 1×', pocet(r3_.n, NENI.label) === 1, pocet(r3_.n, NENI.label));
+    const s4 = viceSachet({});
+    s4.varianty[0].data.techspec = Object.assign(s4.varianty[0].data.techspec || {}, { extra: [kop(NENI)] });
+    await shoda('C2 víc šachet jen NENÍ', s4, s4.varianty[0]);
+    /* EN: syntetická šablona je česká — porovná se jen náhled sám */
+    const n4 = nahledText(s4, s4.varianty[0], 'en');
+    test('C2 víc šachet EN jen NENÍ: řádek 1×, bez pruhu OTHER ARRANGEMENTS',
+      pocet(n4, NENI.label) === 1 && !n4.some(t => /OTHER ARRANGEMENTS|DALŠÍ UJEDNÁNÍ/i.test(t)), { x: pocet(n4, NENI.label), p: n4.filter(t => /ARRANGEMENT/i.test(t)) });
   }
 
   /* ---------- E) upozornění v pruhu ---------- */

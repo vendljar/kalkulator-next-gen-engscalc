@@ -404,7 +404,7 @@ const MATICE = [
   { fn: zakazniciFn, nazev: 'zákazníci — uložení karty (POST /api/zakaznici)', metoda: 'POST',
     url: 'http://x/api/zakaznici',
     telo: () => ({ zakaznik: { nazev: 'Zkušební zákazník', ico: '12345679' } }),
-    proc: 'kartu zakládá a doplňuje obchodník u zákazníka — kdyby na to potřeboval admina, nevznikla by',
+    proc: 'kartu zakládá obchodník u zákazníka — kdyby na to potřeboval admina, nevznikla by; cizí kartu mění jen autor a administrátor, ostatním se úprava uloží jako návrh (B234, test níž)',
     prava: PRIHLASENY_OK },
 
   { fn: zakazniciFn, nazev: 'zákazníci — smazání karty (DELETE /api/zakaznici)', metoda: 'DELETE',
@@ -1318,9 +1318,11 @@ const nactiB59 = async (soubor) => (await (await get(zakazky,
    * který starší verze neměla, jiný text položky. Do opravy to server
    * razítkoval „nesouhlasí" a lišta zámku strašila u každého, kdo nabídku
    * otevřel. */
+  /* B232 (dávka BZ, J. V. 21. 11. 2026): přísné ověření nového zámku vyžaduje
+   * všechna čísla — klíč s ČÍSLEM jen na jedné straně je od BZ rozdíl (test
+   * níž). Tolerance P6 dál platí pro texty, příznaky a klíče bez čísel. */
   const z = odesliB59(zakazkaSCeny('2026 - OPR - CN - 0854'), (r) => {
-    r.ock.klicZeStarsiVerze = { poznamka: 'jen ve starší verzi', pocet: 3 };
-    delete r.ock.odvozene;
+    r.ock.klicZeStarsiVerze = { poznamka: 'jen ve starší verzi', priznak: true };
     const sekce = Object.keys(r.ock.sekce).find(k => Array.isArray(r.ock.sekce[k]) && r.ock.sekce[k].length);
     r.ock.sekce[sekce][0].popisNabidka = 'Dodatkový text z jiné verze';
   });
@@ -1328,6 +1330,18 @@ const nactiB59 = async (soubor) => (await (await get(zakazky,
   const ov = (await nactiB59('2026-OPR-CN-0854.json')).varianty[0].zamek.overeni;
   test('P6: jiný tvar výsledku při stejných číslech = shoda (bez varování)',
     odp.ok === true && !odp.varovani && ov && ov.stav === 'shoda', JSON.stringify({ odp, ov }));
+}
+{
+  /* B232: číslo navíc / vypuštěná čísla (odvozené rozměry) = nesouhlasí. */
+  const z = odesliB59(zakazkaSCeny('2026 - OPR - CN - 0857'), (r) => {
+    r.ock.klicZeStarsiVerze = { pocet: 3 };
+    delete r.ock.odvozene;
+  });
+  const odp = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: z }, cObch)).json();
+  const ov = (await nactiB59('2026-OPR-CN-0857.json')).varianty[0].zamek.overeni;
+  test('B232: číslo jen v jednom výsledku nového zámku = nesouhlasí (s varováním)',
+    odp.ok === true && !!odp.varovani && ov && ov.stav === 'nesouhlasi'
+      && ov.cesty.indexOf('ock.klicZeStarsiVerze') >= 0 && ov.cesty.indexOf('ock.odvozene') >= 0, JSON.stringify(ov));
 }
 {
   /* …ale podvrh, který jádro dokumentu vynechá, shodu nedostane. */
@@ -2759,6 +2773,21 @@ console.log('\n===== AUDIT L29: AUTOR KARTY ZÁKAZNÍKA =====\n');
   const k = (list.zakaznici || []).find(z => z.ico === '27074358');
   test('L29: autor nové karty je z relace, ne z těla požadavku',
     !!k && k.autor === UCTY['Obchodník'].email, k && k.autor);
+  /* B234 (dávka BZ, J. V. 21. 11. 2026): cizí kartu mění jen autor a administrátor;
+   * jiná role (i Vedoucí) ji nepřepíše — úprava se uloží jako návrh změny. */
+  const klic = '27074358';
+  const zmen = async (c, ucet) => (await post(zakazniciFn, 'http://x/api/zakaznici',
+    { zakaznik: Object.assign({}, k, { ucet }) }, c)).json();
+  const cti = async () => (await (await get(zakazniciFn, 'http://x/api/zakaznici?klic=' + klic, cAdmin)).json()).zakaznik;
+  const rv = await zmen(UCTY['Vedoucí'].cookie, '1-VEDOUCI/0100');
+  test('B234: Vedoucí cizí kartu nepřepíše — návrh změny', rv.ok && rv.navrh === true && (await cti()).ucet !== '1-VEDOUCI/0100', JSON.stringify(rv).slice(0, 160));
+  const ro = await zmen(UCTY['Obchodník'].cookie, '2-AUTOR/0100');
+  test('B234: autor (Obchodník) svou kartu změní', ro.ok && !ro.navrh && (await cti()).ucet === '2-AUTOR/0100', JSON.stringify(ro).slice(0, 160));
+  const ra = await zmen(cAdmin, '3-SPRAVCE/0100');
+  test('B234: Administrátor cizí kartu změní', ra.ok && !ra.navrh && (await cti()).ucet === '3-SPRAVCE/0100', JSON.stringify(ra).slice(0, 160));
+  const nv = (await cti()).navrhy || [];
+  const rp = await (await post(zakazniciFn, 'http://x/api/zakaznici', { akce: 'navrhPrijmout', klic, id: (nv[0] || {}).id }, UCTY['Vedoucí'].cookie)).json();
+  test('B234: návrh nepřevezme ten, kdo kartu nesmí měnit', rp.ok === false, JSON.stringify(rp));
 }
 
 console.log('\n===== AUDIT B77: CITLIVÉ AKCE SPRÁVCE S VLASTNÍM HESLEM =====\n');

@@ -45,8 +45,21 @@ function zpracovatelJmeno(z) {
  * FIRMA_ZPRACOVAL* se vyplňují VŽDY (i prázdné) — starší šablony (v5, v6)
  * je mají v bloku „Vypracoval" a nesmí v nich zůstat viset stará osoba ani
  * syrový symbol {{…}}. Parametr f zůstává kvůli volajícím, už se nečte. */
-function zpracovatelPlaceholders(f) {
-  const z = zpracovatelAktualni();
+/* #665 (rozhodnutí J. V. 18. 11. 2026): blok „Vypracoval" odeslané nabídky
+ * je ZMRAZENÝ — snímek zpracovatele v zámku (`zamek.zpracovatel`, píše ho
+ * server z relace při prvním přijetí zámku, drží ho jako `kdo`). Dotisk
+ * zamčené varianty tiskne člověka z doby odeslání, ne dnes přihlášený účet
+ * (dřív: po opravě jména v účtu nové jméno, dotisk kolegou jeho jméno).
+ * Zámek bez snímku (starší) a nezamčená varianta → přihlášený jako dřív. */
+function zpracovatelZeZamku(varianta) {
+  const z = varianta && varianta.zamek;
+  const s = z && z.zamceno && z.zpracovatel;
+  if (!s || typeof s !== 'object' || Array.isArray(s)) return null;
+  const t = x => String(x == null ? '' : x).trim();
+  return { email: t(s.email), jmeno: t(s.jmeno), titul: t(s.titul), funkce: t(s.funkce), telefon: t(s.telefon), podpis: '' };
+}
+function zpracovatelPlaceholders(f, varianta) {
+  const z = zpracovatelZeZamku(varianta) || zpracovatelAktualni();
   const p = {
     ZPRAC_JMENO: zpracovatelJmeno(z),
     ZPRAC_FUNKCE: (z && z.funkce) || '',
@@ -63,8 +76,12 @@ function zpracovatelPlaceholders(f) {
  * data URL, přesně v té podobě, v jaké ho prohlížeč vyrobil při nahrání
  * a v jaké leží na serveru. Kdo podpis nahraný nemá, nabídka se vygeneruje
  * bez něj (a rámeček v šabloně se odstraní – viz docxgen.js). */
-function zpracovatelObrazky() {
+/* #665: u zamčené varianty se snímkem jen podpis TÉHOŽ člověka (shoda
+ * e-mailu) — pod cizí jméno se sken přihlášeného kolegy nevloží. */
+function zpracovatelObrazky(varianta) {
   const z = zpracovatelAktualni();
+  const s = zpracovatelZeZamku(varianta);
+  if (s && (!z || String(z.email).toLowerCase() !== String(s.email).toLowerCase())) return {};
   return z && z.podpis ? { ZPRAC_PODPIS: z.podpis } : {};
 }
 
@@ -82,5 +99,5 @@ function zpracovatelKontaktProKryci(f) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { zpracovatelAktualni, zpracovatelJmeno, zpracovatelPlaceholders,
+  module.exports = { zpracovatelAktualni, zpracovatelJmeno, zpracovatelPlaceholders, zpracovatelZeZamku,
     zpracovatelObrazky, zpracovatelJmenoProKryci, zpracovatelKontaktProKryci };

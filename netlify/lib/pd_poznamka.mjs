@@ -55,7 +55,8 @@
  * (pdPoznamkyUlozeni; volající čte zakázku potřetí jen jednou pro obě).
  * ============================================================ */
 import { createHash } from 'node:crypto';
-import { pdNastaveno, pdZavolej, PdChyba, pdStropCerstvych, PD_PRAVO } from './pipedrive.mjs';
+import { pdNastaveno, pdZavolej, PdChyba, pdStropCerstvych, PD_PRAVO, pdZapisPovolen } from './pipedrive.mjs';
+import { pdDealPatriZakazce } from './pd_overeni.mjs';
 
 export const PD_POZNAMKA_POLE = 'pdPoznamkaSachty';
 /* Délka seznamu šachet před escapováním (10 šachet × název ≤ 80 znaků se
@@ -271,7 +272,10 @@ export function pdPoznamkaSmi(relace, matice, G = globalThis) {
  *   'strop' | 'chyba' — nezapsáno, zkusí se při dalším uložení.
  * `termin` = společný konec časového rozpočtu (VZ-E5); prošlý termín =
  * 'chyba' bez volání a bez čerpání stropu. */
-export async function pdPoznamkaDruhUlozeni(druh, zak, stara, { zapnuto, relace, matice, termin } = {}, G = globalThis) {
+/* B235 (audit 20. 11. 2026): strop prvních zápisů do NOVÉHO dealu i NA UŽIVATELE
+ * (dřív jen na deal — střídáním dealů se nikdy nenaplnil; vzor org-vitez). */
+export const PD_POZNAMKA_STROP_UZIVATEL = 30;
+export async function pdPoznamkaDruhUlozeni(druh, zak, stara, { zapnuto, relace, matice, termin, poleMapa, odkaz } = {}, G = globalThis) {
   const dealId = G.ctrlPdDealIdNorm(zak && zak.pdDealId) || '';
   /* Pole píše jen server: platí uložená verze téhož dealu, klientova se zahodí. */
   const drz = pdPoznamkaNorm(stara && stara[druh.pole]);
@@ -279,7 +283,8 @@ export async function pdPoznamkaDruhUlozeni(druh, zak, stara, { zapnuto, relace,
   delete zak[druh.pole];
   if (plati) zak[druh.pole] = plati;
 
-  if (zapnuto !== true || !dealId || !pdNastaveno()) return { stav: 'bez' };
+  /* B235/B236: bez zapnutého vypínače zápisu do Pipedrive se nepíše (ani se nehlásí). */
+  if (zapnuto !== true || !dealId || !pdNastaveno() || !pdZapisPovolen()) return { stav: 'bez' };
   const text = druh.text(zak, !!plati, G);
   if (!text) return { stav: 'bez' };
   const otisk = pdPoznamkaOtisk(text);
@@ -292,8 +297,19 @@ export async function pdPoznamkaDruhUlozeni(druh, zak, stara, { zapnuto, relace,
   if (!(await pdStropCerstvych('deal:' + dealId, druh.strop, PD_POZNAMKA_STROP)))
     return { stav: 'strop', varovani: nezapsal + ' (strop '
       + PD_POZNAMKA_STROP + ' pokusů za hodinu) — zapíše se při dalším uložení.' };
+  /* B235: první zápis zakázky do dealu (bez platné poznámky téhož dealu) jde
+   * přes strop NA UŽIVATELE — střídáním dealů se dřív zapisovalo bez meze. */
+  if (!plati && !(await pdStropCerstvych(String((relace && relace.email) || ''), druh.strop, PD_POZNAMKA_STROP_UZIVATEL)))
+    return { stav: 'strop', varovani: nezapsal + ' (strop ' + PD_POZNAMKA_STROP_UZIVATEL
+      + ' nových dealů za hodinu na uživatele) — zapíše se při dalším uložení.' };
   const zavolej = volani(konec);
   try {
+    /* B235: deal musí patřit zakázce (pd_overeni.mjs). Poznámka, kterou server
+     * do TÉHOŽ dealu už zapsal (plati), vazbu ověřila dřív. */
+    if (!plati) {
+      const ov = await pdDealPatriZakazce(zak, dealId, { zavolej, poleMapa, odkaz }, G);
+      if (!ov.ok) return { stav: 'neovereno', volano: true, varovani: nezapsal + ': ' + ov.duvod };
+    }
     const r = await zapisDoPipedrive(dealId, plati ? plati.id : 0, pdPoznamkaObsah(text), zak, zavolej, druh);
     zak[druh.pole] = { deal: dealId, id: r.id, otisk, kdy: new Date().toISOString() };
     return { stav: r.akce, volano: true };
@@ -312,17 +328,17 @@ export async function pdPoznamkaUlozeni(zak, stara, { viceSachet, relace, matice
 /* Uložení zakázky (functions/zakazky.mjs, ve výhradním úseku zakázky, VZ-E5):
  * obě poznámky v jednom společném časovém rozpočtu PD_POZNAMKA_CELKEM_MS,
  * šachty první, zákazníci druzí. Vrací { sachty, zakaznici, volano }. */
-export async function pdPoznamkyUlozeni(zak, stara, { viceSachet, viceZakazniku, relace, matice, poleMapa } = {}, G = globalThis) {
+export async function pdPoznamkyUlozeni(zak, stara, { viceSachet, viceZakazniku, relace, matice, poleMapa, odkaz } = {}, G = globalThis) {
   const termin = Date.now() + PD_POZNAMKA_CELKEM_MS;
   const sachty = await pdPoznamkaDruhUlozeni(PD_POZNAMKA_DRUH_SACHTY, zak, stara,
-    { zapnuto: viceSachet, relace, matice, termin }, G);
+    { zapnuto: viceSachet, relace, matice, termin, poleMapa, odkaz }, G);
   /* VZ T1 (N3): skutečná organizace dealu dřív, než se složí text poznámky zákazníků.
    * Revize N9: čtení má vlastní menší limit (PD_ORG_DEALU_MS) a poznámce
    * zákazníků z rozpočtu neukrajuje — o dobu čtení se její termín posune. */
   const zbyvalo = termin - Date.now();
   const org = await pdOrgDealuObnov(zak, { zapnuto: viceZakazniku, relace, matice, termin: Date.now() + Math.min(PD_ORG_DEALU_MS, Math.max(0, zbyvalo)), poleMapa }, G);
   const zakaznici = await pdPoznamkaDruhUlozeni(PD_POZNAMKA_DRUH_ZAKAZNICI, zak, stara,
-    { zapnuto: viceZakazniku, relace, matice, termin: Date.now() + zbyvalo }, G);
+    { zapnuto: viceZakazniku, relace, matice, termin: Date.now() + zbyvalo, poleMapa, odkaz }, G);
   /* Revize N7: i samotné čtení organizace (zápis pdOrgDealu) vyžaduje třetí čtení zakázky. */
   return { sachty, zakaznici, org: org.stav, volano: !!(sachty.volano || zakaznici.volano || org.volano) };
 }

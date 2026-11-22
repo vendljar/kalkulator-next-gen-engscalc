@@ -1,0 +1,10 @@
+# Očekávané rozdíly K40-N1 (#614): main bez opravy × stav s opravou (claude/rychla-k40n1, test) — HN #647, 21. 11. 2026
+# Formát: <vzor případu> <pole,pole|*>  # důvod   (popis v nastroje/porovnani_sada.js)
+#
+# Případy k40:* (nastroje/porovnani_sada.js, oddíl 3c) přepnou typ šachty nebo zasklení
+# s vyřazeným / přepsaným čelním sklem. Jádro bez opravy K40-N1 nechá vyřazení a přepis
+# pod starým názvem (VSG 4.4.2 ↔ 4.4.1) a nový řádek čelního skla počítá: liší se řádky
+# a výsledek jádra (vyřazené sklo), u přepsaného množství i cena, symboly a dokumenty.
+# Ověřeno: origin/main × origin/claude/rychla-k40n1 → 8 rozdílných (jen k40:*), ostatní shodné.
+# Pro main × test se tento soubor přikládá spolu s ostatními seznamy (main se liší i jinde).
+k40:*  *   # K40-N1: čelní sklo po přepnutí typu šachty / zasklení

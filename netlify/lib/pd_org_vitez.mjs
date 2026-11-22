@@ -44,13 +44,15 @@
  * nic nevrací, nespouští se z webhooku. Souběh dvou instancí funkce může
  * organizaci založit dvakrát (výhradní úsek drží jen v instanci).
  * ============================================================ */
-import { pdZavolej, PdChyba, pdStropCerstvych, PD_CACHE_ULOZISTE } from './pipedrive.mjs';
+import { pdZavolej, PdChyba, pdStropCerstvych, PD_CACHE_ULOZISTE, pdZapisPovolen, PD_ZAPIS_VYPNUTY } from './pipedrive.mjs';
+import { pdDealPatriZakazce } from './pd_overeni.mjs';
+import { pdWebhookOdkaz } from './pd_webhook.mjs';
 import { pdHodnota, pdIco } from './pd_mapa.mjs';
 import { aresNacti, aresIcoNorm, aresIcoPlatne, aresText, ARES_SIT, ARES_DIC_TVAR } from './ares_server.mjs';
 import { pdProtokol, pdRejstrikZapis, pdVazbaSmiMenit } from './pd_vazba.mjs';
 import { pdPoznamkaSmi } from './pd_poznamka.mjs';
 
-export const PD_VITEZ_STAVY = ['zapsano', 'shoda', 'bez-ico', 'vice', 'bez-prava', 'chyba', 'strop'];
+export const PD_VITEZ_STAVY = ['zapsano', 'shoda', 'bez-ico', 'vice', 'bez-prava', 'chyba', 'strop', 'neovereno'];   // neovereno: B236
 export const PD_VITEZ_ZDROJE = ['nalezena', 'zalozena'];
 /* Časové meze: jedno volání Pipedrive, celá akce včetně ARES. */
 export const PD_VITEZ_VOLANI_MS = 2500;
@@ -241,6 +243,8 @@ export async function pdOrgVitezAkce(ctx) {
   const deal = G.ctrlPdDealIdNorm(ulozena.pdDealId) || '';
   if (!deal) return { status: 409, telo: { ok: false, chyba: 'Zakázka není navázaná na deal v Pipedrive.' } };
   if (!ctx.nastaveno) return { status: 503, telo: { ok: false, chyba: 'Napojení na Pipedrive není nastavené.' } };
+  /* B235/B236: vypínač zápisu do Pipedrive (výchozí vypnuto). */
+  if (!pdZapisPovolen()) return { status: 503, telo: { ok: false, chyba: PD_ZAPIS_VYPNUTY } };
 
   const minule = pdOrgVitezNorm(ulozena.pdOrgVitez);
   const minuleOrg = minule && minule.deal === deal && minule.org ? minule.org : 0;
@@ -275,6 +279,11 @@ export async function pdOrgVitezAkce(ctx) {
       const mapaOrg = (await Promise.race([ctx.poleMapa(),
         new Promise((_, ne) => setTimeout(() => ne(new PdChyba('Pipedrive neodpověděl včas.', 504)), Math.max(1, termin - Date.now())).unref?.())])).mapaOrganizace || {};
       if (!mapaOrg.ico) throw new PdChyba('Účet Pipedrive nemá pole IČ organizace — organizaci nejde podle IČO najít.', 409);
+      /* B236: deal musí patřit zakázce (vazba z webhooku, odkaz na kalkulaci
+       * nebo číslo nabídky v dealu) — jinak se nic nezakládá ani nepřepojuje. */
+      const ov = await pdDealPatriZakazce(ulozena, deal, { zavolej, poleMapa: ctx.poleMapa,
+        odkaz: ctx.req ? pdWebhookOdkaz(soubor, ctx.req) : '' }, G);
+      if (!ov.ok) return hotovo({ deal, org: minuleOrg, stav: 'neovereno', duvod: ov.duvod });
       const d = await zavolej('/api/v2/deals/' + Number(deal));
       if (!d) throw new PdChyba('Pipedrive deal zakázky nezná.', 404);
       const puvodni = Number(d.org_id) || 0;

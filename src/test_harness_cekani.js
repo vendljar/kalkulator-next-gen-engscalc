@@ -103,6 +103,55 @@ const M = require(MODUL);
     test(f + ': limity z harness_cekani.js', /harness_cekani\.js/.test(kod) && /setDefaultTimeout\(casLimit\(/.test(kod)
       && /setDefaultNavigationTimeout\(casLimit\(/.test(kod));
   }
+  /* ---------- 4) #638: přihlášení a start bez pauz, ADMIN_EMAIL před importem ---------- */
+  for (const f of ['overit_zobrazeni.mjs', 'overit_zaporne.mjs']) {
+    const kod = fs.readFileSync(path.join(KOREN, f), 'utf8');
+    test(f + ': žádné waitForTimeout (pevná pauza)', !/waitForTimeout\s*\(/.test(kod), (kod.match(/.*waitForTimeout.*/g) || []).slice(0, 3));
+    test(f + ': žádný pevný číselný limit', !/timeout:\s*\d/.test(kod), (kod.match(/.*timeout:\s*\d.*/g) || []).slice(0, 3));
+    test(f + ': přihlášení přes prihlasVProhlizeci a start přes cekejNaStart',
+      /prihlasVProhlizeci\(/.test(kod) && /cekejNaStart\(/.test(kod) && /setDefaultTimeout\(casLimit\(/.test(kod));
+  }
+  /* Každý skript, který si ADMIN_EMAIL nastavuje sám a staticky importuje
+   * serverové funkce, musí nejdřív importovat harness_prostredi.mjs —
+   * sdilene.mjs čte ADMIN_EMAIL při importu a tělo modulu běží až po importech. */
+  const kandidati = fs.readdirSync(KOREN).filter(f => /^overit_.*\.mjs$/.test(f))
+    .concat(fs.readdirSync(path.join(KOREN, 'netlify')).filter(f => /^test_.*\.mjs$/.test(f)).map(f => 'netlify/' + f));
+  const spatne = [];
+  for (const f of kandidati) {
+    const kod = fs.readFileSync(path.join(KOREN, f), 'utf8');
+    if (!/process\.env\.ADMIN_EMAIL\s*=/.test(kod)) continue;
+    const radky = kod.split('\n');
+    const prvniServer = radky.findIndex(r => /^import\s.*from\s+'\.{1,2}\/(netlify\/)?(functions|lib)\//.test(r));
+    if (prvniServer < 0) continue;
+    const prostredi = radky.findIndex(r => /^import\s+'\.{1,2}\/nastroje\/harness_prostredi\.mjs'/.test(r));
+    const nastaveniDrive = radky.findIndex(r => /process\.env\.ADMIN_EMAIL\s*=/.test(r)) < radky.findIndex(r => /^import\s/.test(r));
+    if (!(prostredi >= 0 && prostredi < prvniServer) && nastaveniDrive) spatne.push(f);
+  }
+  /* test_prava.mjs nastavuje ADMIN_EMAIL záměrně až uprostřed (zkouší i stav bez něj). */
+  const nalez = spatne.filter(f => f !== 'netlify/test_prava.mjs');
+  test('#638: ADMIN_EMAIL se nastaví dřív, než sdilene.mjs naimportuje (harness_prostredi.mjs první)', nalez.length === 0, nalez);
+  {
+    const env = Object.assign({}, process.env); delete env.ADMIN_EMAIL;
+    const kod = "import('" + path.join(KOREN, 'nastroje/harness_prostredi.mjs') + "').then(() => import('"
+      + path.join(KOREN, 'netlify/lib/sdilene.mjs') + "')).then(m => console.log(m.ADMIN_EMAIL))";
+    const r = spawnSync(process.execPath, ['-e', kod], { encoding: 'utf8', env });
+    test('#638: harness_prostredi.mjs bez ADMIN_EMAIL v prostředí → sdilene.mjs vidí zkušebního správce',
+      String(r.stdout).trim() === 'spravce@priklad.cz', { vystup: r.stdout, chyba: String(r.stderr).slice(0, 200) });
+  }
+  /* Výsledek přihlášení: odmítnutí se pozná a nese hlášku (žádné čekání do vypršení). */
+  globalThis.ONLINE_STAV = { pracuje: true, ja: null, hlaska: '', hlaskaTyp: '' };
+  test('#638: přihlášení běží → ještě není výsledek', M.vysledekPrihlaseni('a@b.cz') === false);
+  Object.assign(globalThis.ONLINE_STAV, { pracuje: false, hlaska: 'Přihlášení se nepodařilo: Příliš mnoho neúspěšných pokusů.', hlaskaTyp: 'varovani' });
+  test('#638: odmítnuté přihlášení → chyba s hláškou aplikace', /^chyba:.*Příliš mnoho/.test(M.vysledekPrihlaseni('a@b.cz')));
+  Object.assign(globalThis.ONLINE_STAV, { ja: { email: 'A@b.cz' }, hlaska: '', hlaskaTyp: '' });
+  test('#638: přihlášen ten, kdo se přihlašoval → ok', M.vysledekPrihlaseni('a@b.cz') === 'ok');
+  test('#638: přihlášen někdo jiný → ještě není výsledek', M.vysledekPrihlaseni('c@d.cz') === false);
+  globalThis.ONLINE_STAV.sondaHotova = false; globalThis.render = () => {};
+  test('#638: start bez doběhlé sondy není hotov', M.startHotov() === false);
+  globalThis.ONLINE_STAV.sondaHotova = true;
+  test('#638: start po sondě hotov', M.startHotov() === true);
+  globalThis.ONLINE_STAV = { ukladaBeh: null };
+
   console.log(`\n${ok} OK, ${fail} FAIL`);
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.log('FAIL výjimka', e && e.stack); process.exit(1); });

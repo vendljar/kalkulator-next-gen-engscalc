@@ -479,7 +479,15 @@ function cenikPopisyKarta() {
       (přejmenované nebo zrušené) — nic se nemaže, rozhodněte sami</th></tr>`
     + cis.osirele.map(o => `<tr><td class="c-nazev">${esc(o.klic)}</td><td>${admin
       ? `<input type="text" style="width:100%" value="${esc(o.text)}" maxlength="${POPISY_MAX_TEXT}"
-           onchange="cenikPopisUlozCis('${keyAttr(o.klic)}', this.value)">` : esc(o.text)}</td></tr>`).join('') : '';
+           onchange="cenikPopisUlozCis('${keyAttr(o.klic)}', this.value)">` : esc(o.text)}${cenikPopisyKandidati(o.klic, admin)}</td></tr>`).join('') : '';
+  /* DO-N1 #680 (J. V. 21. 11. 2026): návrhy a texty ze zakázek k položkám,
+   * které v číselníku řádek nemají (výchozí šachta je nepočítá). Převzetí
+   * stejně jako u ostatních; převzatý text pak stojí mezi osiřelými. */
+  const mimo = (typeof popisyNavrhyMimo === 'function') ? popisyNavrhyMimo(cis, sber) : [];
+  const mimoHtml = mimo.length ? `<tr class="popis-mimo"><th colspan="2">Návrhy k položkám mimo číselník
+      <div class="note" style="margin:0;font-weight:normal">Položky, které výchozí šachta nepočítá
+      (např. přechodové plechy nerez), proto nemají vlastní řádek. Převzatý text platí stejně jako ostatní.</div></th></tr>`
+    + mimo.map(k => `<tr class="popis-mimo"><td class="c-nazev">${esc(k)}</td><td>${cenikPopisyKandidati(k, admin)}</td></tr>`).join('') : '';
   const kdo = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.popisy && ONLINE_STAV.popisy.kdy)
     ? 'Naposledy změněno ' + String(ONLINE_STAV.popisy.kdy).slice(0, 16).replace('T', ' ')
       + ' (' + (ONLINE_STAV.popisy.kdo || '?') + ').' : 'Zatím žádný text není uložený.';
@@ -507,6 +515,7 @@ function cenikPopisyKarta() {
         <tr><th class="c-nazev">Položka</th><th>Dodatkový text</th></tr>
         ${cis.radky.map(radek).join('')}
         ${osirele}
+        ${mimoHtml}
       </table></div>
     </div></div>`;
 }

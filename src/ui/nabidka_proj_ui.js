@@ -391,7 +391,7 @@ async function nabidkaProjNahled() {
     ${typeof nabidkaFotoHtml === 'function' ? nabidkaFotoHtml('proj') : ''}
     ${html}
     ${rekapHtml}
-    ${typeof dokPodpisHtml === 'function' ? dokPodpisHtml(P) : ''}
+    ${typeof dokPodpisHtml === 'function' ? dokPodpisHtml(P, vt.varianta) : ''}
     ${patickaHtml}
     </div>
     ${tiskListaSkript({

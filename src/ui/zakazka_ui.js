@@ -997,7 +997,7 @@ async function nabidkaOckDokument() {
     ${cenaHtml}
     ${priplatkyHtml}
     ${dodavatelHtml}
-    ${typeof dokPodpisHtml === 'function' ? dokPodpisHtml(P) : ''}
+    ${typeof dokPodpisHtml === 'function' ? dokPodpisHtml(P, vt.varianta) : ''}
     ${patickaHtml}
     </div>
     ${tiskListaSkript({

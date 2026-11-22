@@ -32,6 +32,16 @@ import { pdSimulatorStav, pdSimFetch, PD_SIM_ZAKLAD } from './pipedrive_simulato
 
 export const PD_TOKEN_PROMENNA = 'PIPEDRIVE_TOKEN';
 export const PD_DOMENA_PROMENNA = 'PIPEDRIVE_DOMENA';
+/* VYPÍNAČ ZÁPISU DO PIPEDRIVE (B235/B236, J. V. 21. 11. 2026: „do opravy
+ * zůstává zápis do Pipedrive vypnutý"). Do BZ hlídaly zápis jen vypínače
+ * zkušebních funkcí (poznámky, vítěz) a zrušení vazby i odkaz z webhooku šly
+ * ven s pouhým tokenem. Teď každé volání jiné než GET do SKUTEČNÉHO Pipedrive
+ * projde jen s proměnnou Netlify PIPEDRIVE_ZAPIS = „ano" (nastavuje J. V.);
+ * bez ní (výchozí stav) pdZavolej zápis odmítne dřív, než sáhne na síť.
+ * Simulátor (#536) ven nejde, proto ho vypínač nehlídá. */
+export const PD_ZAPIS_PROMENNA = 'PIPEDRIVE_ZAPIS';
+export const PD_ZAPIS_VYPNUTY = 'Zápis do Pipedrive je vypnutý (proměnná ' + PD_ZAPIS_PROMENNA
+  + ' v Netlify) — do Pipedrive se nic neodeslalo.';
 
 /* Kolik dealů se natáhne najednou. Každý POŽADAVEK na seznam stojí
  * 10 tokenů denního rozpočtu (x-token-cost ve specifikaci v2, ověřeno
@@ -53,6 +63,13 @@ export function pdSimulator() {
 
 export function pdNastaveno() {
   return pdSimulator() || !!(process.env[PD_TOKEN_PROMENNA] && process.env[PD_DOMENA_PROMENNA]);
+}
+
+/* Smí jít zápis (POST/PUT/PATCH/DELETE) do Pipedrive? Simulátor ano, skutečný
+ * Pipedrive jen s PIPEDRIVE_ZAPIS = „ano" (B235/B236). */
+export function pdZapisPovolen() {
+  if (pdSimulator()) return true;
+  return String(process.env[PD_ZAPIS_PROMENNA] || '').trim().toLowerCase() === 'ano';
 }
 
 /* 'simulator' | 'pipedrive' | 'vypnuto' — co je za napojením (pro správce,
@@ -114,6 +131,9 @@ function spanek(ms) { return new Promise((h) => setTimeout(h, ms)); }
  * Vrací rozbalené `data`; stránkovací kurzor jde v `_kurzor`. */
 export async function pdZavolej(cesta, volby = {}) {
   const sim = pdSimulator();
+  /* B235/B236: zápis do skutečného Pipedrive jen se zapnutým vypínačem. */
+  if (String(volby.metoda || 'GET').toUpperCase() !== 'GET' && !pdZapisPovolen())
+    throw new PdChyba(PD_ZAPIS_VYPNUTY, 503);
   const token = sim ? 'simulator' : process.env[PD_TOKEN_PROMENNA];
   if (!token) throw new PdChyba('Není nastavený přístupový token Pipedrive ('
     + PD_TOKEN_PROMENNA + ').', 500);

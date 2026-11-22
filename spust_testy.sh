@@ -68,6 +68,20 @@ seznam_preskocenych=()
 # který v repozitáři záměrně není (viz src/zkusebni_data.js). Není to chyba
 # kódu, takže se to nepočítá jako selhání – ale ani jako „prošlo", aby se
 # nezdálo, že shodu s Excelem někdo ověřil.
+# ČÁSTEČNÉ PŘESKOČENÍ (HN, 21. 11. 2026): sada prošla, ale část kontrol
+# nemohla běžet (např. test_354_mustky.js bez staré historie gitu v mělkém
+# klonu). Sada to oznámí řádkem „PRESKOCENO_CAST: <co a proč>"; tady se to
+# přenese do seznamu přeskočených (a testovaci_kolo.sh do souhrnu). Do té doby
+# to bylo jen INFO ve výpisu, který nikdo nečte — kolo DO tak propustilo regresi.
+castecne=0
+preskoceni_casti() {
+  local f="$1" l
+  while IFS= read -r l; do
+    castecne=$((castecne + 1))
+    seznam_preskocenych+=("$f (částečně: ${l#PRESKOCENO_CAST: })")
+    printf '    – část přeskočena: %s\n' "${l#PRESKOCENO_CAST: }"
+  done < <(grep '^PRESKOCENO_CAST: ' "$2" 2>/dev/null)
+}
 spust() {
   local f="$1"
   if [ -n "${KNG_POSUN_DNU:-}" ] && [[ "$BEZ_POSUNU" == *" $(basename "$f") "* ]]; then
@@ -79,6 +93,7 @@ spust() {
   if [ "$kod" -eq 0 ]; then
     proslo=$((proslo + 1))
     printf '  ✓ %s\n' "$f"
+    preskoceni_casti "$f" /tmp/kng_test_out.txt
   elif [ "$kod" -eq 3 ]; then
     preskoceno=$((preskoceno + 1))
     seznam_preskocenych+=("$f (chybí skutečný ceník)")
@@ -182,6 +197,7 @@ spust_prohlizec() {
   fi
   if [ "$kod" -eq 0 ]; then
     proslo=$((proslo + 1)); printf '  ✓ %s\n' "$f"
+    preskoceni_casti "$f" /tmp/kng_prohlizec_out.txt
   elif [ "$kod" -eq 4 ]; then
     preskoceno=$((preskoceno + 1)); seznam_preskocenych+=("$f (chybí firemní podklad – KNG_PODKLADY)")
     printf '  – %s (přeskočeno: chybí firemní podklad mimo repozitář – KNG_PODKLADY=/cesta)\n' "$f"
@@ -228,7 +244,8 @@ fi
 
 echo
 echo "Souhrn: $proslo prošlo, $selhalo selhalo, $preskoceno přeskočeno (celkem $((proslo + selhalo + preskoceno)) sad)."
-if [ "$preskoceno" -gt 0 ]; then
+[ "$castecne" -gt 0 ] && echo "Částečně přeskočeno: $castecne (sada prošla, část kontrol neběžela — viz seznam)."
+if [ "${#seznam_preskocenych[@]}" -gt 0 ]; then
   echo "Přeskočeno (nic neověřily):"
   printf '  – %s\n' "${seznam_preskocenych[@]}"
 fi
@@ -236,8 +253,8 @@ if [ "$selhalo" -gt 0 ]; then
   echo "Selhalo: ${seznam_selhani[*]}"
   exit 1
 fi
-if [ "$preskoceno" -gt 0 ]; then
-  case "$preskoceno" in
+if [ "$preskoceno" -gt 0 ] || [ "$castecne" -gt 0 ]; then
+  case "$((preskoceno + castecne))" in
     1) sady="1 sada se přeskočila" ;;
     2|3|4) sady="$preskoceno sady se přeskočily" ;;
     *) sady="$preskoceno sad se přeskočilo" ;;

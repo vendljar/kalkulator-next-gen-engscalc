@@ -185,9 +185,13 @@ function vzIdDalsi(zak) {
   return 'z' + (max + 1);
 }
 
-/* VZ-F1 (VZ-N1, #654): IČO pro porovnání — jen číslice ('' = bez IČO). */
+/* VZ-F1 (VZ-N1, #654): IČO pro porovnání — jen číslice ('' = bez IČO).
+ * #674 b: úvodní nuly na 8 číslic („027182818" = „27182818", „1234567" =
+ * „01234567"); delší číslo bez úvodních nul zůstává, jak je. */
 function vzIcoKlic(ico) {
-  return vzText(ico).replace(/\D+/g, '');
+  let k = vzText(ico).replace(/\D+/g, '');
+  if (k.length > 8) k = k.replace(/^0+(?=\d{8})/, '');
+  return (k && k.length < 8) ? k.padStart(8, '0') : k;
 }
 /* Zákazník zakázky se stejným IČO (jiný než `kromeId`), nebo null.
  * Zákazníci bez IČO se nehlídají. */
@@ -1065,7 +1069,9 @@ function vzOdstranDuvod(zak, id, admin) {
 function vzZakaznikPoleZmrazeno(zak, id, pole) {
   if (!vzRezim(zak) || VZ_ZMRAZENA_POLE.indexOf(pole) < 0) return '';
   const z = vzZakaznik(zak, id);
-  if (!z || z.ridici || !vzOdeslanoKomu(zak, z.id)) return '';
+  /* #674 d: řídící bez písmene (z1) hlídá zámek hlavičky; řídící s písmenem
+   * (po výměně) má údaje zmrazené jako další zákazník (server § 5 totéž). */
+  if (!z || (z.ridici && !z.pismeno) || !vzOdeslanoKomu(zak, z.id)) return '';
   return 'Zákazníkovi už odešla nabídka — název, sídlo, IČO a DIČ se už nemění (měnit jde kontaktní osobu). '
     + 'Jiný subjekt přidejte jako nového zákazníka.';
 }
@@ -1093,13 +1099,13 @@ function vzServerZakaznici(stara, zak, relace, volby) {
   for (const p of pred) {
     const n = tedIds.get(p.id);
     if (n && n.pismeno !== p.pismeno)
-      return { status: 400, chyba: 'Neuloženo: písmeno zákazníka (' + (p.pismeno || 'bez písmene') + ') se nemění.' };
+      return { status: 400, chyba: 'písmeno zákazníka (' + (p.pismeno || 'bez písmene') + ') se nemění.' };
   }
   /* Odstranění zákazníka s odeslanou nabídkou (podle ULOŽENÉ verze) — jen administrátor. */
   for (const p of pred) {
     if (tedIds.has(p.id)) continue;
     if (!o.obnova && vzOdeslanoKdykoli(stara, p.id) && !admin)
-      return { status: 403, chyba: 'Neuloženo: zákazníkovi „' + (p.hlavicka.objednatel || p.id) + '" už odešla nabídka — '
+      return { status: 403, chyba: 'zákazníkovi „' + (p.hlavicka.objednatel || p.id) + '" už odešla nabídka — '
         + 'odstranit ho smí jen administrátor.' };
   }
   /* N9: nový zákazník nesmí převzít id ani písmeno, se kterým už něco
@@ -1111,9 +1117,9 @@ function vzServerZakaznici(stara, zak, relace, volby) {
   for (const n of ted) {
     if (predIds.has(n.id)) continue;
     if (ulozIds.has(n.id))
-      return { status: 400, chyba: 'Neuloženo: nový zákazník nese id ' + n.id + ', se kterým už odešla nabídka.' };
+      return { status: 400, chyba: 'nový zákazník nese id ' + n.id + ', se kterým už odešla nabídka.' };
     if (n.pismeno && ulozPismena.has(n.pismeno))
-      return { status: 400, chyba: 'Neuloženo: písmeno ' + n.pismeno + ' už nese odeslaná nabídka jiného zákazníka.' };
+      return { status: 400, chyba: 'písmeno ' + n.pismeno + ' už nese odeslaná nabídka jiného zákazníka.' };
   }
   /* VZ-F1 (VZ-N1): zákazník nesmí nést IČO, které už v zakázce je
    * (zákazníci bez IČO se nehlídají). VZ-F2 (#660): hlídá se každý NOVÝ
@@ -1125,7 +1131,8 @@ function vzServerZakaznici(stara, zak, relace, volby) {
   /* Hláška jmenuje zákazníka, který v zakázce UŽ JE: přednost má ten, komu
    * se IČO neměnilo; když jsou noví / změnění oba, ten dřívější v poli
    * (pozdější se ohlásí, až na něj dojde řada). Předponu „Neuloženo:" přidá
-   * volající (zakazka_kontrola.mjs). */
+   * volající (zakazka_kontrola.mjs) — žádná hláška vzServer* ji proto nenese
+   * (#674 c: dřív „Neuloženo: Neuloženo: …"). */
   const icoStejne = z => { const p = predIds.get(z.id); return !!p && vzIcoKlic(p.hlavicka.ico) === vzIcoKlic(z.hlavicka.ico); };
   if (!o.obnova) for (const n of ted) {
     const k = vzIcoKlic(n.hlavicka.ico);
@@ -1138,10 +1145,15 @@ function vzServerZakaznici(stara, zak, relace, volby) {
   for (const p of pred) {
     const n = tedIds.get(p.id);
     if (!n || !vzOdeslanoKomu(stara, p.id) || o.obnova) continue;
-    if (p.ridici && n.ridici) continue;   // hlavička řídícího: zámek hlavičky jako dnes
+    /* Hlavička řídícího BEZ písmene (původní z1): zámek hlavičky jako dnes.
+     * #674 d: zákazník S PÍSMENEM, kterému odešla nabídka jako dalšímu, má
+     * údaje zmrazené i jako řídící — v uložení výměny i potom (dřív jen
+     * v uložení výměny, klient je nechal volné). Klient totéž: vzZakaznikPoleZmrazeno
+     * a zamekZakCestaZmrazena. */
+    if (p.ridici && n.ridici && !n.pismeno) continue;
     const zm = VZ_ZMRAZENA_POLE.filter(k => vzText(p.hlavicka[k]) !== vzText(n.hlavicka[k]));
     if (zm.length)
-      return { status: 409, chyba: 'Neuloženo: zákazníkovi „' + (p.hlavicka.objednatel || p.id) + '" už odešla nabídka — '
+      return { status: 409, chyba: 'zákazníkovi „' + (p.hlavicka.objednatel || p.id) + '" už odešla nabídka — '
         + 'název, sídlo, IČO a DIČ se už nemění (' + zm.join(', ') + ').' };
   }
   /* VZ-F2 (#663, J. V. 18. 11. 2026): po odeslání SMLOUVY O DÍLO zákazníkovi
@@ -1152,7 +1164,7 @@ function vzServerZakaznici(stara, zak, relace, volby) {
     const n = tedIds.get(p.id);
     if (!n || o.obnova || (p.ridici && n.ridici) || !vzSodOdeslanaKomu(stara, p.id)) continue;
     const zz = VZ_ZASTUPCI_POLE.filter(k => vzText(p.zastupci[k]) !== vzText(n.zastupci[k]));
-    if (zz.length) return { status: 409, chyba: 'Neuloženo: ' + vzSodZmrazenoText(p) + ' (' + zz.join(', ') + ').' };
+    if (zz.length) return { status: 409, chyba: vzSodZmrazenoText(p) + ' (' + zz.join(', ') + ').' };
   }
   return null;
 }
@@ -1230,16 +1242,16 @@ function vzServerRazitka(stara, zak) {
       if (!rezim) { delete t.zakaznik; continue; }
       const id = (vzObj(t.zakaznik) && typeof t.zakaznik.id === 'string' && t.zakaznik.id) ? t.zakaznik.id : vzRidiciId(zak);
       const z = vzZakaznik(zak, id);
-      if (!z) return { status: 400, chyba: 'Neuloženo: tisk nabídky pro zákazníka, který v zakázce není. Obnovte stránku a vytiskněte znovu.' };
+      if (!z) return { status: 400, chyba: 'tisk nabídky pro zákazníka, který v zakázce není. Obnovte stránku a vytiskněte znovu.' };
       if (!smi(z, String(v.id)))
-        return { status: 400, chyba: 'Neuloženo: varianta „' + vzText(v.nazev || v.id) + '" není nabídka zákazníka „'
+        return { status: 400, chyba: 'varianta „' + vzText(v.nazev || v.id) + '" není nabídka zákazníka „'
           + (z.hlavicka.objednatel || z.id) + '" — pro něj se netiskne.' };
       /* VZ-E6 (#606, doplněk 3 k E4): smlouva o dílo jen zákazníkovi, kterému
        * nabídka TÉTO varianty odešla — dřívější tisk s jeho id v témže zámku
        * (uložené razítko nebo nové razítko téhož uložení, už ověřené výš). */
       if (vzText(t.typ).replace(/_(en|de|fr)$/, '') === 'sod'
         && !v.zamek.tisky.slice(0, i).some(x => vzObj(x) && vzTiskKomu(x) === z.id))
-        return { status: 400, chyba: 'Neuloženo: smlouvu o dílo k variantě „' + vzText(v.nazev || v.id) + '" jde vytvořit jen pro zákazníka, '
+        return { status: 400, chyba: 'smlouvu o dílo k variantě „' + vzText(v.nazev || v.id) + '" jde vytvořit jen pro zákazníka, '
           + 'kterému nabídka této varianty odešla — zákazníkovi „' + (z.hlavicka.objednatel || z.id) + '" ji nejdřív vytiskněte (Tisk CN).' };
       t.zakaznik = vzRazitkoSnimek(zak, z.id, v);
     }
@@ -1553,11 +1565,11 @@ function vzServerRidici(stara, zak, relace, volby) {
     && !(prodT && vzRidiciVariantaId(zak) === String(prodT.id));
   if ((pred === ted && !zmenaVar) || !vzRezim(zak)) return null;
   if (prodS && prodT && String(prodS.id) === String(prodT.id))
-    return { status: 409, chyba: 'Neuloženo: ' + vzRidiciZamceno(stara).replace(/\.$/, '') + '.' };
+    return { status: 409, chyba: vzRidiciZamceno(stara).replace(/\.$/, '') + '.' };
   const novyProdej = !!prodT && String(prodT.prodano.zakaznik || '') === ted && !(sv(prodT.id) && vzObj(sv(prodT.id).prodano));
   if (novyProdej) return null;
   if (!vzRidiciSmiMenit(stara, relace))
-    return { status: 403, chyba: 'Neuloženo: ' + (pred === ted ? 'řídící variantu zakázky s víc zákazníky' : 'řídícího zákazníka')
+    return { status: 403, chyba: (pred === ted ? 'řídící variantu zakázky s víc zákazníky' : 'řídícího zákazníka')
       + ' mění jen autor zakázky (u zakázek, které sám založil) nebo administrátor.' };
   return null;
 }
@@ -1572,7 +1584,7 @@ function vzServerKolaps(stara, zak, volby) {
   const h = vzHlavickaZ(zak);
   const shoda = vzZakaznici(stara).filter(x => ['objednatel', 'ico', 'adresaObjednatele'].every(k => x.hlavicka[k] === h[k]));
   if (shoda.length === 1 && shoda[0].id === VZ_RIDICI_ID) return null;
-  return { status: 409, chyba: 'Neuloženo: zakázka by se vrátila k jednomu zákazníkovi, který není její původní zákazník — '
+  return { status: 409, chyba: 'zakázka by se vrátila k jednomu zákazníkovi, který není její původní zákazník — '
     + 'odeslané nabídky by změnily adresáta i číslo. Odstraňte zákazníka v samostatném uložení (bez úprav hlavičky), '
     + 'a jen když je řídícím původní zákazník.' };
 }

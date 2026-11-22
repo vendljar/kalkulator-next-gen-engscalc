@@ -241,15 +241,28 @@ async function pokusyStavKlic(klic) {
   if (!z || (Date.now() - (z.posledni || 0)) > POKUSY_OKNO_MS) return { n: 0, posledni: 0 };
   return { n: z.n || 0, posledni: z.posledni || 0 };
 }
+/* SOUBĚH POČÍTADLA (B233, audit 20. 11. 2026). Čtení–změna–zápis bez zámku:
+ * vlna 400 souběžných pokusů z jedné adresy přečetla nulu a limit 60/15 min
+ * obešla (ověřeno 400 hesel). Netlify Blobs v nasazené verzi (8.2.0) nemá
+ * podmíněný zápis ani atomický inkrement, proto se změny počítadla řadí za
+ * sebe výhradním úsekem nad klíčem (vyhradne, vzor B158): každý další pokus
+ * čte až zápis předchozího. Mez: dvě různé instance funkce se navzájem
+ * nevidí (BEZPECNOST_MEZE.md, B233) — úplná oprava chce podmíněný zápis
+ * (novější @netlify/blobs, roadmapa). */
+const POKUSY_FRONTA = 'pokusy:';
 async function pokusyNeuspechKlic(klic) {
-  const s = await uloziste(POKUSY_ULOZISTE);
-  const z = { n: (await pokusyStavKlic(klic)).n + 1, posledni: Date.now() };
-  await s.zapis(klic, z);
-  return z;
+  return vyhradne(POKUSY_FRONTA + klic, async () => {
+    const s = await uloziste(POKUSY_ULOZISTE);
+    const z = { n: (await pokusyStavKlic(klic)).n + 1, posledni: Date.now() };
+    await s.zapis(klic, z);
+    return z;
+  });
 }
 export async function pokusyResetKlic(klic) {
-  const s = await uloziste(POKUSY_ULOZISTE);
-  await s.zapis(klic, { n: 0, posledni: 0 });
+  return vyhradne(POKUSY_FRONTA + klic, async () => {
+    const s = await uloziste(POKUSY_ULOZISTE);
+    await s.zapis(klic, { n: 0, posledni: 0 });
+  });
 }
 
 export async function pokusyStav(email) { return pokusyStavKlic(pokusyKlic(email)); }
@@ -333,9 +346,11 @@ export async function pokusyUspech(email, ip) {
   if (ip) await pokusyUber(pokusyIpKlic(ip));
 }
 export async function pokusyUber(klic) {
-  const s = await uloziste(POKUSY_ULOZISTE);
-  const z = await pokusyStavKlic(klic);
-  await s.zapis(klic, { n: Math.max(0, z.n - 1), posledni: z.posledni || Date.now() });
+  return vyhradne(POKUSY_FRONTA + klic, async () => {   // B233
+    const s = await uloziste(POKUSY_ULOZISTE);
+    const z = await pokusyStavKlic(klic);
+    await s.zapis(klic, { n: Math.max(0, z.n - 1), posledni: z.posledni || Date.now() });
+  });
 }
 
 export async function pokusyReset(email) { return pokusyResetKlic(pokusyKlic(email)); }

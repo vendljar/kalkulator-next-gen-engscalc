@@ -8,20 +8,177 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v22.11.1 — PR #692 (prac.): Připomínky z aplikace, větev claude/pr-pripominky
+## v22.11.4 — PR #706: Připomínky z aplikace, větev claude/pr-pripominky
 
-Nad integrací `cda289e`. Cenu ani dokumenty nemění (porovnání sestavení SHODA). Funkce je výchozí VYPNUTÁ. Verzi přečísluje koordinace.
+Nad integrací `cda289e`, sloučeno s integrací `fe747c6` (v22.11.3). Cenu ani dokumenty nemění (porovnání sestavení SHODA). Funkce je výchozí VYPNUTÁ.
 
 - **Nové — obchodník:** tlačítko „Připomínka“ vpravo dole (číslo nových odpovědí), panel s typem (chyba, cena,
   návrh, dotaz), textem, označením místa na obrazovce a automatickým kontextem a snímkem obrazovky; záložka
   Moje připomínky s průběhem a odpověďmi.
 - **Nové — správce:** Nastavení → „💬 Připomínky (N)“ a tlačítko v liště; filtry, detail se snímkem, akce
   (do fronty oprav, odpovědět a uzavřít, odložit, zamítnout, duplicitní), nastavení a klíč pro koordinaci.
-- **Server:** `/api/pripominky`, záloha a obnova bez snímků, mez B257. Testy `test_pripominky` (jádro 66, server 74),
-  `overit_pripominky` 47, mutace `[PR]` 23/23.
+- **Server:** `/api/pripominky`, záloha a obnova bez snímků, mez B257. Testy `test_pripominky` (jádro 72, server 76),
+  `overit_pripominky` 55, mutace `[PR]` 27/27.
 - **Revize (22. 11.):** označené místo ke koordinaci jen z popisu prvku (bez cen a jmen), úplné vynulování stavu
   připomínek po odhlášení, klíč jen se schématem Bearer, čerstvý snímek při odeslání; mez přečíslována na B257.
-- **Nález #693 (prac.):** useknutá bublina „Opláštit i prohlubeň“ (rovná uvozovka v title) — neopraveno, mimo rozsah.
+- **Nález #707:** useknutá bublina „Opláštit i prohlubeň“ (rovná uvozovka v title) — neopraveno, mimo rozsah.
+
+## v22.11.3 — BZ: opravy bezpečnostního auditu 20. 11. 2026 (B231–B236, B195), větev claude/bz-bezpecnost
+
+Nad integrací `cda289e` (v19.11.11), sloučeno s integrací `cedb857` (v22.11.2). Rozhodnutí J. V. 21. 11. 2026 (přes koordinaci). Mění bezpečnostní meze a chování
+zámků, ceny ani text dokumentů nemění. Před sloučením revize poradce (Fable). Verzi přečísluje koordinace.
+
+- **B231 (vysoká) — strana zakázky po zámku zmrazená:** příznaky `jenProj` / `jenOck` u zakázky se zamčenou variantou
+  server nezmění (403 pro každou roli; ven = odemčení správcem). Nový zámek nese snímek `zamek.strana` (píše a drží
+  server), zaškrtávátka v Kalkulaci PROJ / OCK po zámku hlásí důvod. Dotisk dokumentu nové strany nově hlídá
+  i nepotvrzenou ruční cenu (zakázky z doby před BZ). Controlling a hodnota dealu prodané zakázky se už nepřepnou.
+- **B232 — ověření zmrazeného výsledku:** přísné porovnání nového zámku počítá chybějící i přidané číslo → „nesouhlasí“
+  s varováním (dřív „shoda“ i výsledku bez 782 čísel).
+- **B233 — přihlášení:** počítadla pokusů (e-mail i adresa) se počítají ve výhradním úseku — souběžná vlna z jedné
+  adresy limit 60/15 min neobejde (PoC 400 souběžných → 390× 429). Zbytek mezi instancemi funkce = mez (#703).
+- **B234 — karta zákazníka:** mění jen autor a administrátor; ostatním se úprava uloží jako **návrh změny** (převezme
+  nebo zamítne autor / administrátor, tlačítka na kartě). **Historie verzí** karty (tlačítko „Historie verzí“,
+  50 verzí, v záloze i obnově).
+- **B235/B236 — Pipedrive:** nový **vypínač zápisu** — bez proměnné Netlify `PIPEDRIVE_ZAPIS` = „ano“ nejde do
+  skutečného Pipedrive žádný zápis (výchozí vypnuto; dřív zrušení vazby a odkaz z webhooku šly ven s tokenem).
+  Poznámka do dealu a přepojení organizace (vítěz) jen u dealu, který zakázce patří (vazba z webhooku, odkaz na
+  kalkulaci nebo číslo nabídky v dealu); strop nových dealů pro poznámky 30/h na uživatele.
+- **B195 — nulová ruční cena:** ověřeno, že bez zdroje neprojde (obchodník, vedoucí 403; správce smí); text meze opraven.
+- **Testy:** `netlify/test_bz_bezpecnost.mjs` (42; před opravou 14+2+13 selhání podle nálezu),
+  `netlify/test_bz_pipedrive.mjs` (20; před opravou 13 selhání), `test_prava.mjs` (B232, B234), upravené přípravky
+  `test_koncova_cena` N4, `test_vyjimky` B153/B155 (stav před B231 zapsán přímo), Pipedrive sady (deal nese číslo
+  nabídky zakázky). Mutace [BZ] 21. PoC auditu B231 (2×), B232, B233, B234, B235, B236: před ZRANITELNÉ, po ODOLNÉ.
+- **Roadmapa:** #696–#704 (pracovní čísla); #702 souhrn nízkých nálezů B237–B256, #703 zbytek B233, #704 otázky J. V.
+- **Opravy po revizi Fable (22. 11.):** R1 příznak strany s pravdivou nebooleovskou hodnotou (`1`, „ano“, `{}`) —
+  server ho ukládá jako pravda/nepravda a porovnává pravdivost; R2 zmrazena i výsledná strana (změna čísla nabídky,
+  např. „ÓVP“ × „OVP“, je 403 i pro správce); R3 přísné ověření: objekt s čísly proti textu / `true` / `null` = rozdíl;
+  R4 vazbu dealu dokládá jen číslo, ze kterého je klíč souboru zakázky (ne číslo PROJ vedle OCK); R5 smazání karty
+  zákazníka smaže i historii; nestabilní kontrola rejstříku v `test_vyjimky` (hledala sazbu i v ms razítku). Testy
+  R1–R5 před opravou 8 selhání, po opravě zelené; mutace [BZ] 25/25. Roadmapa #705 (R6, R7), #704 otázky (5), (6).
+## v22.11.2 — HN: zpevnění testů kola (#638, #644, #646, #647, #695), větev claude/hn-harnessy
+
+Nad integrací `cda289e` (v19.11.11). Jen testy, harnessy a nástroje kola — **kód aplikace beze změny**, cena ani
+dokumenty se nemění (porovnání sestavení proti integraci SHODA). Verzi přečísluje koordinace.
+
+- **#638 — nestabilní `overit_zobrazeni.mjs` a `overit_zaporne.mjs`:** „limit přihlášení" byl ve skutečnosti chybějící
+  `ADMIN_EMAIL`: `netlify/lib/sdilene.mjs` ho čte při importu, harness ho nastavoval až v těle modulu (statické importy
+  běží dřív) → přihlášení správce 401, timeout 10 s. V kole to zakrýval export ve `spust_testy.sh`. Nový
+  `nastroje/harness_prostredi.mjs` (importuje se první; i `overit_cenik_prava`, `overit_neulozene`,
+  `netlify/test_prihlaseni`). `harness_cekani.js`: `cekejNaStart`, `prihlasVProhlizeci` (čeká na přihlášení nebo
+  odmítnutí a vypíše hlášku aplikace s návodem). Oba harnessy bez `waitForTimeout` (30 pauz) a pevných limitů — čeká
+  se na klid (dotazy API, akce, odložené samoukládání matice). B168 v `overit_zobrazeni` procházel jen díky časování;
+  scénář „heslo poprvé" se nastaví výslovně (HN-T2). Pojistka: `test_harness_cekani.js` nad cda289e padá, po 46/0;
+  bez `ADMIN_EMAIL` zaporne pád → 15/0, zobrazeni timeout → 159/0, test_prihlaseni 37/30 → 67/0; souběh 6 harnessů zelený.
+  Třetí nestabilní test z #638, `netlify/test_577_kopie_skript.mjs` T4 (padl i v kole této dávky): „špatný token"
+  `TOKEN.slice(0, -1) + 'X'` se při náhodném TOKENu končícím „X" (1 : 64) shodoval se správným → 200. Poslední znak
+  se teď vždy změní (`pokazToken`, kontrola T4a); reprodukce `KNG_577_TOKEN=<…X>`: před 52/1, po 54/0.
+- **#644 — občasné selhání `test_vz_unik.js` („výměna řídícího (B)"):** žádný únik. Pětimístná cena varianty v EUR
+  se náhodně shodovala s číslicemi razítka času `v.vytvoreno`/`v.upraveno` v JSON pohledu (např. 10:49:23.2xx ∋ 49232);
+  záleželo na čase dne, ne na posunu hodin. Detektor ceny vynechává ISO časy a id z `Date.now()`; nová pojistka
+  zmrazí hodiny na čas nesoucí cenu (před 2 FAIL, po 0); posuny +400/−30/+1000 dní a 64 zmrazených časů 0 FAIL.
+- **#646 — `overit_sod.mjs` na šablony v4–v6:** očekávání podle verze šablony (SoD realizace v2+), tečky „……" místo
+  `{{SODP_*}}`/`{{PM_*}}` (C3 #584). Nový `nastroje/smlouvy_syntet.mjs` vyrobí smyšlené šablony (SoD realizace v4–v6,
+  SoD PROJ v2–v4, plná moc v1–v2) týmiž nástroji jako `vyrob_sablony.js` — bez `KNG_PODKLADY` harness běží nad nimi
+  a už se nepřeskakuje. Pojistka: starý harness nad syntetickými v6 46/5, nový 51/0; bez podkladů 55/0.
+- **#647 — pevná sada porovnání sestavení:** `porovnani_sada.js` oddíl 3c (`k40:*`), přepnutí typu šachty / zasklení
+  s vyřazeným nebo přepsaným čelním sklem. `origin/main × origin/claude/rychla-k40n1`: stará sada 79/79 SHODA,
+  nová 8 rozdílných (jen `k40:*`); seznam `podklady/porovnani/ocekavane_k40n1_main_2026-11-21.txt` → kód 0.
+- **#695 — přeskočení v kole je vidět:** `testovaci_kolo.sh` bez načitatelného playwrightu skončí hned
+  kódem 2 s návodem, přeskočené harnessy = selhání, vědomě `KNG_BEZ_PROHLIZECE=1` → „ZELENÁ BEZ PROHLÍŽEČE".
+  `test_354_mustky.js` si staré jádro dotáhne podle plného SHA, jinak vypíše `PRESKOCENO_CAST:` a `spust_testy.sh`
+  ho přenese do „Přeskočené sady" (v mělkém klonu teď srovnání opravdu běží: 67/0 → 69/0). Nový
+  `nastroje/test_kolo_preskoceni.sh` ve statických kontrolách (10 z 10); pojistka nad původními skripty 8 FAIL, po 10/0.
+  Svěřené rozhodnutí HN-T1.
+
+Kolo `--bez-mutaci --proti origin/claude/integrace-16-10` (porovnání proběhlo už proti nové integraci 885577e, v21.11.4):
+**VŠE ZELENÉ** — sady 496/0/6, hodiny 401/0/1, statické 10/10, porovnání SHODA 367/367 (nově i `k40:*`). Přeskočené jen
+test.js a 5 harnessů bez `KNG_PODKLADY` (`overit_sod.mjs` už ne). Mutace nespuštěny — dávka nesahá do jádra ani serveru.
+## v22.11.1 — VZD: drobnosti víc zákazníků a dokumentů (#673, #674, #665, #683, #635), větev claude/vzd-drobnosti
+
+Nad integrací `cda289e` (v19.11.11), sloučeno s integrací `885577e` (v21.11.4). Cenu nemění. Mění text dotisku odeslané nabídky („Vypracoval“, #665, rozhodnutí
+J. V.) a krycí list PROJ jen u slevy PROJ 100 % (#683). Verzi a čísla přečísluje koordinace.
+
+- **#673 suchý běh Pipedrive za řídícího zákazníka:** `pdnPodklad` skládá krycí listy OCK i PROJ z pohledu řídícího
+  (`vzTiskPohled` + varianta bez cizích ručních hodnot); ruční pole zákazníka zapsaná u dalšího zákazníka (kopie
+  faktur, podpisy, zmocnitel…) do náhledu ani do budoucího ostrého zápisu (#115) nejdou. Jeden zákazník beze změny.
+- **#674 drobnosti VZ:** (a) `plnaMocData` hlídá `vzTiskHlidej`; (b) IČO s úvodní nulou (`027182818` = `27182818`);
+  (c) hláška „Neuloženo: Neuloženo:“ u 12 hlášek serveru víc zákazníků — předponu přidává jen `zakazka_kontrola.mjs`
+  a nezdvojí ji; (d) řídící zákazník **s písmenem** (stal se řídícím výměnou), kterému odešla nabídka: název, sídlo,
+  IČO a DIČ zmrazené v klientu (hlavička) i na serveru, v uložení výměny i potom — dřív klient pole nechal volné
+  a server odmítl jen v uložení výměny. Řídící z1 beze změny. (e) upozornění u KL PROJ dalšího zákazníka neděláno.
+- **#665 „Vypracoval“ ze snímku zámku:** odeslaná nabídka nese `zamek.zpracovatel` (jméno, titul, funkce, telefon,
+  e-mail; píše ho server z účtu v relaci, drží ho jako `kdo`). Dotisk (Word i online tisk) tiskne zpracovatele z doby
+  odeslání; podpis jen téhož člověka (pod cizí jméno se sken kolegy nevloží). Starší zámky bez snímku jako dřív.
+- **#683 (D8-I1) jedno pravidlo „nabízí činnost“:** `nabidkaProjNabizi` (cena před slevou, jak rozhoduje CN); krycí
+  list PROJ (rozsah činností, termíny D8) se ptá téhož. Liší se jen u slevy PROJ 100 %; SoD beze změny. Zápis
+  v `ROZHODNUTI_LOG` (technické sjednocení). Příčinu z TEST 7650-K29-N50 z dat v repu reprodukovat nešlo.
+- **#635 tlačítko „vlastní varianta“** u upozornění sdílené varianty v krycím listu (`vzVlastniVarianta`).
+- **Testy (pojistka v commitech):** `src/test_vzd_pd_unik.js` 23, `src/test_vzd_drobnosti.js` 19,
+  `netlify/test_vz_server.mjs` +8, `src/test_665_vypracoval.js` 19, `netlify/test_665_vypracoval.mjs` 6,
+  `src/test_683_nabizi_studii.js` 8, `src/test_635_vlastni_varianta.js` 8.
+## v21.11.4 — DOS: drobnosti DO-N1 #680 a náhled podkladů NPT-N1–N4 #690/#691, větev claude/dos-drobnosti
+
+Nad integrací `cda289e` (v19.11.11). Cenu ani text Wordu nemění (porovnání sestavení SHODA). Verzi přečísluje koordinace.
+
+- **DO-N1 #680 — návrhy k položkám mimo číselník** (rozhodnutí J. V. 21. 11.): Ceník → číselník dodatkových textů má
+  po „Najít texty v uložených zakázkách“ nový oddíl **„Návrhy k položkám mimo číselník“** se všemi návrhy a texty
+  ze zakázek ke klíčům, které v číselníku řádek nemají (výchozí šachta je nepočítá — např. příplatek
+  „PŘECHODOVÉ PLECHY - NEREZ (MATERIÁL)“). Převzetí stejně jako u ostatních. Kandidáti k osiřelým textům se nově
+  vypisují pod jejich řádkem. `popisyNavrhyMimo` v `src/cenik.js`, `cenikPopisyKarta` v `src/ui/cenik_ui.js`.
+- **NPT-N1 #690 — světlíky v náhledu podkladů:** Word CN v17 řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ nemá a nedostane
+  (J. V. 21. 11.: cena světlíků se počítá v kalkulaci) → náhled řádek vynechá. Kalkulace i cena nabídky beze změny.
+- **NPT-N2 #691:** popisky technické specifikace v náhledu bez CSS verzálek — `[m]`, `[mm]`, vlastní řádky
+  DALŠÍ UJEDNÁNÍ a DE „(inkl. Revisionsbericht)“ jako ve Wordu.
+- **NPT-N3 #691:** EN/DE/FR hlavička náhledu s dvojtečkou jako šablona („Site address / project:“,
+  „Baustellenadresse / Projekt:“); koncová interpunkce podle českého textu i u celých odstavců (`nwInterpunkce`),
+  stejně u „Popis záměru:“ a „Vypracoval:“.
+- **NPT-N4:** beze změny náhledu (IČ/Tel. už překládá); Word přeloží nové šablony v18 v dávce SB.
+- **Testy:** `src/test_do_n1_navrhy.js` (16 OK; před opravou 10 FAIL), `src/test_np_nahled_word.js` oddíl F
+  (syntetická šablona v17 bez řádku světlíků; před opravou 148 FAIL, po 184 OK). Mutace jádra [DOS] 6/6.
+- **Kolo** `--bez-mutaci --proti origin/claude/integrace-16-10`: VŠE ZELENÉ (sady 496/0/7, hodiny 402/0/1,
+  statické 9/9, porovnání sestavení SHODA 359/359).
+## v21.11.3 — DS #648–#650: název šachty v cizím jazyce, texty správy šablon, větev claude/ds-sablony
+
+Nad integrací `cda289e` (v19.11.11). Cenu nemění; mění text cizojazyčné nabídky a SoD (jen název nepřejmenované šachty).
+Verzi přečísluje koordinace.
+
+- **#648 (K49-I6): výchozí název šachty v jazyce dokumentu.** Nepřejmenovaná šachta — prázdný název i uložený
+  výchozí tvar „Šachta N“, který zapisuje tlačítko „+ přidat šachtu“ — se v EN/DE/FR nabídce (Word, smyčka šachet,
+  online náhled, náhled podkladů) i ve smlouvě o dílo (předmět a rozpis šachet) tiskne jako **Shaft N / Schacht N /
+  Gaine N**. Dřív CN EN tiskla „Shaft 1“, ale „Šachta 2“ a SoD EN/DE „Šachta 1/2“. Ručně zadaný název zůstává beze
+  změny; česky beze změny. `vsNazevPreloz` / `vsNazevL` v `vice_sachet.js`.
+- **#649 (K49-I8): úvodní věta správy šablon po C7.** Místo „Česká šablona je zdroj, ze kterého se vyrábějí jazykové
+  verze“ říká, že se jazykové verze nahrávají jako přeložené soubory a smlouva z víc než 20 % česky nejde zveřejnit
+  ani vytisknout; totéž ve větě průvodce a v manuálu správce.
+- **#650 (K49-I9): popisek chybějící jazykové šablony.** U smluv (SoD realizace, SoD projekce, plná moc) „chybí —
+  nevytiskne se“ (shodně se zábranou `sodJazykZabrana`), u nabídek dál „chybí — tiskne se česky“.
+- **Testy:** `src/test_ds_sachta_nazev.js` (30 OK; před opravou 15 FAIL), `src/test_sablony_online.js` +10 (před
+  opravou 6 FAIL).
+## v21.11.2 — OP1 drobnosti ze zkoušek testovacího sezení (PG-N1, #682, D3-N1, D3-N2), větev claude/op1-drobnosti
+
+Nad integrací `cda289e` (v19.11.11). Cenu nemění; mění vzhled náhledu podkladů OCK, Word CN v EN/DE/FR (prázdný
+pruh pryč) a rozvržení objednávky PROJ. Verzi a pracovní čísla roadmapy (#692–#694) přečísluje koordinace.
+
+- **PG-N1 (#692 prac.) — Kompletní náhled podkladů:** vlastní řádek přepnutý na SOUČÁSTÍ DODÁVKY NENÍ se už neukazuje
+  podruhé pod DALŠÍ UJEDNÁNÍ a jen s řádky NENÍ náhled nemá pruh DALŠÍ UJEDNÁNÍ (jako Word). `nwBloky` filtr `!e.neni`.
+- **#682 — Word CN v EN/DE/FR:** prázdný pruh sekce technické části (typicky BRIDGES… / BRÜCKEN… u šachty bez
+  skladebných můstků) zmizí jako v češtině. `odstranPrazdneTsRadky` pozná pruh i podle překladu ze slovníku
+  (`tsSekceNazvy`: živý i zabudovaný PREKLAD, všechny jazyky, bez ohledu na velikost písmen).
+- **D3-N1 (#693 prac.) — objednávka PROJ na 2 strany:** popis dodávky přes celou šířku řádku a pod ním řádek čísel
+  (Množ. · MJ · J. cena · C. cena · celkem bez DPH · DPH % · celkem s DPH) jako vzor účetního systému, v náhledu
+  i ve Wordu stejně; záhlaví ve Wordu se opakuje, popis drží s čísly. Rozsah prací se nezkracuje. Zkušební ceník:
+  4 činnosti PDF 2 / Word 2 strany (dřív 3 / 2), 7 činností PDF 2 / Word 2 (dřív 4 / 3).
+- **D3-N2 (#694 prac.) — okno náhledu objednávky:** lišta „Kontrola před odesláním“ ukazuje jen kontroly, které se
+  objednávky týkají (strana PROJ, bez nálezů SoD OCK a SoD PROJ) — `kontrolyProDokument`. Do tisku nejde.
+- **Testy (s pojistkou):** `test_np_nahled_word.js` C2 (před opravou 9 FAIL → 183/0), `test_docxgen.js` (d2) (4 FAIL
+  → vše OK), `test_objednavka_proj.js` D3-N2 (2 FAIL → 78/0), nový harness `overit_objednavka_strany.mjs`
+  (6/6 FAIL → 6/6 OK; PDF z Chromia, Word orientačně přes LibreOffice).
+## v21.11.1 — SB: šablony CN v18 a PROJ v9 (nástroj), větev claude/sb-sablony
+
+Nad integrací `cda289e` (v19.11.11). Rozhodnutí J. V. 21. 11. 2026 (NPT-N4 #691). Cenu ani aplikaci nemění — jen nástroj výroby šablon.
+
+- `nastroje/vyrob_sablony.js --cn-v18`: v EN/DE/FR šabloně CN přeloží v bloku „Kancelář“ popisky IČ/Tel. ze slovníku náhledu (jako „Kompletní náhled podkladů“); CZ beze změny, řádek SVĚTLÍKY se nepřidává (J. V.: ve Wordu ho nepotřebuje). Test `src/test_sb_kancelar.js` 25/25 (pojistka: s popiskem česky 20 FAIL), mutace [SB] 2/2.
+- Šablony CN v18 (CZ/EN/DE/FR) a PROJ v9 (CZ/EN/DE/FR) vyrobeny z test v17/v8 a předány J. V. (mimo repo) — nahrát na test až po odeslání do main. Číslo stránky v CN v18 ověřit ve Wordu (LibreOffice pole ve VML textovém poli nepřepočítává).
 
 ## v19.11.11 — D3 #688: Objednávka / Smlouva PROJ z nabídky PROJ, větev claude/d3-objednavka-proj
 

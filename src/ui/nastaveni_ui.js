@@ -1033,8 +1033,10 @@ function nastSablony() {
   if (sablonyOnlineAktivni() && typeof sablonySpravaHtml === 'function')
     return nastSmluvniStandardy(`
     <div class="sec-title">Šablony dokumentů ${nastSablonyFiltr()}</div>
-    <div class="note">Platí to, co je zveřejněné na serveru — z toho tisknou všichni přihlášení. Česká šablona je zdroj,
-      ze kterého se vyrábějí jazykové verze; každá jazyková verze ví, ze které české verze vznikla.
+    <div class="note">Platí to, co je zveřejněné na serveru — z toho tisknou všichni přihlášení. Jazykové verze
+      (EN/DE/FR) se nahrávají jako přeložené soubory — z české šablony se nevyrábějí. Každá jazyková verze ví, ke které
+      české verzi patří; po nové české verzi je potřeba nahrát nový překlad. Smlouvu, která je z víc než
+      ${Math.round((typeof SABLONA_CESTINA_MEZ === 'number' ? SABLONA_CESTINA_MEZ : 0.2) * 100)} % česky, nejde zveřejnit ani vytisknout.
       ${jeAdmin() ? 'Klikněte na dokument v tabulce: dole se ukáže jeho detail, jazykové verze a historie.' : ''}</div>
     ${sablonySpravaHtml()}
     ${rezimBlok()}`);

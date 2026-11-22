@@ -72,7 +72,7 @@ export default async (req) => {
     const zobr = relace.role === 'Administrátor' ? null : await sProg.cti('zobrazeni');
     try {
       const v = await pdOrgVitezAkce({ soubor, relace, matice: (zobr && zobr.matice) || null, s, ULO, vyhradne, G,
-        nastaveno: pdNastaveno(), poleMapa: () => pdPoleMapa(), uloziste });
+        nastaveno: pdNastaveno(), poleMapa: () => pdPoleMapa(), uloziste, req });
       return json(v.telo, v.status);
     } catch (e) {
       if (e instanceof PdChyba) return json({ ok: false, chyba: e.message }, (e.stav >= 500 || e.stav === 401) ? 502 : e.stav);

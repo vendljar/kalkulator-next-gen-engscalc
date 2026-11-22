@@ -515,7 +515,10 @@ function zamekPoTisku(typ, varId, sablona, navic) {
       : (typeof vzTiskId === 'function' ? vzTiskId() : '');
     komu = vzRazitkoSnimek(ZAK, kid || vzRidiciId(ZAK), v);
   }
-  zamkniVariantu(v, Object.assign({ typ, kdo: zamekKdo(), cislo: variantaCislo(ZAK, v), otisk, vysledek, snimek,
+  /* #665: snímek zpracovatele (přihlášený) — server ho při uložení přepíše z relace. */
+  const zpracovatel = (prvni && typeof zamekZpracovatelSnimek === 'function' && typeof zpracovatelAktualni === 'function')
+    ? zamekZpracovatelSnimek(zpracovatelAktualni()) : null;
+  zamkniVariantu(v, Object.assign({ typ, kdo: zamekKdo(), cislo: variantaCislo(ZAK, v), otisk, vysledek, snimek, zpracovatel,
                       sablona: sablona || null, slovnik: zamekSlovnikTed(), sod: (navic && navic.sod) || null }, komu ? { zakaznik: komu } : {}));
   render();
   zamekPoTiskuUloz();

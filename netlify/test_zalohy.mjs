@@ -243,6 +243,7 @@ const KLICE = {
    * znovu. Výjimka k odsouhlasení J. V. (PREDAVKA, otevřený bod). */
   funkce: ['program', 'výjimka: vypínač zkušebních funkcí (VS #570), po obnově výchozí vypnuto'],
   'z/': ['zakazky', true], _rejstrik: ['zakazky', true],
+  'h/': ['zakaznici', true],                       // B234 (BZ): historie verzí karty zákazníka, úložiště zakaznici celé
   rejstrik: ['sablony', true],
   rezim: ['analytika', false], 'den/': ['analytika', false], 'ocista-b175': ['analytika', false],
   pole: ['pipedrive', false],

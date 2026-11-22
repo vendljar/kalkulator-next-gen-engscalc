@@ -78,6 +78,12 @@ async function uloz(zak, cookie) {
   if (t.razitko) zak.uloRazitko = t.razitko;
   return t;
 }
+
+/* B235/B236 (dávka BZ): server zapisuje jen do dealu, který zakázce patří
+ * (pd_overeni.mjs) — přípravek dá dealu v simulátoru číslo nabídky zakázky. */
+const BZ_CN = SIM.pdSimStav().data.pole.deal.find(p => p.field_name === 'Číslo nabídky (CN)').field_code;
+const dealPatri = (id, cislo) => { const d = SIM.pdSimStav().data.dealy.find(x => String(x.id) === String(id)); if (d) d.custom_fields[BZ_CN] = cislo; };
+
 const D = SIM.pdSimStav().data;
 const dealy = D.dealy.filter(d => d.status !== 'deleted').map(d => d.id).slice(40);   // jiné dealy než sada #588
 const notes = () => (SIM.pdSimStav().data.poznamky || []).filter(p => p.active_flag !== false);
@@ -97,7 +103,7 @@ function nova(dealId, { sachty = false } = {}) {
     v.data.ock.nazev = 'Výtah A';
     v.data.ock.dalsi = [{ id: 's_b1', nazev: 'Výtah B', ks: 2, zadani: Object.assign(kopie(v.data.ock.zadani), { zdvih: 12 }) }];
   }
-  if (dealId) z.pdDealId = String(dealId);
+  if (dealId) { z.pdDealId = String(dealId); dealPatri(dealId, z.cislo); }
   return z;
 }
 function sVz(dealId, volby = {}) {
@@ -272,14 +278,17 @@ let Z2, ID2;
 /* 7) výpadek, strop, časový limit, společný rozpočet */
 {
   const z = sVz(dealy[8]);
-  const pred = pozadavkyNotes().length;
+  /* BZ (B235): první zápis do dealu nejdřív deal přečte (ověření vazby) —
+   * počítají se všechny požadavky do Pipedrive: čtení organizace dealu (VZ T1)
+   * a čtení dealu k ověření, každé jednou, bez opakování a bez zápisu. */
+  const pred = SIM.pdSimStav().pozadavky.length;
   SIM.pdSimNastav({ scenar: 'vypadek' });
   const t = await uloz(z);
-  const kolik = pozadavkyNotes().length - pred;
+  const kolik = SIM.pdSimStav().pozadavky.length - pred;
   SIM.pdSimNastav({ scenar: '' });
   test('7 výpadek: uloženo, stav chyba, varování, bez id, jediný požadavek', t.status === 200 && t.pdPoznamkaZakaznici === 'chyba'
     && /Seznam dalších zákazníků se do poznámky dealu v Pipedrive nezapsal/.test(t.varovani || '') && ulozeno(t.soubor).pdPoznamkaZakaznici === undefined
-    && kolik === 1, { t, kolik });
+    && kolik === 2 && !SIM.pdSimStav().pozadavky.slice(pred).some(x => !/^GET /.test(x)), { kolik, poz: SIM.pdSimStav().pozadavky.slice(pred) });
   z.nazevAkce = 'TEST VZ-E5 po výpadku';
   const t2 = await uloz(z);
   test('7 další uložení zápis zopakuje', t2.pdPoznamkaZakaznici === 'zalozeno' && notes().filter(x => x.deal_id === dealy[8]).length === 1, t2.pdPoznamkaZakaznici);
@@ -320,6 +329,8 @@ let Z2, ID2;
   /* rozpočet sdílený (pdPoznamkyUlozeni): šachty vyčerpají termín → zákazníci chyba bez volání */
   await vypinac({ viceSachet: true });
   const z4 = sVz(dealy[11], { sachty: true });
+  /* BZ (B235): přímé volání bez mapy polí — vazbu dealu dokládá živá vazba z webhooku. */
+  z4.pdVazbaWebhook = { deal: String(dealy[11]), stav: 'potvrzeno', kdy: new Date().toISOString().slice(0, 19) + 'Z', cislo: z4.cislo, strana: 'ock' };
   let volani = 0;
   const puvodni = Date.now;
   const posun = PP.PD_POZNAMKA_CELKEM_MS + 1000;
@@ -351,7 +362,7 @@ let Z2, ID2;
   const t0 = await uloz(z, cO);
   if (t0.status !== 200) throw new Error('obchodník ' + JSON.stringify(t0).slice(0, 300));
   await vypinac({ viceZakazniku: false });
-  const za = ulozeno(t0.soubor); za.pdDealId = String(dealy[12]);
+  const za = ulozeno(t0.soubor); za.pdDealId = String(dealy[12]); dealPatri(dealy[12], za.cislo);
   const ta = await uloz(za);
   if (ta.status !== 200) throw new Error('správce ' + JSON.stringify(ta).slice(0, 300));
   await vypinac({ viceZakazniku: true });

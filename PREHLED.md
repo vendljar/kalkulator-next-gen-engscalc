@@ -8,9 +8,9 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | prostředí | verze |
 |---|---|
 | ostrý web (`main`) | **v11.11.1** (`6c4bc80e`, 11. 11. 2026) |
-| testovací web (`test`) | **v19.11.11** (`329b3ecf`, 19. 11. 2026) |
+| testovací web (`test`) | **v19.11.11** (`cda289e2`, 19. 11. 2026) |
 
-Test je proti main napřed o 362 commitů.
+Test je proti main napřed o 363 commitů.
 
 ## V testu, ještě ne v main
 
@@ -104,13 +104,9 @@ Test je proti main napřed o 362 commitů.
 | #640 (dřív B221) | otázka | Role jen ke čtení: „kdo smí ukládat“ je dnes každý přihlášený | zavést roli jen ke čtení? (doporučeno až s kolegou s rolí administrátora) |
 | #642 | úkol | Zeštíhlení roadmap.json: hotové položky starší 60 dní do archivu (živý soubor kolem 60 položek) | souhlas (návrh režie S6 d; soubor má 1,2 MB) |
 | #643 | úkol | Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6) | nahrát upravený skill (mimo repo) |
-| #680 (dřív DO-N1) | nález | DO-N1: návrh obchodníka do číselníku u příplatku přechodových plechů (MATERIÁL) správce v Ceník → číselník nevidí | rozhodnout, zda vypsat návrhy i k položkám mimo řádky číselníku |
-| #682 (dřív NP-N1) | úkol | Word CN v EN/DE/FR nechává prázdný pruh sekce technické části (MŮSTKY bez řádků) | rozhodnout opravu (rychlá cesta, text dokumentu) |
-| #690 (dřív NPT-N1) | nález | NPT-N1: řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ je v náhledu podkladů, ale Word CN v17 ho nemá | doplnit {{TS_SVETLIKY_DVERI}} do šablony CN (v18), nebo řádek v náhledu vynechat |
-| #691 (dřív NPT-N2, NPT-N3, NPT-N4) | nález | NPT-N2–N4: drobné odchylky náhledu od Wordu (verzálky jednotek, dvojtečka EN/DE, IČ/Tel. v bloku Kancelář) | NPT-N4 — přeložit IČ/Tel. i v cizojazyčné šabloně, nebo nechat česky |
 
 K tomu 12 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
 
 ## Nehotové položky evidence
 
-Celkem 66: J. V. 44, kolega 5, koordinace 12, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 50: J. V. 40, kolega 5, koordinace 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.

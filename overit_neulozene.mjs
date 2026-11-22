@@ -34,6 +34,7 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
   },
 });
 
+import './nastroje/harness_prostredi.mjs';   // ADMIN_EMAIL dřív než sdilene.mjs (#638)
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
