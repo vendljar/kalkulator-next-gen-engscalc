@@ -22,6 +22,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/on-online` | (tato dávka) | v19.11.8 | #ON kdo je online (Nastavení → Uživatelé) nad 042fcbc; verzi přečísluje koordinace |
 | `claude/d8-lhuty` | (tato dávka) | v19.11.7 | D8 #677 (pracovní) lhůty PROJ → termíny krycího listu; nad integrací 042fcbc; verzi přečísluje koordinace |
 | `claude/vz-f1` | (tato dávka) | v18.11.8 | VZ-F1 #659 opravy nálezů ruční zkoušky VZ; nad ec5bbac, sloučeno s integrací 41bbe99 |
+| `claude/jt-jazyk-tisku` | (tato dávka) | v22.11.6 | JT #713 prac.: jazyk specifikace OCK = Jazyk tisku; nad 05a496d |
 | `claude/pr-pripominky` | (tato dávka) | v22.11.5 | PR #707–#712 Připomínky z aplikace, sloučeno s integrací 6fa67af |
 | `claude/hn-harnessy` | (tato dávka) | v22.11.2 | HN zpevnění testů kola (#638, #644, #646, #647, #695) nad cda289e; aplikace beze změny; verzi přečísluje koordinace |
 | `claude/vzd-drobnosti` | (tato dávka) | v22.11.1 | VZD #673 #674 #665 #683 #635, sloučeno s integrací 885577e; viz CHANGELOG |
@@ -30,17 +31,18 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/ds-sablony` | (tato dávka) | v21.11.3 | DS #648–#650 nad cda289e; verzi přečísluje koordinace |
 | `claude/op1-drobnosti` | (tato dávka) | v21.11.2 | OP1: PG-N1, #682, D3-N1, D3-N2 nad cda289e; kolo --bez-mutaci VŠE ZELENÉ, S3 SHODA 359/359, mutace [OP1] 9/9, [D3] 18/18, [NP] 16/16, [PG] 16/16; #692–#694 a verzi přečísluje koordinace |
 | `claude/bz-bezpecnost` | (tato dávka) | v22.11.3 | BZ audit B231–B236, B195 nad cda289e; revize Fable |
-| `claude/lak-lakovani` | (tato dávka) | v22.11.6 | LAK #666 lakování z nabídky lakovny nad 05a496d; verzi přečísluje koordinace |
+| `claude/lak-lakovani` | (tato dávka) | v22.11.8 | LAK #666 lakování z nabídky lakovny nad 05a496d, s integrací 21eeffa |
 
 Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontrola: `python3 nastroje/release_odkaz.py --chybejici`
 (22. 11.: žádná — main v19.11.11, tag vydán).
 
 ## Běžící dávky
 
-- **LAK #666** (`claude/lak-lakovani`, v22.11.6 prac., nad 05a496d): cena z nabídky lakovny jako částka řádku
+- **LAK #666** (`claude/lak-lakovani`, v22.11.8, nad 05a496d + 21eeffa): cena z nabídky lakovny jako částka řádku
   `C.lak.nabidkaKc` (mimo ceník/Nastavení, `RC_CASTKY_RADKU` v `rucni_ceny.js`), ruční cena #561 se zdrojem a potvrzením;
-  bez zdroje = nepotvrzená (zábrana, 403). Svěřené LAK-1/LAK-2, otázky #713. Testy `test_666_lakovani` (44 + 19),
+  bez zdroje = nepotvrzená (zábrana, 403). Svěřené LAK-1/LAK-2, otázky #716. Testy `test_666_lakovani` (44 + 19),
   `overit_lakovani` 13, mutace [LAK] 9/9 + 9/9, kolo VŠE ZELENÉ, SHODA 367/367. PG blok přesunut (je v archivu 2026-11).
+- **JT #713** (`claude/jt-jazyk-tisku`, prac.): HOTOVO, detail `podklady/predavky/JT_jazyk_tisku.md`.
 - **PR #707** (`claude/pr-pripominky`, v22.11.5): Připomínky z aplikace, mez B257, HOTOVO; revize poradce před sloučením. Detail a bezpečnostní rozhodnutí: `podklady/predavky/PR_pripominky.md`.
 - **BZ** (`claude/bz-bezpecnost`, v22.11.3, nad cda289e): opravy auditu 20. 11. (rozhodnutí J. V. 21. 11.), #696–#704
   prac. Testy `netlify/test_bz_bezpecnost.mjs`, `test_bz_pipedrive.mjs`, mutace [BZ] 21. **Před sloučením revize Fable.**

@@ -754,7 +754,7 @@
           "polozky": [
             {"text": "Na konci karty **Cenová nabídka** v Kalkulaci OCK klikněte na **Přejít na technickou specifikaci**.", "snimek": "k23-karta-nabidka", "klik": {"obsahuje": "Přejít na technickou specifikaci"}},
             {"text": "Projděte specifikaci shora dolů. Na jejím konci, v kartě **Cenová nabídka (OCK)**, si přečtěte panel **Než nabídku odešlete**: nález opravte, nebo klikněte na **Beru na vědomí, pokračovat**.", "snimek": "k23-spec-nabidka", "klik": {"obsahuje": "Beru na vědomí, pokračovat"}},
-            {"text": "Vyberte **Jazyk tisku** (česky, anglicky, německy, francouzsky).", "snimek": "k23-spec-nabidka", "klik": {"sel": "select", "stitek": "jazyk"}},
+            {"text": "Vyberte **Jazyk tisku** (česky, anglicky, německy, francouzsky). Jazyk tisku a jazyk náhledu specifikace jdou spolu: přepnete-li nahoře ve specifikaci **Jazyk dokumentu** na EN, DE nebo FR, Jazyk tisku se nastaví sám a tatáž karta s tlačítky je i pod cizojazyčným náhledem (pod *Print specification / PDF*) — nabídku vytisknete rovnou, bez návratu do české verze.", "snimek": "k23-spec-nabidka", "klik": {"sel": "select", "stitek": "jazyk"}},
             {"text": "Tlačítka jdou zleva v pořadí práce: **Kompletní náhled podkladů** (co se do nabídky vyplní), modré **Vytvořit nabídku (Word)** (nabídka do šablony Word) a **Kompletní náhled a tisk nabídky**. Klikněte na **Kompletní náhled a tisk nabídky**. Otevře se nové okno s náhledem.", "snimek": "k23-spec-nabidka", "klik": {"obsahuje": "Kompletní náhled a tisk nabídky"}},
             {"text": "V liště náhledu můžete zaškrtnout **✏️ Upravit text před tiskem** a text doladit. Nakonec klikněte na **Tisk / Uložit jako PDF** — tiskem se nabídka uzamkne jako odeslaná.", "snimek": "k23-nahled-lista", "klik": {"obsahuje": "Tisk / Uložit jako PDF"}}
           ]
@@ -784,7 +784,7 @@
         { "typ": "text", "text": "Náhled i Word berou kapitoly ze stejného zdroje, pokud administrátor nahrál aktuální šablonu nabídky (CN v11). Uvidíte-li ve Wordu jiné znění kapitol než v náhledu, dejte mu vědět." },
         { "typ": "text", "text": "**Odeslaná nabídka se nemění ani po změně firemních textů.** Při prvním tisku (zamčení varianty) se s platebními podmínkami uloží i texty kapitol IV.–VI. a doložek ve všech jazycích, věty platebního kalendáře a splátky smlouvy o dílo. Dotisk odeslané nabídky i smlouva z ní je tisknou tak, jak odešly. Rozpracované nabídky berou vždy aktuální texty." },
         { "typ": "podnadpis", "text": "Nabídka v angličtině, němčině a francouzštině" },
-        { "typ": "text", "text": "Jazyk dokumentu volíte u tlačítek tisku výběrem **Jazyk tisku** (česky, anglicky, německy, francouzsky; „dle Nastavení“ = jazyk aplikace). Volba platí pro jeden výtisk, zakázku nemění. Pevný text dokumentu dodá jazyková verze šablony, kterou zveřejňuje administrátor; údaje ze zakázky přeloží aplikace." },
+        { "typ": "text", "text": "Jazyk dokumentu volíte u tlačítek tisku výběrem **Jazyk tisku** (česky, anglicky, německy, francouzsky; „dle Nastavení“ = jazyk aplikace). U nabídky OCK je to táž volba jako **Jazyk dokumentu** v hlavičce technické specifikace: změna jedné přepne i druhou (u nabídky PROJ a smlouvy o dílo se jazyk specifikace nepřepíná). Volba se k zakázce neukládá. Pevný text dokumentu dodá jazyková verze šablony, kterou zveřejňuje administrátor; údaje ze zakázky přeloží aplikace." },
         {
           "typ": "seznam",
           "polozky": [

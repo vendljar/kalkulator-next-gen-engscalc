@@ -8,9 +8,9 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v22.11.6 — LAK #666: lakování — cena z nabídky lakovny jako částka řádku, větev claude/lak-lakovani
+## v22.11.8 — LAK #666: lakování — cena z nabídky lakovny jako částka řádku, větev claude/lak-lakovani
 
-Nad integrací `05a496d` (v22.11.5). Pracovní verze, číslo přidělí koordinace. Rozhodnutí J. V. 18. 11. 2026 (audit #668, bod B2);
+Nad integrací `05a496d` (v22.11.5), sloučeno s integrací `21eeffa`. Verze přidělena koordinací. Rozhodnutí J. V. 18. 11. 2026 (audit #668, bod B2);
 vzor #667 / #561. Bez ruční částky se cena nemění (porovnání sestavení SHODA).
 
 - **Nové — obchodník:** u souhrnného řádku LAKOVÁNÍ (ŠACHTA, PLECHY, ZASKLENÍ, OPLECHOVÁNÍ) tlačítko „✎ cena z nabídky“:
@@ -25,6 +25,23 @@ vzor #667 / #561. Bez ruční částky se cena nemění (porovnání sestavení 
   Detail výpočtu ukazuje „Cena z nabídky lakovny“. Word, náhled a krycí list berou částku z řádku výsledku.
 - **Testy:** `src/test_666_lakovani.js` (44), `netlify/test_666_lakovani.mjs` (19), `overit_lakovani.mjs` (13);
   pojistky proti 05a496d v commitech. Mutace `[LAK]` jádro 9/9, server 9/9. Kolo `--bez-mutaci --proti 2b68f98` VŠE ZELENÉ (514/0/6, hodiny 416/0/1, statické 10/10, porovnání SHODA 367/367).
+
+## v22.11.6 — JT #713 (prac.): jazyk hlavičky specifikace OCK = Jazyk tisku nabídky, větev claude/jt-jazyk-tisku
+
+Nad integrací `05a496d` (v22.11.5). Verzi a číslo roadmapy přidělí koordinace. Cenu ani text dokumentů nemění (porovnání sestavení SHODA).
+
+- **Nové — obchodník (zadání J. V. 22. 11.):** přepnutí jazyka v hlavičce technické specifikace OCK
+  (CZ / EN / DE / FR) nastaví zároveň Jazyk tisku nabídky; změna Jazyka tisku u nabídky OCK přepne i náhled
+  specifikace („dle Nastavení“ nic nepřepíná). Pod cizojazyčným náhledem (pod „Print specification / PDF“)
+  je tatáž karta Cenová nabídka (OCK) jako v české verzi — úvodní fotka, kontroly „Než nabídku odešlete…“,
+  zábrany a tlačítka Kompletní náhled podkladů · Vytvořit nabídku (Word) · Kompletní náhled a tisk nabídky,
+  které tisknou rovnou v tom jazyce. Návrat do české verze už není potřeba.
+- **Beze změny:** PROJ a smlouva o dílo (jejich Jazyk tisku jazyk specifikace nepřepíná); uložení (Jazyk tisku
+  jen pro relaci, jazyk dokumentu v Nastavení jako dosud).
+- **Testy:** `src/test_jt_jazyk_tisku.js` 23 (pojistka nad 05a496d 10 FAIL), `overit_jt_jazyk_tisku.mjs` 19,
+  mutace jádra `[JT]` 9/9. Příručka obchodníka, kapitola 23 (tisk nabídky, jazykové verze).
+- **Kolo** (sloučeno s integrací 2b68f98): `--bez-mutaci --proti 2b68f98` VŠE ZELENÉ (sady 513/0/6, hodiny 415/0/1,
+  statické 10/10, porovnání SHODA 367/367).
 
 ## v22.11.5 — PR #707: Připomínky z aplikace, větev claude/pr-pripominky
 
