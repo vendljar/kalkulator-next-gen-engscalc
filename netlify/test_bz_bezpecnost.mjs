@@ -201,9 +201,14 @@ console.log('\n===== B232: PŘÍSNÉ OVĚŘENÍ VYŽADUJE VŠECHNA ČÍSLA =====
   const a = { ock: { souhrn: { zakladCena: 1, zakladDph: 1, zakladSDph: 2, x: 5 } }, proj: { souhrn: { cena: 1, celkem: 1 } }, kurzEurKc: 25 };
   const b = kopie(a); delete b.ock.souhrn.x;
   test('B232: volné porovnání beze změny (klíč jen v jednom výsledku přeskočí)', zam.zamekVysledekRozdily(a, b).pocet === 0);
-  test('B232: přísné porovnání číslo jen v jednom výsledku počítá', zam.zamekVysledekRozdily(a, b, 5, { prisne: true }).pocet >= 1);
-  const c = kopie(a); c.ock.souhrn.x = null;
-  test('B232: přísné porovnání číslo proti null počítá', zam.zamekVysledekRozdily(a, c, 5, { prisne: true }).pocet >= 1);
+  test('B232: přísné porovnání číslo jen v jednom výsledku počítá', zam.zamekVysledekRozdily(a, b, 5, { prisne: true }).pocet
+    > zam.zamekVysledekRozdily(a, a, 5, { prisne: true }).pocet);
+  const a2 = kopie(a); a2.ock.odvozene = { vyska: 3, sirka: 2 };
+  const c = kopie(a2); c.ock.odvozene = null;
+  const zaklad2 = zam.zamekVysledekRozdily(a2, a2, 5, { prisne: true }).pocet;   // přísné jádro chybí v obou → základ
+  test('B232: přísné porovnání objekt s čísly proti null počítá', zam.zamekVysledekRozdily(a2, c, 5, { prisne: true }).pocet > zaklad2
+    && zam.zamekVysledekRozdily(c, a2, 5, { prisne: true }).pocet > zaklad2, zaklad2);
+  test('B232: volné porovnání objekt proti null dál přeskočí', zam.zamekVysledekRozdily(a2, c).pocet === 0);
 }
 
 /* ============================================================ */
