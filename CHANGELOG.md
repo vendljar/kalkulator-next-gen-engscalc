@@ -21,7 +21,12 @@ Nad integrací `05a496d` (v22.11.5). Pracovní verze — číslo přidělí koor
 - **Zákazníci:** objekt místo textu = 400 (B243); strop 2 000 karet a `zalozen` píše server (B244); dvojče karty
   téže firmy pod jiným klíčem cizí osoba nezaloží, návrhy a historie ve výhradním úseku (#705).
 - **Pipedrive:** validace `PIPEDRIVE_DOMENA` (B245, SEC-M14) a výchozí časový limit 8 s pro každé volání (B246).
-- **Šablony Word:** B247–B251 (viz níž, část subagenta šablon).
+- **Šablony Word:** vnější odkaz jen absolutní http(s):// nebo mailto:, pole HYPERLINK na \\server, file:
+  či relativní cestu se odmítne (B247); vnější odkaz použitý jako obrázek se odmítne (B248); `{{…}}` v kódu pole
+  šablonu odmítne (B249); server jen kanonický base64 (B250); název ≤ 255 znaků, poznámka ≤ 2000, bez řídicích
+  znaků (B251). Firemní šablony ověřit s `KNG_PODKLADY` před nasazením.
+- **Zkouška na testu v22.11.5:** okno Nastavení se po odhlášení vyprázdní (PR-T1, soukromí); detail připomínky
+  nepřetéká a plovoucí tlačítko nezakrývá snímek (PR-T2).
 - **Kontrola údajů:** workflow zkontroluje i dvě nové větve naráz (B252); `kontrola_udaju.py` čte UTF-16, složky
   dist/ a _DB/ v rozsahu pushe, zprávu anotovaného tagu, tajemství bez uvozovek, adresu Apps Script a heslo
   v adrese (B253); nový `*@doména` v povoleném seznamu v témže pushi zastaví push (B254); B255 a zbytky = meze.
@@ -31,9 +36,9 @@ Nad integrací `05a496d` (v22.11.5). Pracovní verze — číslo přidělí koor
 - **Meze:** B241 (síla hesla, hádání z více adres — rozhodne J. V.), B242, B253–B255 zbytky, #703 (B233 zbytek
   přijat J. V. 22. 11.).
 - **Testy:** `test_nn_nizke` (30), `test_nn_pipedrive` (14), `test_nn_poc` (PoC auditu jako sada), `src/test_nn_nizke`,
-  rozšířené `test_pripominky` (jádro 77, server 82), `overit_pripominky` 57, `test_pre_push` 25, nový
+  rozšířené `test_pripominky` (jádro 77, server 82), `overit_pripominky` 62, `test_pre_push` 25, nový
   `test_workflow_udaju` 7; sady ukládající bez razítka ho doplňují jako klient (`netlify/pomoc_razitko.mjs`).
-  Mutace [NN] 23/23.
+  `test_nn_sablony` 34, `test_sablony` +18. Mutace [NN] server 23 + 8, jádro 10 — vše chyceno.
 
 ## v22.11.5 — PR #707: Připomínky z aplikace, větev claude/pr-pripominky
 

@@ -2301,7 +2301,22 @@ Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md` (tabulka �
 - **B245 — PIPEDRIVE_DOMENA — OPRAVENO (SEC-M14).** Doména = jedno jméno subdomény; jinak chyba 500
   a žádné síťové volání.
 - **B246 — časový limit Pipedrive — OPRAVENO.** Výchozí limit každého volání 8 s (504, bez opakování).
-- **B247–B251 — šablony Word a jejich uložení:** viz níž (část dávky NN).
+- **B247–B251 — šablony Word a jejich uložení — OPRAVENO.** Kontrola obsahu šablony (`src/sablona_obsah.js`,
+  prohlížeč, generátor i server): vnější hypertextový odkaz jen na absolutní http(s):// nebo mailto: (B247);
+  pole HYPERLINK smí cíl jen http(s):// / mailto:, odkaz na záložku (`\l`) smí (B247); Id vnějšího odkazu
+  smí použít jen prvek odkazu (hyperlink, hlinkClick, hlinkHover, hlinkMouseOver), ne `a:blip r:link/r:embed`
+  ani `v:imagedata` (B248); symbol `{{…}}` v kódu pole (instrText, fldSimple) šablonu odmítne (B249). Server:
+  data šablony jen v kanonickém base64 (B250); název ≤ 255 znaků, poznámka ≤ 2000, bez řídicích znaků (B251).
+  Testy `src/test_nn_sablony.js`, `netlify/test_sablony.mjs`, mutace [NN] 10 + 8. *Meze:* vztah hyperlink
+  bez TargetMode External s relativním cílem projde (Word ho bere jako část balíčku); B248 hledá Id jen
+  v atributech s prefixem; chování Wordu u B248 dál neověřeno. Obnova ze zálohy kanonický base64 ani strop
+  názvu / poznámky nehlídá (obsah šablony ano) — obnovu dělá administrátor. Firemní šablony na serveru proti
+  nové kontrole neověřeny: šablonu, která by kontrolou neprošla, generátor odmítne (bezpečný směr) —
+  ověřit `src/test_sablona_obsah.js` s `KNG_PODKLADY` před nasazením.
+- **PR-T1 — obsah okna Nastavení po odhlášení — OPRAVENO** (zkouška na testu v22.11.5). Odhlášení i nové
+  přihlášení okno Nastavení zavře a vyprázdní (`nastaveniVyprazdni`) — záložka Připomínky s e-maily autorů
+  a snímkem dřív zůstala ve skrytém DOM pro další účet v témže okně. *Mez:* stav v paměti JS (např.
+  `ANL.prehled`) se nemaže; zobrazí se jen v záložkách, které nový účet smí otevřít.
 - **B252–B254 — kontrola údajů — OPRAVENO.** Workflow srovnává novou větev nebo tag jen s `origin/main`
   a `origin/test` (dvě nové větve se stejnými commity naráz se zkontrolují); `kontrola_udaju.py` čte
   UTF-16, v rozsahu pushe i soubory ze složek dist/, _DB/…, zprávu anotovaného tagu, tajemství serveru

@@ -36,7 +36,7 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 
 ## Běžící dávky
 
-- **NN** (`claude/nn-nizke-nalezy`, prac. v22.11.6, nad 05a496d): #702 B237–B256, #703 mez, #705, #708, #711, #712, N1. Detail CHANGELOG, MEZE oddíl NN.
+- **NN** (`claude/nn-nizke-nalezy`, prac. v22.11.6, nad 05a496d): #702 B237–B256, #703 mez, #705, #708, #711, #712, N1, PR-T1/T2. Detail CHANGELOG, MEZE oddíl NN.
 - **PR #707** (`claude/pr-pripominky`, v22.11.5): Připomínky z aplikace, mez B257, HOTOVO; revize poradce před sloučením. Detail a bezpečnostní rozhodnutí: `podklady/predavky/PR_pripominky.md`.
 - **BZ** (`claude/bz-bezpecnost`, v22.11.3, nad cda289e): opravy auditu 20. 11. (rozhodnutí J. V. 21. 11.), #696–#704
   prac. Testy `netlify/test_bz_bezpecnost.mjs`, `test_bz_pipedrive.mjs`, mutace [BZ] 21. **Před sloučením revize Fable.**
