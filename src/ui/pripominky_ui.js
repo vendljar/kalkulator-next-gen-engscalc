@@ -58,6 +58,16 @@ function pripominkyOpustit() { PRIP.sp.novyKlic = ''; }
 /* ---------- načtení po přihlášení ---------- */
 function pripominkyPoPrihlaseni() {
   pripominkyReset();
+  /* NN #712 (PR-I1): přihlášení i /api/ja nesou `pripominky.zapnuto`. Při VYP
+   * se nic nenačítá (žádný ?nastaveni=1, u správce ani seznam) a plovoucí
+   * tlačítko se do stránky nevkládá. Správce si nastavení dočte až v záložce
+   * Nastavení → Připomínky. Starý server bez údaje = načíst postaru. */
+  const st = typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.ja ? ONLINE_STAV.ja.pripominky : undefined;
+  if (st && st.zapnuto === false) {
+    PRIP.nastaveni = { zapnuto: false, smiOdesilat: false, snimekVychozi: true, vypnutoZPrihlaseni: true };
+    if (typeof renderOnlineLista === 'function') renderOnlineLista();
+    return Promise.resolve();
+  }
   return pripominkyNactiZnovu();
 }
 /* Načte nastavení, svoje připomínky a (správce) seznam — bez resetu stavu
@@ -97,9 +107,12 @@ function pripEl(id, tag, cls) {
 }
 function pripFabKresli() {
   if (typeof document === 'undefined') return;
+  const vidi = pripSmiOdesilat() && !PRIP.panel && !PRIP.vybira;
+  /* NN #712: kdo tlačítko nesmí vidět (vypnuto, role, nepřihlášen), tomu se
+   * do stránky ani nevloží — skryté se vkládalo i při VYP. */
+  if (!pripSmiOdesilat() && !document.getElementById(PRIP_FAB_ID)) return;
   const el = pripEl(PRIP_FAB_ID, 'button', 'prip-fab noprint');
   el.type = 'button';
-  const vidi = pripSmiOdesilat() && !PRIP.panel && !PRIP.vybira;
   el.style.display = vidi ? '' : 'none';
   el.setAttribute('aria-label', 'Připomínka k aplikaci');
   el.onclick = () => pripPanelOtevri(PRIP.novych ? 'moje' : 'nova');
@@ -337,10 +350,14 @@ function pripMistoPopis(t) {
   /* `zdroj` popisku (N1 revize 22. 11. 2026): 'popis' = popis prvku (label,
    * aria-label, title, placeholder), 'obsah' = text ze stránky (první buňka
    * řádku, text prvku) — ten může nést cenu nebo jméno, ke koordinaci nejde. */
-  let popisek = '', zdroj = 'popis';
+  /* NN (zbytek N1): 'stitek' = label / placeholder (ke koordinaci smí),
+   * 'popis' = aria-label / title (jen správci — u tlačítek víc zákazníků nese
+   * jméno zákazníka bez číslic, src/ui/vice_zakazniku_ui.js). */
+  let popisek = '', zdroj = 'stitek';
   const lab = t.closest('label') || (t.id && document.querySelector('label[for="' + CSS.escape(t.id) + '"]'));
   if (lab) popisek = txt(lab.textContent);
-  if (!popisek) popisek = txt(t.getAttribute('aria-label') || t.getAttribute('title') || t.getAttribute('placeholder'));
+  if (!popisek) popisek = txt(t.getAttribute('placeholder'));
+  if (!popisek) { popisek = txt(t.getAttribute('aria-label') || t.getAttribute('title')); zdroj = 'popis'; }
   if (!popisek && t.closest('td,th')) {
     const tr = t.closest('tr'); const prvni = tr && tr.cells && tr.cells[0];
     popisek = txt(prvni ? prvni.textContent : ''); zdroj = 'obsah';
@@ -605,6 +622,12 @@ function nastPripominky() {
   const sp = PRIP.sp;
   if (!pripPrihlasen()) return '<div class="note">Připomínky jsou dostupné po přihlášení k online databázi.</div>';
   if (!sp.nacteno && !sp.nacita) setTimeout(pripSpravceNacti, 0);
+  /* NN #712: při VYP se po přihlášení nic nenačetlo — nastavení a klíč se
+   * dočtou až tady, když správce záložku otevře. */
+  if (PRIP.nastaveni && PRIP.nastaveni.vypnutoZPrihlaseni && !sp.nastaveni && !sp.nastaveniNacita) {
+    sp.nastaveniNacita = true;
+    setTimeout(() => pripominkyNactiZnovu().then(() => { sp.nastaveniNacita = false; pripSpravcePrekresli(); }), 0);
+  }
   const pocty = pripominkyPocty(sp.seznam, sp.zdroj);
   const cipy = PRIPOMINKA_FILTRY.map(f => `<button class="mini prip-cip-filtr${sp.filtr === f.id ? ' aktivni' : ''}" data-filtr="${esc(f.id)}"
       onclick="pripSpFiltr('${escJs(f.id)}')">${esc(f.nazev)} <b>${esc(pocty[f.id] || 0)}</b></button>`).join(' ');

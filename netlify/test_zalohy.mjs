@@ -258,6 +258,7 @@ const KLICE = {
   'spatne:': ['disk_kopie', false],                // #577: počítadlo špatných tokenů na adresu, ne data
   'p/': ['pripominky', true], nastaveni: ['pripominky', true], citac: ['pripominky', true],   // PR: připomínky
   klic_zaznam: ['pripominky_limit', false],        // PR: záznam použití klíče koordinace, ne data
+  klic_spravce: ['pripominky_limit', false],       // NN #711: záznam akcí správce s klíčem koordinace, ne data
   pripominky_klic: ['program', 'výjimka: hash klíče koordinace připomínek (PR, B257) — po obnově vydá správce nový'],
   'a/': ['aktivita', false],                       // #ON: čas poslední aktivity, ne data
   'o/': ['aktivita', false],                       // #ON: čas odhlášení, ne data

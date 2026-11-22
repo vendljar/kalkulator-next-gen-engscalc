@@ -122,13 +122,28 @@ test('N1: kontext drží původ popisku (obsah)', kOb.misto && kOb.misto.zdroj =
 test('N1: neznámý původ = obsah (bezpečná strana)', P.pripominkaKontextOciste({ misto: { popisek: 'x', zdroj: 'cokoli' } }).misto.zdroj === 'obsah');
 const pOb = P.pripominkaProKoordinaci(Object.assign({}, p1, { kontext: kOb }));
 test('N1: koordinace z obsahu prvku nedostane popisek ani sekci', !/Novák|1 250|Celkem/.test(JSON.stringify(pOb)), pOb.kontext);
-test('N1: koordinace dostane obrazovku a selektor', pOb.kontext.obrazovka === 'Kalkulace OCK' && pOb.kontext.selektor === '#kalk-nabidka > td', pOb.kontext);
-const kPo = P.pripominkaKontextOciste({ misto: { sekce: 'Zákazník Novák s.r.o.', popisek: 'Výška šachty', zdroj: 'popis' } });
+test('N1: koordinace dostane obrazovku a strukturální selektor (NN: bez #id)', pOb.kontext.obrazovka === 'Kalkulace OCK' && pOb.kontext.selektor === 'td', pOb.kontext);
+const kPo = P.pripominkaKontextOciste({ misto: { sekce: 'Zákazník Novák s.r.o.', popisek: 'Výška šachty', zdroj: 'stitek' } });
 const pPo = P.pripominkaProKoordinaci(Object.assign({}, p1, { kontext: kPo }));
-test('N1: popisek z popisu prvku jde, nadpis okna ne', pPo.kontext.misto === 'Výška šachty' && !/Novák/.test(JSON.stringify(pPo)), pPo.kontext);
-const pPc = P.pripominkaProKoordinaci(Object.assign({}, p1, { kontext: P.pripominkaKontextOciste({ misto: { popisek: 'Cena 12 000 Kč', zdroj: 'popis' } }) }));
+test('N1: popisek ze štítku pole jde, nadpis okna ne', pPo.kontext.misto === 'Výška šachty' && !/Novák/.test(JSON.stringify(pPo)), pPo.kontext);
+const pPc = P.pripominkaProKoordinaci(Object.assign({}, p1, { kontext: P.pripominkaKontextOciste({ misto: { popisek: 'Cena 12 000 Kč', zdroj: 'stitek' } }) }));
 test('N1: popis s číslicí nebo zavináčem ke koordinaci nejde', pPc.kontext.misto === ''
-  && P.pripominkaProKoordinaci(Object.assign({}, p1, { kontext: P.pripominkaKontextOciste({ misto: { popisek: 'jan@priklad.cz', zdroj: 'popis' } }) })).kontext.misto === '');
+  && P.pripominkaProKoordinaci(Object.assign({}, p1, { kontext: P.pripominkaKontextOciste({ misto: { popisek: 'jan@priklad.cz', zdroj: 'stitek' } }) })).kontext.misto === '');
+
+/* 6c) NN (zbytek N1, 22. 11. 2026): title / aria-label může nést jméno zákazníka
+ * BEZ číslic (tlačítka víc zákazníků, src/ui/vice_zakazniku_ui.js) — ke koordinaci
+ * jde jen štítek pole (label, placeholder). Selektor jen strukturální: #id bývá
+ * odvozené z dat. Pojistka: před opravou koordinace dostala „Prodat zákazníkovi
+ * Novák“ (zdroj 'popis') i selektor s #vz-novak. */
+const kTi = P.pripominkaKontextOciste({ misto: { sekce: 'Víc zákazníků', popisek: 'Prodat zákazníkovi Novák Stavby', zdroj: 'popis',
+  selektor: '#vz-karta-novak-stavby > div:nth-of-type(2) > button' } });
+test('NN: kontext drží původ popisu (title / aria)', kTi.misto.zdroj === 'popis', kTi.misto);
+const pTi = P.pripominkaProKoordinaci(Object.assign({}, p1, { kontext: kTi }));
+test('NN: popis z title / aria (jméno bez číslic) ke koordinaci nejde', pTi.kontext.misto === '' && !/Novák|novak/i.test(JSON.stringify(pTi)), pTi.kontext);
+test('NN: selektor ke koordinaci bez #id (jen značky a pořadí)', pTi.kontext.selektor === 'div:nth-of-type(2) > button', pTi.kontext.selektor);
+test('NN: selektor — cokoli mimo holou značku vypadne', P.pripominkaSelektorProKoordinaci('div.cena[data-x="Novák"] > span > #a1 > td:nth-of-type(3)') === 'span > td:nth-of-type(3)'
+  && P.pripominkaSelektorProKoordinaci('') === '' && P.pripominkaSelektorProKoordinaci(null) === '');
+test('NN: štítek pole (label / placeholder) jde dál', P.pripominkaProKoordinaci(Object.assign({}, p1, { kontext: P.pripominkaKontextOciste({ misto: { popisek: 'Výška šachty', zdroj: 'stitek' } }) })).kontext.misto === 'Výška šachty');
 
 /* 7) průběh, filtry, počty, uchovávání */
 test('kroky: Přijato → Řeší se → Testuje se → Hotovo', P.PRIPOMINKA_KROKY.join('|') === 'Přijato|Řeší se|Testuje se|Hotovo');

@@ -220,7 +220,7 @@ function renderInputs() {
          * stěn, dokud zkratka platí (oplasteniProhlubenSleduj). */
         + `<div class="row"><label>Prohlubeň</label>
             <input ${CISLO_POLE} step="any" value="${esc(Z.prohluben)}"
-              title="Opláštění i v prohlubni: zaškrtněte „Opláštit i prohlubeň" — všechny stěny pak začínají v −prohlubeň (opláštění po stěnách)."
+              title="Opláštění i v prohlubni: zaškrtněte „Opláštit i prohlubeň“ — všechny stěny pak začínají v −prohlubeň (opláštění po stěnách)."
               onchange="prohlubenSet(this.value)"><span class="u">m</span></div>`
         + prohlubenSkloRadek()
         + `<div class="row"><label>Průchozí šachta</label>
@@ -2543,7 +2543,7 @@ function renderOutputs() {
   const thCena = col.admin ? 'Cena vč. přirážky' : 'Cena';
   const adminTh = (col.admin && col.spravce)
     ? '<th class="admincol" title="viditelné pro běžného uživatele">Viditelné</th>'
-      + '<th class="admincol" title="výchozí stav položky v NOVÉ zakázce: u volitelných „rovnou v základní ceně", u ostatních „počítá se">Výchozí</th>'
+      + '<th class="admincol" title="výchozí stav položky v NOVÉ zakázce: u volitelných „rovnou v základní ceně“, u ostatních „počítá se“">Výchozí</th>'
     : '';
   const adminTd = '<td class="admincol"></td>'.repeat(col.adminExtra);
   const kalkulace = `<table>

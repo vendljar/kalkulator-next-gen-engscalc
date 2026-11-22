@@ -12,6 +12,7 @@ import { uloziste, otiskHesla, hesloSedi, relaceCookie, json, ADMIN_EMAIL,
          zpozdeniMs, pockej, pokusyZacatek, pokusyUspech, pokusyAdresaNadLimit, adresaKlienta,
          EMAIL_MAX, HESLO_MAX, spravceNastaven, cizihoPuvodu, tajneShodne, hesloPlatne,
          aktivitaZaznamenej } from '../lib/sdilene.mjs';
+import { pripominkyStavRelace } from '../lib/pripominky_stav.mjs';
 
 export default async (req) => {
   if (req.method !== 'POST') return json({ ok: false, chyba: 'Použijte POST.' }, 405);
@@ -88,6 +89,8 @@ export default async (req) => {
     return json({ ok: true, ...profilZUctu(ucet), hlavni: ucet.email === ADMIN_EMAIL,
       /* Jen administrátorovi (B57, #278), stejně jako /api/ja. */
       ...(ucet.role === 'Administrátor' ? { spravceNastaven: spravceNastaven() } : {}),
+      /* NN #712: stav připomínek — při VYP klient nic nenačítá ani nevkládá. */
+      pripominky: await pripominkyStavRelace(ucet.role),
       podpis: await podpisCti(ucet.email) }, 200, { 'Set-Cookie': cookie });
   }
 

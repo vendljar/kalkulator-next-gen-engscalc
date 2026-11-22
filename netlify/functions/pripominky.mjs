@@ -47,6 +47,9 @@ export const PR_KLIC_SPATNE_MAX = 10;
 export const PR_KLIC_OKNO_MS = 15 * 60 * 1000;
 export const PR_KLIC_HODINA_MAX = 300;
 export const PR_ZAZNAM_MAX = 100;
+export const PR_ZAZNAM_SPRAVCE_MAX = 50;
+export const PR_LIMIT_UKLID_MS = 2 * 24 * 3600 * 1000;
+export const PR_LIMIT_UKLID_MAX = 200;
 const ZAKAZANE_PARAMETRY = ['token', 'access_token', 'key', 'klic', 'auth', 'authorization'];
 
 const zdrojWebu = () => (String(process.env.PROSTREDI || '').trim().toLowerCase() === 'test' ? 'test' : 'ostry');
@@ -61,19 +64,46 @@ async function nastaveniCti(s) { return P.pripominkyNastaveniOciste(await s.cti(
 
 /* Záznam o použití klíče (B257: „při zneužití limit a záznam"). Bez obsahu
  * požadavku — jen čas, událost a klíč počítadla adresy. Úložiště limitů,
- * ne záloha (provozní stopa). */
-async function zaznamPridej(req, udalost) {
+ * ne záloha (provozní stopa).
+ * NN #711 (PR-N4): akce SPRÁVCE (vydání a zrušení klíče) jdou do odděleného
+ * záznamu `klic_spravce` — anonymní pokusy (`klic_zaznam`, nejvýš 100) je
+ * z něj nevytlačí. Správce vidí oba záznamy sloučené podle času. */
+async function zaznamPridej(req, udalost, spravce) {
+  const klicZaznamu = spravce ? 'klic_spravce' : 'klic_zaznam';
   try {
     const sl = await uloziste(PR_LIMIT);
     await vyhradne('pripominky-zaznam', async () => {
-      const z = (await sl.cti('klic_zaznam')) || { udalosti: [] };
+      const z = (await sl.cti(klicZaznamu)) || { udalosti: [] };
       const u = Array.isArray(z.udalosti) ? z.udalosti : [];
       u.push({ kdy: new Date().toISOString(), udalost: String(udalost).slice(0, 80),
         adresa: pokusyIpKlic(adresaKlienta(req) || 'neznama') });
-      await sl.zapis('klic_zaznam', { udalosti: u.slice(-PR_ZAZNAM_MAX) });
+      await sl.zapis(klicZaznamu, { udalosti: u.slice(-(spravce ? PR_ZAZNAM_SPRAVCE_MAX : PR_ZAZNAM_MAX)) });
     });
   } catch (e) { /* záznam nesmí shodit odpověď */ }
   console.log('pripominky: klíč koordinace — ' + udalost);
+}
+/* NN #711 (PR-N4): úklid počítadel. `spatne:<adresa>` (okno 15 min),
+ * `hodina/<hodina>` a `den/<den>/<e-mail>` plní i anonym a nikdo je dřív
+ * neuklízel. Při čtení nastavení správcem se smažou počítadla starší než
+ * PR_LIMIT_UKLID_MS (2 dny), nejvýš PR_LIMIT_UKLID_MAX naráz. Záznamy událostí
+ * (`klic_zaznam`, `klic_spravce`) se nemažou — mají vlastní strop. */
+export async function pripominkyLimitUklid(ted = Date.now()) {
+  const sl = await uloziste(PR_LIMIT);
+  if (typeof sl.smaz !== 'function' || typeof sl.seznam !== 'function') return 0;
+  const hranice = ted - PR_LIMIT_UKLID_MS;
+  const den = (k) => Date.parse(k.slice(4, 14) + 'T23:59:59.999Z');
+  const hodina = (k) => Date.parse(k.slice(7, 20) + ':59:59.999Z');
+  let n = 0;
+  for (const k of await sl.seznam('')) {
+    if (n >= PR_LIMIT_UKLID_MAX) break;
+    let stare = false;
+    if (k.startsWith('den/')) stare = !(den(k) >= hranice);
+    else if (k.startsWith('hodina/')) stare = !(hodina(k) >= hranice);
+    else if (k.startsWith('spatne:')) { const z = await sl.cti(k); stare = !(z && +z.posledni >= hranice); }
+    else continue;
+    if (stare) { await sl.smaz(k); n++; }
+  }
+  return n;
 }
 async function spatnyKlicZapocti(req) {
   const sl = await uloziste(PR_LIMIT);
@@ -189,10 +219,14 @@ export default async (req) => {
         snimekVychozi: n.snimekVychozi, limitDen: n.limitDen, zdroj: zdrojWebu(), emailUmime: false };
       if (jeSpravce) {
         const k = await (await klicUloziste()).cti(PR_KLIC_KLIC);
-        const z = (await (await uloziste(PR_LIMIT)).cti('klic_zaznam')) || { udalosti: [] };
+        const sl = await uloziste(PR_LIMIT);
+        try { await pripominkyLimitUklid(); } catch (e) { /* úklid nesmí shodit čtení (NN #711) */ }
+        const ud = (z) => (z && Array.isArray(z.udalosti) ? z.udalosti : []);
+        const vse = ud(await sl.cti('klic_zaznam')).concat(ud(await sl.cti('klic_spravce')).map(u => Object.assign({}, u, { spravce: true })))
+          .sort((a, b) => String(a.kdy).localeCompare(String(b.kdy)));
         o.nastaveni = n;
         o.klic = k && k.hash ? { nastaven: true, vytvoren: k.vytvoren || '', kdo: k.kdo || '' } : { nastaven: false };
-        o.zaznam = (z.udalosti || []).slice(-20).reverse();
+        o.zaznam = vse.slice(-20).reverse();
       }
       return json(o);
     }
@@ -234,13 +268,13 @@ export default async (req) => {
       { const stop = await potvrdHesloSpravce(req, relace, t.hesloSpravce); if (stop) return stop; }
       if (t.akce === 'klicZrusit') {
         await (await klicUloziste()).zapis(PR_KLIC_KLIC, { hash: '', zrusen: new Date().toISOString(), kdo: relace.email });
-        await zaznamPridej(req, 'klíč zrušen správcem');
+        await zaznamPridej(req, 'klíč zrušen správcem', true);
         return json({ ok: true, zrusen: true });
       }
       const klic = 'kngpr_' + randomBytes(32).toString('base64url');
       const vytvoren = new Date().toISOString();
       await (await klicUloziste()).zapis(PR_KLIC_KLIC, { hash: hashKlice(klic), vytvoren, kdo: relace.email });
-      await zaznamPridej(req, 'nový klíč vydán správcem');
+      await zaznamPridej(req, 'nový klíč vydán správcem', true);
       return json({ ok: true, klic, vytvoren });
     }
     if (t.akce !== undefined) return json({ ok: false, chyba: 'Neznámá akce.' }, 400);

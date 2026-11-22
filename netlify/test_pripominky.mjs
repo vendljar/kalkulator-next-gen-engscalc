@@ -63,7 +63,7 @@ const cVed = await prihlas('vedouci.pr@priklad.cz', HESLO);
 
 const NOVA = { typ: 'chyba', text: 'Po kliknutí na Uložit zakázku se nic nestalo.',
   kontext: { obrazovka: 'Kalkulace OCK', zalozka: 'kalk', verze: '21.11.1', zakazka: { cislo: '2026 - OPR - CN - 9', varianta: 'V1' },
-    misto: { sekce: 'Šachta', popisek: 'Výška šachty', zdroj: 'popis', rect: { x: 1, y: 2, w: 3, h: 4, vw: 1280, vh: 800 } },
+    misto: { sekce: 'Šachta', popisek: 'Výška šachty', zdroj: 'stitek', rect: { x: 1, y: 2, w: 3, h: 4, vw: 1280, vh: 800 } },
     pole: [{ popisek: 'Výška šachty', hodnota: '12 000' }] },
   snimek: 'data:image/jpeg;base64,' + 'QUJD'.repeat(500) };
 
@@ -159,7 +159,7 @@ test('nastavení klíč znovu neukáže', nA2.klic.nastaven === true && !JSON.st
 const kc = await get(K, undefined, B(KLIC));
 test('koordinace čte: jen puštěné (bez nové P-0003)', kc.status === 200 && kc.pripominky.map(p => p.id).sort().join() === 'P-0001,P-0002,P-0004', kc);
 test('koordinace: bez autora, zakázky, polí a snímku', !/obchodnik\.pr|2026 - OPR|12 000|QUJD|autor"/.test(JSON.stringify(kc)), JSON.stringify(kc).slice(0, 300));
-test('koordinace: obrazovka a místo z popisu prvku (bez sekce) ano', kc.pripominky.find(p => p.id === 'P-0001').kontext.misto === 'Výška šachty'
+test('koordinace: obrazovka a místo ze štítku pole (bez sekce) ano', kc.pripominky.find(p => p.id === 'P-0001').kontext.misto === 'Výška šachty'
   && kc.pripominky.find(p => p.id === 'P-0001').kontext.obrazovka === 'Kalkulace OCK', kc.pripominky.find(p => p.id === 'P-0001').kontext);
 const kOd = await get(K + '&od=2999-01-01T00:00:00Z', undefined, B(KLIC));
 test('koordinace ?od v budoucnu = nic', kOd.status === 200 && kOd.pripominky.length === 0);
@@ -205,6 +205,33 @@ const la2 = await get(U, cAdmin);
 test('stará vyřízená (duplicitní) se při čtení správcem smaže', la2.smazano === 1 && !pamet.has('pripominky/p/P-0004'), la2.smazano);
 test('odložená zůstává', pamet.has('pripominky/p/P-0002'));
 test('metoda DELETE 405', (await req('DELETE', U, undefined, cAdmin)).status === 405);
+
+/* 7) NN #711 (PR-N4): vydání klíče nevytlačí 100 anonymních pokusů a počítadla
+ * se uklízejí. Pojistka: před opravou šlo vydání do klic_zaznam (po 110 pokusech
+ * z různých adres zmizelo) a spatne:/hodina/den zůstávaly navždy. */
+const vyd = await post({ akce: 'klic', hesloSpravce: 'Docasne.Heslo.123' }, cAdmin);
+test('NN #711: správce vydá nový klíč', vyd.status === 200 && !!vyd.klic);
+for (let i = 0; i < 110; i++) await get(K, undefined, Object.assign(B('kngpr_vytlac' + i), { 'x-nf-client-connection-ip': '10.20.' + (i >> 8) + '.' + (i & 255) }));
+const nA4 = await get(U + '?nastaveni=1', cAdmin);
+const vseZaz = JSON.stringify(pamet.get('pripominky_limit/klic_zaznam') || '') + JSON.stringify(pamet.get('pripominky_limit/klic_spravce') || '');
+test('NN #711: vydání klíče po 110 anonymních pokusech v záznamu zůstane', /nový klíč vydán/.test(vseZaz)
+  && JSON.parse(pamet.get('pripominky_limit/klic_spravce') || '{"udalosti":[]}').udalosti.some(u => /nový klíč vydán/.test(u.udalost)));
+test('NN #711: anonymní záznam má dál strop 100', JSON.parse(pamet.get('pripominky_limit/klic_zaznam')).udalosti.length <= 100);
+test('NN #711: správce vidí sloučený záznam (nejnovější nahoře, akce správce označené)', Array.isArray(nA4.zaznam) && nA4.zaznam.length === 20
+  && String(nA4.zaznam[0].kdy) >= String(nA4.zaznam[19].kdy), nA4.zaznam && nA4.zaznam.slice(0, 2));
+/* úklid: staré počítadlo špatných klíčů, hodinové a denní počítadlo → pryč; čerstvé zůstanou */
+const staryDen = new Date(Date.now() - 5 * 86400000).toISOString();
+pamet.set('pripominky_limit/spatne:10.77.0.1', JSON.stringify({ n: 3, posledni: Date.now() - 3 * 86400000 }));
+pamet.set('pripominky_limit/spatne:10.77.0.2', JSON.stringify({ n: 3, posledni: Date.now() - 60000 }));
+pamet.set('pripominky_limit/hodina/' + staryDen.slice(0, 13), JSON.stringify({ n: 5 }));
+pamet.set('pripominky_limit/den/' + staryDen.slice(0, 10) + '/obchodnik.pr@priklad.cz', JSON.stringify({ n: 2 }));
+const dnesHod = 'pripominky_limit/hodina/' + new Date().toISOString().slice(0, 13);
+await get(U + '?nastaveni=1', cAdmin);
+test('NN #711: čtení nastavení správcem uklidí stará počítadla (spatne:, hodina/, den/)',
+  !pamet.has('pripominky_limit/spatne:10.77.0.1') && !pamet.has('pripominky_limit/hodina/' + staryDen.slice(0, 13))
+  && !pamet.has('pripominky_limit/den/' + staryDen.slice(0, 10) + '/obchodnik.pr@priklad.cz'));
+test('NN #711: čerstvá počítadla a záznamy zůstanou', pamet.has('pripominky_limit/spatne:10.77.0.2') && pamet.has(dnesHod)
+  && pamet.has('pripominky_limit/klic_zaznam') && pamet.has('pripominky_limit/klic_spravce'));
 
 await aktivitaDobehni();
 console.log(`\n${ok} OK, ${fail} FAIL`);

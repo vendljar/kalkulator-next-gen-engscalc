@@ -330,7 +330,10 @@ function onlinePoPrihlaseni(ja, hesloPrihlaseni) {
     titul: ja.titul || '', funkce: ja.funkce || '', telefon: ja.telefon || '',
     podpis: ja.podpis || '',
     /* Jen u administrátora (#278, B57); jinde undefined = server to neřekl. */
-    spravceNastaven: (typeof ja.spravceNastaven === 'boolean') ? ja.spravceNastaven : undefined };
+    spravceNastaven: (typeof ja.spravceNastaven === 'boolean') ? ja.spravceNastaven : undefined,
+    /* NN #712: stav připomínek ze serveru (při VYP klient nic nenačítá). */
+    pripominky: ja.pripominky && typeof ja.pripominky === 'object' ? { zapnuto: ja.pripominky.zapnuto !== false,
+      smiOdesilat: !!ja.pripominky.smiOdesilat } : undefined };
   ONLINE_STAV.uzivateleNacteno = false;   // seznam účtů se načte čerstvý
   if (typeof NAST !== 'undefined') {
     NAST.uzivatel = ja.jmeno || ja.email;

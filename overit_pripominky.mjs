@@ -86,9 +86,11 @@ page.on('pageerror', e => chyby.push('pageerror: ' + e.message));
 page.on('dialog', d => d.dismiss());
 
 let cookieJar = '';
+let pozadavkuPrip = 0;   // NN #712: požadavky na /api/pripominky
 await page.route('**/api/**', async route => {
   const r = route.request();
   const url = new URL(r.url());
+  if (url.pathname === '/api/pripominky') pozadavkuPrip++;
   const fn = FUNKCE[url.pathname];
   if (!fn) return route.fulfill({ status: 404, body: '{"ok":false}' });
   const init = { method: r.method(), headers: { cookie: cookieJar } };
@@ -120,8 +122,14 @@ await page.waitForFunction(() => typeof window.render === 'function');
 await page.waitForTimeout(400);
 
 /* --- správce zapne funkci a založí obchodníka --- */
+pozadavkuPrip = 0;
 await prihlas(process.env.ADMIN_EMAIL, 'Zkusebni.Heslo.123');
 test('správce: bez zapnutí plovoucí tlačítko není', !(await viditelny('#prip-fab')));
+/* NN #712 (PR-I1): při VYP po přihlášení žádný požadavek na připomínky
+ * a #prip-fab není v DOM. Pojistka: před opravou 2 požadavky (nastavení
+ * a seznam správce) a skryté tlačítko v DOM. */
+test('NN #712: při VYP po přihlášení žádný požadavek na /api/pripominky', pozadavkuPrip === 0, pozadavkuPrip);
+test('NN #712: při VYP plovoucí tlačítko #prip-fab v DOM není', await page.evaluate(() => !document.getElementById('prip-fab')));
 const zalozen = await page.evaluate(() => onlineApi('/api/uzivatele', { akce: 'zaloz', email: 'obchodnik.pr@priklad.cz',
   jmeno: 'Petr Zkušební', role: 'Obchodník', heslo: 'ZkusebniHeslo1' }).then(o => o.ok));
 test('založení obchodníka', zalozen);

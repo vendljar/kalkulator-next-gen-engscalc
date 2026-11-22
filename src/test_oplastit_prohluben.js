@@ -36,7 +36,7 @@ const manual = fs.readFileSync(path.join(__dirname, '..', 'manual', 'obsah.json'
 test('(a) zadání šachty: popisek zaškrtávátka „Opláštit i prohlubeň"',
   /<label[^>]*>Opláštit i prohlubeň<\/label>/.test(kalk));
 test('(a) nápověda pole Prohlubeň odkazuje na „Opláštit i prohlubeň" (opláštění i v prohlubni)',
-  /title="Opláštění i v prohlubni: zaškrtněte „Opláštit i prohlubeň"/.test(kalk));
+  /title="Opláštění i v prohlubni: zaškrtněte „Opláštit i prohlubeň“ — všechny stěny pak začínají v −prohlubeň \(opláštění po stěnách\)\."/.test(kalk));
 test('(a) tooltip a hláška nulové prohlubně: „není co opláštit"',
   (kalk.match(/není co opláštit/g) || []).length >= 2 && /\(opláštění i v prohlubni\)/.test(kalk));
 test('(a) detail výpočtu: „Opláštěná prohlubeň" a zkratka „Opláštit i prohlubeň"',

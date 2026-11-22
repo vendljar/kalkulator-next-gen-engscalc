@@ -12,6 +12,7 @@
 /* `hlavni` říká prohlížeči, že jde o hlavní administrátorský účet — ten,
  * který nejde zbavit role ani vypnout. Adresa zůstává jen na serveru (#95). */
 import { vyzadujRoli, json, podpisCti, ADMIN_EMAIL, spravceNastaven } from '../lib/sdilene.mjs';
+import { pripominkyStavRelace } from '../lib/pripominky_stav.mjs';
 export default async (req) => {
   const { chyba, relace, ucet } = await vyzadujRoli(req);
   if (chyba) return chyba;
@@ -20,6 +21,8 @@ export default async (req) => {
     hlavni: relace.email === ADMIN_EMAIL,
     /* Jen administrátorovi (B57, #278) — provozní údaj, ne věc pro obchodníka. */
     ...(relace.role === 'Administrátor' ? { spravceNastaven: spravceNastaven() } : {}),
+    /* NN #712: při vypnutých připomínkách klient nic nenačítá ani nevkládá. */
+    pripominky: await pripominkyStavRelace(relace.role),
     podpis: await podpisCti(ucet.email) });
 };
 export const config = { path: '/api/ja' };

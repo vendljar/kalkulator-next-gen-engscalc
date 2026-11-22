@@ -160,8 +160,12 @@ function pripominkaKontextOciste(v) {
     /* `zdroj` popisku (N1 revize 22. 11. 2026): 'popis' = z popisu prvku
      * (label, aria-label, title, placeholder), 'obsah' = z obsahu stránky
      * (text prvku, první buňka řádku — může nést cenu nebo jméno). Neznámé
-     * = 'obsah' (bezpečná strana). Ke koordinaci jde jen 'popis'. */
-    k.misto = { sekce: _ptxt(m.sekce, 120), popisek: _ptxt(m.popisek, 160), zdroj: m.zdroj === 'popis' ? 'popis' : 'obsah',
+     * = 'obsah' (bezpečná strana). Ke koordinaci jde jen 'stitek' (NN). */
+    /* NN (zbytek N1, 22. 11. 2026): 'stitek' = viditelný štítek pole (label,
+     * placeholder) — jen ten jde ke koordinaci; 'popis' = title / aria-label
+     * (může nést jméno zákazníka bez číslic, např. tlačítka víc zákazníků). */
+    k.misto = { sekce: _ptxt(m.sekce, 120), popisek: _ptxt(m.popisek, 160),
+      zdroj: m.zdroj === 'stitek' || m.zdroj === 'popis' ? m.zdroj : 'obsah',
       selektor: _ptxt(m.selektor, 300),
       rect: { x: _pcislo(r.x, -20000, 20000), y: _pcislo(r.y, -20000, 20000), w: _pcislo(r.w, 0, 20000), h: _pcislo(r.h, 0, 20000),
         vw: _pcislo(r.vw, 0, 20000), vh: _pcislo(r.vh, 0, 20000) } };
@@ -275,12 +279,22 @@ function pripominkaProAutora(p) {
     prubeh: (p.prubeh || []).map(x => ({ kdy: x.kdy, stav: x.stav })) };
 }
 /* Označené místo pro koordinaci (N1 revize 22. 11. 2026): nadpis okna ani
- * obsah prvku ne (cena, jméno zákazníka) — jen popisek z popisu prvku a jen
- * bez číslic a zavináče. Jinak prázdno; zbývá obrazovka a selektor. */
+ * obsah prvku ne (cena, jméno zákazníka) — jen popisek ze ŠTÍTKU pole (label,
+ * placeholder; NN: ne title ani aria-label, ty mohou nést jméno zákazníka bez
+ * číslic) a jen bez číslic a zavináče. Jinak prázdno; zbývá obrazovka a selektor.
+ * Záznamy z doby před NN (zdroj 'popis' = i title / aria) ke koordinaci nejdou. */
 function pripominkaMistoProKoordinaci(m) {
-  if (!m || m.zdroj !== 'popis') return '';
+  if (!m || m.zdroj !== 'stitek') return '';
   const t = _ptxt(m.popisek, 160);
   return /[0-9@]/.test(t) ? '' : t;
+}
+/* Selektor pro koordinaci (NN, zbytek N1): jen STRUKTURA — značky
+ * a pořadí (`div > td:nth-of-type(2)`); články s id (`#…`) vypadnou, protože
+ * id bývá odvozené z dat (klíč zákazníka, číslo zakázky). Cokoli jiného než
+ * holá značka s nepovinným `:nth-of-type(n)` se zahodí. */
+function pripominkaSelektorProKoordinaci(sel) {
+  return String(sel || '').split('>').map(x => x.trim())
+    .filter(x => /^[a-z][a-z0-9]{0,15}(:nth-of-type\([0-9]{1,4}\))?$/.test(x)).join(' > ').slice(0, 300);
 }
 /* Co smí vidět koordinace (B257): žádný autor, zakázka, pole ani snímek. */
 function pripominkaProKoordinaci(p) {
@@ -289,7 +303,7 @@ function pripominkaProKoordinaci(p) {
   return { id: p.id, typ: p.typ, text: p.text, kdy: p.kdy, zmeneno: p.zmeneno, zdroj: p.zdroj, stav: p.stav,
     roadmapa: p.roadmapa || '', odpoved: p.odpoved || '', duplicitniS: p.duplicitniS || '',
     kontext: { obrazovka: k.obrazovka || '', misto: pripominkaMistoProKoordinaci(k.misto),
-      selektor: (k.misto && k.misto.selektor) || '', verze: k.verze || '' },
+      selektor: pripominkaSelektorProKoordinaci(k.misto && k.misto.selektor), verze: k.verze || '' },
     prubeh: (p.prubeh || []).map(x => ({ kdy: x.kdy, stav: x.stav })) };
 }
 function pripominkaKrok(stav) { const s = pripominkaStav(stav); return s ? s.krok : 0; }
@@ -365,6 +379,6 @@ if (typeof module !== 'undefined')
     PRIPOMINKA_ID_TVAR, PRIPOMINKA_STAVY_KOORDINACE,
     pripominkaTyp, pripominkaStav, pripominkaCislo, pripominkaIdPlatne, pripominkaTextStaci, pripominkaLzeOdeslat,
     pripominkyNastaveniVychozi, pripominkyNastaveniOciste, pripominkySmiOdesilat, pripominkaSnimekZkontroluj,
-    pripominkaKontextOciste, pripominkaMistoPopis, pripominkaMistoProKoordinaci, pripominkaNova, pripominkaZmen, pripominkaProAutora,
+    pripominkaKontextOciste, pripominkaMistoPopis, pripominkaMistoProKoordinaci, pripominkaSelektorProKoordinaci, pripominkaNova, pripominkaZmen, pripominkaProAutora,
     pripominkaProKoordinaci, pripominkaKrok, pripominkaOranzove, pripominkyNovychOdpovedi, pripominkyNeprectenych,
     pripominkyFiltruj, pripominkyPocty, pripominkyKSmazani, pripominkaObnovaOciste, pripominkaEmailText };
