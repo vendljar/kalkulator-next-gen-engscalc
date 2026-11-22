@@ -39,6 +39,10 @@ Nad integrací `05a496d` (v22.11.5), sloučeno s integrací `36e2681` (v22.11.7)
   rozšířené `test_pripominky` (jádro 77, server 82), `overit_pripominky` 62, `test_pre_push` 25, nový
   `test_workflow_udaju` 7; sady ukládající bez razítka ho doplňují jako klient (`netlify/pomoc_razitko.mjs`).
   `test_nn_sablony` 34, `test_sablony` +18. Mutace [NN] server 23 + 8, jádro 10 — vše chyceno.
+- **Revize Fable:** R2 zapsáno jako mez (skutečný klient snímek lhůt v cestě klonu po výpadku neposílá — 409 by
+  zablokovalo poctivý prodej; podvržený snímek u nového zámku = 409); hláška dvojčete karty jmenuje
+  autora jménem (R3); meze R4 (stropy B239 i při obnově), R5 (`prepsat` u B237), dvojče jen podle názvu; nálezy
+  šablon B270–B272 zapsány do roadmapy (#790–#792, pracovní).
 - **Kolo** (`--bez-mutaci --proti 36e2681`): VŠE ZELENÉ — sady 519/0/6, hodiny 421/0/1, statické 12/12, porovnání
   sestavení SHODA 367/367; mutace [NN] server 31/31, jádro 10/10.
 ## v22.11.7 — RJ: zapracování rozhodnutí J. V. z 22. 11. 2026, větev claude/rj-rozhodnuti

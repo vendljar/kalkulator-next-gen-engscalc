@@ -36,10 +36,13 @@ import analytika from './functions/analytika.mjs';
 import { ADMIN_EMAIL } from './lib/sdilene.mjs';
 import { ZAKAZKA_VARIANT_MAX, VARIANTA_NAZEV_MAX } from './lib/zakazka_kontrola.mjs';
 import { createRequire } from 'node:module';
+import { jadro } from './lib/jadro.mjs';
 
 const require = createRequire(import.meta.url);
 const zk = require('../src/zakazka.js');
 const ZC = require('../src/zkusebni_cenik.js');
+const zam = require('../src/zamek.js');
+const { JEKLY } = await jadro();
 
 let ok = 0, fail = 0; const selhalo = [];
 function test(nazev, podminka, detail) {
@@ -100,6 +103,31 @@ console.log('\n===== B237: RAZÍTKO VERZE JE POVINNÉ =====\n');
   const g3 = await nacti(r.soubor, cO);
   const r4 = await uloz({ zakazka: kopie(g3), ocekavaneRazitko: 'cokoli', prepsat: true }, cO);
   test('B237: vědomé přepsání (prepsat:true) zůstává (mez — práva nerozšiřuje)', r4.status === 200, r4.status + ' ' + r4.chyba);
+}
+
+/* ============================================================ */
+console.log('\n===== B238 (revize Fable R2): ZÁMEK + PRODÁNO BEZ SNÍMKU LHŮT =====\n');
+/* Pojistka: před opravou zámek a Prodáno jedním uložením bez snímku lhůt → 200
+ * a prodaná varianta s PROJ bez zmrazených lhůt. */
+{
+  const dnes = new Date().toISOString().slice(0, 10);
+  const pripravit = (sSnimkem, podvrh) => {
+    const z = nova('B238 R2'); const v = z.varianty[0];
+    v.prodano = { datum: dnes };
+    if (sSnimkem) { v.data.kryciProj = v.data.kryciProj || { hodnoty: {} }; v.data.kryciProj.lhutyProj = globalThis.lhutyProjEf(null);
+      if (podvrh) v.data.kryciProj.lhutyProj.radky = { studie: { do: 0.01 } }; }
+    zam.zamkniVariantu(v, { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Obch Jedna', cislo: zam.variantaCislo(z, v),
+      vysledek: zam.zamekVysledekSpocti(v, JEKLY, 'NN'), snimek: zam.zamekSnimekSpocti(v) });
+    return z;
+  };
+  /* R2 je mez (skutečný klient snímek v cestě klonu po výpadku neposílá): bez snímku 200. */
+  const r = await uloz({ zakazka: pripravit(false), ocekavaneRazitko: '' }, cO);
+  test('B238 R2 (mez): zámek + Prodáno bez snímku lhůt projde (200), snímek se nepodvrhne', r.status === 200, r.status + ' ' + r.chyba);
+  const zP = pripravit(true, true);
+  const rP = await uloz({ zakazka: zP, ocekavaneRazitko: '' }, cO);
+  test('B238: zámek + Prodáno s podvrženým snímkem lhůt = 409', rP.status === 409 && /nesedí s tabulkou Firmy/.test(rP.chyba || ''), rP.status + ' ' + rP.chyba);
+  const r2 = await uloz({ zakazka: pripravit(true), ocekavaneRazitko: '' }, cO);
+  test('B238 R2: se snímkem lhůt z tabulky Firmy projde (200)', r2.status === 200, r2.status + ' ' + r2.chyba);
 }
 
 /* ============================================================ */
@@ -180,6 +208,9 @@ console.log('\n===== #705: DVOJČE KARTY (R6) A SOUBĚH NÁVRHŮ (R7) =====\n');
   test('#705: obch1 založí kartu s IČO', r.status === 200 && r.klic === '27074358', r);
   const r2 = await odp(await post(zakaznici, U, { zakaznik: { nazev: 'NN Dvojče s.r.o.', ucet: '999/0100' } }, cO2));
   test('#705 R6: obch2 nezaloží dvojče téže firmy bez IČO (klíč z názvu) — 409', r2.status === 409 && r2.dvojce === '27074358', r2.status + ' ' + r2.chyba);
+  /* Revize Fable R3: hláška jmenuje autora jménem z účtu, ne e-mailem. Pojistka: před
+   * opravou „autor nn.obch1@priklad.cz“. */
+  test('#705 R3: hláška dvojčete jmenuje autora jménem, ne e-mailem', /Obch Jedna/.test(r2.chyba || '') && !/@/.test(r2.chyba || ''), r2.chyba);
   const r3 = await odp(await post(zakaznici, U, { zakaznik: { nazev: 'NN Bez IČO a.s.' } }, cO));
   const r4 = await odp(await post(zakaznici, U, { zakaznik: { nazev: 'NN Bez IČO a.s.', ico: '25596641', ucet: '999/0100' } }, cO2));
   test('#705 R6: obch2 nezaloží dvojče karty bez IČO pod IČO — 409', r3.status === 200 && r4.status === 409, r3.status + ' / ' + r4.status + ' ' + r4.chyba);

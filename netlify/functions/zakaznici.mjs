@@ -172,9 +172,15 @@ export default async (req) => {
      * IČO nebo název už má cizí karta, se odmítne 409 — úpravu pošle jako návrh
      * na původní kartu. Autor dvojčete a administrátor kartu založit smějí. */
     const dvojce = await dvojceKarty(s, klice, z, klic);
-    if (dvojce && !g.zakaznikSmiMenit(dvojce.karta, relace))
+    if (dvojce && !g.zakaznikSmiMenit(dvojce.karta, relace)) {
+      /* Revize Fable R3 (vzor P7 / K16-N87): hláška jmenuje člověka jménem
+       * z účtu, ne e-mailem; účet bez jména = „jiný kolega“. */
+      let kdo = '';
+      try { const u = dvojce.karta.autor ? await (await uloziste('uzivatele')).cti(String(dvojce.karta.autor).toLowerCase()) : null;
+        kdo = (u && u.jmeno) ? String(u.jmeno) : ''; } catch (e) { kdo = ''; }
       return json({ ok: false, dvojce: dvojce.klic, chyba: 'Tento zákazník už má kartu (' + (dvojce.karta.nazev || dvojce.klic)
-        + ', autor ' + (dvojce.karta.autor || '—') + '). Upravte tu — změna se uloží jako návrh pro jejího autora.' }, 409);
+        + ', založil(a) ' + (kdo || 'jiný kolega') + '). Upravte tu — změna se uloží jako návrh pro jejího autora.' }, 409);
+    }
   }
   await s.zapis('z/' + klic, z);
   return json({ ok: true, klic, zakaznik: z });

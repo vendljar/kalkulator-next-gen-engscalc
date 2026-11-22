@@ -191,8 +191,9 @@ export default async (req) => {
    * varianty ho přepsal kdokoli a Prodáno ho zmrazilo. Teď: varianta prodaná
    * už v uložené verzi drží zmrazený snímek (změnu odmítne zámek); varianta prodávaná tímto uložením
    * dostane platnou tabulku Firmy ze serveru; neprodaná snímek nenese. */
-  { const lh = lhutyProjServerDrz(stara, zak, await sProg.cti('firma'));
-    if (lh) return { odpoved: json({ ok: false, chyba: lh }, 409) }; }
+  /* Chyba snímku lhůt (409) se vrací až po kontrole zakázky — přednost mají
+   * její odmítnutí (např. datum prodeje 400). */
+  const lhChyba = lhutyProjServerDrz(stara, zak, await sProg.cti('firma'));
   /* #665 (RJ): nese-li uložení NOVÝ zámek, podpis přihlášeného se zmrazí
    * (otisk do snímku zámku, kopie v úložišti podpisů) — čte se jen tehdy. */
   const podpisZamku = await podpisZamkuPriprav(stara, zak, relace, globalThis.variantaUzamcena);
@@ -201,6 +202,7 @@ export default async (req) => {
       program: prog, matice: (zobr && zobr.matice) || null, podpisOtisk: podpisZamku ? podpisZamku.otisk : '',   // #665 (RJ)
       viceSachet, viceZakazniku });   // VS #570 / VZ #598: vypínače správce
   if (!kontrola.ok) return { odpoved: json(Object.assign({ ok: false, chyba: kontrola.chyba }, kontrola.kod ? { kod: kontrola.kod } : {}), kontrola.status) };
+  if (lhChyba) return { odpoved: json({ ok: false, chyba: lhChyba }, 409) };
   /* #665: kopie podpisu dřív než zakázka — otisk ve snímku nikdy nevisí naprázdno. */
   if (podpisZamku && (zak.varianty || []).some(v => v && v.zamek && v.zamek.zpracovatel && v.zamek.zpracovatel.podpisOtisk === podpisZamku.otisk))
     await podpisZamku.zapis();
@@ -385,6 +387,11 @@ export function lhutyProjServerDrz(stara, zak, firma) {
     const zamekNovy = !!(v.zamek && v.zamek.zamceno) && !(sv && sv.zamek && sv.zamek.zamceno);
     const klientsky = obj(v.data.kryciProj) ? v.data.kryciProj.lhutyProj : undefined;
     if (zamekNovy) {
+      /* Revize Fable R2 — MEZ: chybějící snímek se NEodmítá. Skutečný klient ho
+       * v cestě „Prodáno po neuloženém tisku klonu“ (overit_klon_tisk #555)
+       * neposílá a 409 by zablokovalo poctivý prodej; přidat ho server nemůže
+       * (rozbil by snímek zámku spočítaný klientem). Prodaná varianta pak
+       * termíny počítá z aktuální tabulky Firmy (stav před D8). */
       if (G.variantaProdana(v) && klientsky !== undefined
         && JSON.stringify(klientsky) !== JSON.stringify(G.lhutyProjEf(tabulka)))
         return 'Neuloženo: lhůty PROJ v prodávané variantě nesedí s tabulkou Firmy. Načtěte Firmu znovu (obnovte stránku) a prodejte znovu.';

@@ -2317,7 +2317,9 @@ Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md` (tabulka �
 
 - **B237 — razítko verze zakázky — OPRAVENO.** Tělo bez `ocekavaneRazitko` nad existující zakázkou = 409
   (dřív výjimka „starší klient bez pole“). *Mez:* `prepsat: true` (vědomé přepsání po dotazu) zůstává —
-  práva nerozšiřuje: zakázku smí uložit každý, kdo ji smí načíst, s razítkem načtené verze.
+  práva nerozšiřuje: zakázku smí uložit každý, kdo ji smí načíst, s razítkem načtené verze. *Revize Fable R5:*
+  B237 je tím opravený jen částečně — tělo s `prepsat: true` dál přepíše cizí rozpracovanou zakázku bez
+  kolize 409 (zůstává stopa `upravil`); zda vědomé přepsání omezit na autora a správce, rozhodne J. V.
 - **B238 — snímek lhůt PROJ — OPRAVENO.** Snímek `data.kryciProj.lhutyProj` píše server
   (`lhutyProjServerDrz`): neprodaná varianta ho nenese (klientský se zahodí), varianta prodávaná tímto
   uložením dostane platnou tabulku Firmy ze serveru, prodaná dřív — změnu odmítne zámek. *Mez:* obnova ze
@@ -2325,7 +2327,9 @@ Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md` (tabulka �
 - **B239 — limity zakázky — OPRAVENO ČÁSTEČNĚ.** Nejvýš 50 variant, název varianty 300 znaků;
   `/api/vypocet` strop těla 1 MB, hloubka, tvar a strop variant. *Mez:* neznámé klíče a dlouhé texty
   uvnitř zakázky se dál ukládají do stropu velikosti 4 MB (`ZAKAZKA_MAX_B`) — strop velikosti je pojistka
-  proti zahlcení; seznam povolených klíčů by rozbil migrace starších zakázek.
+  proti zahlcení; seznam povolených klíčů by rozbil migrace starších zakázek. *Mez (revize Fable R4):*
+  stropy platí i pro obnovu ze zálohy — zakázka s víc než 50 variantami nebo delším názvem varianty se při
+  obnově přeskočí s důvodem (dnešní zakázky stropů zdaleka nedosahují).
 - **B240 — akce správce nad starým účtem — OPRAVENO.** Viz oprava popisu B156. *Mez:* mezi instancemi
   funkce jen druhé čtení (B158).
 - **B241 — hádání hesla z více adres, síla hesla — MEZ (rozhodnutí J. V. otevřené).** Počítadlo e-mailu
@@ -2376,7 +2380,15 @@ Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md` (tabulka �
   jen pro tagy `v*` (B275).
 - **B256 — escapování čísel ze serveru — OPRAVENO.** Analytika, náhled obnovy, mapa polí CRM a nanečisto
   vkládají počty přes `esc()` (druhá vrstva; server text do čísel nepouští).
-- **#705 — karta zákazníka (revize BZ R6, R7) — OPRAVENO.** Viz B234.
+- **#705 — karta zákazníka (revize BZ R6, R7) — OPRAVENO.** Viz B234. *Mez (revize Fable R3):* dvojče se
+  u karty bez IČO pozná jen podle shody názvu (klíč z názvu bez diakritiky). Jiná firma stejného jména bez IČO
+  tak dostane 409 („karta už existuje“) — cesta ven: doplnit IČO, nebo kartu založí autor původní karty či
+  správce. Firma s jiným IČO dvojče není. Hláška jmenuje autora jménem z účtu, ne e-mailem (P7).
+- **B238 doplněk (revize Fable R2) — MEZ:** zámek a Prodáno jedním uložením BEZ snímku lhůt projde (200)
+  a prodaná varianta pak termíny počítá z aktuální tabulky Firmy (stav před D8). Odmítnout to nejde:
+  skutečný klient snímek v cestě „Prodáno po neuloženém tisku klonu“ neposílá (`overit_klon_tisk` #555)
+  a server ho doplnit nemůže — rozbil by snímek zámku spočítaný klientem. Podvržený (nesedící) snímek
+  u nového zámku se odmítne 409. Úplná oprava = klient pošle snímek vždy (navrženo k dávce).
 - **#711 — počítadla klíče koordinace — OPRAVENO.** Viz B257.
 - **#712 — připomínky při VYP — OPRAVENO.** Přihlášení a `/api/ja` nesou `pripominky {zapnuto,
   smiOdesilat}`; při vypnuté funkci klient nic nenačítá a tlačítko do stránky nevkládá.
