@@ -19,8 +19,11 @@ Navazuje na v22.11.7 (revize koordinace = SLOUČIT). Roadmapa #716 (pracovní č
 - **N2 (připomínky):** uzavřeno správcem = v posledním úseku stavu je jakýkoli záznam správce (uzavřela koordinace
   a správce odpověděl → koordinace už nemění stav ani odpověď).
 - **I3 (kolo):** kontrola značek konfliktu chytí i „=======“ na řádku s CRLF.
-- **Testy:** `test_bz_pipedrive` (PoC N1, model), `test_k40c_webhook` (N2 K40c → „ceka“), `test_pripominky`, `test_rj_rozhodnuti`.
-  Mutace [RJ]: VYSLEDEK_MUTACI. Kolo: VYSLEDEK_KOLA.
+- **Testy:** `test_bz_pipedrive` (PoC N1, model), `test_k40c_webhook` (N2 K40c → „ceka“; oprava firmy až po „V pořádku“),
+  `test_pripominky`, `test_rj_rozhodnuti`. Mutace [RJ] 20/20 (mutace [K40c] N2 odebrána — rozhodnutí obrácené). Kolo
+  `--bez-mutaci --proti 36e2681`: VŠE ZELENÉ (sady 514/0/6, hodiny 416/0/1, statické 11/11, porovnání SHODA 367/367).
+- **Mez (k rozhodnutí J. V. před zapnutím zápisu):** „V pořádku“ smí stisknout i autor zakázky, který deal připojil
+  sám — potvrzením si zápis do dealu pustí.
 
 ## v22.11.7 — RJ: zapracování rozhodnutí J. V. z 22. 11. 2026, větev claude/rj-rozhodnuti
 
