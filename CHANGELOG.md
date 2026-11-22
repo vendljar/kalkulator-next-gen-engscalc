@@ -8,6 +8,20 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.11.9 — RJ revize (koordinace 22. 11.): N1, N2, I3, větev claude/rj-rozhodnuti
+
+Navazuje na v22.11.7 (revize koordinace = SLOUČIT). Roadmapa #716 (pracovní číslo — přečísluje koordinace po LAK). Cenu nemění.
+
+- **N1 (Pipedrive, před zapnutím `PIPEDRIVE_ZAPIS`):** zápis do dealu dokládá jen vazba z webhooku „potvrzeno“ („V pořádku“)
+  nebo „webhook“ u zakázky, kterou webhook sám založil; nepotvrzená „ceka“ zápis zastaví i s odkazem v dealu (ten tam
+  zapsal webhook sám). Webhook dává „webhook“ jen kalkulaci, kterou zakládá — existující kalkulace s ručně zadaným
+  dealem dostane „ceka“. PoC revize (zakázka předem s číslem cizího dealu → webhook → poznámka) je regresní test.
+- **N2 (připomínky):** uzavřeno správcem = v posledním úseku stavu je jakýkoli záznam správce (uzavřela koordinace
+  a správce odpověděl → koordinace už nemění stav ani odpověď).
+- **I3 (kolo):** kontrola značek konfliktu chytí i „=======“ na řádku s CRLF.
+- **Testy:** `test_bz_pipedrive` (PoC N1, model), `test_k40c_webhook` (N2 K40c → „ceka“), `test_pripominky`, `test_rj_rozhodnuti`.
+  Mutace [RJ]: VYSLEDEK_MUTACI. Kolo: VYSLEDEK_KOLA.
+
 ## v22.11.7 — RJ: zapracování rozhodnutí J. V. z 22. 11. 2026, větev claude/rj-rozhodnuti
 
 Nad integrací `05a496d` (v22.11.5), sloučeno s integrací `21eeffa` (v22.11.6). Roadmapa #704, #706, #709, #710 → #714 (dávka), #715 (podpis). Cenu nemění.

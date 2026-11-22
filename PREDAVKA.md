@@ -22,7 +22,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/on-online` | (tato dávka) | v19.11.8 | #ON kdo je online (Nastavení → Uživatelé) nad 042fcbc; verzi přečísluje koordinace |
 | `claude/d8-lhuty` | (tato dávka) | v19.11.7 | D8 #677 (pracovní) lhůty PROJ → termíny krycího listu; nad integrací 042fcbc; verzi přečísluje koordinace |
 | `claude/vz-f1` | (tato dávka) | v18.11.8 | VZ-F1 #659 opravy nálezů ruční zkoušky VZ; nad ec5bbac, sloučeno s integrací 41bbe99 |
-| `claude/rj-rozhodnuti` | (tato dávka) | v22.11.7 | RJ rozhodnutí J. V. 22. 11. (#714, #715) nad 05a496d, sloučeno s integrací 21eeffa |
+| `claude/rj-rozhodnuti` | (tato dávka) | v22.11.9 | RJ (#714, #715) sloučeno s 21eeffa; v22.11.9 revize N1/N2/I3 (#716 prac.) |
 | `claude/jt-jazyk-tisku` | (tato dávka) | v22.11.6 | JT #713 prac.: jazyk specifikace OCK = Jazyk tisku; nad 05a496d |
 | `claude/pr-pripominky` | (tato dávka) | v22.11.5 | PR #707–#712 Připomínky z aplikace, sloučeno s integrací 6fa67af |
 | `claude/hn-harnessy` | (tato dávka) | v22.11.2 | HN zpevnění testů kola (#638, #644, #646, #647, #695) nad cda289e; aplikace beze změny; verzi přečísluje koordinace |
@@ -69,6 +69,7 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
   #710-4 koordinace 403 u uzavřené správcem; #706 `nastroje/kontrola_konfliktu.sh` (staticke 11). #709 → vlna F (stav
   „odlozeno“ schéma nezná). Testy `netlify/test_rj_rozhodnuti.mjs` + přípravky PD (odkaz místo čísla). Kolo proti 21eeffa
   VŠE ZELENÉ (514/0/6, hodiny 416/0/1, 11/11, SHODA 367/367), mutace [RJ] server 16/16, jádro 5/5. HOTOVO, k revizi.
+  v22.11.9 (#716 prac.): revize N1 vazba „ceka“ zápis nedokládá, N2 záznam správce v úseku, I3 CRLF. Mez: „V pořádku“ smí i autor.
 - **VZD** (`claude/vzd-drobnosti`, v22.11.1, s integrací 885577e): HOTOVO. Kolo VŠE ZELENÉ (505/0/7, hodiny 410/0/1, 9/9, SHODA 359/359),
   mutace [VZD] jádro 16/16, server 4/4. #674 d a podpis u #665 k potvrzení J. V. Detail v CHANGELOG.
 

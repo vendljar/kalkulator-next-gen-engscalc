@@ -11,7 +11,8 @@
 set -u
 cd "$(dirname "$0")/.."
 
-VZOR='^(<<<<<<< |>>>>>>> |=======$|<<<<<<<$|>>>>>>>$)'
+CR=$'\r'   # I3 (revize RJ): „=======" na konci řádku s CRLF (git grep -E \r nezná → skutečný znak)
+VZOR="^(<<<<<<< |>>>>>>> |=======${CR}?\$|<<<<<<<${CR}?\$|>>>>>>>${CR}?\$)"
 # Výjimky: cesty (pathspec) vyloučené z hledání.
 VYJIMKY=(
   ':(exclude)nastroje/kontrola_konfliktu.sh'   # vzor a pojistka značky nesou jako data
@@ -36,12 +37,12 @@ if [ "${1:-}" = "--pojistka" ]; then
   printf '# Změny\n\nřádek\n----\n= nadpis =\n' > "$tmp/CHANGELOG.md"
   g add CHANGELOG.md && g commit -q -m a
   hledej "$tmp" >/dev/null || { echo "POJISTKA SELHALA: čistý soubor nahlášen jako konflikt"; exit 1; }
-  for znacka in '<<<<<<< HEAD' '=======' '>>>>>>> origin/test'; do
+  for znacka in '<<<<<<< HEAD' '=======' '>>>>>>> origin/test' "=======$CR" "<<<<<<<$CR"; do
     printf '# Změny\n%s\nřádek\n' "$znacka" > "$tmp/CHANGELOG.md"
     g add CHANGELOG.md && g commit -q -m "b $znacka"
-    if hledej "$tmp" >/dev/null; then echo "POJISTKA SELHALA: značka „$znacka“ nenalezena"; exit 1; fi
+    if hledej "$tmp" >/dev/null; then echo "POJISTKA SELHALA: značka „${znacka%$CR}“ nenalezena"; exit 1; fi
   done
-  echo "Pojistka v pořádku: čistý soubor projde; „<<<<<<< “, „=======“ i „>>>>>>> “ na začátku řádku = chyba."
+  echo "Pojistka v pořádku: čistý soubor projde; „<<<<<<< “, „=======“ i „>>>>>>> “ na začátku řádku (i s CRLF) = chyba."
   exit 0
 fi
 hledej .
