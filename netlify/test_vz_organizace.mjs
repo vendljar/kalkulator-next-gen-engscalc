@@ -82,10 +82,10 @@ const kopie = x => JSON.parse(JSON.stringify(x));
 const zakazka = (soubor) => JSON.parse(pamet.get('zakazky/z/' + soubor) || 'null');
 const zapis = (soubor, z) => pamet.set('zakazky/z/' + soubor, JSON.stringify(z));
 
-/* B235/B236 (dávka BZ): server zapisuje jen do dealu, který zakázce patří
- * (pd_overeni.mjs) — přípravek dá dealu v simulátoru číslo nabídky zakázky. */
-const BZ_CN = SIM.pdSimStav().data.pole.deal.find(p => p.field_name === 'Číslo nabídky (CN)').field_code;
-const dealPatri = (id, cislo) => { const d = SIM.pdSimStav().data.dealy.find(x => String(x.id) === String(id)); if (d) d.custom_fields[BZ_CN] = cislo; };
+/* B235/B236 (dávka BZ): server zapisuje jen do dealu, který zakázce patří (pd_overeni.mjs). */
+/* RJ (#704-7, J. V. 22. 11. 2026): pravidlo 3 (číslo nabídky) zrušeno — vazbu dokládá
+ * pole „Odkaz na kalkulaci" v dealu (odkaz na soubor zakázky, uloJmenoSouboru). */
+const BZ_ODKAZ = SIM.pdSimStav().data.pole.deal.find(p => p.field_name === 'Odkaz na kalkulaci').field_code;
 
 const D = () => SIM.pdSimStav().data;
 const poz = () => SIM.pdSimStav().pozadavky;
@@ -118,13 +118,14 @@ let cisloN = 9800, sN = 0;
 function prodana(deal, ico, { nazev = 'TEST – VÍTĚZ s.r.o.', autor = 'obch.autor@priklad.cz', prodal = 'obch.prodal@priklad.cz', vz = true, prod = true } = {}) {
   const z = zk.novaZakazka(); z.cislo = '2026 - OPR - CN - ' + (cisloN++) + ' - TEST'; z.nazevAkce = 'TEST VZ-E5b';
   z.objednatel = nazev; z.adresaObjednatele = 'Vítězná 1, 110 00 Vzorov'; z.ico = ico; z.dic = ico ? 'CZ' + ico : '';
-  z.autor = autor; z.pdDealId = String(deal.id); dealPatri(deal.id, z.cislo);
+  z.autor = autor; z.pdDealId = String(deal.id);
   if (vz) { const p = G.vzPridej(z, { objednatel: 'TEST – PORAŽENÝ a.s.', adresaObjednatele: 'Jinde 2', ico: '', dic: '', kontakt: '' }, { kdo: 'Test', kdy: '2026-11-16T10:00:00.000Z' });
     if (!p.ok) throw new Error('vzPridej ' + JSON.stringify(p)); }
   const v = z.varianty[0];
   v.zamek = { zamceno: true, kdy: '2026-11-10T10:00:00.000Z' };
   if (prod) v.prodano = { datum: '2026-11-16', kdo: prodal, kdy: '2026-11-16T10:00:00.000Z', pipedrive: { stav: 'ceka', kdy: '2026-11-16T10:00:00.000Z' } };
   const soubor = 'vzorg_' + (++sN) + '.json';
+  deal.custom_fields[BZ_ODKAZ] = 'http://x/?zakazka=' + encodeURIComponent(soubor);   // RJ #704-7: vazbu dokládá odkaz v dealu
   zapis(soubor, z);
   return soubor;
 }
