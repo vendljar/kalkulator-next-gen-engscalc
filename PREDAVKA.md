@@ -32,8 +32,8 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/bz-bezpecnost` | (tato dávka) | v22.11.3 | BZ audit B231–B236, B195 nad cda289e; revize Fable |
 | `claude/lak-lakovani` | (tato dávka) | v22.11.6 | LAK #666 lakování z nabídky lakovny nad 05a496d; verzi přečísluje koordinace |
 
-Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tagu: `python3 nastroje/release_odkaz.py --chybejici`
-(18. 11.: žádná).
+Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontrola: `python3 nastroje/release_odkaz.py --chybejici`
+(22. 11.: žádná — main v19.11.11, tag vydán).
 
 ## Běžící dávky
 

@@ -45,20 +45,42 @@ nehotových položek a zapíše aliasy; mění jen dotčené položky (každou n
 jeden řádek), zbytek souboru zůstává znak po znaku, aby se souběžné větve
 při slučování nehádaly o celý soubor.
 
+ARCHIV HOTOVÝCH POLOŽEK (#642, S6 d; souhlas J. V. 22. 11. 2026)
+
+Hotové položky dokončené před víc než 60 dny leží v `roadmap_archiv.json`
+vedle živého souboru (obecně `<jméno>_archiv.json` vedle `--soubor`).
+Živý `roadmap.json` tak nese jen otevřenou a čerstvou práci a souběžné
+větve se při slučování nehádají o megabajt textu. Archiv je pořád část
+evidence:
+
+  · `--kontrola` čte živý soubor i archiv dohromady — číslo z archivu
+    nejde použít znovu, závislost na archivované položce není viselec,
+    alias z archivu nemůže dostat jiná položka; v archivu smí být jen
+    hotové položky.
+  · `--hledej` hledá i v archivu; stránka ROADMAPA.html a ROADMAPA.md
+    se vyrábějí z obojího, takže se nic neztratí z dohledu.
+  · `--zive`, PREHLED.md a NOVINKY.md čtou jen živý soubor (archiv nese
+    jen staré hotové položky, které do nich nepatří).
+
+Datum dokončení = verze (`verze`, jinak první vDEN.MĚSÍC.pořadí v `hotovoV`,
+rok podle data přesunu), jinak první datum „D. M. RRRR“ v `hotovoV`.
+Hotová položka bez zjistitelného data zůstává v živém souboru.
+
 Použití:
     python3 roadmapa/roadmapa.py --kontrola   # jen pravidla, nic nezapíše
     python3 roadmapa/roadmapa.py              # → ROADMAPA.html + ROADMAPA.md
     python3 roadmapa/roadmapa.py --zive       # nehotové položky s „čeká na“
     python3 roadmapa/roadmapa.py --hledej K48-N1   # položka podle čísla nebo aliasu
     python3 roadmapa/roadmapa.py --migrace [--nanecisto]
-    --soubor <roadmap.json>                   # jiný zdroj (testy)
+    python3 roadmapa/roadmapa.py --archivuj [--dni 60] [--k 22.11.2026] [--nanecisto]
+    --soubor <roadmap.json>                   # jiný zdroj (testy); archiv vedle něj
 """
 
 import json
 import os
 import re
 import sys
-from datetime import date
+from datetime import date, timedelta
 
 KOREN = os.path.dirname(os.path.abspath(__file__))
 ZDROJ = os.path.join(KOREN, 'roadmap.json')
@@ -141,8 +163,113 @@ def nacti(soubor=None):
         return json.load(f)
 
 
-def kontrola(db):
+# --- archiv hotových položek (#642) -----------------------------------------
+
+ARCHIV_PRAZDNY = ('{\n "_comment" : "Archiv hotových položek roadmapy (#642, S6 d). Plní ho '
+                  '`python3 roadmapa/roadmapa.py --archivuj`; čísla odsud se znovu nepoužívají '
+                  '(hlídá --kontrola). Položky beze změny, jedna na řádek.",\n "polozky" : [\n ]\n}\n')
+RE_DATUM = re.compile(r'(\d{1,2})\.\s?(\d{1,2})\.\s?(20\d\d)')
+
+
+def cesta_archivu(soubor=None):
+    """`roadmap.json` → `roadmap_archiv.json` ve stejné složce."""
+    zdroj = soubor or ZDROJ
+    koren, pripona = os.path.splitext(zdroj)
+    return koren + '_archiv' + (pripona or '.json')
+
+
+def nacti_archiv(soubor=None):
+    """Položky archivu (prázdný seznam, když archiv není)."""
+    cesta = cesta_archivu(soubor)
+    if not os.path.exists(cesta):
+        return []
+    with open(cesta, encoding='utf-8') as f:
+        return json.load(f).get('polozky') or []
+
+
+def s_archivem(db, archiv):
+    """Celá evidence pro stránku a hledání: archiv (starší) + živé položky."""
+    if not archiv:
+        return db
+    vysl = dict(db)
+    vysl['polozky'] = list(archiv) + list(db.get('polozky') or [])
+    return vysl
+
+
+def datum_hotovo(p, k_datu):
+    """Datum dokončení hotové položky, nebo None (pak se nearchivuje)."""
+    v = verze(p)
+    if v and RE_VERZE.match(v):
+        den, mesic = (int(x) for x in v[1:].split('.')[:2])
+        for rok in (k_datu.year, k_datu.year - 1):
+            try:
+                d = date(rok, mesic, den)
+            except ValueError:
+                return None
+            if d <= k_datu:
+                return d
+        return None
+    m = RE_DATUM.search(str((p or {}).get('hotovoV') or ''))
+    if m:
+        try:
+            return date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+        except ValueError:
+            return None
+    return None
+
+
+def k_archivaci(db, k_datu, dni=60):
+    """Id hotových položek dokončených před víc než `dni` dny."""
+    mez = k_datu - timedelta(days=dni)
+    vysl = []
+    for p in db.get('polozky', []):
+        if (p or {}).get('stav') != 'hotovo' or str(p.get('cekaNa') or '').strip():
+            continue
+        d = datum_hotovo(p, k_datu)
+        if d is not None and d < mez:
+            vysl.append(str(p.get('id')))
+    return vysl
+
+
+def archivuj_text(text, text_archivu, ids):
+    """(nový živý text, nový text archivu). Přesouvané položky zmizí z živého
+    souboru i s oddělovačem, do archivu se připojí na konec, každá na řádek;
+    vše ostatní zůstane znak po znaku."""
+    ids = set(ids)
+    rozsahy = rozsahy_polozek(text)
+    presun = [obj for _, _, obj in rozsahy if str(obj.get('id')) in ids]
+    zac_pole = text.index('[', text.index('"polozky"')) + 1
+    casti, prvni = [], True
+    for i, (z, k, obj) in enumerate(rozsahy):
+        if str(obj.get('id')) in ids:
+            continue
+        # oddělovač: u první zbylé položky původní začátek pole, jinak
+        # původní mezera před touto položkou (od konce předchozí položky)
+        casti.append(text[zac_pole:rozsahy[0][0]] if prvni else text[rozsahy[i - 1][1]:z])
+        casti.append(text[z:k])
+        prvni = False
+    if prvni:
+        raise SystemExit('archivace by vyprázdnila živý soubor — nic nezapsáno')
+    novy = text[:zac_pole] + ''.join(casti) + text[rozsahy[-1][1]:]
+
+    text_archivu = text_archivu or ARCHIV_PRAZDNY
+    r_arch = rozsahy_polozek(text_archivu)
+    if r_arch:
+        kon = r_arch[-1][1]
+        pridej = ''.join(',\n  ' + json.dumps(p, ensure_ascii=False) for p in presun)
+        text_archivu = text_archivu[:kon] + pridej + text_archivu[kon:]
+    elif presun:
+        zac = text_archivu.index('[', text_archivu.index('"polozky"')) + 1
+        pridej = ',\n'.join('  ' + json.dumps(p, ensure_ascii=False) for p in presun)
+        text_archivu = text_archivu[:zac] + '\n' + pridej + '\n ' + text_archivu[zac:].lstrip()
+    return novy, text_archivu
+
+
+def kontrola(db, archiv=()):
     """Vrací seznam nálezů. Prázdný seznam = v pořádku.
+
+    `archiv` = položky z `roadmap_archiv.json`: kontrolují se spolu s živými
+    (čísla, závislosti, aliasy se nesmí bít ani přes archiv) a musí být hotové.
 
     Hlídá se přesně to, co jako pravidlo vypisuje roadmapa/README.md, nic
     navíc: test nesmí být přísnější než dohoda, jinak začne překážet.
@@ -151,6 +278,12 @@ def kontrola(db):
     polozky = db.get('polozky')
     if not isinstance(polozky, list):
         return ['roadmap.json nenese pole „polozky"']
+    archiv = list(archiv or [])
+    for p in archiv:
+        if (p or {}).get('stav') != 'hotovo':
+            n.append('#%s je v archivu, ale není hotová (archiv nese jen hotové položky)'
+                     % (p or {}).get('id'))
+    polozky = archiv + polozky
 
     videna = {}
     for i, p in enumerate(polozky):
@@ -340,9 +473,9 @@ def radek_zive(p):
     return '#%s [%s] %s\n      čeká na: %s' % (p.get('id'), '; '.join(znak), nazev, cek)
 
 
-def hledej(db, znacka):
+def hledej(db, znacka, archiv=()):
     k = znacka.strip().lstrip('#').lower()
-    return [p for p in db.get('polozky', [])
+    return [p for p in list(archiv or []) + list(db.get('polozky', []))
             if str(p.get('id')).lower() == k or k in (a.lower() for a in aliasy(p))]
 
 
@@ -404,12 +537,62 @@ def md(db):
     return '\n'.join(out) + '\n'
 
 
+def archivuj(db, archiv, soubor, argv):
+    """--archivuj: hotové položky starší `--dni` (60) k datu `--k` (dnes) do archivu."""
+    dni = int(argv[argv.index('--dni') + 1]) if '--dni' in argv else 60
+    k_datu = date.today()
+    if '--k' in argv:
+        d, m, r = (int(x) for x in argv[argv.index('--k') + 1].split('.'))
+        k_datu = date(r, m, d)
+    nalezy = kontrola(db, archiv)
+    if nalezy:
+        print('KONTROLA NEPROŠLA — nejdřív opravit, pak archivovat (%d nálezů).' % len(nalezy))
+        return 1
+    ids = k_archivaci(db, k_datu, dni)
+    cesta, cesta_a = soubor or ZDROJ, cesta_archivu(soubor)
+    print('Archivace k %s (hotové před %s): %d položek%s.' % (
+        k_datu.strftime('%d. %m. %Y'), (k_datu - timedelta(days=dni)).strftime('%d. %m. %Y'),
+        len(ids), ' (nanečisto)' if '--nanecisto' in argv else ''))
+    if not ids or '--nanecisto' in argv:
+        if ids:
+            print(' ' + ', '.join('#' + i for i in ids))
+        return 0
+    with open(cesta, encoding='utf-8') as f:
+        text = f.read()
+    text_a = ''
+    if os.path.exists(cesta_a):
+        with open(cesta_a, encoding='utf-8') as f:
+            text_a = f.read()
+    novy, novy_a = archivuj_text(text, text_a, ids)
+    # pojistka: nic se neztratí ani nezdvojí, nepřesunuté položky beze změny
+    puvodni = archiv + db['polozky']
+    zivy, arch = json.loads(novy), json.loads(novy_a)
+    if (sorted(json.dumps(p, sort_keys=True) for p in arch['polozky'] + zivy['polozky'])
+            != sorted(json.dumps(p, sort_keys=True) for p in puvodni)
+            or [p for p in db['polozky'] if str(p.get('id')) not in set(ids)] != zivy['polozky']
+            or {k: v for k, v in zivy.items() if k != 'polozky'} != {k: v for k, v in db.items() if k != 'polozky'}
+            or kontrola(zivy, arch['polozky'])):
+        print('CHYBA: archivace nesedí s daty — nic nezapsáno.')
+        return 1
+    with open(cesta_a, 'w', encoding='utf-8') as f:
+        f.write(novy_a)
+    with open(cesta, 'w', encoding='utf-8') as f:
+        f.write(novy)
+    print('Živý soubor: %d položek, %d B; archiv: %d položek, %d B.' % (
+        len(zivy['polozky']), len(novy.encode('utf-8')), len(arch['polozky']), len(novy_a.encode('utf-8'))))
+    return 0
+
+
 def main():
     argv = sys.argv[1:]
     soubor = None
     if '--soubor' in argv:
         i = argv.index('--soubor'); soubor = argv[i + 1]; del argv[i:i + 2]
     db = nacti(soubor)
+    archiv = nacti_archiv(soubor)
+
+    if '--archivuj' in argv:
+        return archivuj(db, archiv, soubor, argv)
 
     if '--migrace' in argv:
         zmenene = migrace(db)
@@ -433,14 +616,14 @@ def main():
 
     if '--hledej' in argv:
         znacka = argv[argv.index('--hledej') + 1]
-        nalez = hledej(db, znacka)
+        nalez = hledej(db, znacka, archiv)
         for p in nalez:
             print(radek_zive(p) + '\n      stav: %s' % STAV_NAZEV.get(p.get('stav'), p.get('stav')))
         if not nalez:
             print('Nic: „%s" není číslo ani alias žádné položky.' % znacka)
         return 0 if nalez else 1
 
-    nalezy = kontrola(db)
+    nalezy = kontrola(db, archiv)
     if nalezy:
         print('KONTROLA NEPROŠLA (%d nálezů):' % len(nalezy))
         for x in nalezy:
@@ -448,7 +631,8 @@ def main():
         return 1
 
     if '--kontrola' in argv:
-        print('Kontrola v pořádku: %d položek, žádný nález.' % len(db.get('polozky', [])))
+        print('Kontrola v pořádku: %d položek%s, žádný nález.' % (
+            len(db.get('polozky', [])), (' + %d v archivu' % len(archiv)) if archiv else ''))
         return 0
 
     if '--zive' in argv:
@@ -469,10 +653,11 @@ def main():
         print('\nNehotových položek: %d.' % len(otev))
         return 0
 
+    cele = s_archivem(db, archiv)
     with open(VYSTUP_HTML, 'w', encoding='utf-8') as f:
-        f.write(vloz_data(db))
+        f.write(vloz_data(cele))
     with open(VYSTUP_MD, 'w', encoding='utf-8') as f:
-        f.write(md(db))
+        f.write(md(cele))
     print('OK -> %s' % VYSTUP_HTML)
     print('OK -> %s' % VYSTUP_MD)
     return 0

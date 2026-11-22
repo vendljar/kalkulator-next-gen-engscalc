@@ -253,6 +253,81 @@ let body = '';
 try { body = new URL(r.stdout.trim()).searchParams.get('body') || ''; } catch (e) { /* níž */ }
 test('release --od: odkaz nese novinky v `body`', /Pro uživatele/.test(body) && /Přehled stavu/.test(body), r.stdout + r.stderr);
 
+/* ---------------- archiv hotových položek (#642, 22. 11. 2026) ----------------
+ * `--archivuj` přesune hotové položky dokončené před víc než 60 dny do
+ * `<jméno>_archiv.json` vedle zdroje; `--kontrola` vidí obojí (čísla se
+ * nerecyklují, závislost na archivu není viselec), `--hledej` hledá i v
+ * archivu a stránka se vyrábí z obojího. Vlastní podsložka, ať archiv
+ * nepotká ostatní umělé soubory. */
+const dirA = path.join(dir, 'archiv');
+fs.mkdirSync(dirA);
+const RA = path.join(dirA, 'roadmap.json');
+const RAA = path.join(dirA, 'roadmap_archiv.json');
+const ZIVY = [
+  '{',
+  ' "polozky" : [',
+  '  {',
+  '   "id" : "50",',
+  '   "vlna" : "G",',
+  '   "stav" : "hotovo",',
+  '   "nazev" : "stará hotová (verze)",',
+  '   "hotovoV" : "v1.8.2"',
+  '  },',
+  '  {"id": "51", "vlna": "G", "stav": "ceka", "typ": "ukol", "nazev": "otevřená stará", "cekaNa": "J. V.: rozhodnout", "zavisi": [{"id": "50", "typ": "tvrda", "proc": ""}]},',
+  '  {"id": "52", "vlna": "G", "stav": "hotovo", "nazev": "stará hotová (datum)", "hotovoV": "zrušeno 3. 8. 2026"},',
+  '  {"id": "53", "vlna": "G", "stav": "hotovo", "nazev": "čerstvá hotová", "hotovoV": "v20.11.1"},',
+  '  {"id": "54", "vlna": "G", "stav": "hotovo", "nazev": "hotová bez data", "hotovoV": "hotovo"},',
+  '  {"id": "55", "vlna": "G", "stav": "hotovo", "typ": "nalez", "kolo": 30, "alias": ["K30-N1"], "nazev": "starý nález", "verze": "v24.9.1"}',
+  ' ],',
+  ' "meta" : { "vlny" : [ { "id" : "G" } ] }',
+  '}', ''].join('\n');
+fs.writeFileSync(RA, ZIVY);
+r = py([ROADMAPA, '--soubor', RA, '--archivuj', '--k', '22.11.2026', '--nanecisto']);
+test('archivace nanečisto nic nezapíše', r.status === 0 && /2 položek/.test(r.stdout)
+  && fs.readFileSync(RA, 'utf8') === ZIVY && !fs.existsSync(RAA), r.stdout);
+r = py([ROADMAPA, '--soubor', RA, '--archivuj', '--k', '22.11.2026']);
+const zivyPo = fs.readFileSync(RA, 'utf8');
+let archPo = null; try { archPo = JSON.parse(fs.readFileSync(RAA, 'utf8')); } catch (e) { /* níž */ }
+test('archivace přesune jen hotové starší 60 dní (verze i datum v hotovoV)', r.status === 0 && archPo
+  && archPo.polozky.map(p => p.id).join(',') === '50,52'
+  && JSON.parse(zivyPo).polozky.map(p => p.id).join(',') === '51,53,54,55', r.stdout);
+test('archivace nechá zbylé položky a meta znak po znaku',
+  zivyPo.indexOf(ZIVY.split('\n')[9]) >= 0 && zivyPo.indexOf(ZIVY.split('\n')[11]) >= 0
+  && zivyPo.indexOf(' "meta" : { "vlny" : [ { "id" : "G" } ] }') >= 0 && /^\{\n "polozky" : \[\n  \{"id": "51"/.test(zivyPo), zivyPo);
+test('archivovaná položka je v archivu beze změny', archPo && archPo.polozky[0].hotovoV === 'v1.8.2'
+  && archPo.polozky[0].nazev === 'stará hotová (verze)', JSON.stringify(archPo));
+r = py([ROADMAPA, '--soubor', RA, '--kontrola']);
+test('po archivaci kontrola projde (závislost na archivované položce není viselec)',
+  r.status === 0 && /4 položek \+ 2 v archivu/.test(r.stdout), r.stdout);
+r = py([ROADMAPA, '--soubor', RA, '--hledej', '50']);
+test('--hledej najde položku i v archivu', r.status === 0 && /^#50 /.test(r.stdout), r.stdout);
+const dbA = JSON.parse(zivyPo);
+dbA.polozky.push({ id: '52', vlna: 'G', stav: 'ceka', typ: 'ukol', nazev: 'recyklované číslo', cekaNa: 'J. V.: x' });
+fs.writeFileSync(RA, JSON.stringify(dbA));
+r = py([ROADMAPA, '--soubor', RA, '--kontrola']);
+test('kontrola chytí číslo použité znovu (je v archivu)', r.status === 1 && /id 52 je použité dvakrát/.test(r.stdout), r.stdout);
+dbA.polozky.pop(); dbA.polozky[0].zavisi = [{ id: '49', typ: 'tvrda', proc: '' }];
+fs.writeFileSync(RA, JSON.stringify(dbA));
+r = py([ROADMAPA, '--soubor', RA, '--kontrola']);
+test('kontrola dál chytí viselce (ani v archivu není)', r.status === 1 && /#51 závisí na #49/.test(r.stdout), r.stdout);
+dbA.polozky[0].zavisi = [];
+fs.writeFileSync(RA, JSON.stringify(dbA));
+const archZly = JSON.parse(JSON.stringify(archPo || { polozky: [{}, {}] }));
+archZly.polozky[1].stav = 'ceka'; archZly.polozky[1].typ = 'ukol'; archZly.polozky[1].cekaNa = 'J. V.: x';
+fs.writeFileSync(RAA, JSON.stringify(archZly));
+r = py([ROADMAPA, '--soubor', RA, '--kontrola']);
+test('kontrola chytí nehotovou položku v archivu', r.status === 1 && /#52 je v archivu, ale není hotová/.test(r.stdout), r.stdout);
+fs.writeFileSync(RAA, JSON.stringify(archPo));
+r = py([ROADMAPA, '--soubor', RA, '--archivuj', '--k', '22.11.2026']);
+test('druhá archivace nic nepřesune (idempotentní)', r.status === 0 && /0 položek/.test(r.stdout)
+  && JSON.parse(fs.readFileSync(RAA, 'utf8')).polozky.length === 2, r.stdout);
+r = py([ROADMAPA, '--soubor', RA, '--archivuj', '--k', '25.11.2026']);
+test('další archivace připojí do existujícího archivu', r.status === 0
+  && JSON.parse(fs.readFileSync(RAA, 'utf8')).polozky.map(p => p.id).join(',') === '50,52,55'
+  && JSON.parse(fs.readFileSync(RA, 'utf8')).polozky.map(p => p.id).join(',') === '51,53,54', r.stdout);
+r = py([ROADMAPA, '--soubor', RA, '--hledej', 'K30-N1']);
+test('--hledej najde v archivu i podle aliasu', r.status === 0 && /^#55 /.test(r.stdout), r.stdout);
+
 fs.rmSync(dir, { recursive: true, force: true });
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

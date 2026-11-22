@@ -140,11 +140,16 @@ test('reset vrátí skrývání hotových vln', (await sloupce()).indexOf('A') <
 /* S6 (18. 11. 2026): staré značky jsou aliasy — hledání je najde a detail
  * ukáže typ, alias, kolo a dopad na cenu. Položka se vybírá podle dat. */
 const s6 = await page.evaluate(() => {
-  const p = RM.polozky.find(x => x.typ === 'nalez' && x.alias && x.alias.length && x.dopadCena === 'ano');
-  return p ? { id: p.id, alias: p.alias[0] } : null;
+  /* Přednost má otevřený nález; když jsou všechny hotové (22. 11. 2026 po
+   * nasazení main — #614 uzavřen), hledá se s vypnutými filtry hotové práce,
+   * jinak by výchozí „Jen ke zpracování“ hotovou položku schoval. */
+  const je = x => x.typ === 'nalez' && x.alias && x.alias.length && x.dopadCena === 'ano';
+  const p = RM.polozky.find(x => je(x) && x.stav !== 'hotovo') || RM.polozky.find(je);
+  return p ? { id: p.id, alias: p.alias[0], hotova: p.stav === 'hotovo' } : null;
 });
 test('S6: v datech je nález s aliasem a dopadem na cenu', !!s6, s6);
 if (s6) {
+  if (s6.hotova) { await page.click('#f-nehotove'); await page.click('#f-vlny'); }
   await page.fill('#hledej', s6.alias);
   await page.waitForTimeout(250);
   test('S6: hledání podle staré značky (alias) najde položku',
