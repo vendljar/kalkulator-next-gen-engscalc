@@ -47,7 +47,9 @@ if (!process.env.ADMIN_EMAIL) process.env.ADMIN_EMAIL = 'spravce@priklad.cz';
  * je soubor zmutovaný. Běžný běh ji nenastavuje. */
 const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
-  : [/* #ON (19. 11. 2026): čas poslední aktivity — zápis, rozestup, práva, best-effort (rychlá sada). */
+  : [/* VZD #665 (21. 11. 2026): snímek „Vypracoval“ v zámku z relace a jeho držení (rychlá sada). */
+     'test_665_vypracoval.mjs',
+     /* #ON (19. 11. 2026): čas poslední aktivity — zápis, rozestup, práva, best-effort (rychlá sada). */
      'test_on_aktivita.mjs',
      /* #UE (18. 11. 2026): úprava existujícího účtu správcem — práva, meze, hlavní účet (rychlá sada). */
      'test_ue_uzivatele.mjs',
