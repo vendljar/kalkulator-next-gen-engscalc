@@ -30,8 +30,8 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 
 ## Běžící dávky
 
-- **HN** (`claude/hn-harnessy`, v22.11.1, nad cda289e = v19.11.11): jen testy a nástroje kola. #638 harnessy zobrazení / záporné + test_577 T4 (náhodný token končící X);
-  záporné bez pauz (příčina: `ADMIN_EMAIL` čtený při importu → `nastroje/harness_prostredi.mjs`), #644 test_vz_unik
+- **HN** (`claude/hn-harnessy`, v22.11.1, nad cda289e = v19.11.11): jen testy a nástroje kola. #638 harnessy zobrazení /
+  záporné bez pauz + test_577 T4 (náhodný token končící X) (příčina: `ADMIN_EMAIL` čtený při importu → `nastroje/harness_prostredi.mjs`), #644 test_vz_unik
   (falešná shoda ceny s razítkem času, ne únik), #646 overit_sod + syntetické šablony (`nastroje/smlouvy_syntet.mjs`),
   #647 případy `k40:*` v porovnání sestavení (+ `podklady/porovnani/ocekavane_k40n1_main_2026-11-21.txt` pro main × test),
   #692 (prac.) kolo bez playwrightu = chyba s návodem (`KNG_BEZ_PROHLIZECE=1`), `PRESKOCENO_CAST` v souhrnu.
