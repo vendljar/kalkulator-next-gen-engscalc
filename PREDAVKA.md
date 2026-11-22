@@ -65,7 +65,7 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 - **RJ** (`claude/rj-rozhodnuti`, v22.11.7, nad 05a496d, sloučeno s integrací 21eeffa): rozhodnutí J. V. 22. 11. (#704, #706, #709, #710,
   #665 podpis) → roadmapa #714 (dávka), #715 (podpis). (2) nový zámek „nesouhlasi“ → 409 `zamekNesouhlasi` + dialog Ctrl+F5;
   (3) R2 potvrzeno testem; (4) oprava firmy přes `pd_overeni` (409 neovereno); (6)(7) pravidlo 3 zrušeno, druhá zakázka
-  na dealu zapisuje s vlastní vazbou; #665 `podpisOtisk` ve snímku + kopie `podpisy/zamek/<otisk>`, GET `?podpisZamku=`;
+  na dealu zapisuje s vlastní vazbou, s vypnutým zápisem poznámka varuje; #665 `podpisOtisk` ve snímku + kopie `podpisy/zamek/<otisk>`, GET `?podpisZamku=`;
   #710-4 koordinace 403 u uzavřené správcem; #706 `nastroje/kontrola_konfliktu.sh` (staticke 11). #709 → vlna F (stav
   „odlozeno“ schéma nezná). Testy `netlify/test_rj_rozhodnuti.mjs` + přípravky PD (odkaz místo čísla). Kolo VŠE ZELENÉ
   (512/0/6, hodiny 415/0/1, 11/11, SHODA 367/367), mutace [RJ] server 15/15, jádro 5/5. HOTOVO, k nezávislé revizi.

@@ -270,6 +270,10 @@ const MUTACE = [
    * #710-4 koordinace a uzavřené připomínky. Hlídají test_rj_rozhodnuti.mjs, test_bz_pipedrive.mjs,
    * test_vsd_pd_poznamka.mjs, test_pripominky.mjs. Přepis kopie podpisu týmž obsahem (klíč = otisk
    * obsahu) je ekvivalentní mutace, proto tu není. [RJ] */
+  { nazev: "RJ: vypnutý zápis do Pipedrive poznámku mlčky přeskočí [RJ]", soubor: "lib/pd_poznamka.mjs",
+    hledej: "    return { stav: 'bez', varovani: nezapsal + ': ' + PD_ZAPIS_VYPNUTY + ' Zakázka je uložená; zapíše se při uložení po zapnutí zápisu.' };",
+    nahrad: "    return { stav: 'bez' };",
+    proc: "obchodník by nevěděl, že se seznam šachet / zákazníků do dealu nezapsal", sady: ["test_bz_pipedrive.mjs"] },
   { nazev: "RJ #704-7: číslo nabídky zase dokládá vazbu dealu [RJ]", soubor: "lib/pd_overeni.mjs",
     hledej: "  if (odkaz && mapa.odkazKalkulace && pdHodnota(cf[mapa.odkazKalkulace]).trim() === odkaz) return { ok: true, zdroj: 'odkaz' };\n",
     nahrad: "  if (odkaz && mapa.odkazKalkulace && pdHodnota(cf[mapa.odkazKalkulace]).trim() === odkaz) return { ok: true, zdroj: 'odkaz' };\n  if (String(zak.cislo || '').trim() && String(cf[mapa.cisloNabidky] || d.title || '').includes(String(zak.cislo).trim())) return { ok: true, zdroj: 'cislo' };\n",

@@ -2226,7 +2226,8 @@ Rozhodnutí v `podklady/ROZHODNUTI_LOG.md`, roadmapa #704, #710, #714, #715. Tes
   regresní test „neovereno“). Druhá zakázka na témž dealu (jiné číslo) poznámku zapíše jako dřív (N3),
   má-li sama platnou vazbu (#704 (6)). *Mez:* dokud CRM nevyplní odkaz na kalkulaci ani nepošle webhook,
   zakázka s ručně zadaným dealem do Pipedrive nepíše (stav „neovereno“, varování, uložení projde).
-  Vypínač `PIPEDRIVE_ZAPIS` dál VYPNUTÝ — zapíná jen J. V. (#704 (1)).
+  Vypínač `PIPEDRIVE_ZAPIS` dál VYPNUTÝ — zapíná jen J. V. (#704 (1)). S vypnutým zápisem poznámka dealu
+  vrací stav „bez“ a varování `PD_ZAPIS_VYPNUTY` (jen má-li co psát a uživatel právo; nic se neodešle ani nečerpá).
 - **B209 (doplněk) — oprava firmy ověřuje vazbu dealu.** `POST /api/pd/organizace` `akce: nahled | zapis`
   nejdřív `pdDealPatriZakazce` (totéž pravidlo jako poznámky a vítěz) — jinak 409, `stav: 'neovereno'`,
   do Pipedrive nic (#704 (4)).

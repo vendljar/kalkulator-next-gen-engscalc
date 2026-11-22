@@ -90,6 +90,14 @@ console.log('\n===== VYPÍNAČ ZÁPISU DO PIPEDRIVE (výchozí vypnuto) =====\n'
   const pred2 = sit.length;
   const r = await PP.pdPoznamkaDruhUlozeni(PP.PD_POZNAMKA_DRUH_SACHTY, z, null, { zapnuto: true, relace: { role: 'Administrátor', email: ADMIN_EMAIL } });
   test('vypínač: poznámka při uložení se s vypnutým zápisem nezkouší (stav bez, bez sítě)', r.stav === 'bez' && sit.length === pred2, r);
+  /* RJ (doplněk koordinace 22. 11. 2026): s vypnutým zápisem stav „bez" + srozumitelné
+   * varování (dřív ticho, na rozdíl od odkazu z webhooku a zrušení vazby). */
+  test('RJ: vypnutý zápis — poznámka nese varování (PIPEDRIVE_ZAPIS, nic neodesláno)', /vypnutý/.test(r.varovani || '')
+    && /PIPEDRIVE_ZAPIS/.test(r.varovani || '') && /poznámky dealu/.test(r.varovani || ''), r);
+  const rBez = await PP.pdPoznamkaDruhUlozeni(PP.PD_POZNAMKA_DRUH_SACHTY, nova(), null, { zapnuto: true, relace: { role: 'Administrátor', email: ADMIN_EMAIL } });
+  test('RJ: bez dealu žádné varování (není co psát)', rBez.stav === 'bez' && !rBez.varovani, rBez);
+  const rVyp = await PP.pdPoznamkaDruhUlozeni(PP.PD_POZNAMKA_DRUH_SACHTY, Object.assign(nova(), { pdDealId: '1001' }), null, { zapnuto: false, relace: { role: 'Administrátor', email: ADMIN_EMAIL } });
+  test('RJ: vypnutá funkce víc šachet — žádné varování', rVyp.stav === 'bez' && !rVyp.varovani, rVyp);
   process.env.PIPEDRIVE_ZAPIS = 'ano';
   const pred3 = sit.length;
   await PD.pdZavolej('/api/v2/deals/1', { metoda: 'PATCH', telo: { x: 1 } });
@@ -263,6 +271,23 @@ const uloz = async (z, c) => { const r = await post(zakazky, 'http://x/api/zakaz
   const r2 = await post(orgFn, 'http://x/api/pd/organizace', { soubor: t.soubor, akce: 'nahled' }, cO);
   const o2 = await r2.json();
   test('RJ #704-4: s odkazem na kalkulaci ověření projde (pojistka; dál rozhoduje shoda IČO)', o2.stav !== 'neovereno' && !/nepatří/.test(o2.chyba || ''), { s: r2.status, o2 });
+}
+
+{
+  /* RJ (doplněk koordinace): totéž celou cestou uložení — skutečný Pipedrive (token),
+   * zápis vypnutý: uložení projde, odpověď varuje, do sítě nic (fetch hlídaný).
+   * Simulátor zápis povoluje vždy (pdZapisPovolen), proto se tu na chvíli vypne. */
+  const simPred = process.env.PIPEDRIVE_SIMULATOR;
+  delete process.env.PIPEDRIVE_SIMULATOR; delete process.env.PIPEDRIVE_ZAPIS;
+  process.env.PIPEDRIVE_TOKEN = 'testovaci-token-nic-neplati'; process.env.PIPEDRIVE_DOMENA = 'zkusebni';
+  const z = nova(); z.pdDealId = '1001';
+  const pred = sit.length;
+  const t = await uloz(z, cA);
+  test('RJ: uložení s vypnutým zápisem — 200, stav bez (odpověď ho neuvádí), varování v odpovědi, do Pipedrive nic',
+    t.status === 200 && t.pdPoznamka === undefined && /Zápis do Pipedrive je vypnutý/.test(t.varovani || '') && sit.length === pred,
+    { s: t.status, p: t.pdPoznamka, v: t.varovani, sit: sit.slice(pred) });
+  delete process.env.PIPEDRIVE_TOKEN; delete process.env.PIPEDRIVE_DOMENA;
+  if (simPred !== undefined) process.env.PIPEDRIVE_SIMULATOR = simPred;
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);

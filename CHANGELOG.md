@@ -23,6 +23,8 @@ Nad integrací `05a496d` (v22.11.5), sloučeno s integrací `21eeffa` (v22.11.6)
   odkaz na kalkulaci v dealu — shoda čísla nabídky už ne (zápis do cizího dealu novou zakázkou s jeho číslem,
   PoC revize, je regresní test). Druhá zakázka na témž dealu poznámku zapíše, má-li vlastní vazbu. „Opravit firmu“
   vazbu ověřuje (409 neověřeno). Zápis do Pipedrive zůstává vypnutý (`PIPEDRIVE_ZAPIS`, #704 (1)).
+  S vypnutým zápisem poznámka dealu (šachty, další zákazníci) nově hlásí srozumitelné varování (dřív ticho;
+  doplněk koordinace ze zkoušky BZ na testu).
 - **Připomínky (#710 (4), mez B257):** klíč koordinace nezmění stav ani odpověď připomínky uzavřené správcem (403);
   číslo roadmapy doplnit smí. #710 (1)–(3) beze změny, #709 e-mail odložen (vlna F).
 - **Kolo (#706):** statická kontrola značek konfliktu `nastroje/kontrola_konfliktu.sh` v kroku `staticke` (11 kontrol).
