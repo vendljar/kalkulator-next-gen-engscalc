@@ -10,7 +10,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## v22.11.8 — LAK #666: lakování — cena z nabídky lakovny jako částka řádku, větev claude/lak-lakovani
 
-Nad integrací `05a496d` (v22.11.5), sloučeno s integrací `21eeffa`. Verze přidělena koordinací. Rozhodnutí J. V. 18. 11. 2026 (audit #668, bod B2);
+Nad integrací `05a496d` (v22.11.5), sloučeno s integrací `36e2681` (v22.11.7). Verze přidělena koordinací. Rozhodnutí J. V. 18. 11. 2026 (audit #668, bod B2);
 vzor #667 / #561. Bez ruční částky se cena nemění (porovnání sestavení SHODA).
 
 - **Nové — obchodník:** u souhrnného řádku LAKOVÁNÍ (ŠACHTA, PLECHY, ZASKLENÍ, OPLECHOVÁNÍ) tlačítko „✎ cena z nabídky“:
@@ -29,6 +29,35 @@ vzor #667 / #561. Bez ruční částky se cena nemění (porovnání sestavení 
   (`cenikZverejneniOcisti`). L3 a L4 zapsány k otázkám #716.
 - **Testy:** `src/test_666_lakovani.js` (53), `netlify/test_666_lakovani.mjs` (31), `overit_lakovani.mjs` (13);
   pojistky proti 05a496d v commitech. Mutace `[LAK]` jádro 9/9, server 9/9. Kolo `--bez-mutaci --proti 2b68f98` VŠE ZELENÉ (514/0/6, hodiny 416/0/1, statické 10/10, porovnání SHODA 367/367).
+
+## v22.11.7 — RJ: zapracování rozhodnutí J. V. z 22. 11. 2026, větev claude/rj-rozhodnuti
+
+Nad integrací `05a496d` (v22.11.5), sloučeno s integrací `21eeffa` (v22.11.6). Roadmapa #704, #706, #709, #710 → #714 (dávka), #715 (podpis). Cenu nemění.
+
+- **Změna — odeslaná nabídka ze zastaralé stránky (#704 (2), mez B232):** nový zámek, jehož čísla nesouhlasí
+  s výpočtem serveru, se neuloží (409). Aplikace ukáže dialog: obnovit stránku Ctrl+F5, otevřít zakázku znovu
+  a nabídku vytisknout znovu; dokument z prvního tisku neposílat. Poctivý výsledek z jiné verze stránky (text
+  nebo příznak navíc) dál projde.
+- **Nové — dotisk kolegou nese podpis původního obchodníka (#665 → #715):** při prvním uložení odeslané nabídky
+  server zmrazí sken podpisu zpracovatele; dotisk (Word OCK i PROJ, online tisk) ho vloží i tehdy, když tiskne
+  kolega nebo když si obchodník podpis mezitím vyměnil. Starší zámky jako dřív.
+- **Pipedrive (#704 (4)(6)(7), meze B235/B236/B209):** vazbu dealu na zakázku dokládá jen vazba z webhooku nebo
+  odkaz na kalkulaci v dealu — shoda čísla nabídky už ne (zápis do cizího dealu novou zakázkou s jeho číslem,
+  PoC revize, je regresní test). Druhá zakázka na témž dealu poznámku zapíše, má-li vlastní vazbu. „Opravit firmu“
+  vazbu ověřuje (409 neověřeno). Zápis do Pipedrive zůstává vypnutý (`PIPEDRIVE_ZAPIS`, #704 (1)).
+  S vypnutým zápisem poznámka dealu (šachty, další zákazníci) nově hlásí srozumitelné varování (dřív ticho;
+  doplněk koordinace ze zkoušky BZ na testu).
+- **Připomínky (#710 (4), mez B257):** klíč koordinace nezmění stav ani odpověď připomínky uzavřené správcem (403);
+  číslo roadmapy doplnit smí. #710 (1)–(3) beze změny, #709 e-mail odložen (vlna F).
+- **Kolo (#706):** statická kontrola značek konfliktu `nastroje/kontrola_konfliktu.sh` v kroku `staticke` (11 kontrol).
+- **Potvrzeno testem:** vedoucí strana po zámku zmrazená i při změně čísla (#704 (3), BZ R2); zdroj nulové ruční ceny
+  jeden znak (#704 (5), jen text meze B195).
+- **Testy:** nový `netlify/test_rj_rozhodnuti.mjs`; `test_bz_pipedrive`, `test_vsd_pd_poznamka` (10 = dvě poznámky
+  s vazbou), `test_vz_poznamka`, `test_vz_vs`, `test_vz_organizace` (přípravky: odkaz na kalkulaci místo čísla
+  nabídky), `test_prava` a `test_bz_bezpecnost` (nový zámek s rozporem = 409), `test_pripominky`, `src/test_665_vypracoval.js`.
+  Mutace [RJ]: server 16/16, jádro 5/5 (ekvivalentní mutace přepisu kopie podpisu vyřazena), VSD vypínač 1/1. Kolo
+  (sloučeno s integrací 21eeffa) `--bez-mutaci --proti 21eeffa`: VŠE ZELENÉ (sady 514/0/6, hodiny 416/0/1, statické 11/11,
+  porovnání SHODA 367/367); `overit_online.mjs` přizpůsoben (upravený klient B59 = 409 + dialog).
 
 ## v22.11.6 — JT #713 (prac.): jazyk hlavičky specifikace OCK = Jazyk tisku nabídky, větev claude/jt-jazyk-tisku
 

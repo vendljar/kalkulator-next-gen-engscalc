@@ -101,6 +101,42 @@ function zamkni(zak, v, zpracovatel) {
   test('bez varianty (volající bez parametru): přihlášený', zpracovatelPlaceholders(null).ZPRAC_JMENO === 'Karel Kolega');
 }
 
+/* ---------- RJ (J. V. 22. 11. 2026): sken podpisu PŮVODNÍHO zpracovatele ---------- */
+{
+  const OTISK = '0123456789abcdef0123456789abcdef';
+  const zak = zakazka();
+  const v = zak.varianty[0];
+  prihlas(PUVODNI);
+  zamkni(zak, v, Object.assign(zamekZpracovatelSnimek(PUVODNI), { podpisOtisk: OTISK }));
+  prihlas(KOLEGA);
+  test('RJ: zpracovatelZeZamku nese otisk podpisu', zpracovatelZeZamku(v).podpisOtisk === OTISK);
+  test('RJ: neplatný otisk se zahodí', zpracovatelZeZamku({ zamek: { zamceno: true, zpracovatel: { email: 'a@priklad.cz', podpisOtisk: '../x' } } }).podpisOtisk === '');
+  test('RJ: bez načtené kopie kolega podpis nevloží (jako dřív)', JSON.stringify(zpracovatelObrazky(v)) === '{}');
+  const volano = [];
+  const nacti = (id) => { volano.push(id); return Promise.resolve({ obrazek: 'data:image/png;base64,UFVWT0ROSQ==' }); };
+  zpracovatelPodpisPriprav(zak, nacti).then(n => {
+    test('RJ: zpracovatelPodpisPriprav načte kopii zamčené varianty', n === 1 && volano.join() === v.id, { n, volano });
+    test('RJ: dotisk kolegou — Word (zpracovatelObrazky) nese sken PŮVODNÍHO', zpracovatelObrazky(v).ZPRAC_PODPIS === 'data:image/png;base64,UFVWT0ROSQ==');
+    const d = nabidkaData(zak, v, JEKLY, 'cz');
+    test('RJ: nabidkaData (Word i online náhled OCK) — podpis původního', d.obrazky && d.obrazky.ZPRAC_PODPIS === 'data:image/png;base64,UFVWT0ROSQ==');
+    let dp = null; try { dp = nabidkaProjData(zak, v, 'cz'); } catch (e) { dp = { chyba: e.message }; }
+    test('RJ: nabidkaProjData — podpis původního', dp && dp.obrazky && dp.obrazky.ZPRAC_PODPIS === 'data:image/png;base64,UFVWT0ROSQ==', dp && dp.chyba);
+    prihlas(PUVODNI);
+    test('RJ: týž člověk po výměně podpisu dostane zmrazený sken', zpracovatelObrazky(v).ZPRAC_PODPIS === 'data:image/png;base64,UFVWT0ROSQ==');
+    return zpracovatelPodpisPriprav(zak, nacti);
+  }).then(n => {
+    test('RJ: načtená kopie se znovu nestahuje', n === 0 && volano.length === 1);
+    const z2 = zakazka(); zamkni(z2, z2.varianty[0], Object.assign(zamekZpracovatelSnimek(PUVODNI), { podpisOtisk: 'f'.repeat(32) }));
+    return Promise.all([zpracovatelPodpisPriprav(z2, () => Promise.reject(new Error('404'))),
+      zpracovatelPodpisPriprav(z2, () => Promise.resolve({ obrazek: 'javascript:alert(1)' }))]).then(r => {
+      prihlas(KOLEGA);
+      test('RJ: chyba čtení i neplatný obrázek → nic, kolega podpis nevloží', r[0] === 0 && r[1] === 0 && JSON.stringify(zpracovatelObrazky(z2.varianty[0])) === '{}', r);
+      const z3 = zakazka(); zamkni(z3, z3.varianty[0], zamekZpracovatelSnimek(PUVODNI));
+      return zpracovatelPodpisPriprav(z3, () => { throw new Error('nemá se volat'); });
+    }).then(n3 => test('RJ: starší snímek bez otisku nic nenačítá', n3 === 0));
+  }).then(() => konec(), e => { test('RJ: bez výjimky', false, e && e.message); konec(); });
+}
+
 /* ---------- server drží uložený snímek ---------- */
 {
   const zak = zakazka();
@@ -118,5 +154,4 @@ function zamkni(zak, v, zpracovatel) {
   test('uloZamekRazitkaDrz: starší zámek snímek nedostane', !('zpracovatel' in st2.varianty[0].zamek));
 }
 
-console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
-process.exit(fail ? 1 : 0);
+function konec() { console.log('\n' + ok + ' OK, ' + fail + ' FAIL'); process.exit(fail ? 1 : 0); }

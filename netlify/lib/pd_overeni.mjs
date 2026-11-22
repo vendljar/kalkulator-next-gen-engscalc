@@ -11,19 +11,19 @@
  *   1. živá vazba z webhooku (pdVazbaWebhook) právě na tento deal — vazbu
  *      založilo CRM samo (pd_webhook.mjs, #553), ne obchodník;
  *   2. pole „Odkaz na kalkulaci" v dealu míří na tuto zakázku (pdWebhookOdkaz);
- *   3. číslo nabídky v dealu (pole „Číslo nabídky (CN)", jinak z názvu dealu) sedí s číslem
- *      zakázky, ze kterého je klíč jejího souboru (revize R4) — totéž pravidlo jako webhook (pdWebhookCisloSedi), ale obě
- *      čísla musí být neprázdná.
+ *   (3. číslo nabídky v dealu — ZRUŠENO v RJ, rozhodnutí J. V. 22. 11. 2026, #704-7:
+ *      novou zakázkou s klíčem = číslem cizího dealu šlo zapsat do cizího dealu;
+ *      číslo nabídky si autor zakázky volí sám, vazbu tedy nedokládá.)
  * Jinak se nezapisuje nic (stav „neověřeno"). Čte se jen deal (GET).
  * ============================================================ */
-import { pdHodnota, pdCisloZNazvu } from './pd_mapa.mjs';
-import { pdWebhookCisloSedi, pdWebhookCisloKlic, pdWebhookHlavicka } from './pd_webhook.mjs';
+import { pdHodnota } from './pd_mapa.mjs';
 import { pdVazbaZiva } from './pd_vazba.mjs';
 
-export const PD_DEAL_NEPATRI = 'Deal v Pipedrive nepatří této zakázce (číslo nabídky ani odkaz na kalkulaci v dealu nesedí '
-  + 's touto zakázkou) — do dealu se nic nezapsalo. Zkontrolujte číslo obchodního případu v Controllingu.';
+export const PD_DEAL_NEPATRI = 'Deal v Pipedrive nepatří této zakázce (zakázka nemá vazbu z Pipedrive na tento deal '
+  + 'a pole „Odkaz na kalkulaci" v dealu nemíří na tuto zakázku) — do dealu se nic nezapsalo. '
+  + 'Zkontrolujte číslo obchodního případu v Controllingu, nebo v dealu vyplňte odkaz na kalkulaci.';
 
-/* Vrací { ok: true, zdroj: 'vazba'|'odkaz'|'cislo' } nebo { ok: false, duvod }.
+/* Vrací { ok: true, zdroj: 'vazba'|'odkaz' } nebo { ok: false, duvod }.
  * `zavolej(cesta)` = čtení Pipedrive (s časovou mezí volajícího),
  * `poleMapa()` = mapa polí (pd_pole.mjs), `odkaz` = odkaz na tuto kalkulaci
  * (pdWebhookOdkaz(soubor, req)) nebo ''. Chyba čtení (PdChyba) se propouští. */
@@ -40,13 +40,5 @@ export async function pdDealPatriZakazce(zak, dealId, { zavolej, poleMapa, odkaz
   if (!d || typeof d !== 'object') return { ok: false, duvod: PD_DEAL_NEPATRI };
   const cf = (d.custom_fields && typeof d.custom_fields === 'object') ? d.custom_fields : {};
   if (odkaz && mapa.odkazKalkulace && pdHodnota(cf[mapa.odkazKalkulace]).trim() === odkaz) return { ok: true, zdroj: 'odkaz' };
-  /* Pole CN, jinak číslo z názvu dealu (`CN-84 …`) — totéž jako webhook (pdWebhookZadani). */
-  const cnDealu = (mapa.cisloNabidky ? pdHodnota(cf[mapa.cisloNabidky]).trim() : '') || pdCisloZNazvu(d.title);
-  /* Revize Fable R4: jen číslo, ze kterého je KLÍČ SOUBORU zakázky (uloJmenoSouboru:
-   * číslo OCK, jinak číslo PROJ) — to cizí zakázce nepatří (kolize 409).
-   * Číslo PROJ vedle čísla OCK autor volně přepisuje, proto se nepočítá. */
-  const cislo = String(((G.uloCisloVyplneno ? G.uloCisloVyplneno(zak.cislo) : String(zak.cislo || '').trim())
-    ? zak.cislo : pdWebhookHlavicka(JSON.parse(JSON.stringify(zak)), 'proj').cislo) || '').trim();
-  if (cnDealu && pdWebhookCisloKlic(cislo) && pdWebhookCisloSedi(cislo, cnDealu, zak)) return { ok: true, zdroj: 'cislo' };
   return { ok: false, duvod: PD_DEAL_NEPATRI };
 }

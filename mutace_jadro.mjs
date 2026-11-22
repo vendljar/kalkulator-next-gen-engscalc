@@ -312,6 +312,27 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* RJ (22. 11. 2026): #665 sken podpisu původního zpracovatele v dotisku (zpracovatel.js). [RJ] */
+  { nazev: "RJ #665: zmrazený sken nemá přednost [RJ]", soubor: "zpracovatel.js",
+    hledej: "  if (s && s.podpisOtisk && ZPRAC_PODPISY_ZAMKU.has(s.podpisOtisk)) return { ZPRAC_PODPIS: ZPRAC_PODPISY_ZAMKU.get(s.podpisOtisk) };\n",
+    nahrad: "",
+    proc: "dotisk kolegou by vyšel bez podpisu původního zpracovatele", sady: ["test_665_vypracoval.js"] },
+  { nazev: "RJ #665: otisk ze snímku se nečte [RJ]", soubor: "zpracovatel.js",
+    hledej: "podpis: '', podpisOtisk: otisk };",
+    nahrad: "podpis: '', podpisOtisk: '' };",
+    proc: "kopie podpisu by se nenačetla ani nepoužila", sady: ["test_665_vypracoval.js"] },
+  { nazev: "RJ #665: otisk bez kontroly tvaru [RJ]", soubor: "zpracovatel.js",
+    hledej: "  const otisk = /^[0-9a-f]{32}$/.test(String(s.podpisOtisk || '')) ? s.podpisOtisk : '';",
+    nahrad: "  const otisk = String(s.podpisOtisk || '');",
+    proc: "podvržený otisk (cesta) by šel do adresy dotazu", sady: ["test_665_vypracoval.js"] },
+  { nazev: "RJ #665: kopie bez kontroly obrázku [RJ]", soubor: "zpracovatel.js",
+    hledej: " && /^data:image\\/(png|jpeg);base64,/.test(String(obrazek || '')))",
+    nahrad: " && obrazek)",
+    proc: "do dokumentu by šlo cokoli místo obrázku PNG/JPEG", sady: ["test_665_vypracoval.js"] },
+  { nazev: "RJ #665: načtená kopie se stahuje znovu [RJ]", soubor: "zpracovatel.js",
+    hledej: ".filter(x => x.s && x.s.podpisOtisk && !ZPRAC_PODPISY_ZAMKU.has(x.s.podpisOtisk));",
+    nahrad: ".filter(x => x.s && x.s.podpisOtisk);",
+    proc: "každý render a tisk by znovu tahal sken ze serveru", sady: ["test_665_vypracoval.js"] },
   /* JT (J. V. 22. 11. 2026): jazyk hlavičky specifikace OCK = Jazyk tisku
    * nabídky, tisk z cizojazyčného náhledu. Hlídá src/test_jt_jazyk_tisku.js
    * (prohlížeč: overit_jt_jazyk_tisku.mjs). [JT] */

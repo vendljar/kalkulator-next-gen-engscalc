@@ -72,10 +72,12 @@ async function uloz(zak) {
   return t;
 }
 
-/* B235/B236 (dávka BZ): server zapisuje jen do dealu, který zakázce patří
- * (pd_overeni.mjs) — přípravek dá dealu v simulátoru číslo nabídky zakázky. */
-const BZ_CN = SIM.pdSimStav().data.pole.deal.find(p => p.field_name === 'Číslo nabídky (CN)').field_code;
-const dealPatri = (id, cislo) => { const d = SIM.pdSimStav().data.dealy.find(x => String(x.id) === String(id)); if (d) d.custom_fields[BZ_CN] = cislo; };
+/* B235/B236 (dávka BZ): server zapisuje jen do dealu, který zakázce patří (pd_overeni.mjs). */
+/* RJ (#704-7, J. V. 22. 11. 2026): pravidlo 3 (číslo nabídky) zrušeno — vazbu dokládá
+ * pole „Odkaz na kalkulaci" v dealu (odkaz na soubor zakázky, uloJmenoSouboru). */
+const BZ_ODKAZ = SIM.pdSimStav().data.pole.deal.find(p => p.field_name === 'Odkaz na kalkulaci').field_code;
+const dealPatri = (id, cislo) => { const d = SIM.pdSimStav().data.dealy.find(x => String(x.id) === String(id));
+  if (d) d.custom_fields[BZ_ODKAZ] = 'http://x/?zakazka=' + encodeURIComponent(globalThis.uloJmenoSouboru({ cislo })); };
 
 const D = SIM.pdSimStav().data;
 const dealy = D.dealy.filter(d => d.status !== 'deleted').map(d => d.id);
@@ -334,23 +336,34 @@ let Z2, ID2;
 
 /* 10) N3 — dvě zakázky na jednom dealu: dvě poznámky; ztracené id se převezme podle značky */
 {
-  /* BZ (B235, J. V. 21. 11. 2026): deal nese jedno číslo nabídky — zakázka
-   * s jiným číslem na témž dealu do něj nepíše (stav „neovereno"). Dřív tu
-   * vznikly dvě poznámky (N3). */
-  const b = nova(true, dealy[12]), a = nova(true, dealy[12]);   // deal nese číslo `a` (dealPatri posledního)
+  /* RJ (#704-6, J. V. 22. 11. 2026 „Ne, obě"): druhá zakázka na témž dealu (jiné
+   * číslo nabídky) poznámku ZAPISUJE jako dřív (N3) — ale jen s platnou vazbou
+   * (#704-7): `a` má odkaz na kalkulaci v dealu (dealPatri posledního), `b` živou
+   * vazbu z webhooku (pole píše jen server → zapsáno přímo do úložiště), `c`
+   * žádnou vazbu → neovereno. (BZ 21. 11. tu čekal jen jednu poznámku.) */
+  const b = nova(true, dealy[12]), c = nova(true, dealy[12]), a = nova(true, dealy[12]);
   b.varianty[0].data.ock.dalsi[0].nazev = 'Výtah Z';
-  const ta = await uloz(a), tb = await uloz(b);
+  const ta = await uloz(a), tb0 = await uloz(b), tc = await uloz(c);
+  test('10 RJ: zakázka bez vazby na témž dealu nezapíše (neovereno)', tb0.pdPoznamka === 'neovereno' && tc.pdPoznamka === 'neovereno'
+    && /nepatří/.test(tc.varovani || ''), { b: tb0.pdPoznamka, c: tc.pdPoznamka });
+  { const rb = ulozeno(soubor(tb0));
+    rb.pdVazbaWebhook = { deal: String(dealy[12]), kdy: '2026-11-22T08:00:00.000Z', cislo: b.cislo, strana: 'ock', stav: 'potvrzeno' };
+    pamet.set('zakazky/z/' + soubor(tb0), JSON.stringify(rb)); }
+  b.varianty[0].data.ock.dalsi[0].ks = 3;
+  const tb = await uloz(b);
   const p = notes().filter(x => x.deal_id === dealy[12]);
-  test('10 N3+B235: zakázka s číslem dealu zapíše, cizí číslo na témž dealu ne', ta.pdPoznamka === 'zalozeno' && tb.pdPoznamka === 'neovereno' && p.length === 1
-    && p.some(x => x.content.endsWith(' — nabídka ' + a.cislo)) && /nepatří/.test(tb.varovani || ''), { a: ta.pdPoznamka, b: tb.pdPoznamka, p: p.map(x => x.content) });
+  test('10 N3 (RJ #704-6): dvě zakázky s vazbou na dealu = dvě poznámky se svou značkou', ta.pdPoznamka === 'zalozeno' && tb.pdPoznamka === 'zalozeno' && p.length === 2
+    && p.some(x => x.content.endsWith(' — nabídka ' + a.cislo)) && p.some(x => x.content.endsWith(' — nabídka ' + b.cislo))
+    && !p.some(x => x.content.endsWith(' — nabídka ' + c.cislo)), { a: ta.pdPoznamka, b: tb.pdPoznamka, p: p.map(x => x.content) });
   /* ztracené id (např. kolize) — server poznámku najde a neduplikuje */
   const sa = soubor(ta); const raw = ulozeno(sa); const idA = raw.pdPoznamkaSachty.id;
   delete raw.pdPoznamkaSachty; pamet.set('zakazky/z/' + sa, JSON.stringify(raw)); a.uloRazitko = raw.uloRazitko;
   a.varianty[0].data.ock.dalsi[0].nazev = 'Výtah Y';
   const ta2 = await uloz(a);
   const p2 = notes().filter(x => x.deal_id === dealy[12]);
-  test('10 N3: bez id se převezme vlastní poznámka (GET ?deal_id), žádná druhá', ta2.pdPoznamka === 'upraveno' && p2.length === 1
-    && ulozeno(sa).pdPoznamkaSachty.id === idA && /Výtah Y/.test(p2.find(x => x.id === idA).content), { s: ta2.pdPoznamka, p2: p2.map(x => [x.id, x.content]) });
+  test('10 N3: bez id se převezme vlastní poznámka (GET ?deal_id), žádná třetí', ta2.pdPoznamka === 'upraveno' && p2.length === 2
+    && ulozeno(sa).pdPoznamkaSachty.id === idA && /Výtah Y/.test(p2.find(x => x.id === idA).content)
+    && /Výtah Z/.test(p2.find(x => x.id !== idA).content), { s: ta2.pdPoznamka, p2: p2.map(x => [x.id, x.content]) });
   test('10 N3: značka v obsahu (Pipedrive obalí do <p>) se pozná', PP.pdPoznamkaJeNase('<p>' + PP.pdPoznamkaEsc(PP.pdPoznamkaText(a)) + '</p>', a)
     && !PP.pdPoznamkaJeNase(PP.pdPoznamkaEsc(PP.pdPoznamkaText(a)), b) && !PP.pdPoznamkaJeNase('Jiná poznámka — nabídka ' + a.cislo, a));
 }

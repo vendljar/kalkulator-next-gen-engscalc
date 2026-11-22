@@ -2159,9 +2159,9 @@ Roadmapa #696–#704 (pracovní čísla).
 - **B232 — přísné ověření zmrazeného výsledku — OPRAVENO.** Nový zámek: číslo jen v jednom z výsledků
   (vypuštěné, přidané) a objekt / pole s číslem proti čemukoli jinému (`null`, text, `true`; revize R3)
   je rozdíl → razítko „nesouhlasi“ a varování po uložení.
-  Tolerance P6 (jiná verze stránky) platí jen pro texty, příznaky a klíče bez čísel. *Mez:* nesouhlas
-  uložení neodmítá (B59 — rozpor je zapsaný v zámku a hlášený), controlling a dokumenty čtou zmrazený
-  výsledek dál; zda nový zámek s „nesouhlasi“ odmítat, rozhodne J. V. (#704 (2)).
+  Tolerance P6 (jiná verze stránky) platí jen pro texty, příznaky a klíče bez čísel. **Od RJ (J. V.
+  22. 11. 2026, #704 (2)) server nový zámek s „nesouhlasi“ ODMÍTNE (409, viz oddíl RJ níž)**; zámek
+  uložený dřív (nebo obnovený ze souboru) razítko nese dál, controlling a dokumenty čtou zmrazený výsledek.
 - **B233 — počítadla pokusů o přihlášení při souběhu — OPRAVENO V INSTANCI.** Čtení–změna–zápis počítadel
   (e-mail i adresa) běží ve výhradním úseku nad klíčem (`vyhradne`, vzor B158). *Mez:* Netlify Blobs
   8.2.0 nemá podmíněný zápis — dvě různé instance funkce se navzájem nevidí, souběh mezi nimi může
@@ -2188,11 +2188,53 @@ Roadmapa #696–#704 (pracovní čísla).
   zakázky (číslo OCK, jinak PROJ — revize R4: číslo PROJ vedle čísla OCK autor volně přepisuje; pravidlo
   webhooku `pdWebhookCisloSedi`, obě čísla neprázdná) — jinak stav „neovereno“ a nic se nezapíše. Strop prvních
   zápisů poznámek do nového dealu **na uživatele** 30/h (vedle 20/h na deal). *Mez:* poznámka, kterou
-  server do téhož dealu už zapsal, se dál upravuje bez nového ověření; dvě zakázky s různým číslem
-  na jednom dealu — píše jen ta s číslem dealu; oprava firmy (`akce: zapis`, B209) vazbu dealu
-  neověřuje (#704 (4)).
+  server do téhož dealu už zapsal, se dál upravuje bez nového ověření. **Změněno v RJ (J. V. 22. 11.
+  2026, oddíl RJ níž):** pravidlo „číslo nabídky v dealu“ zrušeno (#704 (7)), druhá zakázka na témž
+  dealu zapisuje, má-li vlastní vazbu (#704 (6)), oprava firmy vazbu ověřuje (#704 (4)).
 - **Nulová ruční cena (mez B195) — UPRAVENO (text meze).** Viz oddíl RC #561 výš: nula jen se zdrojem,
-  bez zdroje jen administrátor.
+  bez zdroje jen administrátor. **J. V. 22. 11. 2026 (#704 (5)):** jako zdroj stačí jeden znak (minimální
+  délka ani číslo nabídky dodavatele se nevyžaduje) — vědomě přijatá mez, kód beze změny.
+
+## RJ — zapracování rozhodnutí J. V. z 22. 11. 2026 (dávka RJ, v22.11.7)
+
+Rozhodnutí v `podklady/ROZHODNUTI_LOG.md`, roadmapa #704, #710, #714, #715. Testy
+`netlify/test_rj_rozhodnuti.mjs`, `netlify/test_bz_pipedrive.mjs`, `netlify/test_vsd_pd_poznamka.mjs`,
+`netlify/test_pripominky.mjs`, `src/test_665_vypracoval.js`; mutace [RJ].
+
+- **B232 (doplněk) — nový zámek „nesouhlasi“ se ODMÍTÁ.** Nový zámek, jehož zmrazený výsledek přísně
+  nesouhlasí s výpočtem serveru, server neuloží: 409, `kod: 'zamekNesouhlasi'`, hláška
+  `zamekNesouhlasiText` (jádro `src/zamek.js`: počet rozdílů, verze klienta a serveru, rada obnovit
+  stránku Ctrl+F5, otevřít zakázku znovu a vytisknout znovu; dokument z prvního tisku neposílat). Klient
+  ukáže vlastní dialog (`onlineZamekNesouhlasiDialog`), automatické ukládání ho neopakuje. Tolerance P6
+  (poctivý výsledek s textem / příznakem / klíčem bez čísla navíc = „shoda“) a stav „chyba“ (server
+  nepřepočítal → jen varování) beze změny. *Mez:* obnova (otisk i soubor) zámek s „nesouhlasi“ dál
+  zapíše a ohlásí v náhledu (data zálohy jsou doklad); nesouhlas při dotisku (zámek už uložený) se
+  nepočítá znovu.
+- **B232 / #665 (doplněk) — podpis původního zpracovatele v dotisku.** Při prvním přijetí zámku server
+  zkopíruje sken podpisu PŘIHLÁŠENÉHO (z úložiště `podpisy`, ne od klienta) pod klíč `zamek/<otisk>`
+  (32 hex SHA-256 obrázku) a do snímku `zamek.zpracovatel` zapíše jen `podpisOtisk` (drží ho
+  `uloZamekRazitkaDrz`, klient ho nepodvrhne). Kopie se nemění ani nemaže — výměna nebo odebrání podpisu
+  v účtu odeslanou nabídku nezmění; jde se zálohou a obnovou (jen ze serverového otisku, B27,
+  `podpisZkontroluj`). Vydá ji jen `GET /api/zakazky?soubor=…&podpisZamku=<varianta>` — kdo smí číst
+  zakázku, dostane podpis jejího zamčeného zpracovatele; server ověří, že obsah kopie sedí s otiskem.
+  *Mez (vědomá):* sken podpisu smazaného účtu zůstává u jeho odeslaných nabídek (doklad toho, co
+  zákazník dostal); každý přihlášený, kdo zakázku otevře, si sken stáhne (v tisku ho vidí tak jako tak).
+- **B235 / B236 (změna) — vazba dealu jen z webhooku nebo z odkazu.** `lib/pd_overeni.mjs` uznává jen
+  živou vazbu z webhooku na tento deal a pole „Odkaz na kalkulaci“ v dealu mířící na tuto zakázku.
+  Pravidlo 3 (číslo nabídky v poli CN / v názvu dealu) **zrušeno** (#704 (7)): číslo nabídky si volí autor
+  zakázky, novou zakázkou s číslem cizího dealu šlo psát do cizího dealu (PoC revize BZ 2. kola — teď
+  regresní test „neovereno“). Druhá zakázka na témž dealu (jiné číslo) poznámku zapíše jako dřív (N3),
+  má-li sama platnou vazbu (#704 (6)). *Mez:* dokud CRM nevyplní odkaz na kalkulaci ani nepošle webhook,
+  zakázka s ručně zadaným dealem do Pipedrive nepíše (stav „neovereno“, varování, uložení projde).
+  Vypínač `PIPEDRIVE_ZAPIS` dál VYPNUTÝ — zapíná jen J. V. (#704 (1)). S vypnutým zápisem poznámka dealu
+  vrací stav „bez“ a varování `PD_ZAPIS_VYPNUTY` (jen má-li co psát a uživatel právo; nic se neodešle ani nečerpá).
+- **B209 (doplněk) — oprava firmy ověřuje vazbu dealu.** `POST /api/pd/organizace` `akce: nahled | zapis`
+  nejdřív `pdDealPatriZakazce` (totéž pravidlo jako poznámky a vítěz) — jinak 409, `stav: 'neovereno'`,
+  do Pipedrive nic (#704 (4)).
+- **B257 (doplněk) — klíč koordinace a uzavřené připomínky.** Připomínku, kterou uzavřel SPRÁVCE (stav
+  hotovo / zamítnuto / duplicitní; kdo uzavřel = vstup do stavu v průběhu, bez průběhu = správce), klíč
+  koordinace nevrátí do fronty ani nepřepíše odpověď → 403; číslo roadmapy doplnit smí. Uzavřenou
+  koordinací si koordinace otevřít smí (#710 (4)). #710 (1)–(3) potvrzeno beze změny.
 
 ## PR — připomínky z aplikace (dávka PR, 21. 11. 2026) — B257
 

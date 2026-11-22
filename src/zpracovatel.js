@@ -56,7 +56,31 @@ function zpracovatelZeZamku(varianta) {
   const s = z && z.zamceno && z.zpracovatel;
   if (!s || typeof s !== 'object' || Array.isArray(s)) return null;
   const t = x => String(x == null ? '' : x).trim();
-  return { email: t(s.email), jmeno: t(s.jmeno), titul: t(s.titul), funkce: t(s.funkce), telefon: t(s.telefon), podpis: '' };
+  const otisk = /^[0-9a-f]{32}$/.test(String(s.podpisOtisk || '')) ? s.podpisOtisk : '';
+  return { email: t(s.email), jmeno: t(s.jmeno), titul: t(s.titul), funkce: t(s.funkce), telefon: t(s.telefon), podpis: '', podpisOtisk: otisk };
+}
+
+/* #665 (RJ, rozhodnutí J. V. 22. 11. 2026): sken podpisu PŮVODNÍHO zpracovatele
+ * odeslané nabídky. Server ho při prvním přijetí zámku zmrazil (kopie v úložišti
+ * podpisů, ve snímku zámku jen `podpisOtisk`); prohlížeč si kopii načte
+ * (zpracovatelPodpisPriprav) a drží ji tady podle otisku. Tisk je synchronní,
+ * proto se kopie připravuje předem: při otevření zakázky a před Wordem. */
+const ZPRAC_PODPISY_ZAMKU = new Map();   // otisk → data URL
+function zpracovatelPodpisZamkuUloz(otisk, obrazek) {
+  if (/^[0-9a-f]{32}$/.test(String(otisk || '')) && /^data:image\/(png|jpeg);base64,/.test(String(obrazek || '')))
+    ZPRAC_PODPISY_ZAMKU.set(otisk, obrazek);
+}
+/* Načte chybějící kopie pro zamčené varianty zakázky. `nacti(variantaId)` →
+ * Promise s { obrazek } (v prohlížeči GET /api/zakazky?soubor=…&podpisZamku=…).
+ * Vrací Promise s počtem nově načtených; chyba čtení nic nezastaví (tisk pak
+ * jako u zámku bez kopie: podpis jen téhož člověka). */
+function zpracovatelPodpisPriprav(zak, nacti) {
+  if (typeof nacti !== 'function' || !zak || !Array.isArray(zak.varianty)) return Promise.resolve(0);
+  const chybi = zak.varianty.map(v => ({ v, s: zpracovatelZeZamku(v) }))
+    .filter(x => x.s && x.s.podpisOtisk && !ZPRAC_PODPISY_ZAMKU.has(x.s.podpisOtisk));
+  return Promise.all(chybi.map(x => Promise.resolve().then(() => nacti(x.v.id))
+    .then(o => { if (o && o.obrazek) zpracovatelPodpisZamkuUloz(x.s.podpisOtisk, o.obrazek); return ZPRAC_PODPISY_ZAMKU.has(x.s.podpisOtisk) ? 1 : 0; })
+    .catch(() => 0))).then(n => n.reduce((a, b) => a + b, 0));
 }
 function zpracovatelPlaceholders(f, varianta) {
   const z = zpracovatelZeZamku(varianta) || zpracovatelAktualni();
@@ -77,10 +101,14 @@ function zpracovatelPlaceholders(f, varianta) {
  * a v jaké leží na serveru. Kdo podpis nahraný nemá, nabídka se vygeneruje
  * bez něj (a rámeček v šabloně se odstraní – viz docxgen.js). */
 /* #665: u zamčené varianty se snímkem jen podpis TÉHOŽ člověka (shoda
- * e-mailu) — pod cizí jméno se sken přihlášeného kolegy nevloží. */
+ * e-mailu) — pod cizí jméno se sken přihlášeného kolegy nevloží.
+ * RJ (J. V. 22. 11. 2026): přednost má zmrazený sken PŮVODNÍHO zpracovatele
+ * ze snímku zámku (podpisOtisk → načtená kopie) — Word i online tisk, i když
+ * tiskne kolega. Bez kopie (starší zámek, nenačteno) jako dřív. */
 function zpracovatelObrazky(varianta) {
   const z = zpracovatelAktualni();
   const s = zpracovatelZeZamku(varianta);
+  if (s && s.podpisOtisk && ZPRAC_PODPISY_ZAMKU.has(s.podpisOtisk)) return { ZPRAC_PODPIS: ZPRAC_PODPISY_ZAMKU.get(s.podpisOtisk) };
   if (s && (!z || String(z.email).toLowerCase() !== String(s.email).toLowerCase())) return {};
   return z && z.podpis ? { ZPRAC_PODPIS: z.podpis } : {};
 }
@@ -100,4 +128,5 @@ function zpracovatelKontaktProKryci(f) {
 
 if (typeof module !== 'undefined')
   module.exports = { zpracovatelAktualni, zpracovatelJmeno, zpracovatelPlaceholders, zpracovatelZeZamku,
+    zpracovatelPodpisPriprav, zpracovatelPodpisZamkuUloz, ZPRAC_PODPISY_ZAMKU,
     zpracovatelObrazky, zpracovatelJmenoProKryci, zpracovatelKontaktProKryci };

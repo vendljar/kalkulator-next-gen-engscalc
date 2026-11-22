@@ -1092,6 +1092,18 @@ function zamekOvereniText(ov) {
   return '';
 }
 
+/* RJ (#704-2, J. V. 22. 11. 2026): hláška odmítnutí NOVÉHO zámku, jehož čísla
+ * nesouhlasí s výpočtem serveru (409, kód `zamekNesouhlasi`). Stejný text
+ * vrací server a ukazuje klient (online_ui.js) — srozumitelně, s radou Ctrl+F5. */
+function zamekNesouhlasiText(cislo, ov) {
+  const n = +(ov && ov.rozdilu) || 0;
+  const rozdilu = n + (n === 1 ? ' rozdíl' : (n >= 2 && n <= 4) ? ' rozdíly' : ' rozdílů');
+  return 'Neuloženo: čísla odeslané nabídky ' + (cislo || '') + ' nesouhlasí s výpočtem serveru (' + rozdilu
+    + '; výsledek spočítala verze aplikace ' + ((ov && ov.klient) || 'neuvedená') + ', server běží na '
+    + ((ov && ov.server) || 'neznámé verzi') + '). Stránka má nejspíš starší verzi aplikace. Obnovte stránku '
+    + '(Ctrl+F5), otevřete zakázku znovu ze serveru a nabídku vytiskněte znovu — dokument z tohoto tisku zákazníkovi neposílejte.';
+}
+
 /* Odemknutí je výjimka, ne běžný krok: smí ho udělat jen správce a musí
  * uvést důvod. Původní zámek se neztrácí – uloží se do historie odemčení,
  * aby zůstalo dohledatelné, co a kdy bylo odesláno. */
@@ -1401,7 +1413,7 @@ function listaZakazkyRozhodni(zak, zaloha, ja, prava, ctx) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { zamekZpracovatelSnimek, zamekZakVzOdeslano, variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, ZAMEK_PRODANO_TERMINY, zamekProdanoTerminVolny, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
+  module.exports = { zamekNesouhlasiText, zamekZpracovatelSnimek, zamekZakVzOdeslano, variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, ZAMEK_PRODANO_TERMINY, zamekProdanoTerminVolny, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
                      zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, ZAMEK_OVERENI_JADRO, ZAMEK_OVERENI_JADRO_PRISNE, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
                      zamekCteniSmiOdemknout, zamekCteniDuvod, priponaPrvniNalez, priponaPrvniOprav,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,

@@ -220,15 +220,18 @@ console.log('\n===== B232: PŘÍSNÉ OVĚŘENÍ VYŽADUJE VŠECHNA ČÍSLA =====
   /* PoC poc_AZ_2: vypuštěná čísla mimo jádro. */
   const z = nova('B232 vypuštěno'); zamkni(z, z.varianty[0]);
   const vy = z.varianty[0].zamek.vysledek; delete vy.ock.souhrn.zakladNaklad;
-  const r = await uloz(z, cO); const g = await nacti(r.soubor, cO);
-  test('B232: výsledek s vypuštěným číslem (náklad) dostane „nesouhlasi"', g.varianty[0].zamek.overeni.stav === 'nesouhlasi',
-    JSON.stringify(g.varianty[0].zamek.overeni));
-  test('B232: a uložení vrátí varování', !!r.varovani, JSON.stringify(r).slice(0, 200));
+  /* RJ (#704-2, J. V. 22. 11. 2026): nový zámek s rozporem server odmítne 409
+   * (kód zamekNesouhlasi, rada Ctrl+F5) — dřív uložil s razítkem a varoval. */
+  const nesouhlasi = (z) => G.zamekOvereni(z.varianty[0], JEKLY, '', undefined, { prisne: true });
+  const r = await uloz(z, cO);
+  test('B232: výsledek s vypuštěným číslem (náklad) = „nesouhlasi"', nesouhlasi(z).stav === 'nesouhlasi', JSON.stringify(nesouhlasi(z)));
+  test('B232 + RJ #704-2: a uložení server odmítne (409, zamekNesouhlasi, Ctrl+F5)', r.status === 409 && r.kod === 'zamekNesouhlasi'
+    && /Ctrl\+F5/.test(r.chyba || ''), JSON.stringify(r).slice(0, 300));
   const z2 = nova('B232 přidáno'); zamkni(z2, z2.varianty[0]);
   z2.varianty[0].zamek.vysledek.ock.souhrn.mustkyCena = 1;
-  const r2 = await uloz(z2, cO); const g2 = await nacti(r2.soubor, cO);
-  test('B232: výsledek s přidaným číslem dostane „nesouhlasi"', g2.varianty[0].zamek.overeni.stav === 'nesouhlasi',
-    JSON.stringify(g2.varianty[0].zamek.overeni));
+  const r2 = await uloz(z2, cO);
+  test('B232: výsledek s přidaným číslem = „nesouhlasi" → odmítnuto 409', nesouhlasi(z2).stav === 'nesouhlasi' && r2.status === 409
+    && r2.kod === 'zamekNesouhlasi', JSON.stringify(r2).slice(0, 200));
   /* Model: volné porovnání (starší zámek, obnova) dál klíč jen na jedné straně přeskočí. */
   const a = { ock: { souhrn: { zakladCena: 1, zakladDph: 1, zakladSDph: 2, x: 5 } }, proj: { souhrn: { cena: 1, celkem: 1 } }, kurzEurKc: 25 };
   const b = kopie(a); delete b.ock.souhrn.x;
@@ -253,9 +256,9 @@ console.log('\n===== B232: PŘÍSNÉ OVĚŘENÍ VYŽADUJE VŠECHNA ČÍSLA =====
   const zamen = (o, h) => { if (!o || typeof o !== 'object' || h > 3) return; for (const k of Object.keys(o)) {
     if (o[k] && typeof o[k] === 'object' && !Array.isArray(o[k]) && k !== 'souhrn' && h >= 1) { o[k] = 'x'; nahrazeno++; } else zamen(o[k], h + 1); } };
   zamen(vy3.ock, 0);
-  const r3 = await uloz(z3, cO); const g3 = await nacti(r3.soubor, cO);
-  test('B232 R3: výsledek s podstromy zaměněnými za text (' + nahrazeno + ') dostane „nesouhlasi"', nahrazeno > 0
-    && g3.varianty[0].zamek.overeni.stav === 'nesouhlasi', JSON.stringify(g3.varianty[0].zamek.overeni));
+  const r3 = await uloz(z3, cO);
+  test('B232 R3: výsledek s podstromy zaměněnými za text (' + nahrazeno + ') = „nesouhlasi" → odmítnuto 409', nahrazeno > 0
+    && nesouhlasi(z3).stav === 'nesouhlasi' && r3.status === 409 && r3.kod === 'zamekNesouhlasi', JSON.stringify(r3).slice(0, 200));
 }
 
 /* ============================================================ */

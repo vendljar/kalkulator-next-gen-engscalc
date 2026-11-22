@@ -375,7 +375,7 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   const slevyNast = ctx.slevyNast || {};
   const verzeServeru = ctx.verzeServeru || '';
   relace = relace || {};
-  const odmitni = (status, chyba) => ({ ok: false, status, chyba });
+  const odmitni = (status, chyba, kod) => (kod ? { ok: false, status, chyba, kod } : { ok: false, status, chyba });
   /* Věta odmítnutí: obchodníkovi „Neuloženo: … Pokračujte klonem varianty.",
    * do přehledu obnovy jen důvod. */
   /* #674 c: důvod s vlastní předponou („Neuloženo: …") ji nezdvojí. */
@@ -834,6 +834,9 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
     /* #665: blok „Vypracoval" odeslané nabídky = profil účtu z RELACE (ne od
      * klienta); dál ho drží uloZamekRazitkaDrz. Bez e-mailu klíč pryč. */
     { const zs = typeof globalThis.zamekZpracovatelSnimek === 'function' ? globalThis.zamekZpracovatelSnimek(relace) : null;
+      /* #665 (RJ, J. V. 22. 11. 2026): otisk zmrazené kopie skenu podpisu
+       * (připraví functions/zakazky.mjs z úložiště podpisů, ne klient). */
+      if (zs && /^[0-9a-f]{32}$/.test(String(ctx.podpisOtisk || ''))) zs.podpisOtisk = ctx.podpisOtisk;
       if (zs) v.zamek.zpracovatel = zs; else delete v.zamek.zpracovatel; }
     /* K40-S1 (#580): čas PRVNÍHO přijetí zámku serverem — dolní mez data
      * prodeje; příchozí hodnota se zahodí (píše ho jen server). */
@@ -842,6 +845,14 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
      * výsledku je rozdíl a jádro nese i součty příplatků a volitelných —
      * vždy, bez ohledu na verzi, kterou výsledek uvádí (tu posílá klient). */
     const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru, undefined, { prisne: true });
+    /* RJ (#704-2, J. V. 22. 11. 2026; mez B232): nový zámek, jehož zmrazený výsledek
+     * NESOUHLASÍ s výpočtem serveru, se ODMÍTNE (409) — dřív se uložil s razítkem
+     * „nesouhlasi" a jen varoval (B59). Typicky stránka se starším jádrem po
+     * nasazení: rada obnovit stránku a vytisknout znovu. Tolerance P6 platí dál
+     * (poctivý výsledek s textem či příznakem navíc = „shoda"); „chyba" (server
+     * nepřepočítal) dál jen varuje. Obnova (výše) se nemění. */
+    if (ov && ov.stav === 'nesouhlasi')
+      return odmitni(409, globalThis.zamekNesouhlasiText(v.zamek.cislo || cisloMaBy, ov), 'zamekNesouhlasi');
     if (ov) v.zamek.overeni = ov; else delete v.zamek.overeni;
     if (ov && ov.stav !== 'shoda') sporne.push({ cislo: v.zamek.cislo || cisloMaBy, ov });
   }

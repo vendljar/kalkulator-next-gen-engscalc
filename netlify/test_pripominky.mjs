@@ -170,6 +170,26 @@ test('koordinace: Řeší se + #712', kp.status === 200 && kp.pripominka.stav ==
 test('koordinace: na novou P-0003 nesáhne (403)', (await patch({ id: 'P-0003', stav: 'resi' }, undefined, B(KLIC))).status === 403);
 test('koordinace: akce správce 403', (await patch({ id: 'P-0001', akce: 'duplicitni', duplicitniS: 'P-0002' }, undefined, B(KLIC))).status === 403);
 test('koordinace: zamítnout bez zdůvodnění 400', (await patch({ id: 'P-0001', stav: 'zamitnuto' }, undefined, B(KLIC))).status === 400);
+/* RJ (#710-4 / N5, J. V. 22. 11. 2026; mez B257): připomínku UZAVŘENOU SPRÁVCEM
+ * (hotovo / zamítnuto / duplicitní) klíč koordinace nevrátí do fronty ani
+ * nepřepíše odpověď — 403. Uzavřenou koordinací si koordinace otevřít smí;
+ * číslo roadmapy doplnit smí vždy. Pojistka: před opravou 200. */
+test('RJ N5: P-0004 duplicitní (správce) — koordinace stav 403', (await patch({ id: 'P-0004', stav: 'fronta' }, undefined, B(KLIC))).status === 403);
+test('RJ N5: P-0004 duplicitní (správce) — koordinace odpověď 403', (await patch({ id: 'P-0004', odpoved: 'Přepis' }, undefined, B(KLIC))).status === 403);
+const kh = await patch({ id: 'P-0001', stav: 'hotovo', odpoved: 'Opraveno ve v22.11.6.' }, undefined, B(KLIC));
+test('RJ N5: koordinace uzavře sama (hotovo) — 200', kh.status === 200 && kh.pripominka.stav === 'hotovo', kh);
+test('RJ N5: uzavřenou koordinací vrátí koordinace do testu — 200', (await patch({ id: 'P-0001', stav: 'test' }, undefined, B(KLIC))).status === 200);
+const su = await patch({ id: 'P-0001', akce: 'uzavrit', odpoved: 'Uzavírá správce.' }, cAdmin);
+test('RJ N5: správce uzavře P-0001', su.status === 200 && su.pripominka.stav === 'hotovo', su);
+const k403 = await patch({ id: 'P-0001', stav: 'resi' }, undefined, B(KLIC));
+test('RJ N5: uzavřenou správcem koordinace nevrátí do fronty (403)', k403.status === 403 && /správce/.test(k403.chyba || ''), k403);
+test('RJ N5: … ani nepřepíše odpověď správce (403)', (await patch({ id: 'P-0001', odpoved: 'Jiná odpověď' }, undefined, B(KLIC))).status === 403
+  && JSON.parse(pamet.get('pripominky/p/P-0001')).odpoved === 'Uzavírá správce.');
+test('RJ N5: … ani stav a odpověď s „hotovo" znovu (403)', (await patch({ id: 'P-0001', stav: 'hotovo', odpoved: 'X' }, undefined, B(KLIC))).status === 403);
+const kr = await patch({ id: 'P-0001', roadmapa: '#713' }, undefined, B(KLIC));
+test('RJ N5: číslo roadmapy koordinace doplnit smí (200), stav beze změny', kr.status === 200 && kr.pripominka.stav === 'hotovo' && kr.pripominka.roadmapa === '#713', kr);
+test('RJ N5: ani po doplnění roadmapy koordinací (záznam průběhu „koordinace“) stav nezmění (403)',
+  (await patch({ id: 'P-0001', stav: 'test' }, undefined, B(KLIC))).status === 403);
 /* N3 revize (22. 11. 2026): hlavička Authorization jiného schématu (Basic od
  * hesla webu nebo proxy) nesmí běžný požadavek přesměrovat na cestu klíče.
  * Pojistka: před opravou GET se správcovou cookie a Basic → 400. */
