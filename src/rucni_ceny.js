@@ -101,6 +101,17 @@ function rucniCenaCestaRadku(r) {
   return k || '';
 }
 
+/* ČÁSTKA BEZ DOKLADU (revize Fable L1, 22. 11. 2026). Ceník částku řádku
+ * nezná, takže ji kontrola ceníku (B112 — kandidátem je i uložená verze
+ * varianty) ani cenová výjimka neuvidí. Hodnota na cestě z RC_CASTKY_RADKU
+ * proto MUSÍ mít platný záznam (rucniCenaPlati) — u každé role; jinak server
+ * uložení odmítne (rucniCenyServer) a zábrana / zámek ji berou jako
+ * nepotvrzenou (rucniCenyPrehled). Vrací cesty bez dokladu. */
+function rucniCenyCastkyBezDokladu(data) {
+  const c = data && data.cenik;
+  return Object.keys(RC_CASTKY_RADKU).filter(k => rcGet(c, k) !== undefined && !rucniCenaPlati(data, k));
+}
+
 function rcDef() {
   if (typeof CENIK_DEF !== 'undefined') return CENIK_DEF;
   if (typeof require === 'function') { try { return require('./cenik.js').CENIK_DEF || []; } catch (e) { return []; } }
@@ -291,6 +302,10 @@ function rucniCenyPrehled(data, opts) {
       if (typeof d === 'number' && typeof r.zaklad === 'number' && d !== r.zaklad) out.cenikZmena.push(pol);
     }
   });
+  /* L1: částka řádku bez platného záznamu = nepotvrzená (zábrana, zámek). */
+  rucniCenyCastkyBezDokladu(data).forEach(cesta => {
+    if (!out.nepotvrzene.some(x => x.cesta === cesta)) out.nepotvrzene.push({ cesta, popis: rucniCenaPopis(cesta) });
+  });
   /* Starší vlastní cena příplatku dle nabídky (S13) bez záznamu. */
   if (typeof opts.dleNabidkyF === 'function' && typeof opts.dnesniF === 'function') {
     const c = (data && data.cenik && data.cenik.priplatky && typeof data.cenik.priplatky === 'object') ? data.cenik.priplatky : {};
@@ -368,8 +383,19 @@ function rucniCenyServer(stara, nova, relace, ctx) {
     if (!v || !v.data || typeof v.data !== 'object') continue;
     const o = rucniCenyOciste(v.data.rucniCeny);
     if (!o.ok) return { ok: false, status: 400, chyba: 'Varianta „' + String(v.nazev || v.id).slice(0, 60) + '": ' + o.chyba + '.' };
+    const zamcena = typeof ctx.zamcenaDriv === 'function' && ctx.zamcenaDriv(v);
+    /* L1 (revize Fable 22. 11. 2026): částka řádku (lakování z nabídky) jen
+     * s platným záznamem — u každé role, i u klonu a importu ze souboru.
+     * Zamčená varianta je doklad (hlídá zámek), obnova bere data ze zálohy. */
+    if (!zamcena && !ctx.obnova) {
+      const tmp = { cenik: v.data.cenik, rucniCeny: o.mapa || {} };
+      const bez = rucniCenyCastkyBezDokladu(tmp);
+      if (bez.length) return { ok: false, status: 403, chyba: 'Varianta „' + String(v.nazev || v.id).slice(0, 60) + '": „'
+        + bez.map(rucniCenaPopis).join('“, „') + '“ nemá doklad (ruční cenu z nabídky se zdrojem). Zadejte ji v Kalkulaci OCK '
+        + 'tlačítkem „✎ cena z nabídky“, nebo ji vraťte na ceník (↺).' };
+    }
     if (!o.mapa || !Object.keys(o.mapa).length) { delete v.data.rucniCeny; continue; }
-    if (typeof ctx.zamcenaDriv === 'function' && ctx.zamcenaDriv(v)) continue;   // doklad, hlídá zámek
+    if (zamcena) continue;   // doklad, hlídá zámek
     if (ctx.obnova) { v.data.rucniCeny = o.mapa; continue; }
     const sv = stare.find(x => x && x.id === v.id);
     /* Klon (B154): totéž potvrzení se stejným obsahem z jiné uložené varianty. */
@@ -425,7 +451,7 @@ function rucniCenyZamekProblem(zak, v) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { RC_CASTKY_RADKU, rucniCenaCastkaRadku, rucniCenaCestaRadku, RC_ZDROJ, RC_TEXT_MAX, RC_MAX, RC_NEPOTVRZENO, RC_POTVRZENO, RC_BEZ_DOKLADU, RC_BEZ_ZDROJE, RC_ZDROJ_HLASKA, rucniCenaMaZdroj,
+  module.exports = { RC_CASTKY_RADKU, rucniCenaCastkaRadku, rucniCenaCestaRadku, rucniCenyCastkyBezDokladu, RC_ZDROJ, RC_TEXT_MAX, RC_MAX, RC_NEPOTVRZENO, RC_POTVRZENO, RC_BEZ_DOKLADU, RC_BEZ_ZDROJE, RC_ZDROJ_HLASKA, rucniCenaMaZdroj,
     rucniCenaSmi, rucniCenaPopis, rucniCenaJednotka, rucniCenyMapa, rucniCenaZaznam, rucniCenaPlati, rucniCenaObsah,
     rucniCenaDnes, rucniCenaProsla, rucniCenaStav, rucniCenaNastav, rucniCenaZdrojNastav, rucniCenaPotvrd,
     rucniCenaVrat, rucniCenaPoSet, rucniCenyPrehled, rucniCenaOdchylka, rucniCenaZdrojText,

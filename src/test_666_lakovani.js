@@ -12,7 +12,9 @@
  *
  * Pojistka proti prázdnému testu: proti 05a496d (v22.11.5, před #666) sada
  * padá v oddílu 1 (rucniCenaSmi('C.lak.nabidkaKc') = false, jádro částku
- * nebere) a s ním padají oddíly 2–6. */
+ * nebere) a s ním padají oddíly 2–6.
+ * Pojistka revize Fable L1/L2: proti fe690e0 padá oddíl 7 (funkce
+ * rucniCenyCastkyBezDokladu chybí, zveřejnění klíč nechá). */
 const nacti = f => { const m = require(f); Object.keys(m).forEach(k => { global[k] = m[k]; }); };
 nacti('./format.js'); nacti('./cenik.js'); nacti('./cenik_stari.js'); nacti('./cenik_rady.js');
 nacti('./engine.js'); nacti('./engine_proj.js'); nacti('./techspec.js'); nacti('./zamek.js');
@@ -157,6 +159,25 @@ console.log('===== 6. tisk: výsledek strany (nabídka, krycí list) nese část
   const r0 = vysledekStrany(zakazka(), zakazka().varianty[0], 'ock', JEKLY);
   const cena0 = cenaNabidkyOck(r0, d.slevaOck, d.zaokrOck);
   test('cena nabídky klesla (částka z nabídky je nižší než výpočet z ceníku)', cena && cena0 && cena.cena < cena0.cena, [cena && cena.cena, cena0 && cena0.cena]);
+}
+
+console.log('===== 7. revize Fable L1/L2: částka bez dokladu, zveřejnění =====');
+{ const z = zakazka(); const v = z.varianty[0]; const d = v.data;
+  d.cenik.lak.nabidkaKc = 1;                                      // bez záznamu (podvrh přes API)
+  test('L1: částka bez záznamu = bez dokladu', JSON.stringify(rucniCenyCastkyBezDokladu(d)) === JSON.stringify([LAK]));
+  test('L1: přehled ji vede jako nepotvrzenou (zábrana tisku)', rucniCenyPrehled(d).nepotvrzene.some(x => x.cesta === LAK));
+  test('L1: nový zámek odmítnut (i pro správce — rucniCenyZamekProblem nehledí na roli)', !!rucniCenyZamekProblem(z, v));
+  d.cenik.lak.nabidkaKc = '';
+  test('L1: i prázdný text na cestě bez záznamu = bez dokladu', rucniCenyCastkyBezDokladu(d).length === 1);
+  delete d.cenik.lak.nabidkaKc;
+  test('bez klíče nic', rucniCenyCastkyBezDokladu(d).length === 0 && !rucniCenyPrehled(d).nepotvrzene.length);
+  rucniCenaNastav(d, LAK, 100);
+  test('se záznamem doklad má', rucniCenyCastkyBezDokladu(d).length === 0);
+  const sv = rucniCenyServer(null, { varianty: [{ id: 'x', nazev: 'X', data: { cenik: { lak: { nabidkaKc: 3 } } } }] }, { role: 'Administrátor' }, {});
+  test('L1 server: rucniCenyServer částku bez záznamu odmítne 403 (i správci)', !sv.ok && sv.status === 403, sv);
+  const c = kopie(PLATNY.cenik); c.lak.nabidkaKc = 5;
+  test('L2: zveřejnění klíč z ceníku odstraní', !('nabidkaKc' in cenikZverejneniOcisti(c).lak) && c.lak.nabidkaKc === 5);
+  test('L2: záznam programu (zveřejnění, soubor) klíč nenese', !('nabidkaKc' in programZaznam({ cenik: c, cenikProj: {} }, 2).cenik.lak));
 }
 
 console.log(`\n${ok} OK, ${fail} FAIL`);

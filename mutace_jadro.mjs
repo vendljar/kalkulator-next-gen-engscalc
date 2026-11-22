@@ -2783,6 +2783,11 @@ const MUTACE = [
   /* [LAK] #666 (22. 11. 2026, J. V. 18. 11.): lakování — cena z nabídky
    * lakovny jako částka řádku (C.lak.nabidkaKc). Hlídá src/test_666_lakovani.js
    * (pole `sady` = pustit ji první). */
+  { nazev: '[LAK] L2: zveřejnění nechá částku lakování v ceníku', soubor: 'cenik_rady.js',
+    hledej: "    if (cil && typeof cil === 'object') delete cil[last];",
+    nahrad: "",
+    proc: 'správce by částku zveřejnil a nová zakázka by měla lakování bez dokladu (revize Fable L2)',
+    sady: ['test_666_lakovani.js'] },
   { nazev: '[LAK] částka z nabídky lakovny se nepoužije', soubor: 'engine.js',
     hledej: "  const lakovaniKc = (lakNabidka !== null ? lakNabidka : lakDleCeniku) + lakVlastniKc;",
     nahrad: "  const lakovaniKc = lakDleCeniku + lakVlastniKc;",

@@ -40,7 +40,7 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 
 - **LAK #666** (`claude/lak-lakovani`, v22.11.8, nad 05a496d + 21eeffa): cena z nabídky lakovny jako částka řádku
   `C.lak.nabidkaKc` (mimo ceník/Nastavení, `RC_CASTKY_RADKU` v `rucni_ceny.js`), ruční cena #561 se zdrojem a potvrzením;
-  bez zdroje = nepotvrzená (zábrana, 403). Svěřené LAK-1/LAK-2, otázky #716. Testy `test_666_lakovani` (44 + 19),
+  bez zdroje = nepotvrzená (zábrana, 403). Svěřené LAK-1/LAK-2, otázky #716. Testy `test_666_lakovani` (53 + 31), revize Fable L1/L2 opraveny,
   `overit_lakovani` 13, mutace [LAK] 9/9 + 9/9, kolo VŠE ZELENÉ, SHODA 367/367. PG blok přesunut (je v archivu 2026-11).
 - **JT #713** (`claude/jt-jazyk-tisku`, prac.): HOTOVO, detail `podklady/predavky/JT_jazyk_tisku.md`.
 - **PR #707** (`claude/pr-pripominky`, v22.11.5): Připomínky z aplikace, mez B257, HOTOVO; revize poradce před sloučením. Detail a bezpečnostní rozhodnutí: `podklady/predavky/PR_pripominky.md`.

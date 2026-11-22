@@ -9,7 +9,12 @@
  *      srozumitelnou větou; nepotvrzená se zdrojem → zámek 403;
  *   4) záznam s jinou hodnotou než ceník varianty → odmítnuto (B112 403);
  *   5) zamčená varianta: částku po odeslání změnit nejde;
- *   6) ↺ vrátit (klíč smazán) → uložení 200, lakování zase z ceníku.
+ *   6) ↺ vrátit (klíč smazán) → uložení 200, lakování zase z ceníku;
+ *   7) revize Fable L1: záznam smazán a částka ponechána (druhé uložení),
+ *      zámek, klon, import ze souboru, správce, hodnota textem → 403;
+ *   8) L2: zveřejněný ceník (i zahraniční řada) klíč nenese.
+ * Pojistka L1/L2: proti fe690e0 padá oddíl 7 (krok 2, klon, import a správce
+ * → 200) a oddíl 8 (platný ceník nese nabidkaKc).
  * Čísla jsou smyšlená (zkušební ceník).
  *
  * Pojistka: proti 05a496d (před #666) padá oddíl 2 (403 B112 „Ceník
@@ -164,6 +169,56 @@ await blok(async () => {
   test('klíč i záznam pryč', !('nabidkaKc' in u.varianty[0].data.cenik.lak) && !u.varianty[0].data.rucniCeny, u.varianty[0].data.rucniCeny);
   const rz = await uloz(zamkni(u), cO);
   test('zámek bez částky (200)', rz.status === 200, rz);
+});
+
+console.log('===== 7. revize Fable L1: částka bez záznamu po krocích, klon, import, správce =====');
+await blok(async () => {
+  /* krok 1: záznam bez zdroje a potvrzení → 200 */
+  const r1 = await uloz(sNabidkou('L1 kroky', 1, { dodavatel: '', cislo: '', potvrdil: null }), cO);
+  test('L1 krok 1: částka se záznamem bez zdroje (200)', r1.status === 200, r1);
+  /* krok 2: záznam smazat, částku nechat → 403 (dřív 200 — uložená verze byla kandidátem B112) */
+  const g = await nacti(r1.soubor, cO);
+  delete g.varianty[0].data.rucniCeny;
+  const r2 = await uloz(kopie(g), cO);
+  test('L1 krok 2: záznam smazán, částka zůstala → 403 s větou o dokladu', r2.status === 403 && /nemá doklad/.test(r2.chyba || ''), r2);
+  /* krok 3: zámek té varianty → 403 */
+  const r3 = await uloz(zamkni(kopie(g)), cO);
+  test('L1 krok 3: zámek s částkou bez záznamu → 403', r3.status === 403, r3);
+  /* klon bez záznamu */
+  const r4 = await uloz(sNabidkou('L1 klon', 7000), cO);
+  const g4 = await nacti(r4.soubor, cO);
+  const kl = zam.klonujVariantu(g4, g4.varianty[0].id);
+  const vk = g4.varianty.find(v => v.id === kl.id); delete vk.data.rucniCeny;
+  const r5 = await uloz(g4, cO);
+  test('L1 klon bez záznamu → 403', r5.status === 403 && /nemá doklad/.test(r5.chyba || ''), r5);
+  /* import ze souboru (prohlížeč: importZakazka) bez záznamu */
+  const zf = zk.importZakazka(kopie(sNabidkou('L1 import', 9000, null)));
+  test('příprava: import klíč zachová', zf.varianty[0].data.cenik.lak.nabidkaKc === 9000);
+  const r6 = await uloz(zf, cO);
+  test('L1 import ze souboru bez záznamu → 403', r6.status === 403, r6);
+  /* správce: B112 ho nehlídá, doklad ano */
+  const r7 = await uloz(sNabidkou('L1 správce', 5, null), cA);
+  test('L1 správce: částka bez záznamu → 403', r7.status === 403 && /nemá doklad/.test(r7.chyba || ''), r7);
+  /* neplatná hodnota (text) bez záznamu taky ne */
+  const r8 = await uloz(sNabidkou('L1 text', '5', null), cA);
+  test('L1 hodnota textem bez záznamu → 403', r8.status === 403, r8);
+});
+
+console.log('===== 8. revize Fable L2: zveřejněný ceník částku nenese =====');
+await blok(async () => {
+  const c2 = kopie(platny().cenik); c2.lak.nabidkaKc = 5; c2.dph = (+c2.dph || 0.21) + 0;
+  c2.montazHodKc = (+c2.montazHodKc || 0) + 1;          // jiná změna, ať verze není beze změny
+  const r = await post(program, 'http://x/api/program', { cenik: c2, cenikProj: platny().cenikProj,
+    zahranicni: { ceny: { 'C.lak.nabidkaKc': 5 }, jenZahr: {} },
+    slevy: { minMarze: 0, maxGlobalni: 1, stropy: { 'Obchodník': 0.05, 'Vedoucí': 0.15, 'Administrátor': 1 } }, poznamka: 'L2' }, cA);
+  const t = await r.json();
+  test('L2: zveřejnění s jinou změnou projde (200)', r.status === 200, t);
+  const p = platny();
+  test('L2: platný ceník klíč lak.nabidkaKc nenese', !('nabidkaKc' in (p.cenik.lak || {})), p.cenik.lak);
+  test('L2: zahraniční řada cestu C.lak.nabidkaKc nenese', !(p.zahranicni && p.zahranicni.ceny && 'C.lak.nabidkaKc' in p.zahranicni.ceny), p.zahranicni);
+  /* nová zakázka z platného ceníku: lakování z ceníku, uložení 200 */
+  const z = nova('L2 nová'); const rz = await uloz(z, cO);
+  test('L2: nová zakázka bez částky (200)', rz.status === 200 && !('nabidkaKc' in d0(z).cenik.lak), rz);
 });
 
 console.log(`\n${ok} OK, ${fail} FAIL`);

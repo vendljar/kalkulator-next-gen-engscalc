@@ -23,7 +23,11 @@ vzor #667 / #561. Bez ruční částky se cena nemění (porovnání sestavení 
   schválení jako směs ceníků nejde) — svěřené LAK-1, čeká na potvrzení J. V.
 - **Controlling:** řádek lakování (klíč `C.lak.*`, skupina beze změny) nese zdroj a odchylku od výpočtu z ceníku.
   Detail výpočtu ukazuje „Cena z nabídky lakovny“. Word, náhled a krycí list berou částku z řádku výsledku.
-- **Testy:** `src/test_666_lakovani.js` (44), `netlify/test_666_lakovani.mjs` (19), `overit_lakovani.mjs` (13);
+- **Revize Fable (fe690e0 → opraveno):** L1 částka bez záznamu po druhém uložení / klonem / importem prošla (uložená
+  verze byla kandidátem B112) → hodnota na cestě částky musí mít platný záznam u každé role (`rucniCenyCastkyBezDokladu`:
+  server 403, zábrana tisku a zámek jako nepotvrzená); L2 zveřejněný ceník (i zahraniční řada) klíč nenese
+  (`cenikZverejneniOcisti`). L3 a L4 zapsány k otázkám #716.
+- **Testy:** `src/test_666_lakovani.js` (53), `netlify/test_666_lakovani.mjs` (31), `overit_lakovani.mjs` (13);
   pojistky proti 05a496d v commitech. Mutace `[LAK]` jádro 9/9, server 9/9. Kolo `--bez-mutaci --proti 2b68f98` VŠE ZELENÉ (514/0/6, hodiny 416/0/1, statické 10/10, porovnání SHODA 367/367).
 
 ## v22.11.6 — JT #713 (prac.): jazyk hlavičky specifikace OCK = Jazyk tisku nabídky, větev claude/jt-jazyk-tisku
