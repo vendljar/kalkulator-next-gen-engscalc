@@ -19,6 +19,11 @@ doby jen vyjmenované složky a přípony (nová složka, .ts či .npmrc prošly
   3. tajemství: privátní klíče, tokeny známého tvaru (GitHub, AWS, Netlify,
      Slack), a tajemství serveru zapsaná doslova do kódu (TAJEMSTVI_RELACE,
      ADMIN_INIT_HESLO, PIPEDRIVE_API_TOKEN, ADMIN_EMAIL = '…').
+  Od auditu 20. 11. 2026 (B253, B254): i tajemství serveru s dvojtečkou
+  nebo bez uvozovek, adresa Apps Script, heslo v adrese, text v UTF-16,
+  soubor s textovou příponou i s NUL; v --rozsah navíc soubory ve složkách
+  dist/, _DB/ … (push je zveřejní), zpráva anotovaného tagu a každý nový
+  řádek *@doména v povoleném seznamu (nález — celou doménu povoluje J. V.).
 
 Použití:  python3 nastroje/kontrola_udaju.py            (0 = čisté, 1 = nálezy, 2 = špatná volba)
           python3 nastroje/kontrola_udaju.py --vypis    (jen vypíše všechny výskyty)
@@ -94,7 +99,26 @@ TAJEMSTVI = [
     ('klíč sk-… / sk-proj-…', re.compile(r'\bsk-(?:proj-)?[A-Za-z0-9_-]{32,}')),
     ('40 hex v konstantě s názvem klíče',
      re.compile(r'(KLIC|KEY|TOKEN|SECRET|TAJ)\w*[\'"]?\s*[:=]\s*[\'"][0-9a-fA-F]{40}[\'"]', re.I)),
+    # B253 (audit 20. 11. 2026, NS-2): adresa webové aplikace Apps Script
+    # (…/macros/s/<id>/exec) je přístupový bod skriptu — do repa patří jen
+    # zástupný text (…/macros/s/<id>/exec, …/s/…).
+    ('adresa Apps Script', re.compile(r'script\.google\.com/(?:a/macros/[^/\s]+/|macros/)s/[A-Za-z0-9_-]{20,}')),
 ]
+# B253 (NS-2): heslo v adrese schéma://uživatel:heslo@host. Zástupné texty
+# (heslo, password, ***, ${…}, <…>, …) nálezem nejsou.
+HESLO_V_ADRESE = re.compile(r'(?<![\w])[A-Za-z][A-Za-z0-9+.-]*://[^/\s:@\'"<>]+:(?P<h>[^/\s@\'"<>]+)@')
+HESLO_ZASTUPNE = re.compile(r'^(heslo|password|passwd|pass|pwd|secret|tajne|tajemstvi|x+|\*+|\.+|…|\$.*|\{.*|%.*)$', re.I)
+# B253 (NS-2): tajemství serveru zapsané s dvojtečkou (JSON, YAML, objekt JS)
+# nebo bez uvozovek (.env, výpis prostředí, log). Hodnota musí vypadat jako
+# tajemství (aspoň 8 znaků, písmeno i číslice nebo znak); odkaz na proměnnou
+# (process.env.X, ${{ secrets.X }}, $X, os.environ…) nálezem není.
+TAJEMSTVI_SERVERU_PRIRAZENI = re.compile(
+    r'\b(TAJEMSTVI_RELACE|ADMIN_INIT_HESLO|PIPEDRIVE_API_TOKEN)[\'"]?\s*[:=]\s*(?P<q>[\'"]?)(?P<h>[^\s\'"`,;)}\]]{8,})')
+TAJEMSTVI_SERVERU_ODKAZ = re.compile(
+    r'^(process\.|env\.|os\.|import|require|Deno\.|Netlify\.|this\.|undefined|null|None|true|false|\$|\{|<|…|\.\.\.)', re.I)
+# Zkušební hodnota v těchto nových tvarech: jen výslovně testovací slova
+# (pokus/docasne platí dál jen pro process.env.X = '…', viz níže).
+TAJEMSTVI_SERVERU_ZKUSEBNI = re.compile(r'(zkusebni|testovaci|harness|priklad)', re.I)
 # SEC-M11: výjimka pro zkušební hodnotu (níže) nesmí krýt hodnotu, která
 # v sobě nese 32 a víc hex znaků — „pokus" + skutečný token není zkušební.
 DLOUHY_HEX = re.compile(r'[0-9a-fA-F]{32,}')
@@ -134,10 +158,34 @@ def _vynechat(rel):
     return rel in VYNECHAT_SOUBORY or any(c in VYNECHAT_SLOZKY for c in casti[:-1])
 
 
+def _utf16(data):
+    """B253 (NS-2): text v UTF-16 (export „Unicode text"/CSV z Excelu) má
+    NUL v každém druhém bajtu a dřív se přeskočil jako binární. Vrací
+    kódování ('utf-16' s BOM, 'utf-16-le'/'utf-16-be' bez BOM podle toho,
+    kde leží NUL), jinak None."""
+    if data[:2] in (b'\xff\xfe', b'\xfe\xff'):
+        return 'utf-16'
+    vzorek = data[:8192]
+    if len(vzorek) < 8:
+        return None
+    sude, liche = vzorek[0::2], vzorek[1::2]
+    podil = lambda b: b.count(0) / max(len(b), 1)
+    if podil(liche) >= 0.6 and podil(sude) <= 0.05:
+        return 'utf-16-le'
+    if podil(sude) >= 0.6 and podil(liche) <= 0.05:
+        return 'utf-16-be'
+    return None
+
+
 def _binarni(data, rel):
     """SEC-M11: binární soubor (NUL v prvních 8 kB) se přeskočí — kromě
-    sešitů a dokumentů Office, ty se rozbalí (ZIP_PRIPONY)."""
-    return not rel.endswith(ZIP_PRIPONY) and b'\0' in data[:8192]
+    sešitů a dokumentů Office, ty se rozbalí (ZIP_PRIPONY), a textu
+    v UTF-16 (B253), ten se dekóduje."""
+    return not rel.endswith(ZIP_PRIPONY) and b'\0' in data[:8192] and _utf16(data) is None
+
+
+def _textova_pripona(rel):
+    return rel.lower().endswith(PRIPONY + KORENOVE_PRIPONY)
 
 
 def soubory():
@@ -169,7 +217,7 @@ def soubory():
         cesta = os.path.join(KOREN, r_)
         try:
             with open(cesta, 'rb') as f:
-                if _binarni(f.read(8192), r_):
+                if _binarni(f.read(8192), r_) and not _textova_pripona(r_):
                     continue
         except OSError:
             continue
@@ -192,8 +240,13 @@ def text_dat(data, rel):
         except (OSError, zipfile.BadZipFile):
             return '[nečitelný soubor Office]'
         return '\n'.join(casti)
-    if _binarni(data, rel):
+    kod = _utf16(data) if b'\0' in data[:8192] else None
+    if kod:
+        return data.decode(kod, 'replace')
+    if _binarni(data, rel) and not _textova_pripona(rel):
         return None
+    # B253 (NS-2): soubor s textovou příponou (.csv, .txt, .js …) se čte vždy,
+    # i když nese NUL — dřív se celý přeskočil jako binární.
     return data.decode('utf-8', 'replace')
 
 
@@ -219,6 +272,27 @@ def polozky_rozsahu(revize):
     commity = [c for c in _git('rev-list', *revize).decode().split() if c]
     bloby = {}
     out = []
+    # B253 (NS-2): zpráva ANOTOVANÉHO tagu je obsah, který push zveřejní —
+    # rev-list tag rozbalí na commit a zprávu by jinak nikdo nečetl.
+    # Kladná revize, která je objektem tagu (i tag na tag), přidá zprávu
+    # (hlavička tagu s adresou autora se nečte — u commitů také ne).
+    for rev in revize:
+        if rev.startswith(('-', '^')):
+            continue
+        obj = rev
+        for _ in range(10):
+            try:
+                if _git('cat-file', '-t', obj).decode().strip() != 'tag':
+                    break
+                surovy = _git('cat-file', 'tag', obj).decode('utf-8', 'replace')
+            except subprocess.CalledProcessError:
+                break
+            hlavicka, _, zprava = surovy.partition('\n\n')
+            out.append(('tag %s (zpráva)' % obj[:40], zprava))
+            m = re.match(r'object ([0-9a-f]+)', hlavicka)
+            if not m:
+                break
+            obj = m.group(1)
     for c in commity:
         zprava = _git('log', '-1', '--format=%B', c).decode('utf-8', 'replace')
         out.append(('commit %s (zpráva)' % c[:9], zprava))
@@ -231,7 +305,11 @@ def polozky_rozsahu(revize):
             cesta = pole[k + 1].decode('utf-8', 'replace')
             if len(m) < 5 or m[1] == '160000':          # podmodul
                 continue
-            if not _vynechat(cesta):
+            if cesta == POVOLENE_REL:
+                out.extend(nove_domeny(c, m[3]))
+            # B253 (NS-2): v rozsahu se nevynechávají složky (dist/, _DB/ …):
+            # soubor přidaný přes `git add -f` push zveřejní stejně jako jiný.
+            if cesta not in VYNECHAT_SOUBORY:
                 bloby.setdefault(m[3], (c, cesta))
     for sha, (c, cesta) in sorted(bloby.items(), key=lambda x: x[1][1]):
         data = _git('cat-file', 'blob', sha)
@@ -239,6 +317,33 @@ def polozky_rozsahu(revize):
         if t is not None:
             out.append(('%s@%s' % (cesta, c[:9]), t))
     return out, len(commity)
+
+
+POVOLENE_REL = 'nastroje/povolene_kontakty.txt'
+
+
+def _domeny_textu(text):
+    return {r.split('#', 1)[0].strip()[2:].lower() for r in text.split('\n')
+            if r.split('#', 1)[0].strip().startswith('*@')}
+
+
+def nove_domeny(c, sha_po):
+    """B254 (audit 20. 11. 2026, NS-3): kontrola čte povolený seznam z téhož
+    pushe — commit, který přidá `*@doména`, by pustil libovolnou adresu té
+    domény. V rozsahu pushe je proto KAŽDÝ nový řádek `*@…` nález (přesné
+    adresy smyšlených kontaktů se přidávat dál smí). Celou doménu povoluje jen
+    J. V. (SEC-N4: jen rezervované a zkušební domény; hlídá i
+    src/test_kontrola_udaju.js). Vrací [(popis, značka)] pro hlavní smyčku."""
+    rodice = _git('rev-list', '--parents', '-n', '1', c).decode().split()[1:]
+    if not rodice:          # kořen nebo hranice mělkého klonu — není s čím srovnat
+        return []
+    po = _domeny_textu(_git('cat-file', 'blob', sha_po).decode('utf-8', 'replace'))
+    try:
+        pred = _domeny_textu(_git('show', '%s^:%s' % (c, POVOLENE_REL)).decode('utf-8', 'replace'))
+    except subprocess.CalledProcessError:
+        pred = set()
+    return [('%s@%s' % (POVOLENE_REL, c[:9]), '\0nová celá doména v povoleném seznamu (povoluje jen J. V.): *@' + d)
+            for d in sorted(po - pred)]
 
 
 def maskuj(radek, vzor):
@@ -273,6 +378,10 @@ def main():
             except OSError:
                 continue
     for rel, text in polozky:
+        if text.startswith('\0'):                     # značka z nove_domeny (nález celé položky)
+            popis, _, co = text[1:].partition(': ')
+            nalezy.append((rel, 0, popis, co or '-'))
+            continue
         for i, radek in enumerate(text.split('\n'), 1):
             for m in EMAIL.finditer(radek):
                 e = m.group(0).lower().rstrip('.')
@@ -296,6 +405,24 @@ def main():
             for popis, vzor in TAJEMSTVI:
                 if vzor.search(radek) and not vyj:
                     nalezy.append((rel, i, popis, maskuj(radek, vzor)))
+            for m in HESLO_V_ADRESE.finditer(radek):
+                if not HESLO_ZASTUPNE.match(m.group('h')):
+                    nalezy.append((rel, i, 'heslo v adrese', maskuj(radek, HESLO_V_ADRESE)))
+            if not vyj and TAJEMSTVI_SERVERU_PRIRAZENI.search(radek) \
+                    and not any(r_ == rel and j == i for r_, j, _, _ in nalezy):   # řádek už je nález
+                for m in TAJEMSTVI_SERVERU_PRIRAZENI.finditer(radek):
+                    h = m.group('h')
+                    if TAJEMSTVI_SERVERU_ODKAZ.match(h) or not re.search(r'[A-Za-z]', h) \
+                            or not re.search(r'[0-9\W_]', h):
+                        continue
+                    # Bez uvozovek a tvaru výrazu v kódu (SPRAVCE.heslo, nahodne(32)) → odkaz, ne hodnota.
+                    if not m.group('q') and re.match(r'^[A-Za-z_$][\w$]*(\.[\w$]+)+$|^[A-Za-z_$][\w$.]*\(', h):
+                        continue
+                    if TAJEMSTVI_SERVERU_ZKUSEBNI.search(h) and not DLOUHY_HEX.search(h):
+                        continue
+                    nalezy.append((rel, i, 'tajemství serveru v přiřazení (dvojtečka / bez uvozovek)',
+                                   maskuj(radek, TAJEMSTVI_SERVERU_PRIRAZENI)))
+                    break
     if vypis:
         print('E-maily ve stromu (%d):' % len(videno['email']))
         for e in sorted(videno['email']):

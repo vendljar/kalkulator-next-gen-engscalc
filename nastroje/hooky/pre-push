@@ -17,6 +17,10 @@
 # nastroje/hooky; samo ho volá testovaci_kolo.sh a pred_pushem.sh, sezení
 # podle CLAUDE.md hned na začátku). `git push --no-verify` hook
 # obejde — v sezeních Claude je ZAKÁZANÉ (CLAUDE.md, oddíl Testy).
+# B255 (audit 20. 11. 2026): stejně ho obejde `git -c core.hooksPath=… push`
+# a zápis do repa přes API GitHubu (ne `git push`) — hook to technicky
+# zabránit neumí; zbývá druhá vrstva, workflow kontrola_udaju.yml
+# (mez v BEZPECNOST_MEZE.md).
 set -u
 vzdalene="${1:-origin}"
 koren="$(git rev-parse --show-toplevel)" || exit 1
