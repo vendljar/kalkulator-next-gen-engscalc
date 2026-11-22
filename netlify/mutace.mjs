@@ -762,8 +762,8 @@ const MUTACE = [
     nahrad: "",
     proc: 'kopie pro jiného zákazníka by nesla údaje cizích zákazníků (R1)', sady: ['../src/test_vz_model.js'] },
   { nazev: 'VSD: poznámka i s vypnutým vypínačem [VSD]', soubor: 'lib/pd_poznamka.mjs',
-    hledej: "  if (zapnuto !== true || !dealId || !pdNastaveno() || !pdZapisPovolen()) return { stav: 'bez' };",   /* VZ-E5: zobecněno na druh poznámky; BZ: vypínač zápisu */
-    nahrad: "  if (!dealId || !pdNastaveno() || !pdZapisPovolen()) return { stav: 'bez' };",
+    hledej: "  if (zapnuto !== true || !dealId || !pdNastaveno()) return { stav: 'bez' };",   /* VZ-E5: zobecněno na druh poznámky; BZ: vypínač zápisu (RJ: zvlášť s varováním) */
+    nahrad: "  if (!dealId || !pdNastaveno()) return { stav: 'bez' };",
     proc: 'na ostrém webu s vypnutou funkcí by uložení psalo do Pipedrive', sady: ['test_vsd_pd_poznamka.mjs'] },
   { nazev: 'VSD: pole poznámky převzaté od klienta [VSD]', soubor: 'lib/pd_poznamka.mjs',
     hledej: '  delete zak[druh.pole];\n  if (plati) zak[druh.pole] = plati;',   /* VZ-E5: zobecněno na druh poznámky */
