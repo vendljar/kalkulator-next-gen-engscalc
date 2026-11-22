@@ -79,10 +79,12 @@ async function uloz(zak, cookie) {
   return t;
 }
 
-/* B235/B236 (dávka BZ): server zapisuje jen do dealu, který zakázce patří
- * (pd_overeni.mjs) — přípravek dá dealu v simulátoru číslo nabídky zakázky. */
-const BZ_CN = SIM.pdSimStav().data.pole.deal.find(p => p.field_name === 'Číslo nabídky (CN)').field_code;
-const dealPatri = (id, cislo) => { const d = SIM.pdSimStav().data.dealy.find(x => String(x.id) === String(id)); if (d) d.custom_fields[BZ_CN] = cislo; };
+/* B235/B236 (dávka BZ): server zapisuje jen do dealu, který zakázce patří (pd_overeni.mjs). */
+/* RJ (#704-7, J. V. 22. 11. 2026): pravidlo 3 (číslo nabídky) zrušeno — vazbu dokládá
+ * pole „Odkaz na kalkulaci" v dealu (odkaz na soubor zakázky, uloJmenoSouboru). */
+const BZ_ODKAZ = SIM.pdSimStav().data.pole.deal.find(p => p.field_name === 'Odkaz na kalkulaci').field_code;
+const dealPatri = (id, cislo) => { const d = SIM.pdSimStav().data.dealy.find(x => String(x.id) === String(id));
+  if (d) d.custom_fields[BZ_ODKAZ] = 'http://x/?zakazka=' + encodeURIComponent(globalThis.uloJmenoSouboru({ cislo })); };
 
 const D = SIM.pdSimStav().data;
 const dealy = D.dealy.filter(d => d.status !== 'deleted').map(d => d.id).slice(40);   // jiné dealy než sada #588

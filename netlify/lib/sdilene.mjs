@@ -605,6 +605,44 @@ export async function podpisCti(email) {
   } catch (e) { return ''; }
 }
 
+/* ZMRAZENÝ PODPIS ODESLANÉ NABÍDKY (#665, RJ, rozhodnutí J. V. 22. 11. 2026).
+ * Dotisk odeslané nabídky kolegou nese jméno PŮVODNÍHO zpracovatele ze snímku
+ * zámku — a teď i jeho sken podpisu. Sken (až ~660 kB) do zakázky nepatří
+ * (strop 4 MB, každé uložení by ho vozilo), proto:
+ *   – při prvním přijetí zámku se podpis přihlášeného zkopíruje do úložiště
+ *     podpisů pod klíč `zamek/<otisk>` (otisk = prvních 32 hex SHA-256 obrázku;
+ *     stejný sken = jedna kopie), snímek zámku nese jen `podpisOtisk`;
+ *   – kopie se nemění ani nemaže (pozdější výměna či smazání podpisu v účtu
+ *     odeslanou nabídku nezmění); jde se zálohou a obnovou jako ostatní podpisy;
+ *   – vydá ji jen GET /api/zakazky?soubor=…&podpisZamku=<varianta> té zakázky. */
+export const PODPIS_ZAMKU_PREDPONA = 'zamek/';
+const OTISK_PODPISU = /^[0-9a-f]{32}$/;
+export function podpisOtisk(obrazek) {
+  return createHash('sha256').update(String(obrazek || '')).digest('hex').slice(0, 32);
+}
+/* Nese uložení nový zámek? → { otisk, zapis() } s podpisem přihlášeného, jinak null. */
+export async function podpisZamkuPriprav(stara, zak, relace, uzamcena) {
+  const jeZam = typeof uzamcena === 'function' ? uzamcena : (v) => !!(v && v.zamek && v.zamek.zamceno);
+  const drive = new Set(((stara && stara.varianty) || []).filter(v => v && jeZam(v)).map(v => v.id));
+  if (!((zak && zak.varianty) || []).some(v => v && jeZam(v) && !drive.has(v.id))) return null;
+  const obrazek = relace && relace.email ? await podpisCti(relace.email) : '';
+  if (!obrazek || !podpisZkontroluj(obrazek).ok) return null;
+  const otisk = podpisOtisk(obrazek);
+  return { otisk, async zapis() {
+    const p = await uloziste(PODPIS_ULOZISTE);
+    if (!(await p.cti(PODPIS_ZAMKU_PREDPONA + otisk)))
+      await p.zapis(PODPIS_ZAMKU_PREDPONA + otisk, { obrazek, zmeneno: new Date().toISOString(), zmenil: relace.email });
+  } };
+}
+export async function podpisZamkuCti(otisk) {
+  if (!OTISK_PODPISU.test(String(otisk || ''))) return '';
+  try {
+    const z = await (await uloziste(PODPIS_ULOZISTE)).cti(PODPIS_ZAMKU_PREDPONA + otisk);
+    const o = (z && z.obrazek) || '';
+    return o && podpisOtisk(o) === otisk ? o : '';
+  } catch (e) { return ''; }
+}
+
 /* Ověření, kdo požadavek posílá a jestli na něj má právo.
  *
  * PROČ SE ÚČET DOČÍTÁ Z DATABÁZE A NEVĚŘÍ SE COOKIE (rozhodnutí 5. 8. 2026,

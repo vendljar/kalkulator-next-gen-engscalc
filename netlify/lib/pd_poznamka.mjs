@@ -55,7 +55,7 @@
  * (pdPoznamkyUlozeni; volající čte zakázku potřetí jen jednou pro obě).
  * ============================================================ */
 import { createHash } from 'node:crypto';
-import { pdNastaveno, pdZavolej, PdChyba, pdStropCerstvych, PD_PRAVO, pdZapisPovolen } from './pipedrive.mjs';
+import { pdNastaveno, pdZavolej, PdChyba, pdStropCerstvych, PD_PRAVO, pdZapisPovolen, PD_ZAPIS_VYPNUTY } from './pipedrive.mjs';
 import { pdDealPatriZakazce } from './pd_overeni.mjs';
 
 export const PD_POZNAMKA_POLE = 'pdPoznamkaSachty';
@@ -283,15 +283,20 @@ export async function pdPoznamkaDruhUlozeni(druh, zak, stara, { zapnuto, relace,
   delete zak[druh.pole];
   if (plati) zak[druh.pole] = plati;
 
-  /* B235/B236: bez zapnutého vypínače zápisu do Pipedrive se nepíše (ani se nehlásí). */
-  if (zapnuto !== true || !dealId || !pdNastaveno() || !pdZapisPovolen()) return { stav: 'bez' };
+  if (zapnuto !== true || !dealId || !pdNastaveno()) return { stav: 'bez' };
   const text = druh.text(zak, !!plati, G);
   if (!text) return { stav: 'bez' };
   const otisk = pdPoznamkaOtisk(text);
   if (plati && plati.otisk === otisk) return { stav: 'beze-zmeny' };
   if (!pdPoznamkaSmi(relace, matice, G)) return { stav: 'bez-prava' };
-  const konec = typeof termin === 'number' ? termin : Date.now() + PD_POZNAMKA_CELKEM_MS;
   const nezapsal = druh.predmet + ' se do poznámky dealu v Pipedrive nezapsal';
+  /* B235/B236: bez zapnutého vypínače zápisu do Pipedrive se nepíše. RJ (doplněk
+   * koordinace 22. 11. 2026): stav „bez" + srozumitelné varování (dřív ticho —
+   * na rozdíl od odkazu z webhooku a zrušení vazby); jen když je co psát
+   * a uživatel smí. Do Pipedrive nic, nic se nečerpá. */
+  if (!pdZapisPovolen())
+    return { stav: 'bez', varovani: nezapsal + ': ' + PD_ZAPIS_VYPNUTY + ' Zakázka je uložená; zapíše se při uložení po zapnutí zápisu.' };
+  const konec = typeof termin === 'number' ? termin : Date.now() + PD_POZNAMKA_CELKEM_MS;
   if (konec - Date.now() <= 0)
     return { stav: 'chyba', varovani: nezapsal + ': Pipedrive neodpověděl včas. Zakázka je uložená; zápis se zkusí při dalším uložení.' };
   if (!(await pdStropCerstvych('deal:' + dealId, druh.strop, PD_POZNAMKA_STROP)))

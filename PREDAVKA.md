@@ -22,6 +22,8 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/on-online` | (tato dávka) | v19.11.8 | #ON kdo je online (Nastavení → Uživatelé) nad 042fcbc; verzi přečísluje koordinace |
 | `claude/d8-lhuty` | (tato dávka) | v19.11.7 | D8 #677 (pracovní) lhůty PROJ → termíny krycího listu; nad integrací 042fcbc; verzi přečísluje koordinace |
 | `claude/vz-f1` | (tato dávka) | v18.11.8 | VZ-F1 #659 opravy nálezů ruční zkoušky VZ; nad ec5bbac, sloučeno s integrací 41bbe99 |
+| `claude/rj-rozhodnuti` | (tato dávka) | v22.11.7 | RJ rozhodnutí J. V. 22. 11. (#714, #715) nad 05a496d, sloučeno s integrací 21eeffa |
+| `claude/jt-jazyk-tisku` | (tato dávka) | v22.11.6 | JT #713 prac.: jazyk specifikace OCK = Jazyk tisku; nad 05a496d |
 | `claude/pr-pripominky` | (tato dávka) | v22.11.5 | PR #707–#712 Připomínky z aplikace, sloučeno s integrací 6fa67af |
 | `claude/hn-harnessy` | (tato dávka) | v22.11.2 | HN zpevnění testů kola (#638, #644, #646, #647, #695) nad cda289e; aplikace beze změny; verzi přečísluje koordinace |
 | `claude/vzd-drobnosti` | (tato dávka) | v22.11.1 | VZD #673 #674 #665 #683 #635, sloučeno s integrací 885577e; viz CHANGELOG |
@@ -36,7 +38,8 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 
 ## Běžící dávky
 
-- **NN** (`claude/nn-nizke-nalezy`, prac. v22.11.6, nad 05a496d): #702 B237–B256, #703 mez, #705, #708, #711, #712, N1, PR-T1/T2. Detail CHANGELOG, MEZE oddíl NN.
+- **JT #713** (`claude/jt-jazyk-tisku`, prac.): HOTOVO, detail `podklady/predavky/JT_jazyk_tisku.md`.
+- **NN** (`claude/nn-nizke-nalezy`, v22.11.10, nad 36e2681): #702 B237–B256, #703 mez, #705, #708, #711, #712, N1, PR-T1/T2. Detail CHANGELOG, MEZE oddíl NN.
 - **PR #707** (`claude/pr-pripominky`, v22.11.5): Připomínky z aplikace, mez B257, HOTOVO; revize poradce před sloučením. Detail a bezpečnostní rozhodnutí: `podklady/predavky/PR_pripominky.md`.
 - **BZ** (`claude/bz-bezpecnost`, v22.11.3, nad cda289e): opravy auditu 20. 11. (rozhodnutí J. V. 21. 11.), #696–#704
   prac. Testy `netlify/test_bz_bezpecnost.mjs`, `test_bz_pipedrive.mjs`, mutace [BZ] 21. **Před sloučením revize Fable.**
@@ -60,40 +63,13 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
   #647 případy `k40:*` v porovnání sestavení (+ `podklady/porovnani/ocekavane_k40n1_main_2026-11-21.txt` pro main × test),
   #695 kolo bez playwrightu = chyba s návodem (`KNG_BEZ_PROHLIZECE=1`), `PRESKOCENO_CAST` v souhrnu.
   Statické kontroly nově 10. Svěřená HN-T1/T2. Tabulka S7 přesunuta do archivu `2026-11.md`. Kolo VŠE ZELENÉ (496/0/6, hodiny 401/0/1, 10/10, SHODA 367/367 proti 885577e). HOTOVO, předáno koordinaci.
-- **DOS** (`claude/dos-drobnosti`, v21.11.4, nad cda289e): #680 návrhy mimo číselník; #690 náhled bez světlíků;
-  #691 bez verzálek, EN/DE dvojtečka; N4 → šablony v18 (SB). Kolo VŠE ZELENÉ, SHODA 359/359, mutace [DOS] 6/6. HOTOVO.
-- **SB** (`claude/sb-sablony`, 8996260): `--cn-v18` EN/DE/FR + IČ/Tel. Kancelář ze slovníku (#691). Šablony u J. V. (zip). Kolo: sady/hodiny zelené, SHODA 359/359; statické 8/9 = verze.txt 19.11.11 (číslo dá koordinace).
-- **PG** (`claude/pg-tisk`, v19.11.10, nad 042fcbc): #684 tlačítka tisku CN OCK (náhled podkladů → Word modře → náhled
-  a tisk), #685 vlastní řádek TS v SOUČÁSTÍ DODÁVKY NENÍ (`extra[i].sekce='neni'`), #686 DALŠÍ UJEDNÁNÍ v nabídce PROJ
-  (`PJ.dalsiUjednani`, Word přes šablonu PROJ v9 `--proj-v9`, kontrola `dalsiUjednaniWordProj`), #687 číslo stránky: vada šablony CN v9–v17 (pevná „1“ v záhlaví) → `--cn-v18`,
-  upozornění v průvodci šablon (`docxCisloStranky`). Testy `test_pg_*.js`. Kolo `--bez-mutaci --proti integrace`
-  VŠE ZELENÉ (sady 482/0/7, hodiny 392/0/1, statické 9/9, porovnání SHODA), mutace jádra [PG] 16/16. HOTOVO, předáno koordinaci.
-  Šablony PROJ v9 a CN v18 vyrobí a nahraje J. V. (`podklady/SABLONA_PROJ_V9_19_11.md`, `SABLONA_CN_V18_19_11.md`).
-
-  | | cesta / položka | sdílí / chybí | stav |
-  |---|---|---|---|
-  | A1 | `C.statikaKc` | statika OCK + opláštění | opraveno #667 |
-  | A2 | `C.priplatky.madlaBmKc` | madla boky + zadní stěna | J. V. (dop. ponechat) |
-  | A3 | `C.leseniFix` | fix lešení vnitřní + vnější, bez ceny z nabídky | J. V. (dop. ponechat) |
-  | A4 | `C.profilasKgKc` | profily + sloupy můstků | J. V. (dop. ponechat) |
-  | A5–A7 | powertech, `oplechPracKc`, sklo | týž materiál / sazba | ponechat |
-  | B1–B2 | spojovací materiál, lakování | souhrn skupiny, bez ceny z nabídky | J. V. (lak: dop. cena z nabídky) |
-  | B6 | nulová cena z nabídky | dřív odmítnuta | opraveno #667 |
-
-- **D3 #688** (`claude/d3-objednavka-proj`, v19.11.11, nad 042fcbc): nový dokument „Objednávka / Smlouva“ PROJ
-  (`src/objednavka_proj.js`, `src/ui/objednavka_proj_ui.js`; karta v KL PROJ pod SoD PROJ; tisk/PDF + Word bez šablony;
-  číslo CN → OBJ; ceny = nabídka PROJ). Sdílené soubory jen po řádku: `build.py`, `kryci_proj_ui.js` (karta),
-  `vice_zakazniku.js` (vzTypProj), `kontroly.js` (strana), `plan_plateb_ui.js` (brána), `nazvy_souboru.js` (druh).
-  Rozhodnutí J. V. #689 zapracována (pole KL PROJ „Číslo zakázky“, jen z odeslané CN, rozvržení podle vzoru).
-  Kolo `--bez-mutaci --proti integrace` VŠE ZELENÉ (479/0/7, hodiny 388/0/1, 9/9, SHODA 359/359), mutace jádra [D3] 12/12. HOTOVO.
-- **VZ-F2** (`claude/vz-f2`, v19.11.4): #660 IČO nového/změněného zákazníka proti všem (klient hned při úpravě),
-  #663 zástupci+DIČ dalšího zákazníka zmrazení po JEHO SoD, hlavičku zmrazí jen SoD řídícímu, #661 KL PROJ v pohledu
-  otevřeného zákazníka, #662 `overit_vz_f2.mjs`, VZF1-I1 název plné moci. Kolo VŠE ZELENÉ (475/0/7, 385/0/1, 9/9, SHODA 353/353),
-  mutace [VZ F2] jádro 19/19, server 5/5. Detail v CHANGELOG. HOTOVO, slučuje koordinace.
-
-- **DS** (`claude/ds-sablony`, v21.11.3, nad cda289e): #648 „Šachta N“ v EN/DE/FR nabídce a SoD jako Shaft/Schacht/Gaine N
-  (`vsNazevPreloz`), #649 věta správy šablon po C7, #650 „nevytiskne se“ u smlouvy bez jazykové šablony. Cenu nemění.
-
+- **RJ** (`claude/rj-rozhodnuti`, v22.11.7, nad 05a496d, sloučeno s integrací 21eeffa): rozhodnutí J. V. 22. 11. (#704, #706, #709, #710,
+  #665 podpis) → roadmapa #714 (dávka), #715 (podpis). (2) nový zámek „nesouhlasi“ → 409 `zamekNesouhlasi` + dialog Ctrl+F5;
+  (3) R2 potvrzeno testem; (4) oprava firmy přes `pd_overeni` (409 neovereno); (6)(7) pravidlo 3 zrušeno, druhá zakázka
+  na dealu zapisuje s vlastní vazbou, s vypnutým zápisem poznámka varuje; #665 `podpisOtisk` ve snímku + kopie `podpisy/zamek/<otisk>`, GET `?podpisZamku=`;
+  #710-4 koordinace 403 u uzavřené správcem; #706 `nastroje/kontrola_konfliktu.sh` (staticke 11). #709 → vlna F (stav
+  „odlozeno“ schéma nezná). Testy `netlify/test_rj_rozhodnuti.mjs` + přípravky PD (odkaz místo čísla). Kolo proti 21eeffa
+  VŠE ZELENÉ (514/0/6, hodiny 416/0/1, 11/11, SHODA 367/367), mutace [RJ] server 16/16, jádro 5/5. HOTOVO, k revizi.
 - **VZD** (`claude/vzd-drobnosti`, v22.11.1, s integrací 885577e): HOTOVO. Kolo VŠE ZELENÉ (505/0/7, hodiny 410/0/1, 9/9, SHODA 359/359),
   mutace [VZD] jádro 16/16, server 4/4. #674 d a podpis u #665 k potvrzení J. V. Detail v CHANGELOG.
 

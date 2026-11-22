@@ -226,6 +226,7 @@ async function nabidkaProjWordGeneruj(srv) {
   const varianta = (typeof nabidkaVarianta === 'function')
     ? await nabidkaVarianta()
     : ((typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : (ZAK.varianty || [])[0]);
+  if (typeof onlinePodpisZamkuPriprav === 'function') await onlinePodpisZamkuPriprav();   // #665 (RJ): podpis původního zpracovatele
   /* Zábrany (#377, plán plateb) — hláška dřív než chyba z registru. */
   if (typeof dokumentZabranaHlas === 'function' && dokumentZabranaHlas('nabidkaProj', varianta, nabidkaProjStavText)) return;
   if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol('nabidkaProj', varianta))) { nabidkaProjStavText('Dokument nevznikl — nabídka je otevřená jen ke čtení.'); return; }   // P2 (K13-N54)

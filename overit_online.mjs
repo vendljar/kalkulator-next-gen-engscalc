@@ -1916,19 +1916,40 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
     window.zamekPoTiskuUloz = () => false;
     try { zamekPoTisku('nabidkaTisk', aktivniVarianta(ZAK).id); } finally { window.zamekPoTiskuUloz = puvTiskUloz; }
     aktivniVarianta(ZAK).zamek.vysledek.ock.souhrn.zakladSDph += 1000;   // upravený klient
-    await onlineUloz();
-    const po = { hlaska: ONLINE_STAV.hlaska, typ: ONLINE_STAV.hlaskaTyp, soubor: ONLINE_STAV.soubor };
-    await onlineOtevri(po.soubor);
+    /* RJ (#704-2, J. V. 22. 11. 2026): server nový zámek s rozporem ODMÍTNE (409,
+     * kód zamekNesouhlasi) a prohlížeč ukáže dialog s radou Ctrl+F5 — dialog se
+     * tu zachytí (jinak by modál zastavil harness). */
+    const puvHlaska = window.hlaska; const dialogy = [];
+    window.hlaska = (t, o) => { dialogy.push({ nadpis: (o && o.nadpis) || '', text: String(t) }); return Promise.resolve(); };
+    let vysl;
+    try { vysl = await onlineUloz(); } finally { window.hlaska = puvHlaska; }
+    const po = { vysl, hlaska: ONLINE_STAV.hlaska, typ: ONLINE_STAV.hlaskaTyp, soubor: ONLINE_STAV.soubor, dialogy };
+    const d = await onlineApi('/api/zakazky?soubor=' + encodeURIComponent(po.soubor));
+    po.naServeruZamceno = !!(d.zakazka.varianty[0].zamek && d.zakazka.varianty[0].zamek.zamceno);
+    /* B130: lišta zámku se zmrazeným výsledkem — na poctivé zakázce 0761.
+     * V okně zůstal neuložený zámek 0762 (server ho odmítl) — dialog „Otevřít
+     * jinou zakázku“ dostane „Zahodit změny“, jako po „obnovte stránku“. */
+    const puvVolba = window.volba; window.volba = () => Promise.resolve('zahodit');
+    try { await onlineOtevri('2026-OPR-CN-0761.json'); } finally { window.volba = puvVolba; }
     po.lista = (document.getElementById('zamekLista') || {}).textContent || '';
     return po;
   }, ceniky);
-  test('B59: upravený klient se uloží, ale hláška varuje, že čísla nesouhlasí',
-    upraveny.typ === 'varovani' && /nesouhlasí/.test(upraveny.hlaska) && /0762/.test(upraveny.hlaska),
-    JSON.stringify(upraveny));
-  test('B59: po otevření ze serveru ukazuje rozpor lišta zámku',
-    /nesouhlasí s výpočtem serveru/.test(upraveny.lista), upraveny.lista);
+  test('B59 + RJ #704-2: upravený klient se NEULOŽÍ (409) a hláška říká, že čísla nesouhlasí',
+    upraveny.vysl === false && upraveny.typ === 'varovani' && /nesouhlasí/.test(upraveny.hlaska) && /0762/.test(upraveny.hlaska)
+      && /Ctrl\+F5/.test(upraveny.hlaska), JSON.stringify(upraveny));
+  test('RJ #704-2: dialog „obnovte stránku (Ctrl+F5)“ se ukáže právě jednou',
+    upraveny.dialogy.length === 1 && /Ctrl\+F5/.test(upraveny.dialogy[0].nadpis) && /vytiskněte znovu/.test(upraveny.dialogy[0].text), JSON.stringify(upraveny.dialogy));
+  test('RJ #704-2: na serveru varianta zůstala nezamčená', upraveny.naServeruZamceno === false);
   test('B130: zámek se zmrazeným výsledkem „přepočteno dnes" netvrdí',
-    !/nejsou u zámku zmrazené/.test(upraveny.lista), upraveny.lista);
+    upraveny.lista.length > 0 && !/nejsou u zámku zmrazené/.test(upraveny.lista), upraveny.lista);
+  /* Zámek s razítkem „nesouhlasi“ uložený před RJ (nebo z obnovy) lišta dál hlásí. */
+  { const klic = 'zakazky/z/2026-OPR-CN-0761.json'; const raw = JSON.parse(pamet.get(klic));
+    raw.varianty[0].zamek.overeni = { stav: 'nesouhlasi', rozdilu: 1, cesty: ['ock.souhrn.zakladSDph'], kdy: raw.varianty[0].zamek.kdy, server: 'starsi', klient: 'v-starsi' };
+    pamet.set(klic, JSON.stringify(raw)); }
+  const lista2 = await page.evaluate(async () => { await onlineOtevri('2026-OPR-CN-0761.json');
+    return (document.getElementById('zamekLista') || {}).textContent || ''; });
+  test('B59: zámek „nesouhlasi“ (stav před RJ) po otevření ze serveru ukazuje rozpor v liště',
+    /nesouhlasí s výpočtem serveru/.test(lista2), lista2);
   await page.evaluate(() => { if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
     ZAK = novaZakazka(); syncVarianta(); render(); });
 }

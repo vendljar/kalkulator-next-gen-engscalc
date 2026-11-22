@@ -36,6 +36,8 @@
 #                  PREDAVKA.md do 15 kB (chyba), main předkem HEAD (upozornění; S7),
 #                  evidence roadmap.json podle schématu S6 a PREHLED.md (vyrobit jde = jinak chyba;
 #                  neodpovídá stavu = upozornění; nastroje/prehled_stavu.py --kontrola, S8)
+#                  značky konfliktu (<<<<<<< / ======= / >>>>>>>) ve sledovaných
+#                  souborech = chyba (nastroje/kontrola_konfliktu.sh, #706)
 #   porovnani      VOLITELNÝ (jen s --proti nebo --jen porovnani; S3, 18. 11. 2026):
 #                  nastroje/porovnej_sestaveni.sh <ref> . — pevná sada kalkulací
 #                  nad sestavením <ref> (výchozí origin/test) a nad pracovní kopií;
@@ -207,7 +209,9 @@ staticke() {
   { bash nastroje/kontrola_podkladu.sh && bash nastroje/kontrola_podkladu.sh --pojistka; } || chyb=$((chyb + 1))
   echo "— evidence a přehled: roadmap.json podle schématu S6, PREHLED.md jde vyrobit a odpovídá stavu (S6/S8 #613)"
   { python3 roadmapa/roadmapa.py --kontrola && python3 nastroje/prehled_stavu.py --kontrola; } || chyb=$((chyb + 1))
-  echo "STATICKE_KONTROLY: $((11 - chyb)) z 11 prošly"
+  echo "— značky konfliktu ve sledovaných souborech (nastroje/kontrola_konfliktu.sh, #706)"
+  { bash nastroje/kontrola_konfliktu.sh && bash nastroje/kontrola_konfliktu.sh --pojistka; } || chyb=$((chyb + 1))
+  echo "STATICKE_KONTROLY: $((12 - chyb)) z 12 prošly"
   return "$chyb"
 }
 # S3 (18. 11. 2026): pevná sada kalkulací nad <ref> × pracovní kopie (.).

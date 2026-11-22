@@ -7,7 +7,7 @@
  *   stejná kontrola jako ve složce (uloKontrolaZamku není v modelu, ale
  *   zámky hlídá porovnání razítek: server odmítne zápis, který by změnil
  *   variantu zamčenou v uložené verzi). */
-import { uloziste, vyzadujRoli, json, serverVerze, vyhradne, klicZAdresyPlatny, hloubkaChyba } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, serverVerze, vyhradne, klicZAdresyPlatny, hloubkaChyba, podpisZamkuPriprav, podpisZamkuCti } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { zakazkaPrijmi, zakazkaServerKontrola, ZAKAZKA_MAX_B, zakazkaVelikostHlaska } from '../lib/zakazka_kontrola.mjs';
 import { pdStavPripoj, pdStavUlozeni } from '../lib/pd_stav.mjs';
@@ -45,6 +45,18 @@ export default async (req) => {
     }
     if (!klicZAdresyPlatny(soubor)) return json({ ok: false, chyba: 'Neplatné jméno zakázky.' }, 400);   // SEC-I4
     const zak = await s.cti('z/' + soubor);
+    /* #665 (RJ, J. V. 22. 11. 2026): sken podpisu PŮVODNÍHO zpracovatele odeslané
+     * nabídky — zmrazená kopie, jejíž otisk nese snímek zámku varianty
+     * (zamek.zpracovatel.podpisOtisk). Smí každý, kdo smí číst zakázku; jinou
+     * kopii než tu ze zámku téže zakázky nevydá. */
+    const podpisVar = url.searchParams.get('podpisZamku');
+    if (podpisVar !== null) {
+      const v = zak && Array.isArray(zak.varianty) ? zak.varianty.find(x => x && x.id === podpisVar) : null;
+      const zs = v && v.zamek && v.zamek.zamceno && v.zamek.zpracovatel;
+      const obrazek = zs ? await podpisZamkuCti(zs.podpisOtisk) : '';
+      return obrazek ? json({ ok: true, otisk: zs.podpisOtisk, obrazek })
+                     : json({ ok: false, chyba: 'Odeslaná nabídka nemá uložený podpis zpracovatele.' }, 404);
+    }
     /* Stav dealu Pipedrive (P1): poslední známý z úložiště pd_stav. */
     return zak ? json({ ok: true, zakazka: await pdStavPripoj(zak) })
                : json({ ok: false, chyba: 'Zakázka nenalezena: ' + soubor }, 404);
@@ -181,11 +193,17 @@ export default async (req) => {
    * dostane platnou tabulku Firmy ze serveru; neprodaná snímek nenese. */
   { const lh = lhutyProjServerDrz(stara, zak, await sProg.cti('firma'));
     if (lh) return { odpoved: json({ ok: false, chyba: lh }, 409) }; }
+  /* #665 (RJ): nese-li uložení NOVÝ zámek, podpis přihlášeného se zmrazí
+   * (otisk do snímku zámku, kopie v úložišti podpisů) — čte se jen tehdy. */
+  const podpisZamku = await podpisZamkuPriprav(stara, zak, relace, globalThis.variantaUzamcena);
   const kontrola = zakazkaServerKontrola(stara, zak, relace,
     { ULO, SCHV, JEKLY, slevyNast, verzeServeru: serverVerze(), rezim: 'ulozeni',
-      program: prog, matice: (zobr && zobr.matice) || null,
+      program: prog, matice: (zobr && zobr.matice) || null, podpisOtisk: podpisZamku ? podpisZamku.otisk : '',   // #665 (RJ)
       viceSachet, viceZakazniku });   // VS #570 / VZ #598: vypínače správce
-  if (!kontrola.ok) return { odpoved: json({ ok: false, chyba: kontrola.chyba }, kontrola.status) };
+  if (!kontrola.ok) return { odpoved: json(Object.assign({ ok: false, chyba: kontrola.chyba }, kontrola.kod ? { kod: kontrola.kod } : {}), kontrola.status) };
+  /* #665: kopie podpisu dřív než zakázka — otisk ve snímku nikdy nevisí naprázdno. */
+  if (podpisZamku && (zak.varianty || []).some(v => v && v.zamek && v.zamek.zpracovatel && v.zamek.zpracovatel.podpisOtisk === podpisZamku.otisk))
+    await podpisZamku.zapis();
   /* Stav dealu Pipedrive dosazuje server (P1) — z prohlížeče jen tvar. */
   await pdStavUlozeni(zak, stara);
 

@@ -90,6 +90,14 @@ console.log('\n===== VYPÍNAČ ZÁPISU DO PIPEDRIVE (výchozí vypnuto) =====\n'
   const pred2 = sit.length;
   const r = await PP.pdPoznamkaDruhUlozeni(PP.PD_POZNAMKA_DRUH_SACHTY, z, null, { zapnuto: true, relace: { role: 'Administrátor', email: ADMIN_EMAIL } });
   test('vypínač: poznámka při uložení se s vypnutým zápisem nezkouší (stav bez, bez sítě)', r.stav === 'bez' && sit.length === pred2, r);
+  /* RJ (doplněk koordinace 22. 11. 2026): s vypnutým zápisem stav „bez" + srozumitelné
+   * varování (dřív ticho, na rozdíl od odkazu z webhooku a zrušení vazby). */
+  test('RJ: vypnutý zápis — poznámka nese varování (PIPEDRIVE_ZAPIS, nic neodesláno)', /vypnutý/.test(r.varovani || '')
+    && /PIPEDRIVE_ZAPIS/.test(r.varovani || '') && /poznámky dealu/.test(r.varovani || ''), r);
+  const rBez = await PP.pdPoznamkaDruhUlozeni(PP.PD_POZNAMKA_DRUH_SACHTY, nova(), null, { zapnuto: true, relace: { role: 'Administrátor', email: ADMIN_EMAIL } });
+  test('RJ: bez dealu žádné varování (není co psát)', rBez.stav === 'bez' && !rBez.varovani, rBez);
+  const rVyp = await PP.pdPoznamkaDruhUlozeni(PP.PD_POZNAMKA_DRUH_SACHTY, Object.assign(nova(), { pdDealId: '1001' }), null, { zapnuto: false, relace: { role: 'Administrátor', email: ADMIN_EMAIL } });
+  test('RJ: vypnutá funkce víc šachet — žádné varování', rVyp.stav === 'bez' && !rVyp.varovani, rVyp);
   process.env.PIPEDRIVE_ZAPIS = 'ano';
   const pred3 = sit.length;
   await PD.pdZavolej('/api/v2/deals/1', { metoda: 'PATCH', telo: { x: 1 } });
@@ -139,10 +147,17 @@ const uloz = async (z, c) => { const r = await post(zakazky, 'http://x/api/zakaz
   const z = nova(); const pred = notes().length; const stavy = {};
   for (let i = 0; i < 5; i++) { z.pdDealId = String(dealy[40 + i]); const t = await uloz(z, cO); stavy[t.status + '/' + t.pdPoznamka] = (stavy[t.status + '/' + t.pdPoznamka] || 0) + 1; }
   test('B235: do cizích dealů se poznámka nezapíše (stav neovereno, uložení projde)', notes().length === pred && stavy['200/neovereno'] === 5, stavy);
-  /* Deal, jehož číslo nabídky sedí se zakázkou → zapíše se. */
+  /* RJ (#704-7, J. V. 22. 11. 2026): pravidlo 3 (číslo nabídky v dealu) zrušeno —
+   * samotné číslo nabídky vazbu NEDOKLÁDÁ; doloží ji až odkaz na kalkulaci v dealu. */
   const deal = D().dealy.find(d => d.id === dealy[50]); deal.custom_fields[CN] = z.cislo;
-  z.pdDealId = String(dealy[50]); const t = await uloz(z, cO);
-  test('B235: deal s číslem nabídky zakázky — poznámka zapsána (pojistka)', t.pdPoznamka === 'zalozeno' && notes().some(p => p.deal_id === dealy[50]), t.pdPoznamka);
+  z.pdDealId = String(dealy[50]); const tc = await uloz(z, cO);
+  test('RJ #704-7: deal jen s číslem nabídky zakázky vazbu nedoloží (neovereno, nic nezapsáno)', tc.pdPoznamka === 'neovereno'
+    && !notes().some(p => p.deal_id === dealy[50]), tc.pdPoznamka);
+  const hashOdkaz0 = D().pole.deal.find(p => p.field_name === 'Odkaz na kalkulaci').field_code;
+  deal.custom_fields[hashOdkaz0] = 'http://x/?zakazka=' + encodeURIComponent(tc.soubor);
+  z.varianty[0].data.ock.dalsi[0].nazev = 'Výtah B2';
+  const t = await uloz(z, cO);
+  test('B235: deal s odkazem na kalkulaci — poznámka zapsána (pojistka)', t.pdPoznamka === 'zalozeno' && notes().some(p => p.deal_id === dealy[50]), t.pdPoznamka);
   /* Další uložení téhož dealu (platná poznámka) deal znovu neověřuje a jen upraví. */
   z.varianty[0].data.ock.dalsi[0].nazev = 'Výtah C'; deal.custom_fields[CN] = 'CN-1';
   const t2 = await uloz(z, cO);
@@ -172,7 +187,7 @@ const uloz = async (z, c) => { const r = await post(zakazky, 'http://x/api/zakaz
   const zp = nova(); zp.cislo = ''; zp.projHlavicka = Object.assign(zp.projHlavicka || {}, { cislo: '2026 - OVP - CN - 9977 - TEST' });
   const dp = D().dealy.find(d => d.id === dealy[61]); dp.custom_fields[CN] = '2026 - OVP - CN - 9977 - TEST'; zp.pdDealId = String(dealy[61]);
   const tp = await uloz(zp, cO);
-  test('B235 R4: číslo PROJ jako klíč souboru zakázky vazbu doloží (pojistka)', tp.pdPoznamka === 'zalozeno', tp.pdPoznamka + ' ' + (tp.chyba || ''));
+  test('RJ #704-7: ani číslo PROJ jako klíč souboru zakázky vazbu nedoloží (pravidlo 3 zrušeno)', tp.pdPoznamka === 'neovereno', tp.pdPoznamka + ' ' + (tp.chyba || ''));
 }
 {
   /* Strop na uživatele: první zápisy do nových dealů. */
@@ -212,11 +227,67 @@ const uloz = async (z, c) => { const r = await post(zakazky, 'http://x/api/zakaz
   const r = await (await post(orgFn, 'http://x/api/pd/organizace', { soubor: a.soubor, akce: 'vitez' }, cO)).json();
   test('B236: vítěz u cizího dealu — stav neovereno, organizace dealu beze změny, žádná nová organizace',
     r.stav === 'neovereno' && a.obet.org_id === a.org && D().organizace.length === orgu, { r, org: a.obet.org_id, orgu: D().organizace.length });
-  /* Pojistka: deal s číslem nabídky zakázky → přepojí se. */
+  /* RJ (#704-7): číslo nabídky v dealu vazbu nedokládá; pojistka = odkaz na kalkulaci. */
   const b = await pripravVitez('2026 - OPR - CN - 9961 - TEST');
   b.obet.custom_fields[CN] = '2026 - OPR - CN - 9961 - TEST';
+  const rc = await (await post(orgFn, 'http://x/api/pd/organizace', { soubor: b.soubor, akce: 'vitez' }, cO)).json();
+  test('RJ #704-7: vítěz u dealu jen s číslem nabídky zakázky — neovereno, organizace beze změny', rc.stav === 'neovereno' && b.obet.org_id === b.org, rc);
+  b.obet.custom_fields[D().pole.deal.find(p => p.field_name === 'Odkaz na kalkulaci').field_code] = 'http://x/?zakazka=' + encodeURIComponent(b.soubor);
   const r2 = await (await post(orgFn, 'http://x/api/pd/organizace', { soubor: b.soubor, akce: 'vitez' }, cO)).json();
   test('B236: vítěz u dealu zakázky — organizace přepojena (pojistka)', r2.stav === 'zapsano' && b.obet.org_id !== b.org, r2);
+}
+
+{
+  /* PoC revize 2. kola BZ (#704-7) jako regresní test: obchodník založí NOVOU
+   * zakázku, jejíž číslo (= klíč souboru) je číslo nabídky cizího dealu, a deal
+   * k ní připojí. Do RJ pravidlo 3 zápis pustilo; teď neověřeno, nic se nezapíše. */
+  const cizi = D().dealy.find((d) => d.status === 'open' && d.id > 1150 && d.id < 1200 && !d.custom_fields[CN]);
+  const cizi2 = D().dealy.find((d) => d.status === 'open' && d.id > cizi.id && !d.custom_fields[CN]);
+  cizi.custom_fields[CN] = '2026 - OPR - CN - 9971 - CIZI';
+  cizi2.title = '2026 - OPR - CN - 9972 - CIZI Bytový dům';
+  const pred = notes().length;
+  for (const [deal, cislo] of [[cizi, '2026 - OPR - CN - 9971 - CIZI'], [cizi2, '2026 - OPR - CN - 9972 - CIZI']]) {
+    const z = nova(); z.cislo = cislo; z.pdDealId = String(deal.id);
+    const t = await uloz(z, cO);
+    test('RJ #704-7 PoC: nová zakázka s číslem cizího dealu (' + (deal === cizi ? 'pole CN' : 'název dealu') + ') — neovereno, uložení projde',
+      t.status === 200 && t.pdPoznamka === 'neovereno', { s: t.status, p: t.pdPoznamka });
+  }
+  test('RJ #704-7 PoC: do cizích dealů nic nezapsáno', notes().length === pred && !notes().some(p => p.deal_id === cizi.id || p.deal_id === cizi2.id));
+}
+{
+  /* RJ (#704-4, J. V. 22. 11. 2026): „Opravit firmu v Pipedrive" (pd_organizace,
+   * náhled i zápis, mez B209) jen u dealu, který zakázce patří (pd_overeni.mjs). */
+  const z = nova(); z.cislo = '2026 - OPR - CN - 9970 - TEST'; z.ico = '27074358';
+  const cizi = D().dealy.find((d) => d.status === 'open' && d.org_id && d.id > 1200 && !d.custom_fields[CN]);
+  z.pdDealId = String(cizi.id); const t = await uloz(z, cO);
+  const patchPred = SIM.pdSimStav().pozadavky.filter(p => /^PATCH/.test(p)).length;
+  for (const akce of ['nahled', 'zapis']) {
+    const r = await post(orgFn, 'http://x/api/pd/organizace', { soubor: t.soubor, akce, organizace: cizi.org_id, pole: ['nazev'] }, cO);
+    const o = await r.json();
+    test('RJ #704-4: oprava firmy (' + akce + ') u dealu bez vazby — 409 neověřeno, do Pipedrive nic', r.status === 409 && o.stav === 'neovereno'
+      && /nepatří/.test(o.chyba || '') && SIM.pdSimStav().pozadavky.filter(p => /^PATCH/.test(p)).length === patchPred, { s: r.status, o });
+  }
+  cizi.custom_fields[D().pole.deal.find(p => p.field_name === 'Odkaz na kalkulaci').field_code] = 'http://x/?zakazka=' + encodeURIComponent(t.soubor);
+  const r2 = await post(orgFn, 'http://x/api/pd/organizace', { soubor: t.soubor, akce: 'nahled' }, cO);
+  const o2 = await r2.json();
+  test('RJ #704-4: s odkazem na kalkulaci ověření projde (pojistka; dál rozhoduje shoda IČO)', o2.stav !== 'neovereno' && !/nepatří/.test(o2.chyba || ''), { s: r2.status, o2 });
+}
+
+{
+  /* RJ (doplněk koordinace): totéž celou cestou uložení — skutečný Pipedrive (token),
+   * zápis vypnutý: uložení projde, odpověď varuje, do sítě nic (fetch hlídaný).
+   * Simulátor zápis povoluje vždy (pdZapisPovolen), proto se tu na chvíli vypne. */
+  const simPred = process.env.PIPEDRIVE_SIMULATOR;
+  delete process.env.PIPEDRIVE_SIMULATOR; delete process.env.PIPEDRIVE_ZAPIS;
+  process.env.PIPEDRIVE_TOKEN = 'testovaci-token-nic-neplati'; process.env.PIPEDRIVE_DOMENA = 'zkusebni';
+  const z = nova(); z.pdDealId = '1001';
+  const pred = sit.length;
+  const t = await uloz(z, cA);
+  test('RJ: uložení s vypnutým zápisem — 200, stav bez (odpověď ho neuvádí), varování v odpovědi, do Pipedrive nic',
+    t.status === 200 && t.pdPoznamka === undefined && /Zápis do Pipedrive je vypnutý/.test(t.varovani || '') && sit.length === pred,
+    { s: t.status, p: t.pdPoznamka, v: t.varovani, sit: sit.slice(pred) });
+  delete process.env.PIPEDRIVE_TOKEN; delete process.env.PIPEDRIVE_DOMENA;
+  if (simPred !== undefined) process.env.PIPEDRIVE_SIMULATOR = simPred;
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);

@@ -210,6 +210,20 @@ function pripominkaNova(vstup, relace, ted, zdroj, cislo) {
  * a/nebo roadmapa a odpověď — a jen u připomínky, kterou správce pustil do
  * fronty (stav ≠ nova). Vrací { ok, pripominka } nebo { ok:false, chyba, kod }. */
 const PRIPOMINKA_STAVY_KOORDINACE = ['fronta', 'resi', 'test', 'hotovo', 'odlozeno', 'zamitnuto'];
+/* RJ (#710-4 / N5, J. V. 22. 11. 2026; mez B257): připomínka UZAVŘENÁ SPRÁVCEM.
+ * Uzavřené stavy: hotovo, zamítnuto, duplicitní. Kdo uzavřel, říká první záznam
+ * průběhu v posledním souvislém úseku s dnešním stavem (vstup do stavu).
+ * Záznam bez průběhu (starší data) = správce (bezpečná výchozí). */
+const PRIPOMINKA_UZAVRENE = ['hotovo', 'zamitnuto', 'duplicitni'];
+function pripominkaUzavrelSpravce(p) {
+  if (!p || !PRIPOMINKA_UZAVRENE.includes(p.stav)) return false;
+  const pr = Array.isArray(p.prubeh) ? p.prubeh : [];
+  let i = pr.length - 1;
+  if (i < 0 || !pr[i] || pr[i].stav !== p.stav) return true;
+  while (i > 0 && pr[i - 1] && pr[i - 1].stav === p.stav) i--;
+  return pr[i].kdo !== 'koordinace';
+}
+
 function pripominkaZmen(stara, zmena, kdo, ted, existujeId) {
   if (!stara || typeof stara !== 'object') return { ok: false, chyba: 'Připomínka nenalezena.', kod: 404 };
   const z = zmena && typeof zmena === 'object' && !Array.isArray(zmena) ? zmena : {};
@@ -223,6 +237,8 @@ function pripominkaZmen(stara, zmena, kdo, ted, existujeId) {
   if (koord) {
     if (p.stav === 'nova') return { ok: false, chyba: 'Připomínku ještě nepustil správce do fronty oprav.', kod: 403 };
     if (akce && akce !== 'stav') return { ok: false, chyba: 'Klíč koordinace smí měnit jen stav, odpověď a číslo roadmapy.', kod: 403 };
+    if (pripominkaUzavrelSpravce(p) && (z.stav !== undefined || z.odpoved !== undefined))
+      return { ok: false, chyba: 'Připomínku uzavřel správce — klíč koordinace nemění její stav ani odpověď (jen číslo roadmapy).', kod: 403 };
     if (z.stav !== undefined) {
       if (!PRIPOMINKA_STAVY_KOORDINACE.includes(z.stav)) return { ok: false, chyba: 'Neznámý nebo nepovolený stav.', kod: 400 };
       novyStav = z.stav;
@@ -376,7 +392,7 @@ if (typeof module !== 'undefined')
   module.exports = { PRIPOMINKA_TYPY, PRIPOMINKA_STAVY, PRIPOMINKA_KROKY, PRIPOMINKA_FILTRY, PRIPOMINKA_ZDROJE,
     PRIPOMINKA_ROLE, PRIPOMINKA_TEXT_MIN, PRIPOMINKA_TEXT_MAX, PRIPOMINKA_ODPOVED_MAX, PRIPOMINKA_SNIMEK_MAX,
     PRIPOMINKA_KONTEXT_MAX, PRIPOMINKA_LIMIT_DEN, PRIPOMINKA_LIMIT_DEN_MAX, PRIPOMINKA_UCHOVAT_DNI,
-    PRIPOMINKA_ID_TVAR, PRIPOMINKA_STAVY_KOORDINACE,
+    PRIPOMINKA_ID_TVAR, PRIPOMINKA_STAVY_KOORDINACE, PRIPOMINKA_UZAVRENE, pripominkaUzavrelSpravce,
     pripominkaTyp, pripominkaStav, pripominkaCislo, pripominkaIdPlatne, pripominkaTextStaci, pripominkaLzeOdeslat,
     pripominkyNastaveniVychozi, pripominkyNastaveniOciste, pripominkySmiOdesilat, pripominkaSnimekZkontroluj,
     pripominkaKontextOciste, pripominkaMistoPopis, pripominkaMistoProKoordinaci, pripominkaSelektorProKoordinaci, pripominkaNova, pripominkaZmen, pripominkaProAutora,

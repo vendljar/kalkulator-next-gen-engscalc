@@ -34,7 +34,8 @@ import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { pdPristup, pdNastaveno, pdZavolej, PdChyba, pdStropCerstvych, PD_CACHE_ULOZISTE } from '../lib/pipedrive.mjs';
 import { pdHodnota, pdIco } from '../lib/pd_mapa.mjs';
 import { pdPoleMapa } from './pd_pole.mjs';
-import { pdWebhookHlavicka } from '../lib/pd_webhook.mjs';
+import { pdWebhookHlavicka, pdWebhookOdkaz } from '../lib/pd_webhook.mjs';
+import { pdDealPatriZakazce } from '../lib/pd_overeni.mjs';
 import { aresNacti, ARES_SIT } from '../lib/ares_server.mjs';
 import { pdOrgVitezAkce } from '../lib/pd_org_vitez.mjs';
 import { funkceCti } from '../lib/funkce.mjs';
@@ -93,6 +94,12 @@ export default async (req) => {
   try {
     const pole = await pdPoleMapa();
     const mapaOrg = pole.mapaOrganizace || {};
+    /* RJ (#704-4, J. V. 22. 11. 2026; mez B209): náhled i zápis jen u dealu, který
+     * zakázce patří — živá vazba z webhooku nebo odkaz na kalkulaci v dealu
+     * (pd_overeni.mjs, totéž jako poznámky B235 a vítěz B236). */
+    const ov = await pdDealPatriZakazce(ulozena, deal, { zavolej: (c) => pdZavolej(c, { casLimitMs: PD_ORGANIZACE_CAS_MS }),
+      poleMapa: async () => pole, odkaz: pdWebhookOdkaz(soubor, req) }, G);
+    if (!ov.ok) return json({ ok: false, stav: 'neovereno', chyba: ov.duvod }, 409);
     const d = await pdZavolej('/api/v2/deals/' + Number(deal), { casLimitMs: PD_ORGANIZACE_CAS_MS });
     if (!d) return json({ ok: false, chyba: 'Pipedrive deal zakázky nezná.' }, 404);
     if (!d.org_id) return json({ ok: false, chyba: 'K dealu není navázaná organizace.' }, 409);

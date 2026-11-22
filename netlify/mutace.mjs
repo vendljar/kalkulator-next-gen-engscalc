@@ -49,6 +49,8 @@ const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
   : [/* NN (22. 11. 2026): nízké nálezy auditu 20. 11. a revize BZ / PR (rychlé sady). */
      'test_nn_nizke.mjs', '../src/test_nn_nizke.js',
+     /* RJ (22. 11. 2026): rozhodnutí J. V. — zámek „nesouhlasi“ 409, strana, podpis původního zpracovatele (rychlá sada). */
+     'test_rj_rozhodnuti.mjs',
      /* PR (21. 11. 2026): připomínky z aplikace — API, klíč koordinace, limity (rychlá sada). */
      'test_pripominky.mjs', '../src/test_pripominky.js',
      /* BZ (21. 11. 2026): opravy bezpečnostního auditu B231–B236, B195 (rychlé sady). */
@@ -366,6 +368,74 @@ const MUTACE = [
     hledej: "  { const lh = lhutyProjServerDrz(stara, zak, await sProg.cti('firma'));",
     nahrad: "  { const lh = ''; await sProg.cti('firma');",
     proc: "klient by do odeslané nabídky zapsal vlastní lhůty a Prodáno je zmrazilo (B238)", sady: ["test_nn_poc.mjs", "test_d8_lhuty.mjs"] },
+  /* RJ (22. 11. 2026): rozhodnutí J. V. — #704 (2)(4)(6)(7), #665 podpis původního zpracovatele,
+   * #710-4 koordinace a uzavřené připomínky. Hlídají test_rj_rozhodnuti.mjs, test_bz_pipedrive.mjs,
+   * test_vsd_pd_poznamka.mjs, test_pripominky.mjs. Přepis kopie podpisu týmž obsahem (klíč = otisk
+   * obsahu) je ekvivalentní mutace, proto tu není. [RJ] */
+  { nazev: "RJ: vypnutý zápis do Pipedrive poznámku mlčky přeskočí [RJ]", soubor: "lib/pd_poznamka.mjs",
+    hledej: "    return { stav: 'bez', varovani: nezapsal + ': ' + PD_ZAPIS_VYPNUTY + ' Zakázka je uložená; zapíše se při uložení po zapnutí zápisu.' };",
+    nahrad: "    return { stav: 'bez' };",
+    proc: "obchodník by nevěděl, že se seznam šachet / zákazníků do dealu nezapsal", sady: ["test_bz_pipedrive.mjs"] },
+  { nazev: "RJ #704-7: číslo nabídky zase dokládá vazbu dealu [RJ]", soubor: "lib/pd_overeni.mjs",
+    hledej: "  if (odkaz && mapa.odkazKalkulace && pdHodnota(cf[mapa.odkazKalkulace]).trim() === odkaz) return { ok: true, zdroj: 'odkaz' };\n",
+    nahrad: "  if (odkaz && mapa.odkazKalkulace && pdHodnota(cf[mapa.odkazKalkulace]).trim() === odkaz) return { ok: true, zdroj: 'odkaz' };\n  if (String(zak.cislo || '').trim() && String(cf[mapa.cisloNabidky] || d.title || '').includes(String(zak.cislo).trim())) return { ok: true, zdroj: 'cislo' };\n",
+    proc: "novou zakázkou s číslem cizího dealu by šlo zapsat do cizího dealu (PoC revize BZ)", sady: ["test_bz_pipedrive.mjs"] },
+  { nazev: "RJ #704-7: odkaz v dealu stačí jakýkoli [RJ]", soubor: "lib/pd_overeni.mjs",
+    hledej: "pdHodnota(cf[mapa.odkazKalkulace]).trim() === odkaz) return",
+    nahrad: "pdHodnota(cf[mapa.odkazKalkulace]).trim() !== '') return",
+    proc: "odkaz na cizí kalkulaci by doložil vazbu i jiné zakázce na témž dealu", sady: ["test_vsd_pd_poznamka.mjs", "test_bz_pipedrive.mjs"] },
+  { nazev: "RJ #704-4: oprava firmy bez ověření vazby dealu [RJ]", soubor: "functions/pd_organizace.mjs",
+    hledej: "    if (!ov.ok) return json({ ok: false, stav: 'neovereno', chyba: ov.duvod }, 409);\n",
+    nahrad: "",
+    proc: "autor zakázky by opravil organizaci cizího dealu podle ARES", sady: ["test_bz_pipedrive.mjs"] },
+  { nazev: "RJ #704-2: nový zámek „nesouhlasi“ se zase uloží [RJ]", soubor: "lib/zakazka_kontrola.mjs",
+    hledej: "    if (ov && ov.stav === 'nesouhlasi')\n",
+    nahrad: "    if (false)\n",
+    proc: "stránka se starším jádrem by uložila odeslanou nabídku s čísly, která server z dat nedostane", sady: ["test_rj_rozhodnuti.mjs", "test_bz_bezpecnost.mjs", "test_prava.mjs"] },
+  { nazev: "RJ #704-2: odpověď 409 bez kódu zamekNesouhlasi [RJ]", soubor: "functions/zakazky.mjs",
+    hledej: "kontrola.kod ? { kod: kontrola.kod } : {}",
+    nahrad: "{}",
+    proc: "klient by neukázal radu Ctrl+F5, jen obecné „uložte znovu“", sady: ["test_rj_rozhodnuti.mjs"] },
+  { nazev: "RJ #704-2: hláška bez rady Ctrl+F5 [RJ]", soubor: "../src/zamek.js",
+    hledej: "Stránka má nejspíš starší verzi aplikace. Obnovte stránku '\n    + '(Ctrl+F5), otevřete",
+    nahrad: "Stránka má nejspíš starší verzi aplikace. Obnovte stránku '\n    + '(F5), otevřete",
+    proc: "obchodník by obnovil stránku z mezipaměti a narazil znovu", sady: ["test_rj_rozhodnuti.mjs"] },
+  { nazev: "RJ #665: snímek zámku bez otisku podpisu [RJ]", soubor: "lib/zakazka_kontrola.mjs",
+    hledej: "      if (zs && /^[0-9a-f]{32}$/.test(String(ctx.podpisOtisk || ''))) zs.podpisOtisk = ctx.podpisOtisk;\n",
+    nahrad: "",
+    proc: "dotisk kolegou by zase vyšel bez podpisu původního zpracovatele", sady: ["test_rj_rozhodnuti.mjs"] },
+  { nazev: "RJ #665: otisk podpisu z prohlížeče [RJ]", soubor: "lib/zakazka_kontrola.mjs",
+    hledej: "String(ctx.podpisOtisk || ''))) zs.podpisOtisk = ctx.podpisOtisk;",
+    nahrad: "String(ctx.podpisOtisk || ''))) zs.podpisOtisk = (v.zamek.zpracovatel && v.zamek.zpracovatel.podpisOtisk) || ctx.podpisOtisk;",
+    proc: "upravený klient by pod nabídku podstrčil cizí uložený podpis", sady: ["test_rj_rozhodnuti.mjs"] },
+  { nazev: "RJ #665: kopie podpisu se nezapíše [RJ]", soubor: "functions/zakazky.mjs",
+    hledej: "    await podpisZamku.zapis();\n",
+    nahrad: "",
+    proc: "otisk ve snímku by mířil naprázdno — dotisk bez podpisu", sady: ["test_rj_rozhodnuti.mjs"] },
+  { nazev: "RJ #665: kopie se nekontroluje proti otisku [RJ]", soubor: "lib/sdilene.mjs",
+    hledej: "    return o && podpisOtisk(o) === otisk ? o : '';",
+    nahrad: "    return o;",
+    proc: "upravená záloha by pod odeslanou nabídku vložila jiný obrázek", sady: ["test_rj_rozhodnuti.mjs"] },
+  { nazev: "RJ #710-4: koordinace mění i uzavřenou správcem [RJ]", soubor: "../src/pripominky.js",
+    hledej: "    if (pripominkaUzavrelSpravce(p) && (z.stav !== undefined || z.odpoved !== undefined))",
+    nahrad: "    if (false && pripominkaUzavrelSpravce(p))",
+    proc: "klíč koordinace by vrátil připomínku uzavřenou správcem do fronty a přepsal jeho odpověď", sady: ["test_pripominky.mjs", "test_rj_rozhodnuti.mjs"] },
+  { nazev: "RJ #710-4: zákaz jen stavu, odpověď projde [RJ]", soubor: "../src/pripominky.js",
+    hledej: "(z.stav !== undefined || z.odpoved !== undefined))",
+    nahrad: "(z.stav !== undefined))",
+    proc: "klíč koordinace by přepsal odpověď správce", sady: ["test_pripominky.mjs"] },
+  { nazev: "RJ #710-4: uzavřenou koordinací nelze otevřít [RJ]", soubor: "../src/pripominky.js",
+    hledej: "  return pr[i].kdo !== 'koordinace';",
+    nahrad: "  return true;",
+    proc: "koordinace by nemohla vrátit vlastní uzavření (zbytečné 403)", sady: ["test_pripominky.mjs", "test_rj_rozhodnuti.mjs"] },
+  { nazev: "RJ #710-4: rozhoduje poslední záznam průběhu [RJ]", soubor: "../src/pripominky.js",
+    hledej: "  while (i > 0 && pr[i - 1] && pr[i - 1].stav === p.stav) i--;\n",
+    nahrad: "",
+    proc: "doplněním roadmapy by koordinace „převzala“ uzavření správce a pak ho změnila", sady: ["test_pripominky.mjs", "test_rj_rozhodnuti.mjs"] },
+  { nazev: "RJ #710-4: bez průběhu = koordinace [RJ]", soubor: "../src/pripominky.js",
+    hledej: "  if (i < 0 || !pr[i] || pr[i].stav !== p.stav) return true;",
+    nahrad: "  if (i < 0 || !pr[i] || pr[i].stav !== p.stav) return false;",
+    proc: "starší uzavřené připomínky bez průběhu by šly klíčem koordinace přepsat", sady: ["test_rj_rozhodnuti.mjs"] },
   /* BZ (21. 11. 2026): opravy bezpečnostního auditu 20. 11. 2026 — B231–B236, B195.
    * Hlídají netlify/test_bz_bezpecnost.mjs a netlify/test_bz_pipedrive.mjs. [BZ]
    * Model R1 (=== true) a samostatná větev „číslo proti null“ jsou ekvivalentní mutace
@@ -382,10 +452,6 @@ const MUTACE = [
     hledej: "    if (prisne && (!!a && typeof a === 'object') !== (!!b && typeof b === 'object') && (maCislo(a) || maCislo(b))) { pridej(c); return; }",
     nahrad: "",
     proc: "podstromy s čísly zaměněné za \"x\" by dostaly „shoda“ (revize R3)", sady: ['test_bz_bezpecnost.mjs'] },
-  { nazev: "BZ R4: vazbu dealu doloží i číslo PROJ vedle OCK [BZ]", soubor: "lib/pd_overeni.mjs",
-    hledej: "  if (cnDealu && pdWebhookCisloKlic(cislo) && pdWebhookCisloSedi(cislo, cnDealu, zak)) return { ok: true, zdroj: 'cislo' };",
-    nahrad: "  if (cnDealu && [cislo, String((zak.projHlavicka || {}).cislo || '')].some(c => pdWebhookCisloKlic(c) && pdWebhookCisloSedi(c, cnDealu, zak))) return { ok: true, zdroj: 'cislo' };",
-    proc: "autor by přepsal číslo PROJ na číslo cizího dealu a psal do něj (revize R4)", sady: ['test_bz_pipedrive.mjs'] },
   { nazev: "BZ R5: smazaná karta nechá historii [BZ]", soubor: "functions/zakaznici.mjs",
     hledej: "      await s.smaz('h/' + klic);   // revize Fable R5: historie smazané karty nezůstane ani ji nová karta nezdědí",
     nahrad: "",
@@ -798,8 +864,8 @@ const MUTACE = [
     nahrad: "",
     proc: 'kopie pro jiného zákazníka by nesla údaje cizích zákazníků (R1)', sady: ['../src/test_vz_model.js'] },
   { nazev: 'VSD: poznámka i s vypnutým vypínačem [VSD]', soubor: 'lib/pd_poznamka.mjs',
-    hledej: "  if (zapnuto !== true || !dealId || !pdNastaveno() || !pdZapisPovolen()) return { stav: 'bez' };",   /* VZ-E5: zobecněno na druh poznámky; BZ: vypínač zápisu */
-    nahrad: "  if (!dealId || !pdNastaveno() || !pdZapisPovolen()) return { stav: 'bez' };",
+    hledej: "  if (zapnuto !== true || !dealId || !pdNastaveno()) return { stav: 'bez' };",   /* VZ-E5: zobecněno na druh poznámky; BZ: vypínač zápisu (RJ: zvlášť s varováním) */
+    nahrad: "  if (!dealId || !pdNastaveno()) return { stav: 'bez' };",
     proc: 'na ostrém webu s vypnutou funkcí by uložení psalo do Pipedrive', sady: ['test_vsd_pd_poznamka.mjs'] },
   { nazev: 'VSD: pole poznámky převzaté od klienta [VSD]', soubor: 'lib/pd_poznamka.mjs',
     hledej: '  delete zak[druh.pole];\n  if (plati) zak[druh.pole] = plati;',   /* VZ-E5: zobecněno na druh poznámky */
@@ -3430,8 +3496,8 @@ const MUTACE = [
   /* Ověření zmrazeného výsledku NOVÉHO zámku (B59, revize v22.9.9). */
   { nazev: 'B59: server výsledek nového zámku neověří',
     soubor: 'lib/zakazka_kontrola.mjs',
-    hledej: "    const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru, undefined, { prisne: true });\n    if (ov) v.zamek.overeni = ov; else delete v.zamek.overeni;",
-    nahrad: "    const ov = null;\n    if (ov) v.zamek.overeni = ov; else delete v.zamek.overeni;",
+    hledej: "    const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru, undefined, { prisne: true });\n",
+    nahrad: "    const ov = null;\n",
     proc: 'upravený klient by zamkl nabídku s jinými čísly, než dávají data, a B53 by je chránil jako pravdu' },
 
   { nazev: 'B59: server věří razítku ověření u nového zámku',
@@ -3596,8 +3662,8 @@ const MUTACE = [
    * mazání v souboru dvakrát (GET i DELETE) a mutace se přestala hledat
    * jednoznačně — hlásilo se CHYBNĚ ZADANÁ. */
   { nazev: 'jméno souboru se bere, jak přijde', soubor: 'functions/zakazky.mjs',
-    hledej: '    const zak = await s.cti(\'z/\' + soubor);\n    /* Stav dealu',
-    nahrad: '    const zak = await s.cti(soubor);\n    /* Stav dealu',
+    hledej: '    const zak = await s.cti(\'z/\' + soubor);\n    /* #665 (RJ',
+    nahrad: '    const zak = await s.cti(soubor);\n    /* #665 (RJ',
     proc: 'požadavkem na „_rejstrik" nebo cestou ven by šlo číst cizí záznamy' },
 
   /* Mazání zakázek (21. 8. 2026). */
