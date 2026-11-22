@@ -442,6 +442,13 @@ r = await opravOrg(S3, 'nahled', cAutor);
 test('autor bez práva Pipedrive (matice B80) → 403', r.status === 403, r);
 pamet.delete('program/zobrazeni');
 test('… a do ARES ani Pipedrive se nešlo', ares.volani === n0 && pdPatche('/organizations/') === pO);
+/* RJ N1 (revize 22. 11. 2026): vazba existující kalkulace z webhooku je „ceka“ —
+ * oprava firmy (#704-4, totéž pravidlo jako poznámky) projde až po „V pořádku“. */
+r = await opravOrg(S3, 'nahled', cAutor);
+test('RJ N1: nepotvrzená vazba („ceka“) — oprava firmy 409 neověřeno, do Pipedrive nic', r.status === 409 && r.stav === 'neovereno'
+  && /čeká na potvrzení/.test(r.chyba || '') && pdPatche('/organizations/') === pO, r);
+r = await vazba(S3, 'potvrdit', cAutor);
+test('RJ N1: autor vazbu potvrdí („V pořádku“)', r.status === 200 && zakazka(S3).pdVazbaWebhook.stav === 'potvrzeno', r);
 r = await opravOrg(S3, 'nahled', cAutor);
 test('náhled autorem: rozdíly název a adresa, DIČ chybí v účtu → věta v dialogu', r.status === 200
   && r.rozdily.map((x) => x.klic).join() === 'nazev,adresa' && r.dicChybi === true && /DIČ se do Pipedrive nezapíše/.test(r.dicVeta)
