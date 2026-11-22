@@ -201,3 +201,5 @@ async function dvojceKarty(s, klice, z, klic) {
   }
   return null;
 }
+
+export const config = { path: '/api/zakaznici' };

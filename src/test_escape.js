@@ -551,21 +551,6 @@ const PROVERENO_CLENY = {
   'podminky_ui.js': {
     'z.tlacitko': 'hotové HTML tlačítka z onlineFirmaZverejnitBlok() v online_ui.js — popisek je literál z kódu, žádná data (U1, 20. 10. 2026)',
   },
-  'analytika_ui.js': {
-    'p.zakazky': 'počet ze serverové analytiky (/api/analytika sčítá záznamy) — číslo',
-    'p.kalkulace': 'počet ze serverové analytiky — číslo',
-    'p.tiskyWord': 'počet ze serverové analytiky — číslo',
-    'p.tiskyNahled': 'počet ze serverové analytiky — číslo',
-    'p.prihlaseni': 'počet ze serverové analytiky — číslo',
-    'p.chyby': 'počet ze serverové analytiky — číslo',
-    'p.dnu': 'počet dnů se záznamem (server: dvojice.length) — číslo',
-    'c.zakazky': 'součet za období z týchž počtů — číslo',
-    'c.kalkulace': 'součet za období — číslo',
-    'c.tiskyWord': 'součet za období — číslo',
-    'c.tiskyNahled': 'součet za období — číslo',
-    'c.prihlaseni': 'součet za období — číslo',
-    'c.chyby': 'součet za období — číslo',
-  },
   'cenik_stari_ui.js': {
     's.zdrazeni': 'počet zdražených položek z porovnání ceníků — číslo',
     's.zlevneni': 'počet zlevněných položek — číslo',
@@ -600,10 +585,6 @@ const PROVERENO_CLENY = {
     's.nove': 'počet nových hesel — číslo',
   },
   'online_ui.js': {
-    'b.nove': 'počet z náhledu obnovy (server sčítá) — číslo',
-    'b.prepsane': 'počet z náhledu obnovy — číslo',
-    'b.bezeZmeny': 'počet z náhledu obnovy — číslo',
-    'b.preskocene': 'počet z náhledu obnovy — číslo',
     'z.odeslane': 'počet odeslaných variant v záznamu rejstříku (uloRejstrikZaznam: filter().length) — číslo',
     'z.variant': 'počet variant v záznamu rejstříku (varianty.length) — číslo',
   },

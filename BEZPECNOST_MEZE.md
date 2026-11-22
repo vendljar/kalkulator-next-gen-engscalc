@@ -589,9 +589,13 @@ se nezapíše, jinak se na čerstvý záznam přepíšou jen pole hesla. Uložen
 profilu přepisuje na čerstvý záznam jen pole profilu; odhlášení čte znovu
 a zvyšuje jen verzi hesla (od 13. 10.). **Zbývá:** akce správce (role,
 zapnutí, reset hesla, archiv) dál zapisují celý účet přečtený na začátku —
-souběžná změna hesla uživatelem se tak může přepsat zásahem správce
-(bezpečný směr: platí zásah správce). Mezi instancemi funkce jen druhé
-čtení (B158). Text níž popisuje stav před v23.10.5.
+souběžná změna hesla uživatelem se tak může přepsat zásahem správce.
+*Oprava popisu (audit 20. 11. 2026, B240):* „bezpečný směr“ neplatil — zásah
+vracel i `hesloVerze` a otisk hesla, takže odhlášená relace znovu platila.
+**Opraveno v dávce NN (B240):** akce správce přečte účet znovu těsně před
+zápisem ve `vyhradne('uzivatele/<e-mail>')` a přenese jen pole, která
+změnila. Mezi instancemi funkce jen druhé čtení (B158). Text níž popisuje
+stav před v23.10.5.
 
 **Co dělá:** odhlášení (`netlify/functions/odhlaseni.mjs`) a uložení profilu
 nebo podpisu (`netlify/functions/uzivatele.mjs`, akce `profil`/`podpis`)
@@ -2165,17 +2169,19 @@ Roadmapa #696–#704 (pracovní čísla).
 - **B233 — počítadla pokusů o přihlášení při souběhu — OPRAVENO V INSTANCI.** Čtení–změna–zápis počítadel
   (e-mail i adresa) běží ve výhradním úseku nad klíčem (`vyhradne`, vzor B158). *Mez:* Netlify Blobs
   8.2.0 nemá podmíněný zápis — dvě různé instance funkce se navzájem nevidí, souběh mezi nimi může
-  zápis ztratit (zbytek B4/B158; úplná oprava = novější `@netlify/blobs` s `onlyIfMatch`, roadmapa #703).
+  zápis ztratit (zbytek B4/B158; úplná oprava = novější `@netlify/blobs` s `onlyIfMatch`). **Přijato jako
+  vědomá mez** (rozhodnutí J. V. 22. 11. 2026, #703 uzavřeno bez změny kódu): souběh dvou instancí pod
+  náporem dovolí nejvýš jednotky pokusů navíc nad limit; povýšení Blobs se zadá samostatně, až bude důvod.
 - **B234 — karta zákazníka — OPRAVENO.** Kartu ZALOŽÍ kdokoli přihlášený, MĚNÍ jen její autor
   a administrátor (`zakaznikSmiMenit`). Úprava od jiného se uloží jako **návrh změny** na kartě
   (`navrhy`, nejvýš 20; drží je server, klient je nepřepíše ani nesmaže); převezme / zamítne ho autor
   nebo administrátor (`akce: navrhPrijmout | navrhZamitnout`, jinak 403). Každá změna karty uloží
   předchozí verzi do **historie** `zakaznici/h/<klíč>` (nejvýš 50; čte každý přihlášený jako kartu;
-  záloha celé úložiště, obnova touž očistou; smazání karty smaže i historii — revize R5). *Mez (revize
-  R6, R7, #705):* dvojče karty pod jiným klíčem (IČO × název) autora obejde; návrhy a historie se
-  zapisují bez výhradního úseku. *Mez:* karta bez autora (data před B29) mění jen
-  administrátor; mazání dál jen administrátor; strop počtu karet a pole `zalozen` (B244) zůstávají
-  k pozdější dávce (#702).
+  záloha celé úložiště, obnova touž očistou; smazání karty smaže i historii — revize R5). *Revize
+  R6, R7 (#705) — opraveno v dávce NN:* dvojče karty pod jiným klíčem (shodné IČO, nebo shodný název
+  u karty bez IČO) cizí osoba nezaloží (409); návrhy a historie se zapisují ve výhradním úseku nad klíčem
+  karty (jen v instanci, jako B158). *Mez:* karta bez autora (data před B29) mění jen
+  administrátor; mazání dál jen administrátor; strop počtu karet (2 000) a pole `zalozen` (B244) viz oddíl NN.
 - **B235 / B236 — zápis do Pipedrive — OPRAVENO, ZÁPIS VYPNUTÝ.** Jednotný vypínač dřív neexistoval
   (zrušení vazby a odkaz z webhooku šly ven s pouhým tokenem). Teď `pdZavolej` — jediné místo, kde se
   sahá na síť — odmítne každé volání jiné než GET do skutečného Pipedrive bez proměnné Netlify
@@ -2229,10 +2235,12 @@ Roadmapa #696–#704 (pracovní čísla).
   stav (fronta/řeší se/test/hotovo/odloženo/zamítnuto), odpověď a číslo roadmapy, nikdy u nové
   připomínky. Porovnání v konstantním čase (`tajneShodne`). Cesta klíče se volí jen podle schématu `Bearer`
   nebo `?pro=koordinace` — hlavička `Authorization: Basic` (heslo webu, proxy) jde běžnou cestou relace
-  (revize N3, 22. 11. 2026). **Označené místo** jde ke koordinaci jen jako popisek z POPISU prvku (label,
-  aria-label, title, placeholder; klient ho značí `zdroj: 'popis'`) a jen bez číslic a zavináče; text ze
-  stránky (obsah prvku, první buňka řádku — může nést cenu nebo jméno zákazníka) ani nadpis okna ke
-  koordinaci nejdou, jen obrazovka a selektor (`pripominkaMistoProKoordinaci`, revize N1). Zneužití: špatný klíč se počítá na adresu
+  (revize N3, 22. 11. 2026). **Označené místo** jde ke koordinaci jen jako popisek ze ŠTÍTKU pole (label,
+  placeholder; klient ho značí `zdroj: 'stitek'`) a jen bez číslic a zavináče; title a aria-label (mohou
+  nést jméno zákazníka bez číslic — tlačítka víc zákazníků), text ze stránky (obsah prvku, první buňka
+  řádku — může nést cenu nebo jméno zákazníka) ani nadpis okna ke koordinaci nejdou, jen obrazovka
+  a strukturální selektor bez `#id` (`pripominkaMistoProKoordinaci`, `pripominkaSelektorProKoordinaci`;
+  revize N1, zbytek dávka NN). Zneužití: špatný klíč se počítá na adresu
   (10 za 15 min → 429), správný klíč nejvýš 300 požadavků za hodinu (→ 429); obojí jde do záznamu
   `pripominky_limit/klic_zaznam` (čas, událost, klíč počítadla adresy — bez obsahu, bez klíče), který
   vidí správce v Nastavení. Zrušení klíče okamžitě zastaví čtení.
@@ -2254,5 +2262,66 @@ Roadmapa #696–#704 (pracovní čísla).
   u správce rozlišuje jen záznamy uložené v tomto webu, obě databáze čte koordinace zvlášť (dvěma klíči).
   Snímek je obraz DOM v prohlížeči autora: obrázky z jiných domén, `<canvas>` a některé styly se v něm
   nemusí vykreslit; je to diagnostika, ne doklad. Počítadla v `pripominky_limit` (`spatne:`, `hodina/`,
-  `den/`) plní i anonym a nikdo je neuklízí; 100 špatných pokusů vytlačí ze záznamu i událost „klíč vydán“
-  (roadmapa: úklid a oddělený záznam správce, revize N4).
+  `den/`) plní i anonym; od dávky NN (#711) je uklízí čtení nastavení správcem (starší než 2 dny, nejvýš
+  200 naráz) a vydání / zrušení klíče jde do odděleného záznamu `klic_spravce` (nejvýš 50), který anonymní
+  pokusy nevytlačí. Do prvního čtení správcem počítadla rostou.
+
+## NN — nízké nálezy auditu 20. 11. 2026 (B237–B256), revize BZ a PR (dávka NN, 22. 11. 2026)
+
+Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md` (tabulka „Nízká“), roadmapa #702, #703,
+#705, #708, #711, #712. Testy `netlify/test_nn_nizke.mjs`, `netlify/test_nn_pipedrive.mjs`,
+`netlify/test_nn_poc.mjs` (PoC auditu jako sada), `src/test_nn_nizke.js`, rozšířené `test_pripominky`,
+`overit_pripominky.mjs`, `nastroje/test_pre_push.sh`, `nastroje/test_workflow_udaju.sh`; mutace [NN].
+
+- **B237 — razítko verze zakázky — OPRAVENO.** Tělo bez `ocekavaneRazitko` nad existující zakázkou = 409
+  (dřív výjimka „starší klient bez pole“). *Mez:* `prepsat: true` (vědomé přepsání po dotazu) zůstává —
+  práva nerozšiřuje: zakázku smí uložit každý, kdo ji smí načíst, s razítkem načtené verze.
+- **B238 — snímek lhůt PROJ — OPRAVENO.** Snímek `data.kryciProj.lhutyProj` píše server
+  (`lhutyProjServerDrz`): neprodaná varianta ho nenese (klientský se zahodí), varianta prodávaná tímto
+  uložením dostane platnou tabulku Firmy ze serveru, prodaná dřív — změnu odmítne zámek. *Mez:* obnova ze
+  zálohy snímek bere jako doklad (jako B231).
+- **B239 — limity zakázky — OPRAVENO ČÁSTEČNĚ.** Nejvýš 50 variant, název varianty 300 znaků;
+  `/api/vypocet` strop těla 1 MB, hloubka, tvar a strop variant. *Mez:* neznámé klíče a dlouhé texty
+  uvnitř zakázky se dál ukládají do stropu velikosti 4 MB (`ZAKAZKA_MAX_B`) — strop velikosti je pojistka
+  proti zahlcení; seznam povolených klíčů by rozbil migrace starších zakázek.
+- **B240 — akce správce nad starým účtem — OPRAVENO.** Viz oprava popisu B156. *Mez:* mezi instancemi
+  funkce jen druhé čtení (B158).
+- **B241 — hádání hesla z více adres, síla hesla — MEZ (rozhodnutí J. V. otevřené).** Počítadlo e-mailu
+  správné heslo nikdy neblokuje (jinak by útočník zamkl kohokoli); strop je jen na adresu (IPv6 po /64)
+  a brzda. Útočník s mnoha adresami tak hádá bez stropu; síla hesla = jen délka 8. Zda zavést strop
+  na účet (s rizikem zamčení oběti), složitost hesla nebo druhý faktor, rozhodne J. V.
+- **B242 — adresa klienta mimo Netlify — MEZ.** Bez `x-nf-client-connection-ip` se bere první položka
+  `X-Forwarded-For`, bez obou se limit adresy nevede. Na Netlify hlavičku nastavuje platforma a klient ji
+  nepodvrhne; dopad jen při nasazení mimo Netlify (`server/` je nenasazovaná kostra, B262).
+- **B243 — objekt místo textu — OPRAVENO.** Karta zákazníka s objektem v poli = 400; očista karty
+  (`_txt`) a počty analytiky (`analytikaCislo`) objekt nezhroutí.
+- **B244 — číselník zákazníků — OPRAVENO.** Nejvýš 2 000 karet; `zalozen` nové karty píše server, očista
+  ho drží na 40 znacích. *Mez:* starší karty s dlouhým `zalozen` a jejich historie zůstávají, dokud se
+  karta neupraví; seznam se dál čte kartu po kartě (karet jsou desítky).
+- **B245 — PIPEDRIVE_DOMENA — OPRAVENO (SEC-M14).** Doména = jedno jméno subdomény; jinak chyba 500
+  a žádné síťové volání.
+- **B246 — časový limit Pipedrive — OPRAVENO.** Výchozí limit každého volání 8 s (504, bez opakování).
+- **B247–B251 — šablony Word a jejich uložení:** viz níž (část dávky NN).
+- **B252–B254 — kontrola údajů — OPRAVENO.** Workflow srovnává novou větev nebo tag jen s `origin/main`
+  a `origin/test` (dvě nové větve se stejnými commity naráz se zkontrolují); `kontrola_udaju.py` čte
+  UTF-16, v rozsahu pushe i soubory ze složek dist/, _DB/…, zprávu anotovaného tagu, tajemství serveru
+  bez uvozovek nebo s dvojtečkou, adresu Apps Script a heslo v adrese; nový řádek `*@doména`
+  v povoleném seznamu je v rozsahu pushe nález.
+- **B253–B255 — kontrola údajů — MEZE.** (1) Hook pre-push jde obejít i jinak než `--no-verify`:
+  `git -c core.hooksPath=… push`, odpojení `core.hooksPath` nebo zápis přes API GitHubu (MCP `push_files`,
+  `create_or_update_file`) — žádná z cest hook nespustí; zbývá workflow `kontrola_udaju.yml`, která údaj
+  ohlásí až po zveřejnění. (2) Kontrola podle vzorů nepřečte zakódovaný obsah (base64, zip, gz), obrázky,
+  PDF, `.pptx`, `.xlsm`, `.odt` ani části Office mimo výčet `ZIP_XML`. (3) Hook i workflow pouštějí
+  `kontrola_udaju.py` a `povolene_kontakty.txt` z téhož pushe — přidání přesné adresy nebo úprava skriptu
+  se hlídá jen revizí koordinace. (4) Nová větev nad starou historií s dříve přijatými výskyty může dát
+  falešně červený běh (bezpečný směr). (5) Zprávu anotovaného tagu workflow přečte, jen když checkout
+  zachová objekt tagu; hlavní vrstvou je hook, tagy jsou podle pravidel jednoduché. (6) Workflow běží
+  jen pro tagy `v*` (B275).
+- **B256 — escapování čísel ze serveru — OPRAVENO.** Analytika, náhled obnovy, mapa polí CRM a nanečisto
+  vkládají počty přes `esc()` (druhá vrstva; server text do čísel nepouští).
+- **#705 — karta zákazníka (revize BZ R6, R7) — OPRAVENO.** Viz B234.
+- **#711 — počítadla klíče koordinace — OPRAVENO.** Viz B257.
+- **#712 — připomínky při VYP — OPRAVENO.** Přihlášení a `/api/ja` nesou `pripominky {zapnuto,
+  smiOdesilat}`; při vypnuté funkci klient nic nenačítá a tlačítko do stránky nevkládá.
+- **Zbytek N1 (PR) — OPRAVENO.** Viz B257 (jen štítek pole, strukturální selektor).
+- **#703 — B233 zbytek — PŘIJATO JAKO MEZ** (J. V. 22. 11. 2026). Viz B233.

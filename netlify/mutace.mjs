@@ -47,7 +47,9 @@ if (!process.env.ADMIN_EMAIL) process.env.ADMIN_EMAIL = 'spravce@priklad.cz';
  * je soubor zmutovaný. Běžný běh ji nenastavuje. */
 const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
-  : [/* PR (21. 11. 2026): připomínky z aplikace — API, klíč koordinace, limity (rychlá sada). */
+  : [/* NN (22. 11. 2026): nízké nálezy auditu 20. 11. a revize BZ / PR (rychlé sady). */
+     'test_nn_nizke.mjs', '../src/test_nn_nizke.js',
+     /* PR (21. 11. 2026): připomínky z aplikace — API, klíč koordinace, limity (rychlá sada). */
      'test_pripominky.mjs', '../src/test_pripominky.js',
      /* BZ (21. 11. 2026): opravy bezpečnostního auditu B231–B236, B195 (rychlé sady). */
      'test_bz_bezpecnost.mjs', 'test_bz_pipedrive.mjs',
@@ -254,7 +256,11 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* #577 AS (10. 11. 2026): noční kopie na Disk skriptem Apps Script — server
       * (/api/zaloha_disk), simulace skriptu a klient. Na konci (velký otisk
       * 60+ MB trvá ~15 s); mutace #577 je pouštějí první (`sady`). */
-     '../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'];
+     '../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs',
+     /* NN (22. 11. 2026): Pipedrive B245/B246 (čeká na časový limit ~8 s) a PoC auditu
+      * jako sada (~3 s). Na konci: mutace NN je pouštějí první (`sady`), ostatním běh
+      * neprodlouží. */
+     'test_nn_pipedrive.mjs', 'test_nn_poc.mjs'];
 /* Filtr podle názvu; `--cast K/N` a `--od N` vybírají část běhu podle pořadí
  * (P2, 23. 10. 2026 — nastroje/mutace_cast.mjs). */
 const { mutaceCast, filtrZArgv } = await import('../nastroje/mutace_cast.mjs');
@@ -264,6 +270,102 @@ const filtr = filtrZArgv(process.argv.slice(2));
  * čím se nahradí, a proč nás zajímá — co by se v praxi stalo, kdyby tuhle
  * chybu někdo udělal doopravdy. */
 const MUTACE = [
+  /* NN (22. 11. 2026): nízké nálezy auditu 20. 11. 2026 (B237–B246), revize BZ (#705)
+   * a PR (#711, zbytek N1). Hlídají netlify/test_nn_nizke.mjs, test_nn_pipedrive.mjs,
+   * test_nn_poc.mjs, test_pripominky.mjs a src/test_pripominky.js, src/test_nn_nizke.js. [NN]
+   * #712 a B256 hlídá overit_pripominky.mjs / statická kontrola — mutace serveru je nevidí. */
+  { nazev: "NN B237: tělo bez razítka verze přepíše existující zakázku [NN]", soubor: "functions/zakazky.mjs",
+    hledej: "  if (stara && t.prepsat !== true) {\n    const kol = ULO.uloKolize(stara, typeof t.ocekavaneRazitko === 'string' ? t.ocekavaneRazitko : '');",
+    nahrad: "  if (stara && typeof t.ocekavaneRazitko === 'string' && t.prepsat !== true) {\n    const kol = ULO.uloKolize(stara, typeof t.ocekavaneRazitko === 'string' ? t.ocekavaneRazitko : '');",
+    proc: "cizí obchodník by bez pole ocekavaneRazitko přepsal rozpracovanou zakázku (B237)", sady: ["test_nn_nizke.mjs", "test_nn_poc.mjs"] },
+  { nazev: "NN B239: počet variant zakázky bez stropu [NN]", soubor: "lib/zakazka_kontrola.mjs",
+    hledej: "    if (Array.isArray(telo.varianty) && telo.varianty.length > ZAKAZKA_VARIANT_MAX)",
+    nahrad: "    if (false)",
+    proc: "stovky variant by se uložily (B239)", sady: ["test_nn_nizke.mjs"] },
+  { nazev: "NN B239: název varianty bez stropu [NN]", soubor: "lib/zakazka_kontrola.mjs",
+    hledej: "String(v.nazev == null ? '' : v.nazev).length > VARIANTA_NAZEV_MAX)",
+    nahrad: "String(v.nazev == null ? '' : v.nazev).length > 1e9)",
+    proc: "název varianty o statisících znaků by se uložil (B239)", sady: ["test_nn_nizke.mjs"] },
+  { nazev: "NN B239: /api/vypocet bez stropu těla [NN]", soubor: "functions/vypocet.mjs",
+    hledej: "    if (text.length > VYPOCET_TELO_MAX) return",
+    nahrad: "    if (false) return",
+    proc: "výpočet by přijal tělo nad 1 MB (B239)", sady: ["test_nn_nizke.mjs"] },
+  { nazev: "NN B239: /api/vypocet bez stropu variant [NN]", soubor: "functions/vypocet.mjs",
+    hledej: "vstup.zakazka.varianty.length > ZAKAZKA_VARIANT_MAX)",
+    nahrad: "vstup.zakazka.varianty.length > 1e9)",
+    proc: "výpočet by počítal stovky variant (B239)", sady: ["test_nn_nizke.mjs"] },
+  { nazev: "NN B243: objekt v poli karty zákazníka projde [NN]", soubor: "functions/zakaznici.mjs",
+    hledej: "      return json({ ok: false, chyba: 'Pole karty zákazníka musí být text.' }, 400); }",
+    nahrad: "      ; }",
+    proc: "objekt místo textu by se tiše zahodil místo 400 (B243)", sady: ["test_nn_nizke.mjs"] },
+  { nazev: "NN B243: _txt shodí objekt výjimkou [NN]", soubor: "../src/zakaznici.js",
+    hledej: "function _txt(v) { return v == null || typeof v === 'object' || typeof v === 'function' ? '' : String(v).trim(); }",
+    nahrad: "function _txt(v) { return String(v == null ? '' : v).trim(); }",
+    proc: "očista karty by na {\"toString\":1} spadla (B243)", sady: ["test_nn_nizke.mjs"] },
+  { nazev: "NN B243: počet analytiky z objektu shodí funkci [NN]", soubor: "../src/analytika.js",
+    hledej: "  if (typeof n !== 'number' && typeof n !== 'string') return 0;\n",
+    nahrad: "",
+    proc: "+{valueOf:1} by shodil slití dávky (B243)", sady: ["test_nn_nizke.mjs"] },
+  { nazev: "NN B244: počet karet zákazníků bez stropu [NN]", soubor: "functions/zakaznici.mjs",
+    hledej: "    if (klice.length >= ZAKAZNICI_MAX)",
+    nahrad: "    if (false)",
+    proc: "číselník by šel zaplnit kartami (B244)", sady: ["test_nn_nizke.mjs"] },
+  { nazev: "NN B244: zalozen nové karty z klienta [NN]", soubor: "functions/zakaznici.mjs",
+    hledej: "    z.zalozen = ted;          // NN B244: čas založení píše server, ne klient\n",
+    nahrad: "",
+    proc: "čas založení by určil klient (B244)", sady: ["test_nn_nizke.mjs"] },
+  { nazev: "NN B244: zalozen bez stropu [NN]", soubor: "../src/zakaznici.js",
+    hledej: "  z.zalozen = _txt(v.zalozen).slice(0, 40) || _txt(kdy);",
+    nahrad: "  z.zalozen = _txt(v.zalozen) || _txt(kdy);",
+    proc: "pole zalozen bez stropu by se násobilo v historii (B244, #705)", sady: ["test_nn_nizke.mjs"] },
+  { nazev: "NN #705 R6: dvojče karty pod jiným klíčem projde [NN]", soubor: "functions/zakaznici.mjs",
+    hledej: "    if (dvojce && !g.zakaznikSmiMenit(dvojce.karta, relace))",
+    nahrad: "    if (false)",
+    proc: "cizí obchodník by obešel autora kartou pod druhým klíčem (R6)", sady: ["test_nn_nizke.mjs"] },
+  { nazev: "NN #705 R6: dvojče jen podle IČO, ne podle názvu [NN]", soubor: "functions/zakaznici.mjs",
+    hledej: "    if (nKlic && (!ico || !icoK) && g.zakaznikKlic({ nazev: karta.nazev }) === nKlic) return { klic: kk, karta };\n",
+    nahrad: "",
+    proc: "karta téže firmy bez IČO by dvojče obešla (R6)", sady: ["test_nn_nizke.mjs"] },
+  { nazev: "NN #705 R6: dvojče i u stejného názvu s jiným IČO [NN]", soubor: "functions/zakaznici.mjs",
+    hledej: "if (nKlic && (!ico || !icoK) && g.zakaznikKlic",
+    nahrad: "if (nKlic && g.zakaznikKlic",
+    proc: "jiná firma stejného jména by dostala 409 (R6, falešný poplach)", sady: ["test_nn_nizke.mjs"] },
+  { nazev: "NN #705 R7: úprava karty bez výhradního úseku [NN]", soubor: "functions/zakaznici.mjs",
+    hledej: "  return vyhradne('zakaznici/' + klic, async () => {\n  /* Zápis nesmí",
+    nahrad: "  return (async (_k, f) => f())('zakaznici/' + klic, async () => {\n  /* Zápis nesmí",
+    proc: "souběžné návrhy a úpravy karty by se přepsaly (R7)", sady: ["test_nn_nizke.mjs"] },
+  { nazev: "NN #711: vydání klíče do anonymního záznamu [NN]", soubor: "functions/pripominky.mjs",
+    hledej: "  const klicZaznamu = spravce ? 'klic_spravce' : 'klic_zaznam';",
+    nahrad: "  const klicZaznamu = 'klic_zaznam';",
+    proc: "100 anonymních pokusů by vytlačilo záznam o vydání klíče (#711)", sady: ["test_pripominky.mjs"] },
+  { nazev: "NN #711: počítadla klíče koordinace bez úklidu [NN]", soubor: "functions/pripominky.mjs",
+    hledej: "        try { await pripominkyLimitUklid(); } catch (e) { /* úklid nesmí shodit čtení (NN #711) */ }",
+    nahrad: "",
+    proc: "počítadla spatne:/hodina/den by rostla navždy (#711)", sady: ["test_pripominky.mjs"] },
+  { nazev: "NN N1: title / aria ke koordinaci [NN]", soubor: "../src/pripominky.js",
+    hledej: "  if (!m || m.zdroj !== 'stitek') return '';",
+    nahrad: "  if (!m || m.zdroj === 'obsah') return '';",
+    proc: "jméno zákazníka z title / aria-label by šlo koordinaci (zbytek N1)", sady: ["../src/test_pripominky.js"] },
+  { nazev: "NN N1: selektor s #id ke koordinaci [NN]", soubor: "../src/pripominky.js",
+    hledej: "      selektor: pripominkaSelektorProKoordinaci(k.misto && k.misto.selektor), verze: k.verze || '' },",
+    nahrad: "      selektor: (k.misto && k.misto.selektor) || '', verze: k.verze || '' },",
+    proc: "id odvozené z dat by šlo koordinaci (zbytek N1)", sady: ["../src/test_pripominky.js"] },
+  { nazev: "NN B245: PIPEDRIVE_DOMENA bez validace [NN]", soubor: "lib/pipedrive.mjs",
+    hledej: "  if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(d))",
+    nahrad: "  if (false)",
+    proc: "token by odešel na cizího hostitele (B245)", sady: ["test_nn_pipedrive.mjs"] },
+  { nazev: "NN B246: čtení Pipedrive bez výchozího limitu [NN]", soubor: "lib/pipedrive.mjs",
+    hledej: "volby.casLimitMs : PD_CAS_LIMIT_MS;",
+    nahrad: "volby.casLimitMs : 0;",
+    proc: "čtení by viselo na neodpovídajícím Pipedrive (B246)", sady: ["test_nn_pipedrive.mjs"] },
+  { nazev: "NN B240: akce správce zapíše celý starý účet [NN]", soubor: "functions/uzivatele.mjs",
+    hledej: "      if (!cerstvy || !ucetPred) { await u.zapis(email, ucet); return ucet; }",
+    nahrad: "      { await u.zapis(email, ucet); return ucet; }",
+    proc: "souběžná změna hesla by se vrátila (B240)", sady: ["test_nn_poc.mjs"] },
+  { nazev: "NN B238: snímek lhůt PROJ od klienta [NN]", soubor: "functions/zakazky.mjs",
+    hledej: "  lhutyProjServerDrz(stara, zak, await sProg.cti('firma'));",
+    nahrad: "  await sProg.cti('firma');",
+    proc: "klient by do odeslané nabídky zapsal vlastní lhůty a Prodáno je zmrazilo (B238)", sady: ["test_nn_poc.mjs", "test_d8_lhuty.mjs"] },
   /* BZ (21. 11. 2026): opravy bezpečnostního auditu 20. 11. 2026 — B231–B236, B195.
    * Hlídají netlify/test_bz_bezpecnost.mjs a netlify/test_bz_pipedrive.mjs. [BZ]
    * Model R1 (=== true) a samostatná větev „číslo proti null“ jsou ekvivalentní mutace
@@ -2108,7 +2210,7 @@ const MUTACE = [
     proc: 'nešlo by dohledat, co správce u účtu změnil', sady: ['test_ue_uzivatele.mjs'] },
   /* PR (21. 11. 2026): připomínky z aplikace — server, jádro, záloha a obnova (B257). */
   { nazev: "PR: N1: koordinace dostane popisek z obsahu stránky [PR]", soubor: "../src/pripominky.js",
-    hledej: "  if (!m || m.zdroj !== 'popis') return '';",
+    hledej: "  if (!m || m.zdroj !== 'stitek') return '';",
     nahrad: "  if (!m) return '';",
     proc: "cena nebo jméno zákazníka z kliknutého prvku by odešly do kokpitu koordinace", sady: ['test_pripominky.mjs', '../src/test_pripominky.js'] },
   { nazev: "PR: N1: popis s číslicí ke koordinaci projde [PR]", soubor: "../src/pripominky.js",
@@ -2116,8 +2218,8 @@ const MUTACE = [
     nahrad: "  return t;",
     proc: "title s cenou nebo e-mailem by odešel koordinaci", sady: ['test_pripominky.mjs', '../src/test_pripominky.js'] },
   { nazev: "PR: N1: neznámý původ popisku = popis [PR]", soubor: "../src/pripominky.js",
-    hledej: "zdroj: m.zdroj === 'popis' ? 'popis' : 'obsah',",
-    nahrad: "zdroj: m.zdroj || 'popis',",
+    hledej: "zdroj: m.zdroj === 'stitek' || m.zdroj === 'popis' ? m.zdroj : 'obsah',",
+    nahrad: "zdroj: m.zdroj || 'stitek',",
     proc: "klient bez značky by posílal obsah stránky jako popis", sady: ['test_pripominky.mjs', '../src/test_pripominky.js'] },
   { nazev: "PR: N3: cesta klíče na jakoukoli Authorization [PR]", soubor: "functions/pripominky.mjs",
     hledej: "  if (/^\\s*bearer\\b/i.test(req.headers.get('authorization') || '') || q.get('pro') === 'koordinace') {",
@@ -2585,7 +2687,7 @@ const MUTACE = [
 
   /* ---------- 3. dávka (B10, B14, B15, B16, B17, B19) ---------- */
   { nazev: 'B10: razítko verze se nekontroluje', soubor: 'functions/zakazky.mjs',
-    hledej: "  if (stara && typeof t.ocekavaneRazitko === 'string' && t.prepsat !== true) {",
+    hledej: "  if (stara && t.prepsat !== true) {",
     nahrad: "  if (false) {",
     proc: 'dva obchodníci by si tiše přepisovali práci; stejné číslo by přepsalo cizí zakázku' },
 
@@ -3407,8 +3509,8 @@ const MUTACE = [
     proc: 'vedlejší správce by nahrál cizí podpis pod nabídky hlavního administrátora' },
 
   { nazev: 'L29: autor nové karty zákazníka se bere od klienta', soubor: 'functions/zakaznici.mjs',
-    hledej: "  else z.autor = relace.email;   // nová karta",
-    nahrad: "  else z.autor = z.autor || relace.email;   // nová karta",
+    hledej: "    z.autor = relace.email;   // nová karta",
+    nahrad: "    z.autor = z.autor || relace.email;   // nová karta",
     proc: 'obchodník by založil kartu „za" kolegu' },
 
   { nazev: 'L31: správce si smí archivovat vlastní účet', soubor: 'functions/uzivatele.mjs',

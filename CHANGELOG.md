@@ -8,6 +8,33 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.11.6 — NN: nízké nálezy auditu 20. 11. 2026 (#702), revize BZ a PR, větev claude/nn-nizke-nalezy
+
+Nad integrací `05a496d` (v22.11.5). Pracovní verze — číslo přidělí koordinace. Cenu ani text dokumentů nemění
+(porovnání sestavení viz STAV / zpráva koordinaci). Bezpečnostní meze v `BEZPECNOST_MEZE.md`, oddíl NN.
+
+- **Zakázky:** razítko verze je povinné — uložení bez něj nad existující zakázkou = 409 (B237); nejvýš 50 variant
+  a název varianty 300 znaků, `/api/vypocet` strop těla 1 MB, hloubka a tvar (B239); snímek lhůt PROJ píše server
+  při Prodáno z tabulky Firmy, klient ho nepodvrhne (B238).
+- **Účty:** akce správce zapíše jen změněná pole nad čerstvě přečteným účtem — souběžná změna hesla nebo
+  odhlášení se už nevrátí (B240; oprava popisu meze B156).
+- **Zákazníci:** objekt místo textu = 400 (B243); strop 2 000 karet a `zalozen` píše server (B244); dvojče karty
+  téže firmy pod jiným klíčem cizí osoba nezaloží, návrhy a historie ve výhradním úseku (#705).
+- **Pipedrive:** validace `PIPEDRIVE_DOMENA` (B245, SEC-M14) a výchozí časový limit 8 s pro každé volání (B246).
+- **Šablony Word:** B247–B251 (viz níž, část subagenta šablon).
+- **Kontrola údajů:** workflow zkontroluje i dvě nové větve naráz (B252); `kontrola_udaju.py` čte UTF-16, složky
+  dist/ a _DB/ v rozsahu pushe, zprávu anotovaného tagu, tajemství bez uvozovek, adresu Apps Script a heslo
+  v adrese (B253); nový `*@doména` v povoleném seznamu v témže pushi zastaví push (B254); B255 a zbytky = meze.
+- **UI:** čísla ze serveru přes `esc()` (B256); bublina „Opláštit i prohlubeň“ celá (#708).
+- **Připomínky:** záznam vydání klíče oddělený a počítadla se uklízejí (#711); při VYP žádný požadavek ani
+  tlačítko v DOM (#712); ke koordinaci jen štítek pole a strukturální selektor (zbytek N1).
+- **Meze:** B241 (síla hesla, hádání z více adres — rozhodne J. V.), B242, B253–B255 zbytky, #703 (B233 zbytek
+  přijat J. V. 22. 11.).
+- **Testy:** `test_nn_nizke` (30), `test_nn_pipedrive` (14), `test_nn_poc` (PoC auditu jako sada), `src/test_nn_nizke`,
+  rozšířené `test_pripominky` (jádro 77, server 82), `overit_pripominky` 57, `test_pre_push` 25, nový
+  `test_workflow_udaju` 7; sady ukládající bez razítka ho doplňují jako klient (`netlify/pomoc_razitko.mjs`).
+  Mutace [NN] 23/23.
+
 ## v22.11.5 — PR #707: Připomínky z aplikace, větev claude/pr-pripominky
 
 Nad integrací `cda289e`, sloučeno s integrací `6fa67af` (v22.11.4). Cenu ani dokumenty nemění (porovnání sestavení SHODA). Funkce je výchozí VYPNUTÁ.
