@@ -461,11 +461,24 @@ function tiskJazyk() { return TISK_JAZYK || jazyk(); }
 function tiskJazykNastav(v) {
   TISK_JAZYK = (v && (v === 'cz' || JAZYK_IDX[v] !== undefined)) ? v : '';
 }
-function tiskJazykVyber() {
+/* JT (J. V. 22. 11. 2026): u nabídky OCK jdou Jazyk tisku a jazyk náhledu
+ * technické specifikace („Jazyk dokumentu: CZ / EN / DE / FR") SPOLU, ať se
+ * nerozcházejí. Volba Jazyka tisku u tlačítek nabídky OCK přepne i náhled
+ * specifikace (jazykSet = totéž, co tlačítko v hlavičce); opačný směr dělá
+ * tsJazykPrepni v techspec_ui.js. „dle Nastavení" nic nepřepíná — tisk se už
+ * řídí jazykem dokumentu. Uložení se nemění: Jazyk tisku jen pro relaci,
+ * jazyk dokumentu v Nastavení jako dosud. PROJ a SoD volají tiskJazykVyber()
+ * bez parametru a chovají se jako dřív. */
+function tiskJazykNastavOck(v) {
+  tiskJazykNastav(v);
+  if (TISK_JAZYK && TISK_JAZYK !== jazyk()) jazykSet(TISK_JAZYK);
+}
+function tiskJazykVyber(ock) {
   const moznosti = [['', 'dle Nastavení (' + jazyk().toUpperCase() + ')'],
     ['cz', 'česky'], ['en', 'anglicky'], ['de', 'německy'], ['fr', 'francouzsky']];
-  return '<label class="note" style="margin-left:8px">Jazyk tisku:&nbsp;<select class="cteni-ok" '
-    + 'onchange="tiskJazykNastav(this.value)" title="Jazyk tohoto výtisku – pevný text dodá jazyková mutace šablony, hodnoty přeloží aplikace">'
+  return '<label class="note" style="margin-left:8px">Jazyk tisku:&nbsp;<select class="cteni-ok tiskJazyk" '
+    + 'onchange="' + (ock === 'ock' ? 'tiskJazykNastavOck' : 'tiskJazykNastav') + '(this.value)" title="Jazyk tohoto výtisku – pevný text dodá jazyková mutace šablony, hodnoty přeloží aplikace'
+    + (ock === 'ock' ? '; přepne i jazyk náhledu technické specifikace' : '') + '">'
     + moznosti.map(([v, t]) => '<option value="' + v + '"' + (v === TISK_JAZYK ? ' selected' : '')
       + '>' + t + '</option>').join('')
     + '</select></label>';
