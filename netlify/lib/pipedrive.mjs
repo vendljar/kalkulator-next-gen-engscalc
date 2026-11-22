@@ -87,6 +87,11 @@ export function pdZaklad() {
     .replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/\.pipedrive\.com$/, '');
   if (!d) throw new PdChyba('Není nastavená doména Pipedrive ('
     + PD_DOMENA_PROMENNA + ').', 500);
+  /* NN B245 (22. 11. 2026, SEC-M14): doména je JEDNO jméno subdomény. Hodnota
+   * s `#`, `?`, `@`, `:` nebo tečkou dřív poslala token na cizího hostitele
+   * (`zlo.example#` → https://zlo.example#.pipedrive.com). */
+  if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(d))
+    throw new PdChyba('Doména Pipedrive (' + PD_DOMENA_PROMENNA + ') má neplatný tvar — čekám jen jméno firmy, např. „mojefirma“.', 500);
   return 'https://' + d + '.pipedrive.com';
 }
 
@@ -124,6 +129,9 @@ function popisStavu(stav, telo) {
 }
 
 const PD_CAS_VYPRSEL = Symbol('pd-cas-vyprsel');
+/* NN B246 (22. 11. 2026): výchozí časový limit jednoho volání Pipedrive
+ * (pod limitem funkce Netlify 10 s). Vypršení = 504, bez dalšího pokusu. */
+export const PD_CAS_LIMIT_MS = 8000;
 
 function spanek(ms) { return new Promise((h) => setTimeout(h, ms)); }
 
@@ -159,7 +167,9 @@ export async function pdZavolej(cesta, volby = {}) {
      * volání včetně čtení těla — zápis poznámky při uložení zakázky nesmí
      * viset na neodpovídajícím Pipedrive. Po vypršení se požadavek zruší
      * (AbortController) a hlásí se 504. Bez volby beze změny. */
-    const limit = Number.isFinite(volby.casLimitMs) && volby.casLimitMs > 0 ? volby.casLimitMs : 0;
+    /* NN B246: bez volby platí výchozí limit PD_CAS_LIMIT_MS — čtecí volání
+     * (webhook, detail, seznam, mapa polí, stav) dřív neměla žádný. */
+    const limit = Number.isFinite(volby.casLimitMs) && volby.casLimitMs > 0 ? volby.casLimitMs : PD_CAS_LIMIT_MS;
     const ctrl = limit ? new AbortController() : null;
     let casovac = null;
     try {
