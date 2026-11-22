@@ -1931,7 +1931,7 @@ function adminKoncBunky(r, sekceKey) {
  * a „Potvrdit cenu". Ceníkovou sazbu vidí jen role s právem sloupce.naklad
  * (P12) — obchodník „Ceník: skryto". Razítko kdo/kdy po uložení přepíše
  * server z relace. Zamčená varianta: jen štítek, bez úprav. */
-const RC_UI = { otevrene: new Set(), vykresleno: new Set() };
+const RC_UI = { otevrene: new Set(), vykresleno: new Set(), lak: null };
 function rcVarianta() { return (typeof ZAK !== 'undefined' && ZAK) ? aktivniVarianta(ZAK) : null; }
 function rcZamcena(v) { return !!(v && typeof variantaUzamcena === 'function' && variantaUzamcena(v)); }
 function rcCestaJs(c) { return escJs(String(c)); }
@@ -1956,10 +1956,18 @@ function rucniCenyStavVarianty(v) {
   catch (e) { return null; }
 }
 function rcSmiNaklad() { return typeof smiZobrazit === 'function' && smiZobrazit('sloupce.naklad'); }
+/* Cesta ruční ceny řádku: ceníková `cenaPath`, nebo částka souhrnného
+ * řádku (#666 lakování, rucniCenaCestaRadku). */
+function rcCestaRadku(r) {
+  if (!r || r.vlastni) return '';
+  const c = typeof rucniCenaCestaRadku === 'function' ? rucniCenaCestaRadku(r) : (r.cenaPath || '');
+  return c && typeof rucniCenaSmi === 'function' && rucniCenaSmi(c) ? c : '';
+}
 function rcStitek(r) {
-  if (!r || r.vlastni || !r.cenaPath || typeof rucniCenaSmi !== 'function' || !rucniCenaSmi(r.cenaPath)) return '';
+  const cesta = rcCestaRadku(r);
+  if (!cesta) return '';
   const v = rcVarianta(); if (!v || !v.data) return '';
-  const rec = rucniCenaZaznam(v.data, r.cenaPath);
+  const rec = rucniCenaZaznam(v.data, cesta);
   const zamceno = rcZamcena(v);
   let h = '';
   if (rec) {
@@ -1976,20 +1984,21 @@ function rcStitek(r) {
       h += ` <span class="pill warn noprint rc-nepotvrzeno" title="ruční cena z nabídky dodavatele — bez potvrzení nejde tisknout">ručně – nepotvrzeno</span>`;
     }
     if (rucniCenaProsla(rec)) h += ` <span class="pill warn noprint rc-prosla" title="platnost nabídky dodavatele skončila ${esc(rec.platnostDo)}">nabídka prošla</span>`;
-  } else if (rcDleNabidkyF(r.cenaPath)) {
+  } else if (r.cenaPath && rcDleNabidkyF(r.cenaPath)) {
     const dn = rcDnesniF(v);
     const d = dn ? dn(r.cenaPath) : undefined;
     if (typeof d === 'number' && Math.abs((+r.cena || 0) - d) > 1e-9)
       h += ` <span class="pill ok noprint rc-bez-dokladu" title="starší vlastní cena příplatku dle nabídky — bere se jako potvrzená bez dokladu">✓ potvrzeno bez dokladu</span>`;
   }
-  if (!zamceno && !RC_UI.otevrene.has(r.cenaPath))
-    h += ` <button class="mini noprint rc-otevri" title="zadat nákupní cenu z nabídky dodavatele" onclick="rcOtevri('${rcCestaJs(r.cenaPath)}')">✎ cena z nabídky</button>`;
+  if (!zamceno && !RC_UI.otevrene.has(cesta))
+    h += ` <button class="mini noprint rc-otevri" title="${r.cenaPath ? 'zadat nákupní cenu z nabídky dodavatele' : 'zadat částku řádku z nabídky lakovny'}" onclick="rcOtevri('${rcCestaJs(cesta)}')">✎ cena z nabídky</button>`;
   return h;
 }
 function rcRadekPod(r, NC) {
-  if (!r || r.vlastni || !r.cenaPath || typeof rucniCenaSmi !== 'function' || !rucniCenaSmi(r.cenaPath)) return '';
+  const cesta = rcCestaRadku(r);
+  if (!cesta) return '';
   const v = rcVarianta(); if (!v || !v.data || rcZamcena(v)) return '';
-  const cesta = r.cenaPath;
+  const castka = typeof rucniCenaCastkaRadku === 'function' && rucniCenaCastkaRadku(cesta);
   const rec = rucniCenaZaznam(v.data, cesta);
   const otevreno = RC_UI.otevrene.has(cesta) || (rec && rucniCenaStav(rec) !== RC_POTVRZENO);
   if (!otevreno || RC_UI.vykresleno.has(cesta)) return '';
@@ -2002,16 +2011,20 @@ function rcRadekPod(r, NC) {
   let info = 'Ceník: skryto';
   if (rcSmiNaklad()) {
     const dn = rcDnesniF(v);
-    const z = rec && typeof rec.zaklad === 'number' ? rec.zaklad : (dn ? dn(cesta) : undefined);
+    /* #666: částka řádku v ceníku není — srovnání s výpočtem z ceníku. */
+    const L = RC_UI.lak;
+    const lak = castka && L ? (L.dleCeniku !== undefined ? L.dleCeniku : (+L.pouzito || 0) - (+L.vlastniKc || 0)) : undefined;
+    const z = castka ? lak : (rec && typeof rec.zaklad === 'number' ? rec.zaklad : (dn ? dn(cesta) : undefined));
     const o = rec ? rucniCenaOdchylka(Object.assign({}, rec, { zaklad: z })) : null;
-    info = 'Ceník: ' + (typeof z === 'number' ? fmt(z) + ' ' + esc(jed) : 'neznámý')
+    info = (castka ? 'Výpočet z ceníku: ' : 'Ceník: ') + (typeof z === 'number' ? fmt(z) + ' ' + esc(jed) : 'neznámý')
       + (o ? ' · odchylka ' + (o.kc > 0 ? '+' : '') + fmt(o.kc) + (o.pct != null ? ' (' + (o.pct > 0 ? '+' : '') + num(o.pct, 1) + ' %)' : '') : '');
   }
   const potvrzeno = rec && rucniCenaStav(rec) === RC_POTVRZENO;
   const p = potvrzeno ? rec.potvrdil : null;
   return `<tr class="rc-radek noprint" data-cesta="${esc(cesta)}"><td colspan="${NC}" style="white-space:normal">
     <div class="rc-box" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:6px 8px;border:1px solid var(--line, #dde3ea);border-radius:8px">
-      <b>✎ Cena z nabídky dodavatele</b>
+      <b>✎ ${castka ? 'Cena z nabídky lakovny (částka řádku)' : 'Cena z nabídky dodavatele'}</b>
+      ${castka ? `<span class="note rc-castka-pozn" style="flex-basis:100%">Částka nahradí výpočet lakování z ceníku (za šachtu; u více šachet se počítá u každé šachty × ks). Vlastní položky lakování se přičítají dál. Bez dodavatele nebo čísla nabídky nejde nabídku vytisknout.</span>` : ''}
       <label class="rc-pole">Nákupní cena <input ${CISLO_POLE} step="any" min="0" class="rc-hodnota" style="width:96px"
         value="${rec ? +(+rec.hodnota).toFixed(2) : ''}" placeholder="z nabídky" onchange="rcHodnota('${cj}', this.value)"> ${esc(jed)}</label>
       ${pole('dodavatel', 'text', 'Dodavatel', '170px')}${pole('cislo', 'text', 'Č. nabídky', '110px')}
@@ -2020,7 +2033,7 @@ function rcRadekPod(r, NC) {
         title="${rec && !rucniCenaMaZdroj(rec) ? 'Nejdřív ' + esc(RC_ZDROJ_HLASKA) + ' — bez zdroje cenu schvaluje nadřízený' : 'potvrdit nákupní cenu z nabídky'}"
         onclick="rcPotvrd('${cj}')">Potvrdit cenu</button>
       ${rec && !rucniCenaMaZdroj(rec) ? `<span class="note rc-zdroj-hlaska" style="color:var(--warn,#b45309)">Pro potvrzení ${esc(RC_ZDROJ_HLASKA)}. Bez zdroje cenu schvaluje nadřízený (Schvalování).</span>` : ''}
-      ${rec ? `<button class="mini rc-vratit" title="smaže ruční cenu a vrátí ceníkovou sazbu" onclick="rcVrat('${cj}')">↺ vrátit na ceník</button>` : ''}
+      ${rec ? `<button class="mini rc-vratit" title="${castka ? 'smaže částku z nabídky — lakování se spočítá z ceníku' : 'smaže ruční cenu a vrátí ceníkovou sazbu'}" onclick="rcVrat('${cj}')">↺ vrátit na ceník</button>` : ''}
       ${!rec ? `<button class="mini rc-zavrit" onclick="rcZavri('${cj}')">zavřít</button>` : ''}
       <span class="note rc-info">${info}</span>
       ${p ? `<span class="note rc-razitko">Potvrdil ${esc(p.jmeno || p.email || '?')}${p.kdy ? ', ' + esc(String(p.kdy).slice(0, 16).replace('T', ' ')) : ''}${p.lokalne ? ' — razítko doplní server po uložení' : ''}</span>` : ''}
@@ -2488,6 +2501,7 @@ function renderOutputs() {
   const s = rS.souctySekci;
   /* Detail mezivýpočtů a nepoužité přepisy popisují jednu šachtu (i v Součtu). */
   const rD = (typeof vsDetailVysledek === 'function') ? vsDetailVysledek(r) : r;
+  RC_UI.lak = rD && rD.lakovani ? rD.lakovani : null;   // #666: srovnání s výpočtem z ceníku (jen právo nákladů)
   const o = rD.odvozene, p = rD.parametry;
   const vsRez = (x) => (typeof vsRezervaPopis === 'function') ? vsRezervaPopis(x)
     : (Z.rezervaZakladPct ? `REZERVA (${num(Z.rezervaZakladPct * 100)} %)` : '');

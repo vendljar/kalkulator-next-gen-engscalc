@@ -73,6 +73,34 @@ function rucniCenaMaZdroj(r) {
 }
 const RC_ZDROJ_HLASKA = 'doplňte dodavatele nebo číslo nabídky';
 
+/* ČÁSTKA ŘÁDKU Z NABÍDKY (#666, J. V. 18. 11. 2026 — audit #668 bod B2).
+ * Souhrnný řádek, který v ceníku jednu cenu nemá (lakování = součet skupiny
+ * C.lak.*), nese cenu z nabídky jako ČÁSTKU řádku na vlastní cestě mimo
+ * ceník a Nastavení. Cesta platí pro ruční cenu stejně jako položka ceníku
+ * (záznam, zdroj, potvrzení, razítko serveru, B112). Rozdíly:
+ *  – zveřejněný ceník ji nenese: ↺ vrátit klíč z ceníku varianty SMAŽE
+ *    (jádro pak počítá jako dřív, lakNabidkaCastka v engine.js);
+ *  – bez zdroje se nedá schválit jako směs ceníků (ceník ji nezná) — taková
+ *    cena se proto počítá jako NEPOTVRZENÁ: zábrana tisku a server 403
+ *    u nového zámku (svěřené rozhodnutí LAK-1, čeká na potvrzení J. V.).
+ * `radek` = origNazev řádku jádra, u kterého se cena zadává (tvar řádku
+ * jádra se tím nemění — porovnání sestavení bez ruční částky SHODA). */
+const RC_CASTKY_RADKU = {
+  'C.lak.nabidkaKc': { popis: 'Lakování – cena z nabídky lakovny (částka za šachtu)', jed: 'Kč',
+    radek: 'LAKOVÁNÍ (ŠACHTA, PLECHY, ZASKLENÍ, OPLECHOVÁNÍ)' },
+};
+function rucniCenaCastkaRadku(cesta) {
+  return Object.prototype.hasOwnProperty.call(RC_CASTKY_RADKU, String(cesta));
+}
+/* Cesta ruční ceny řádku výsledku: ceníková `cenaPath`, nebo částka
+ * souhrnného řádku podle jeho původního názvu. '' = řádek ruční cenu nemá. */
+function rucniCenaCestaRadku(r) {
+  if (!r || typeof r !== 'object' || r.vlastni) return '';
+  if (r.cenaPath) return String(r.cenaPath);
+  const k = Object.keys(RC_CASTKY_RADKU).find(c => RC_CASTKY_RADKU[c].radek === r.origNazev);
+  return k || '';
+}
+
 function rcDef() {
   if (typeof CENIK_DEF !== 'undefined') return CENIK_DEF;
   if (typeof require === 'function') { try { return require('./cenik.js').CENIK_DEF || []; } catch (e) { return []; } }
@@ -87,6 +115,7 @@ function rcZakazkova(cesta) {
 function rucniCenaSmi(cesta) {
   const c = String(cesta == null ? '' : cesta);
   if (!RC_CESTA.test(c) || rcZakazkova(c)) return false;
+  if (rucniCenaCastkaRadku(c)) return true;
   let ok = false;
   rcDef().forEach(([, items]) => items.forEach(([p, , jed, , typ]) => {
     if (p === c && !typ && /^Kč/.test(String(jed || '')) && String(jed) !== 'Kč/EUR') ok = true;
@@ -94,11 +123,13 @@ function rucniCenaSmi(cesta) {
   return ok;
 }
 function rucniCenaPopis(cesta) {
+  if (rucniCenaCastkaRadku(cesta)) return RC_CASTKY_RADKU[cesta].popis;
   let out = '';
   rcDef().forEach(([, items]) => items.forEach(([p, popis, jed]) => { if (p === cesta) out = String(popis || p); }));
   return out || String(cesta);
 }
 function rucniCenaJednotka(cesta) {
+  if (rucniCenaCastkaRadku(cesta)) return RC_CASTKY_RADKU[cesta].jed;
   let out = '';
   rcDef().forEach(([, items]) => items.forEach(([p, , jed]) => { if (p === cesta) out = String(jed || ''); }));
   return out;
@@ -111,6 +142,11 @@ function rcSet(cenik, cesta, val) {
   if (ks.concat(last).some(k => k === '__proto__' || k === 'constructor' || k === 'prototype')) return;
   const cil = ks.reduce((o, k) => (o[k] = (o[k] && typeof o[k] === 'object') ? o[k] : {}), cenik);
   cil[last] = val;
+}
+function rcSmaz(cenik, cesta) {
+  const ks = String(cesta).split('.').slice(1), last = ks.pop();
+  const cil = ks.reduce((o, k) => (o && typeof o === 'object' && rcMa(o, k) ? o[k] : null), cenik);
+  if (cil && typeof cil === 'object' && rcMa(cil, last)) delete cil[last];
 }
 function rcMa(o, k) { return !!o && typeof o === 'object' && Object.prototype.hasOwnProperty.call(o, k); }
 
@@ -201,7 +237,9 @@ function rucniCenaVrat(data, cesta, dnesni) {
     : (typeof r.zaklad === 'number' && isFinite(r.zaklad) ? r.zaklad : undefined);
   delete data.rucniCeny[cesta];
   if (!Object.keys(data.rucniCeny).length) delete data.rucniCeny;
-  if (h !== undefined) rcSet(data.cenik || (data.cenik = {}), cesta, h);
+  /* #666: částka řádku v ceníku není — klíč pryč, řádek se počítá jako dřív. */
+  if (rucniCenaCastkaRadku(cesta)) rcSmaz(data.cenik, cesta);
+  else if (h !== undefined) rcSet(data.cenik || (data.cenik = {}), cesta, h);
   return true;
 }
 /* Změna čísla jinou cestou (buňka ceny u správce, ceník varianty): záznam
@@ -245,8 +283,8 @@ function rucniCenyPrehled(data, opts) {
     const pol = { cesta, popis: rucniCenaPopis(cesta) };
     const st = rucniCenaStav(r);
     if (st === RC_POTVRZENO) out.potvrzene.push(pol);
-    else if (st === RC_BEZ_ZDROJE) out.bezZdroje.push(pol);
-    else out.nepotvrzene.push(pol);
+    else if (st === RC_BEZ_ZDROJE && !rucniCenaCastkaRadku(cesta)) out.bezZdroje.push(pol);
+    else out.nepotvrzene.push(pol);          // #666: částka řádku bez zdroje = nepotvrzená
     if (rucniCenaProsla(r, opts.dnes)) out.prosle.push(pol);
     if (typeof opts.dnesniF === 'function' && rucniCenaStav(r) === RC_POTVRZENO) {
       const d = opts.dnesniF(cesta);
@@ -378,13 +416,16 @@ function rucniCenyZamekProblem(zak, v) {
   if (vyr === 'ock') return '';
   const nep = rucniCenyPrehled(d).nepotvrzene;
   if (!nep.length) return '';
+  /* #666: částka řádku bez zdroje — potvrdit jde až po doplnění zdroje. */
+  const bezZ = nep.some(x => rucniCenaCastkaRadku(x.cesta) && !rucniCenaMaZdroj(rucniCenaZaznam(d, x.cesta)));
   return 'ruční cena položky není potvrzená (' + nep.slice(0, 5).map(x => x.popis).join(', ')
-    + (nep.length > 5 ? ' a další ' + (nep.length - 5) : '') + ') — potvrďte ji v Kalkulaci OCK tlačítkem „Potvrdit cenu“ '
+    + (nep.length > 5 ? ' a další ' + (nep.length - 5) : '') + ') — '
+    + (bezZ ? 'u ceny z nabídky lakovny ' + RC_ZDROJ_HLASKA + ', pak ' : '') + 'potvrďte ji v Kalkulaci OCK tlačítkem „Potvrdit cenu“ '
     + 'a nabídku vytiskněte znovu; rozpracovanou zakázku lze dál ukládat';
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { RC_ZDROJ, RC_TEXT_MAX, RC_MAX, RC_NEPOTVRZENO, RC_POTVRZENO, RC_BEZ_DOKLADU, RC_BEZ_ZDROJE, RC_ZDROJ_HLASKA, rucniCenaMaZdroj,
+  module.exports = { RC_CASTKY_RADKU, rucniCenaCastkaRadku, rucniCenaCestaRadku, RC_ZDROJ, RC_TEXT_MAX, RC_MAX, RC_NEPOTVRZENO, RC_POTVRZENO, RC_BEZ_DOKLADU, RC_BEZ_ZDROJE, RC_ZDROJ_HLASKA, rucniCenaMaZdroj,
     rucniCenaSmi, rucniCenaPopis, rucniCenaJednotka, rucniCenyMapa, rucniCenaZaznam, rucniCenaPlati, rucniCenaObsah,
     rucniCenaDnes, rucniCenaProsla, rucniCenaStav, rucniCenaNastav, rucniCenaZdrojNastav, rucniCenaPotvrd,
     rucniCenaVrat, rucniCenaPoSet, rucniCenyPrehled, rucniCenaOdchylka, rucniCenaZdrojText,
