@@ -324,6 +324,14 @@ const uloz = async (z, c) => { const r = await post(zakazky, 'http://x/api/zakaz
     const tc = await uloz(zc, cO);
     test('RJ R2: vazba „zruseno“ bez seznamu odmítnutých (starší data) — odkaz zápis nepustí', tc.status === 200
       && tc.pdPoznamka === 'neovereno' && notes().length === pred, { s: tc.status, p: tc.pdPoznamka, ch: tc.chyba });
+    /* Deal v seznamu odmítnutých, vazba už jiná / žádná (např. pozdější webhook
+     * jiného dealu) — odmítnutý deal odkaz taky nedoloží. */
+    const raw2 = JSON.parse(pamet.get('zakazky/z/' + ta.soubor)); delete raw2.pdVazbaWebhook; delete raw2.pdPoznamkaSachty;
+    raw2.pdDealyOdmitnute = [String(cizi2.id)]; pamet.set('zakazky/z/' + ta.soubor, JSON.stringify(raw2));
+    const zd = JSON.parse(JSON.stringify(raw2)); zd.varianty[0].data.ock.dalsi[0].nazev = 'Výtah R2c';
+    const td = await uloz(zd, cO);
+    test('RJ R2: deal v seznamu odmítnutých bez vazby — odkaz zápis nepustí', td.status === 200
+      && td.pdPoznamka === 'neovereno' && notes().length === pred, { s: td.status, p: td.pdPoznamka, ch: td.chyba });
   }
   delete process.env.PIPEDRIVE_WEBHOOK_KLIC;
 }
