@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v21.11.1 — HN: zpevnění testů kola (#638, #644, #646, #647, #692 prac.), větev claude/hn-harnessy
+## v22.11.1 — HN: zpevnění testů kola (#638, #644, #646, #647, #692 prac.), větev claude/hn-harnessy
 
 Nad integrací `cda289e` (v19.11.11). Jen testy, harnessy a nástroje kola — **kód aplikace beze změny**, cena ani
 dokumenty se nemění (porovnání sestavení proti integraci SHODA). Verzi přečísluje koordinace.
@@ -22,6 +22,9 @@ dokumenty se nemění (porovnání sestavení proti integraci SHODA). Verzi pře
   se na klid (dotazy API, akce, odložené samoukládání matice). B168 v `overit_zobrazeni` procházel jen díky časování;
   scénář „heslo poprvé" se nastaví výslovně (HN-T2). Pojistka: `test_harness_cekani.js` nad cda289e padá, po 46/0;
   bez `ADMIN_EMAIL` zaporne pád → 15/0, zobrazeni timeout → 159/0, test_prihlaseni 37/30 → 67/0; souběh 6 harnessů zelený.
+  Třetí nestabilní test z #638, `netlify/test_577_kopie_skript.mjs` T4 (padl i v kole této dávky): „špatný token"
+  `TOKEN.slice(0, -1) + 'X'` se při náhodném TOKENu končícím „X" (1 : 64) shodoval se správným → 200. Poslední znak
+  se teď vždy změní (`pokazToken`, kontrola T4a); reprodukce `KNG_577_TOKEN=<…X>`: před 52/1, po 54/0.
 - **#644 — občasné selhání `test_vz_unik.js` („výměna řídícího (B)"):** žádný únik. Pětimístná cena varianty v EUR
   se náhodně shodovala s číslicemi razítka času `v.vytvoreno`/`v.upraveno` v JSON pohledu (např. 10:49:23.2xx ∋ 49232);
   záleželo na čase dne, ne na posunu hodin. Detektor ceny vynechává ISO časy a id z `Date.now()`; nová pojistka
