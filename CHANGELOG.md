@@ -23,8 +23,8 @@ vzor #667 / #561. Bez ruční částky se cena nemění (porovnání sestavení 
   schválení jako směs ceníků nejde) — svěřené LAK-1, čeká na potvrzení J. V.
 - **Controlling:** řádek lakování (klíč `C.lak.*`, skupina beze změny) nese zdroj a odchylku od výpočtu z ceníku.
   Detail výpočtu ukazuje „Cena z nabídky lakovny“. Word, náhled a krycí list berou částku z řádku výsledku.
-- **Testy:** `src/test_666_lakovani.js` (43), `netlify/test_666_lakovani.mjs` (19), `overit_lakovani.mjs` (13);
-  pojistky proti 05a496d v commitech. Mutace `[LAK]` jádro 10, server 11.
+- **Testy:** `src/test_666_lakovani.js` (44), `netlify/test_666_lakovani.mjs` (19), `overit_lakovani.mjs` (13);
+  pojistky proti 05a496d v commitech. Mutace `[LAK]` jádro 9/9, server 9/9. Kolo `--bez-mutaci --proti 2b68f98` VŠE ZELENÉ (514/0/6, hodiny 416/0/1, statické 10/10, porovnání SHODA 367/367).
 
 ## v22.11.5 — PR #707: Připomínky z aplikace, větev claude/pr-pripominky
 

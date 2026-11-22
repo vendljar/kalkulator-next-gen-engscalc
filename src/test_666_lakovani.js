@@ -63,7 +63,7 @@ console.log('===== 2. jádro: bez částky beze změny, s částkou částka ř�
   test('výchozí: lakování z ceníku (> 0), výsledek bez klíče „nabidka"', l0 && l0.naklad > 0 && !('nabidka' in r0.lakovani)
     && !('dleCeniku' in r0.lakovani), r0.lakovani);
   test('výchozí: tvar řádku beze změny (žádné nové pole)', l0 && !('rucniCesta' in l0) && l0.cenaPath === null && l0.cenaSkupina === 'C.lak.*');
-  for (const spatne of [null, '', 'x', -5, NaN]) {
+  for (const spatne of [null, '', 'x', -5, NaN, '30000']) {
     const dd = kopie(d); dd.cenik.lak.nabidkaKc = spatne;
     const rr = vys(dd);
     test('neplatná částka ' + JSON.stringify(spatne) + ' = počítá se z ceníku', radekLak(rr).naklad === l0.naklad && !('nabidka' in rr.lakovani));
