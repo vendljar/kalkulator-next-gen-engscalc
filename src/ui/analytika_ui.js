@@ -137,10 +137,12 @@ function analytikaNactiPrehled() {
   const r = analytikaObdobiRozsah(ANL.prehledObdobi);
   return onlineApi('/api/analytika?od=' + r.od + '&do=' + r.do).then(d => {
     ANL.prehled = d;
-    if (typeof renderNastaveni === 'function') renderNastaveni();
+    /* NN PR-T1: jen do otevřeného okna — odpověď doběhlá po odhlášení nesmí
+     * vykreslit přehled (e-maily uživatelů) do skrytého okna Nastavení. */
+    if (typeof renderNastaveni === 'function' && (typeof nastOtevreno !== 'function' || nastOtevreno())) renderNastaveni();
   }).catch(e => {
     ANL.prehled = { chyba: e.message };
-    if (typeof renderNastaveni === 'function') renderNastaveni();
+    if (typeof renderNastaveni === 'function' && (typeof nastOtevreno !== 'function' || nastOtevreno())) renderNastaveni();
   });
 }
 

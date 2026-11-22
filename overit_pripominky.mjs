@@ -237,6 +237,16 @@ const det = await page.locator('.prip-sp-detail').innerText();
 test('detail: text, obrazovka, místo, verze, otevřít zakázku chybí bez souboru', /Po kliknutí na záložku/.test(det) && /Kalkulace OCK/.test(det)
   && /📍 .*Kalkulace PROJ/.test(det) && /Verze a prohlížeč/.test(det), det.slice(0, 500));
 test('detail: snímek s vyznačeným místem', (await page.locator('.prip-snimek img').count()) === 1 && (await page.locator('.prip-snimek-ram').count()) === 1);
+/* NN PR-T2: detail nepřetéká panel a plovoucí tlačítko při otevřeném Nastavení nezakrývá snímek.
+ * Pojistka: před opravou bylo #prip-fab nad oknem Nastavení vidět (správce smí odesílat). */
+{
+  const roz = await page.evaluate(() => { const d = document.querySelector('.prip-sp-detail'); const k = document.querySelector('.prip-kontext');
+    const f = document.getElementById('prip-fab');
+    return { det: d.getBoundingClientRect().right, kont: k.scrollWidth - k.clientWidth, panel: document.getElementById('nastaveni-panel').getBoundingClientRect().right,
+      fab: !!f && getComputedStyle(f).display !== 'none' }; });
+  test('NN PR-T2: tabulka Kontext nepřetéká a detail se vejde do okna', roz.kont <= 1 && roz.det <= roz.panel + 1, roz);
+  test('NN PR-T2: plovoucí tlačítko je při otevřeném Nastavení skryté', !roz.fab, roz);
+}
 test('detail: akce Do fronty / Odpovědět a uzavřít / Odložit / Zamítnout / Duplicitní s…',
   ['➜ Do fronty oprav', 'Odpovědět a uzavřít', 'Odložit', 'Zamítnout', 'Duplicitní s…'].every(t => det.includes(t)));
 test('po otevření je řádek přečtený (zbývá 1)', (await page.locator('tr.prip-neprectena').count()) === 1);
@@ -318,6 +328,28 @@ await page.waitForTimeout(300);
 test('N2: další uživatel v témže okně nevidí cizí rozepsaný text', (await page.inputValue('#prip-text')) === '');
 await page.evaluate(() => pripPanelZavri());
 test('N6: zavření panelu zahodí náhled snímku', await page.evaluate(() => PRIP.nahled) === '');
+
+/* NN PR-T1 (soukromí, B257): po odhlášení správce nesmí ve skrytém okně Nastavení zůstat záložka Připomínky
+ * (e-maily autorů, plný snímek). Pojistka: před opravou obchodník přihlášený v témže okně našel v DOM
+ * data:image i e-mail jiného autora (druhy.pr…). */
+await page.evaluate(() => { otevriNastaveni(); nastPanel('pripominky'); });
+await page.waitForTimeout(400);
+await page.waitForFunction(() => PRIP.sp.nacteno && PRIP.sp.seznam.some(p => p.id === 'P-0001'), null, { timeout: 5000 }).catch(() => {});
+await page.evaluate(() => pripSpVyber('P-0001'));
+await page.waitForFunction(() => PRIP.sp.snimky['P-0001'], null, { timeout: 5000 }).catch(() => {});
+await page.waitForTimeout(300);
+const snimekOtisk = await page.evaluate(() => String(PRIP.sp.snimky['P-0001'] || '').slice(-80)) || 'chybi-snimek-nesmi-byt-prazdny';
+test('NN PR-T1 příprava: správce má v DOM detail se snímkem', snimekOtisk.length > 40 && await page.evaluate((o) => document.body.innerHTML.includes(o), snimekOtisk));
+await page.evaluate(() => { document.getElementById('nastaveni-overlay').style.display = 'none'; });
+await odhlas();
+const poOdhlSpr = await page.evaluate((o) => ({ img: document.body.innerHTML.includes(o), kde: [...document.querySelectorAll('*')].filter(e => e.children.length === 0 && (e.outerHTML || '').includes(o)).map(e => e.tagName + '#' + e.id + '.' + e.className).slice(0, 3),
+  panel: (document.getElementById('nastaveni-panel') || {}).innerHTML || '' }), snimekOtisk);
+test('NN PR-T1: po odhlášení správce okno Nastavení prázdné a v DOM žádný snímek', !poOdhlSpr.img && poOdhlSpr.panel === '', { kde: poOdhlSpr.kde, panel: poOdhlSpr.panel.slice(0, 200) });
+await prihlas('obchodnik.pr@priklad.cz', 'ZkusebniHeslo1');
+const uObch = await page.evaluate((o) => ({ img: document.body.innerHTML.includes(o),
+  detail: !!document.querySelector('.prip-sp-detail'), cizi: /spravce@priklad|prip-sp-telo/.test((document.getElementById('nastaveni-panel') || {}).innerHTML || '') }), snimekOtisk);
+test('NN PR-T1: obchodník v témže okně nenajde v DOM snímek ani detail správce', !uObch.img && !uObch.detail && !uObch.cizi, uObch);
+await odhlas();
 
 test('za celý průchod nevznikla nečekaná chyba v konzoli', chyby.length === 0, chyby);
 await prohlizec.close();

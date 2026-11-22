@@ -326,6 +326,7 @@ function onlinePrihlas() {
  * protokolu, role do viditelnosti záložek (skutečná práva beztak hlídá
  * server – upravenému klientovi role v prohlížeči nepomůže). */
 function onlinePoPrihlaseni(ja, hesloPrihlaseni) {
+  nastaveniVyprazdni();                            // NN PR-T1: nic z okna Nastavení předchozího účtu
   ONLINE_STAV.ja = { email: ja.email, jmeno: ja.jmeno || '', role: ja.role,
     titul: ja.titul || '', funkce: ja.funkce || '', telefon: ja.telefon || '',
     podpis: ja.podpis || '',
@@ -469,6 +470,17 @@ function onlinePrijatoZeServeru(zak, mapa) {
  * (překlady EN/DE/FR se týkají dokumentů, ne rozhraní). */
 const ODHLASIT_TITULEK = 'Odhlásí vás na všech zařízeních, kde jste tímto účtem přihlášeni (počítač, telefon, tablet).';
 
+/* NN PR-T1 (zkouška na testu v22.11.5): okno Nastavení se vykresluje při
+ * otevření (otevriNastaveni → renderNastaveni), ale skryté zůstávalo v DOM —
+ * po odhlášení správce v něm ležela záložka Připomínky s e-maily autorů
+ * a plným snímkem (~157 kB) a další účet ve stejném okně ji našel. Při
+ * odhlášení i novém přihlášení se okno zavře a jeho obsah vyprázdní. */
+function nastaveniVyprazdni() {
+  if (typeof document === 'undefined') return;
+  const o = document.getElementById('nastaveni-overlay'); if (o) o.style.display = 'none';
+  const p = document.getElementById('nastaveni-panel'); if (p) p.innerHTML = '';
+}
+
 function onlineOdhlas() {
   return onlineApi('/api/odhlaseni', {}).catch(() => null).then(() => {
     const vladlOnline = ONLINE_STAV.cenikPouzit;
@@ -486,6 +498,7 @@ function onlineOdhlas() {
     ONLINE_STAV.uzivatele = []; ONLINE_STAV.uzivateleNacteno = false; ONLINE_STAV.formHeslo = '';
     /* Připomínky (N2 revize PR): rozepsaný text, snímek i klíč nesmí přežít odhlášení. */
     if (typeof pripominkyReset === 'function') pripominkyReset();
+    nastaveniVyprazdni();                          // NN PR-T1: vykreslené Nastavení nesmí přežít odhlášení
     /* Náhled cizího uživatele se odhlášením ruší — po přihlášení nikdy
      * nikdo nesmí zdědit cizí pohled po předchozím sezení (20. 8. 2026). */
     if (typeof nahledVypni === 'function' && NAST.nahledUzivatel) { NAST.nahledUzivatel = null; NAST.nahledRole = ''; NAST.nahledMenu = false; }

@@ -1192,6 +1192,12 @@
   .prip-nast > div, .prip-nast > label { margin:6px 0; }
   .prip-klic { background:#fefce8; border:1px solid #fde047; border-radius:8px; padding:8px 10px; margin:8px 0; word-break:break-all; }
   @media (max-width: 980px) { .prip-sp-mrizka { grid-template-columns:1fr; } }
+  /* NN PR-T2: buňky mřížky detailu nesmí přetéct (min-width:0), tabulka Kontext se zalamuje; plovoucí
+   * tlačítko se při otevřeném okně Nastavení schová — zakrývalo roh snímku. */
+  .prip-sp-mrizka > * { min-width:0; }
+  .prip-sp-detail { min-width:0; overflow-wrap:anywhere; }
+  .prip-kontext th, .prip-kontext td { white-space:normal; }
+  body:has(#nastaveni-overlay[style*="flex"]) .prip-fab { display:none !important; }
   @media print { .prip-fab, .prip-panel, .prip-vyber-lista, .prip-vyber-ram { display:none !important; } }
 </style>
 </head>
