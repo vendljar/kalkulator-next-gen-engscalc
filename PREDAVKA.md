@@ -22,7 +22,8 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/on-online` | (tato dávka) | v19.11.8 | #ON kdo je online (Nastavení → Uživatelé) nad 042fcbc; verzi přečísluje koordinace |
 | `claude/d8-lhuty` | (tato dávka) | v19.11.7 | D8 #677 (pracovní) lhůty PROJ → termíny krycího listu; nad integrací 042fcbc; verzi přečísluje koordinace |
 | `claude/vz-f1` | (tato dávka) | v18.11.8 | VZ-F1 #659 opravy nálezů ruční zkoušky VZ; nad ec5bbac, sloučeno s integrací 41bbe99 |
-| `claude/rj-rozhodnuti` | (tato dávka) | v22.11.6 | RJ rozhodnutí J. V. 22. 11. (#713, #714) nad integrací 05a496d; verzi potvrdí koordinace |
+| `claude/rj-rozhodnuti` | (tato dávka) | v22.11.7 | RJ rozhodnutí J. V. 22. 11. (#714, #715) nad 05a496d, sloučeno s integrací 21eeffa |
+| `claude/jt-jazyk-tisku` | (tato dávka) | v22.11.6 | JT #713 prac.: jazyk specifikace OCK = Jazyk tisku; nad 05a496d |
 | `claude/pr-pripominky` | (tato dávka) | v22.11.5 | PR #707–#712 Připomínky z aplikace, sloučeno s integrací 6fa67af |
 | `claude/hn-harnessy` | (tato dávka) | v22.11.2 | HN zpevnění testů kola (#638, #644, #646, #647, #695) nad cda289e; aplikace beze změny; verzi přečísluje koordinace |
 | `claude/vzd-drobnosti` | (tato dávka) | v22.11.1 | VZD #673 #674 #665 #683 #635, sloučeno s integrací 885577e; viz CHANGELOG |
@@ -32,11 +33,12 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/op1-drobnosti` | (tato dávka) | v21.11.2 | OP1: PG-N1, #682, D3-N1, D3-N2 nad cda289e; kolo --bez-mutaci VŠE ZELENÉ, S3 SHODA 359/359, mutace [OP1] 9/9, [D3] 18/18, [NP] 16/16, [PG] 16/16; #692–#694 a verzi přečísluje koordinace |
 | `claude/bz-bezpecnost` | (tato dávka) | v22.11.3 | BZ audit B231–B236, B195 nad cda289e; revize Fable |
 
-Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tagu: `python3 nastroje/release_odkaz.py --chybejici`
-(18. 11.: žádná).
+Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontrola: `python3 nastroje/release_odkaz.py --chybejici`
+(22. 11.: žádná — main v19.11.11, tag vydán).
 
 ## Běžící dávky
 
+- **JT #713** (`claude/jt-jazyk-tisku`, prac.): HOTOVO, detail `podklady/predavky/JT_jazyk_tisku.md`.
 - **PR #707** (`claude/pr-pripominky`, v22.11.5): Připomínky z aplikace, mez B257, HOTOVO; revize poradce před sloučením. Detail a bezpečnostní rozhodnutí: `podklady/predavky/PR_pripominky.md`.
 - **BZ** (`claude/bz-bezpecnost`, v22.11.3, nad cda289e): opravy auditu 20. 11. (rozhodnutí J. V. 21. 11.), #696–#704
   prac. Testy `netlify/test_bz_bezpecnost.mjs`, `test_bz_pipedrive.mjs`, mutace [BZ] 21. **Před sloučením revize Fable.**
@@ -60,8 +62,8 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   #647 případy `k40:*` v porovnání sestavení (+ `podklady/porovnani/ocekavane_k40n1_main_2026-11-21.txt` pro main × test),
   #695 kolo bez playwrightu = chyba s návodem (`KNG_BEZ_PROHLIZECE=1`), `PRESKOCENO_CAST` v souhrnu.
   Statické kontroly nově 10. Svěřená HN-T1/T2. Tabulka S7 přesunuta do archivu `2026-11.md`. Kolo VŠE ZELENÉ (496/0/6, hodiny 401/0/1, 10/10, SHODA 367/367 proti 885577e). HOTOVO, předáno koordinaci.
-- **RJ** (`claude/rj-rozhodnuti`, v22.11.6, nad integrací 05a496d): rozhodnutí J. V. 22. 11. (#704, #706, #709, #710,
-  #665 podpis) → roadmapa #713 (dávka), #714 (podpis). (2) nový zámek „nesouhlasi“ → 409 `zamekNesouhlasi` + dialog Ctrl+F5;
+- **RJ** (`claude/rj-rozhodnuti`, v22.11.7, nad 05a496d, sloučeno s integrací 21eeffa): rozhodnutí J. V. 22. 11. (#704, #706, #709, #710,
+  #665 podpis) → roadmapa #714 (dávka), #715 (podpis). (2) nový zámek „nesouhlasi“ → 409 `zamekNesouhlasi` + dialog Ctrl+F5;
   (3) R2 potvrzeno testem; (4) oprava firmy přes `pd_overeni` (409 neovereno); (6)(7) pravidlo 3 zrušeno, druhá zakázka
   na dealu zapisuje s vlastní vazbou; #665 `podpisOtisk` ve snímku + kopie `podpisy/zamek/<otisk>`, GET `?podpisZamku=`;
   #710-4 koordinace 403 u uzavřené správcem; #706 `nastroje/kontrola_konfliktu.sh` (staticke 11). #709 → vlna F (stav

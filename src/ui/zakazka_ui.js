@@ -603,7 +603,7 @@ function nabidkaDokumentyBlok() {
       <button onclick="nabidkaNahled()">Kompletní náhled podkladů</button>
       <button class="primary"${zab} onclick="nabidkaWord()">Vytvořit nabídku (Word)</button>
       <button${zabTisk} onclick="nabidkaOckDokument()">Kompletní náhled a tisk nabídky</button>
-      ${typeof tiskJazykVyber === 'function' ? tiskJazykVyber() : ''}
+      ${typeof tiskJazykVyber === 'function' ? tiskJazykVyber('ock') : ''}
     </div>
     <div class="note" style="margin-top:6px">Tlačítka jdou zleva v pořadí práce: <b>Kompletní náhled podkladů</b> ukáže,
       co se do nabídky vyplní; modré <b>Vytvořit nabídku (Word)</b> vyrobí nabídku do šablony Word;

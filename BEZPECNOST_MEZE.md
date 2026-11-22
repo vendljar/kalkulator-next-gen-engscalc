@@ -2195,9 +2195,9 @@ Roadmapa #696–#704 (pracovní čísla).
   bez zdroje jen administrátor. **J. V. 22. 11. 2026 (#704 (5)):** jako zdroj stačí jeden znak (minimální
   délka ani číslo nabídky dodavatele se nevyžaduje) — vědomě přijatá mez, kód beze změny.
 
-## RJ — zapracování rozhodnutí J. V. z 22. 11. 2026 (dávka RJ, v22.11.6)
+## RJ — zapracování rozhodnutí J. V. z 22. 11. 2026 (dávka RJ, v22.11.7)
 
-Rozhodnutí v `podklady/ROZHODNUTI_LOG.md`, roadmapa #704, #710, #713, #714. Testy
+Rozhodnutí v `podklady/ROZHODNUTI_LOG.md`, roadmapa #704, #710, #714, #715. Testy
 `netlify/test_rj_rozhodnuti.mjs`, `netlify/test_bz_pipedrive.mjs`, `netlify/test_vsd_pd_poznamka.mjs`,
 `netlify/test_pripominky.mjs`, `src/test_665_vypracoval.js`; mutace [RJ].
 

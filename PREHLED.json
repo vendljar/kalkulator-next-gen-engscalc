@@ -1,432 +1,208 @@
 {
  "main": {
   "ref": "origin/main",
-  "sha": "6c4bc80e",
-  "verze": "v11.11.1",
-  "datum": "11. 11. 2026"
- },
- "test": {
-  "ref": "origin/test",
   "sha": "cda289e2",
   "verze": "v19.11.11",
   "datum": "19. 11. 2026"
  },
- "test_navic_commitu": 363,
+ "test": {
+  "ref": "origin/test",
+  "sha": "05a496d0",
+  "verze": "v22.11.5",
+  "datum": "22. 11. 2026"
+ },
+ "test_navic_commitu": 73,
  "v_testu_ne_v_main": [
   {
-   "id": "689",
-   "typ": "rozhodnuti",
-   "nazev": "D3 objednávka PROJ: rozhodnutí J. V. k rozvržení (2 strany, Číslo zakázky, jen z odeslané CN)",
-   "alias": [
-    "D3-Q"
-   ],
-   "verze": "v19.11.11"
-  },
-  {
-   "id": "688",
+   "id": "707",
    "typ": "ukol",
-   "nazev": "D3: dokument „Objednávka / Smlouva“ PROJ z nabídky PROJ (tisk/PDF + Word bez šablony)",
+   "nazev": "Připomínky z aplikace: tlačítko Připomínka (obchodník), Nastavení → Připomínky (správce), klíč pro koordinaci",
    "alias": [
-    "D3"
+    "PR"
    ],
-   "verze": "v19.11.11"
+   "verze": "v22.11.5"
   },
   {
-   "id": "675",
-   "typ": "ukol",
-   "nazev": "Dotazy obchodu D1, D2, D4–D7: opláštění po celé výšce, „bez opláštění“, přechodové plechy (MATERIÁL), materiál+montáž, ukládání dodatkového…",
-   "alias": [
-    "DO"
-   ],
-   "verze": "v19.11.6"
-  },
-  {
-   "id": "672",
+   "id": "701",
    "typ": "nalez",
-   "nazev": "VZF1-I1: soubor plné moci u OPR zakázek bez čísla zakázky (PLNA-MOC_2026-OPR-CN-PROJ-CZ)",
+   "nazev": "B195: nulová ruční cena jen se zdrojem — ověřeno, text meze opraven",
    "alias": [
-    "VZF1-I1"
+    "B195"
    ],
-   "verze": "v19.11.4"
+   "verze": "v22.11.3"
   },
   {
-   "id": "671",
-   "typ": "ukol",
-   "nazev": "Ceník: buňka Zahraničí u statiky opláštění a dialog zveřejnění po K50-N1",
-   "alias": [
-    "K50-N1-R"
-   ],
-   "verze": "v19.11.5"
-  },
-  {
-   "id": "670",
+   "id": "700",
    "typ": "nalez",
-   "nazev": "K50-N1: statika opláštění u zahraniční řady ceníku počítána českou sazbou (od v19.11.1)",
+   "nazev": "B235/B236: vypínač zápisu do Pipedrive (výchozí vypnuto), deal musí patřit zakázce",
    "alias": [
-    "K50-N1"
+    "B235",
+    "B236",
+    "IN-1",
+    "IN-2"
    ],
-   "verze": "v19.11.3"
+   "verze": "v22.11.3"
   },
   {
-   "id": "669",
-   "typ": "ukol",
-   "nazev": "VZ T1: řídící varianta a řídící zákazník v hlavičce (2+ zákazníků), karta ★/☆, náhled poznámky dealu",
-   "alias": [
-    "T1"
-   ],
-   "verze": "v19.11.2"
-  },
-  {
-   "id": "664",
-   "typ": "ukol",
-   "nazev": "UE: úprava existujícího účtu v Nastavení → Uživatelé (titul, jméno, funkce, telefon; e-mail jen ke čtení)",
-   "verze": "v18.11.9"
-  },
-  {
-   "id": "663",
-   "typ": "ukol",
-   "nazev": "Zmrazit zástupce a DIČ dalšího zákazníka po odeslání jeho SoD (po zákaznících, klient i server)",
-   "verze": "v19.11.4"
-  },
-  {
-   "id": "662",
-   "typ": "ukol",
-   "nazev": "Test v prohlížeči: otevřený zákazník C, zápis zástupce v krycím listu, tisk SoD A bez údajů C",
-   "alias": [
-    "VZ-F1-R4"
-   ],
-   "verze": "v19.11.4"
-  },
-  {
-   "id": "661",
-   "typ": "ukol",
-   "nazev": "Krycí list PROJ u otevřeného dalšího zákazníka ukazuje název a firmu řídícího (smíšená obrazovka)",
-   "alias": [
-    "VZ-F1-R3"
-   ],
-   "verze": "v19.11.4"
-  },
-  {
-   "id": "660",
-   "typ": "ukol",
-   "nazev": "Kontrola duplicitního IČO u víc zákazníků jde obejít (doplnění IČO dodatečně, změna IČO řídícího, pořadí v poli)",
-   "alias": [
-    "VZ-F1-R1"
-   ],
-   "verze": "v19.11.4"
-  },
-  {
-   "id": "659",
-   "typ": "davka",
-   "nazev": "Dávka VZ-F1: opravy nálezů ruční zkoušky víc zákazníků na testu (18. 11. 2026)",
-   "alias": [
-    "VZ-F1"
-   ],
-   "verze": "v18.11.8"
-  },
-  {
-   "id": "658",
-   "typ": "ukol",
-   "nazev": "Controlling: řádek prodeje dalšímu zákazníkovi nese číslo s písmenem (…9801-B) jako nabídka a deal",
-   "verze": "v18.11.8"
-  },
-  {
-   "id": "657",
-   "typ": "ukol",
-   "nazev": "Krycí list BO (i PROJ a Techdata) tiskl prázdnou sekci Zástupci a kontakty zákazníka i banku, účet a zápis v rejstříku",
-   "verze": "v18.11.8"
-  },
-  {
-   "id": "656",
-   "typ": "ukol",
-   "nazev": "VZ-N4: název souboru krycího listu vlastní varianty bez přípony varianty (…9801-C místo …9801.2-C)",
-   "alias": [
-    "VZ-N4"
-   ],
-   "verze": "v18.11.8"
-  },
-  {
-   "id": "655",
-   "typ": "ukol",
-   "nazev": "VZ-N2: výběr „Otevřená varianta“ v hlavičce nabízel při otevřeném A i vlastní variantu C",
-   "alias": [
-    "VZ-N2"
-   ],
-   "verze": "v18.11.8"
-  },
-  {
-   "id": "654",
-   "typ": "ukol",
-   "nazev": "VZ-N1: „Přidat zákazníka“ se stejným IČO, jaké už v zakázce je, prošlo bez upozornění",
-   "alias": [
-    "VZ-N1"
-   ],
-   "verze": "v18.11.8"
-  },
-  {
-   "id": "653",
-   "typ": "ukol",
-   "nazev": "VZ-N3: zástupci a kontakty v krycím listu u otevřeného dalšího zákazníka se zapisovali do hlavičky řídícího (SoD A nesla zástupce C)",
-   "alias": [
-    "VZ-N3"
-   ],
-   "verze": "v18.11.8"
-  },
-  {
-   "id": "651",
-   "typ": "ukol",
-   "nazev": "Ověřit SoD u víc šachet a slevy v EUR (L3) na testu",
-   "alias": [
-    "K49-I7"
-   ],
-   "verze": "v18.11.7"
-  },
-  {
-   "id": "645",
-   "typ": "ukol",
-   "nazev": "NS: v Nastavení → Smlouvy / Šablony stojí správa šablon hned pod přepínačem OCK / PROJ, nad platebními podmínkami",
-   "alias": [
-    "NS"
-   ],
-   "verze": "v18.11.7"
-  },
-  {
-   "id": "632",
-   "typ": "ukol",
-   "nazev": "Ceník a termíny firmy v testu srovnané podle main — ověřit v kole 49",
-   "alias": [
-    "B0.7",
-    "B6",
-    "K37-N6",
-    "K38-I2"
-   ],
-   "verze": "v18.11.7"
-  },
-  {
-   "id": "618",
-   "typ": "ukol",
-   "nazev": "Obnovit TEST sadu v databázi testu nástrojem test_sada_obnov.mjs",
-   "alias": [
-    "B4",
-    "C8",
-    "B0.9",
-    "K39-I1",
-    "K38-I1"
-   ],
-   "verze": "v18.11.7"
-  },
-  {
-   "id": "615",
+   "id": "699",
    "typ": "nalez",
-   "nazev": "Smlouva o dílo v5 DE/EN vychází převážně česky — pojistka jazyka SoD (C7: výroba jazykové verze z češtiny zrušena, kontrola podílu češtiny)",
+   "nazev": "B234: kartu zákazníka mění jen autor a správce, návrhy změn, historie verzí",
    "alias": [
-    "K48-N1",
-    "B1",
-    "C7"
+    "B234",
+    "AD-1"
    ],
-   "verze": "v18.11.7"
+   "verze": "v22.11.3"
   },
   {
-   "id": "614",
+   "id": "698",
    "typ": "nalez",
-   "nazev": "Vada ceny v main: po přepnutí typu šachty se čelní sklo přejmenuje a zůstane vyřazené (opraveno v testu v12.11.1)",
+   "nazev": "B233: počítadla pokusů o přihlášení serializovaná (vyhradne)",
    "alias": [
-    "K40-N1"
+    "B233",
+    "AU-1"
    ],
-   "verze": "v12.11.1"
+   "verze": "v22.11.3"
   },
   {
-   "id": "613",
-   "typ": "ukol",
-   "nazev": "S6 + S8: jedna evidence v roadmap.json (typ, čeká na, kolo, větev, verze, dopad na cenu, aliasy), živý výpis, PREHLED.md a NOVINKY.md",
-   "verze": "v18.11.5"
-  },
-  {
-   "id": "612",
-   "typ": "ukol",
-   "nazev": "S7: startovní podklady — CLAUDE.md podle schváleného návrhu, PREDAVKA jen živý stav, archiv předávek, log rozhodnutí J. V.",
-   "verze": "v18.11.4"
-  },
-  {
-   "id": "611",
-   "typ": "ukol",
-   "nazev": "S3: porovnání dvou sestavení nad pevnou sadou kalkulací (nastroje/porovnej_sestaveni.sh, krok kola „porovnani“)",
-   "verze": "v18.11.3"
-  },
-  {
-   "id": "610",
-   "typ": "ukol",
-   "nazev": "SL: kontrola nevyplněných míst SoD dělí „Chybí“ a „Nepovinné“",
-   "verze": "v18.11.6"
-  },
-  {
-   "id": "609",
-   "typ": "ukol",
-   "nazev": "SL: SoD realizace v6 se žlutým podbarvením symbolů; ve smlouvě žluté zůstanou jen tečky",
-   "verze": "v18.11.6"
-  },
-  {
-   "id": "608",
-   "typ": "ukol",
-   "nazev": "C9: prohlížečové harnessy pod zátěží čekají na stav stránky; limity z KNG_HARNESS_TIMEOUT_MS",
+   "id": "697",
+   "typ": "nalez",
+   "nazev": "B232: přísné ověření zmrazeného výsledku vyžaduje všechna čísla",
    "alias": [
-    "C9"
+    "B232",
+    "AZ-2"
    ],
-   "verze": "v18.11.1"
+   "verze": "v22.11.3"
   },
   {
-   "id": "606",
-   "typ": "ukol",
-   "nazev": "VZ-E6: rejstřík a Přehled (štítek, hledání podle dalšího zákazníka), controlling, překlady, příručky, celé kolo s mutacemi po částech",
-   "verze": "v17.11.2"
-  },
-  {
-   "id": "604",
-   "typ": "ukol",
-   "nazev": "VZ-E5: Pipedrive: přepisovaná poznámka „Další zákazníci na zakázce“ u dealu (zobecnění pd_poznamka.mjs, společný časový rozpočet se šachtam…",
-   "verze": "v16.11.2"
-  },
-  {
-   "id": "602",
-   "typ": "ukol",
-   "nazev": "VZ-E3: zámek po zákaznících: razítko „komu“ se snímkem adresáta, stav nabídky zákazníka, vlastní varianta, dotisk; odstranění zákazníka s o…",
-   "verze": "v16.11.6"
-  },
-  {
-   "id": "601",
-   "typ": "ukol",
-   "nazev": "VZ-E2: čísla nabídek s písmenem zákazníka (…9940-B), tisk z pohledu zákazníka, kontroly před tiskem, test úniku údajů s kanárky (revize por…",
-   "verze": "v16.11.4"
-  },
-  {
-   "id": "600",
-   "typ": "ukol",
-   "nazev": "VZ-E1: obrazovka: tlačítko „Přidat zákazníka“ a formulář v hlavičce (ARES a databáze zákazníků — zobecnění ares_ui.js na cíl), od 2. zákazn…",
-   "verze": "v16.11.2"
-  },
-  {
-   "id": "599",
-   "typ": "ukol",
-   "nazev": "VZ-E0: vypínač viceZakazniku, jádro vice_zakazniku.js (model, písmena, pohled zákazníka, invarianty), import, serverová kontrola tvaru, zla…",
-   "verze": "v16.11.1"
-  },
-  {
-   "id": "589",
-   "typ": "ukol",
-   "nazev": "SL: řádek slevy v rozpisu šachet ve smlouvě o dílo realizace",
-   "verze": "v18.11.6"
-  },
-  {
-   "id": "588",
-   "typ": "ukol",
-   "nazev": "VSD: seznam šachet nabídky do poznámky dealu Pipedrive (jedna poznámka na deal a zakázku)",
-   "verze": "v12.11.5"
-  },
-  {
-   "id": "587",
-   "typ": "ukol",
-   "nazev": "K43-T1: overit_lista_cekani.mjs čeká na stav aplikace, ne pevný čas",
+   "id": "696",
+   "typ": "nalez",
+   "nazev": "B231: příznak strany zakázky (jenProj/jenOck) po zámku a Prodáno zmrazený",
    "alias": [
-    "K43-T1"
+    "B231",
+    "AZ-1"
    ],
-   "verze": "v12.11.5"
+   "verze": "v22.11.3"
   },
   {
-   "id": "586",
+   "id": "695",
    "typ": "ukol",
-   "nazev": "VSD: upozornění vsTvar — víc šachet mimo meze uložení (K47-I3)",
-   "verze": "v12.11.5"
-  },
-  {
-   "id": "585",
-   "typ": "ukol",
-   "nazev": "C5: nástroj obnovy testovací sady zakázek TEST do testovací databáze (test_sada_obnov.mjs)",
+   "nazev": "Kolo: chybějící playwright = selhání s návodem; částečně přeskočená sada (PRESKOCENO_CAST) v souhrnu „Přeskočené sady“",
    "alias": [
-    "C5"
+    "HN-5"
    ],
-   "verze": "v12.11.4"
+   "verze": "v22.11.2"
   },
   {
-   "id": "584",
-   "typ": "ukol",
-   "nazev": "C3: tečky „……“ místo nevyplněných symbolů smlouvy, kontrola před tiskem SoD (upozornění)",
+   "id": "691",
+   "typ": "nalez",
+   "nazev": "NPT-N2–N4: drobné odchylky náhledu od Wordu (verzálky jednotek, dvojtečka EN/DE, IČ/Tel. v bloku Kancelář)",
    "alias": [
-    "C3"
+    "NPT-N2",
+    "NPT-N3",
+    "NPT-N4"
    ],
-   "verze": "v12.11.6"
+   "verze": "v21.11.4"
   },
   {
-   "id": "583",
-   "typ": "ukol",
-   "nazev": "C2: SoD realizace v5 se šachtami (předmět díla a rozpis ceny), upozornění u staré šablony",
+   "id": "690",
+   "typ": "nalez",
+   "nazev": "NPT-N1: řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ je v náhledu podkladů, ale Word CN v17 ho nemá",
    "alias": [
-    "C2"
+    "NPT-N1"
    ],
-   "verze": "v12.11.6"
+   "verze": "v21.11.4"
   },
   {
-   "id": "582",
-   "typ": "ukol",
-   "nazev": "C1: šablona CN v17 CZ/EN/DE/FR ke zveřejnění a jednotné nadpisy USAZENÍ OCK (DE, EN)",
+   "id": "683",
+   "typ": "nalez",
+   "nazev": "D8-I1: nabídka PROJ a krycí list rozhodují o „nabízí studii“ jinak (studie vyřazená s cenou 0)",
    "alias": [
-    "C1"
+    "D8-I1"
    ],
-   "verze": "v12.11.3"
+   "verze": "v22.11.1"
   },
   {
-   "id": "581",
-   "typ": "ukol",
-   "nazev": "K40c: vazba kalkulace na deal z webhooku (upozornění, pojistka „Zrušit vazbu“), firma z ARES na serveru, „Opravit firmu v Pipedrive“",
+   "id": "680",
+   "typ": "nalez",
+   "nazev": "DO-N1: návrh obchodníka do číselníku u příplatku přechodových plechů (MATERIÁL) správce v Ceník → číselník nevidí",
    "alias": [
-    "K40c"
+    "DO-N1"
    ],
-   "verze": "v12.11.7"
+   "verze": "v21.11.4"
   },
   {
-   "id": "580",
+   "id": "674",
    "typ": "ukol",
-   "nazev": "K40b: dolní mez data prodeje z razítka přijetí zámku serverem (K40-S1, K40-N3) a levná diagnostika rozdílu zámku (K40-S2)",
+   "nazev": "Víc zákazníků drobnosti po VZ-F2: pojistka v plnaMocData, IČO s úvodními nulami, dvojité „Neuloženo:“",
    "alias": [
-    "K40b",
-    "K40-S1",
-    "K40-N3",
-    "K40-S2"
+    "VZ-F2-R2"
    ],
-   "verze": "v12.11.2"
+   "verze": "v22.11.1"
   },
   {
-   "id": "579",
+   "id": "673",
    "typ": "ukol",
-   "nazev": "K40a: opravy kola 40 bez ceny — čelní sklo a sklo u šachet 2+, ořez konce textu, ceník můstků, kopie na Disku, hygiena testů",
+   "nazev": "Suchý běh Pipedrive ukazuje ruční pole KL dalšího zákazníka jako údaje řídící varianty",
    "alias": [
-    "K40a"
+    "VZ-F2-R1"
    ],
-   "verze": "v12.11.1"
+   "verze": "v22.11.1"
+  },
+  {
+   "id": "665",
+   "typ": "ukol",
+   "nazev": "Dotisk odeslané nabídky bere blok „Vypracoval“ z dnešního přihlášeného účtu, ne z doby odeslání",
+   "verze": "v22.11.1"
+  },
+  {
+   "id": "647",
+   "typ": "ukol",
+   "nazev": "Pevná sada porovnání sestavení: přidat případ přepnutí typu šachty a zasklení (K40-N1)",
+   "alias": [
+    "K49-I4"
+   ],
+   "verze": "v22.11.2"
+  },
+  {
+   "id": "646",
+   "typ": "ukol",
+   "nazev": "Harness overit_sod.mjs: aktualizovat očekávání na šablony v4–v6 a tečky místo symbolů",
+   "alias": [
+    "K49-I2"
+   ],
+   "verze": "v22.11.2"
+  },
+  {
+   "id": "644",
+   "typ": "ukol",
+   "nazev": "Občasné selhání src/test_vz_unik.js: „výměna řídícího (B)“ — kanár „cena varianty A“ v JSON pohledu PROJ C EN/DE/FR",
+   "verze": "v22.11.2"
+  },
+  {
+   "id": "638",
+   "typ": "ukol",
+   "nazev": "Nestabilní harnessy: overit_zobrazeni.mjs a overit_zaporne.mjs (limit přihlášení), test_577_kopie_skript.mjs T4 v mutacích",
+   "verze": "v22.11.2"
+  },
+  {
+   "id": "635",
+   "typ": "ukol",
+   "nazev": "VZ: u upozornění sdílené varianty v krycím listu tlačítko „vlastní varianta“",
+   "verze": "v22.11.1"
   }
  ],
  "vady_ceny": [
   {
-   "id": "614",
+   "id": "696",
    "typ": "nalez",
-   "nazev": "Vada ceny v main: po přepnutí typu šachty se čelní sklo přejmenuje a zůstane vyřazené (opraveno v testu v12.11.1)",
+   "nazev": "B231: příznak strany zakázky (jenProj/jenOck) po zámku a Prodáno zmrazený",
    "alias": [
-    "K40-N1"
+    "B231",
+    "AZ-1"
    ],
-   "verze": "v12.11.1",
-   "kolo": "40",
-   "stav": "opraveno v testu (v12.11.1), v main ne",
-   "cekaNa": "J. V.: pokyn ke sloučení do main (kolo 49 18. 11.: test_k40_celni_sklo nad test 75/0, nad main 47/28; ceny main × test jinak shodné)"
-  },
-  {
-   "id": "670",
-   "typ": "nalez",
-   "nazev": "K50-N1: statika opláštění u zahraniční řady ceníku počítána českou sazbou (od v19.11.1)",
-   "alias": [
-    "K50-N1"
-   ],
-   "verze": "v19.11.3",
+   "verze": "v22.11.3",
    "kolo": "50",
-   "stav": "opraveno v testu (v19.11.3), v main ne",
+   "stav": "opraveno v testu (v22.11.3), v main ne",
    "cekaNa": "—"
   }
  ],
@@ -486,26 +262,6 @@
    "cekaNa": "ruční zkouška víc zákazníků na testu (vypínač viceZakazniku zapíná administrátor)"
   },
   {
-   "id": "614",
-   "typ": "nalez",
-   "nazev": "Vada ceny v main: po přepnutí typu šachty se čelní sklo přejmenuje a zůstane vyřazené (opraveno v testu v12.11.1)",
-   "alias": [
-    "K40-N1"
-   ],
-   "verze": "v12.11.1",
-   "cekaNa": "pokyn ke sloučení do main (kolo 49 18. 11.: test_k40_celni_sklo nad test 75/0, nad main 47/28; ceny main × test jinak shodné)"
-  },
-  {
-   "id": "616",
-   "typ": "rozhodnuti",
-   "nazev": "Kdy sloučit test → main",
-   "alias": [
-    "B2",
-    "C10"
-   ],
-   "cekaNa": "termín (doporučeno spojit s rychlou cestou #614, zbytek po kole 49)"
-  },
-  {
    "id": "617",
    "typ": "rozhodnuti",
    "nazev": "Víc šachet na ostrém webu (main) — po ruční zkoušce na testu se zapnutým vypínačem",
@@ -514,16 +270,6 @@
     "B0.1"
    ],
    "cekaNa": "ruční zkouška víc šachet na testu; rozhodnutí odloženo do 25. 11. 2026"
-  },
-  {
-   "id": "619",
-   "typ": "ukol",
-   "nazev": "SoD projekce v4 zveřejnit i v main (main tiskne starší znění smlouvy)",
-   "alias": [
-    "B5",
-    "B0.6"
-   ],
-   "cekaNa": "datový úkol v main"
   },
   {
    "id": "621",
@@ -628,24 +374,92 @@
    "cekaNa": "zavést roli jen ke čtení? (doporučeno až s kolegou s rolí administrátora)"
   },
   {
-   "id": "642",
-   "typ": "ukol",
-   "nazev": "Zeštíhlení roadmap.json: hotové položky starší 60 dní do archivu (živý soubor kolem 60 položek)",
-   "cekaNa": "souhlas (návrh režie S6 d; soubor má 1,2 MB)"
-  },
-  {
    "id": "643",
    "typ": "ukol",
    "nazev": "Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6)",
    "cekaNa": "nahrát upravený skill (mimo repo)"
+  },
+  {
+   "id": "702",
+   "typ": "nalez",
+   "nazev": "Nízké nálezy auditu 20. 11. 2026 (B237–B256) — souhrnná položka k pozdější dávce",
+   "alias": [
+    "B237",
+    "B238",
+    "B239",
+    "B240",
+    "B241",
+    "B242",
+    "B243",
+    "B244",
+    "B245",
+    "B246",
+    "B247",
+    "B248",
+    "B249",
+    "B250",
+    "B251",
+    "B252",
+    "B253",
+    "B254",
+    "B255",
+    "B256"
+   ],
+   "cekaNa": "zařadit do dávky (nízké nálezy, dnes neopravovat)"
+  },
+  {
+   "id": "703",
+   "typ": "nalez",
+   "nazev": "B233 zbytek: počítadla pokusů mezi dvěma instancemi funkce (podmíněný zápis Blobs)",
+   "alias": [
+    "B233-zbytek"
+   ],
+   "cekaNa": "přijmout jako zbytkovou mez, nebo zadat povýšení @netlify/blobs (doporučeno povýšit v samostatné dávce)"
+  },
+  {
+   "id": "704",
+   "typ": "otazka",
+   "nazev": "BZ: otevřené otázky pro J. V. po dávce BZ",
+   "alias": [
+    "BZ-Q"
+   ],
+   "cekaNa": "(1) doporučeno až po revizi Fable a zkoušce na testu; (2) doporučeno odmítnout 409 s radou Ctrl+F5; (3) doporučeno zmrazit vedoucí stranu odvozenou celkově; (4…"
+  },
+  {
+   "id": "705",
+   "typ": "nalez",
+   "nazev": "Revize BZ, nízké: dvojče karty zákazníka pod jiným klíčem; souběh návrhů/historie a pole zalozen v historii",
+   "alias": [
+    "BZ-R6",
+    "BZ-R7"
+   ],
+   "cekaNa": "zařadit do dávky nízkých nálezů (#702)"
+  },
+  {
+   "id": "709",
+   "typ": "otazka",
+   "nazev": "PR-E: odesílání e-mailu správci o nové připomínce",
+   "alias": [
+    "PR-E"
+   ],
+   "cekaNa": "zvolit službu odesílání e-mailů (dop. až s dalším e-mailovým požadavkem)"
+  },
+  {
+   "id": "710",
+   "typ": "otazka",
+   "nazev": "PR-Q: připomínky v záloze a v kopii na Disk, uchovávání",
+   "alias": [
+    "PR-Q"
+   ],
+   "cekaNa": "potvrdit (1)–(4)"
   }
  ],
  "ceka_na_jv_odlozene": 12,
  "nehotove_podle_kdo": {
-  "J. V.": 40,
-  "kolega": 5,
-  "koordinace": 3,
+  "J. V.": 42,
+  "kolega": 4,
+  "koordinace": 7,
   "integrátor": 2
  },
- "nehotovych": 50
+ "nehotovych": 55
 }

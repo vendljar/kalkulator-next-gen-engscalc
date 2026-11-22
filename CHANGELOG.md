@@ -8,15 +8,15 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v22.11.6 — RJ: zapracování rozhodnutí J. V. z 22. 11. 2026, větev claude/rj-rozhodnuti
+## v22.11.7 — RJ: zapracování rozhodnutí J. V. z 22. 11. 2026, větev claude/rj-rozhodnuti
 
-Nad integrací `05a496d` (v22.11.5). Roadmapa #704, #706, #709, #710 → #713 (dávka), #714 (podpis). Cenu nemění.
+Nad integrací `05a496d` (v22.11.5), sloučeno s integrací `21eeffa` (v22.11.6). Roadmapa #704, #706, #709, #710 → #714 (dávka), #715 (podpis). Cenu nemění.
 
 - **Změna — odeslaná nabídka ze zastaralé stránky (#704 (2), mez B232):** nový zámek, jehož čísla nesouhlasí
   s výpočtem serveru, se neuloží (409). Aplikace ukáže dialog: obnovit stránku Ctrl+F5, otevřít zakázku znovu
   a nabídku vytisknout znovu; dokument z prvního tisku neposílat. Poctivý výsledek z jiné verze stránky (text
   nebo příznak navíc) dál projde.
-- **Nové — dotisk kolegou nese podpis původního obchodníka (#665 → #714):** při prvním uložení odeslané nabídky
+- **Nové — dotisk kolegou nese podpis původního obchodníka (#665 → #715):** při prvním uložení odeslané nabídky
   server zmrazí sken podpisu zpracovatele; dotisk (Word OCK i PROJ, online tisk) ho vloží i tehdy, když tiskne
   kolega nebo když si obchodník podpis mezitím vyměnil. Starší zámky jako dřív.
 - **Pipedrive (#704 (4)(6)(7), meze B235/B236/B209):** vazbu dealu na zakázku dokládá jen vazba z webhooku nebo
@@ -34,6 +34,23 @@ Nad integrací `05a496d` (v22.11.5). Roadmapa #704, #706, #709, #710 → #713 (d
   Mutace [RJ]: server 15/15, jádro 5/5 (ekvivalentní mutace přepisu kopie podpisu vyřazena). Kolo `--bez-mutaci --proti
   origin/claude/integrace-16-10`: VŠE ZELENÉ (sady 512/0/6, hodiny 415/0/1, statické 11/11, porovnání SHODA 367/367);
   `overit_online.mjs` přizpůsoben (upravený klient B59 = 409 + dialog).
+
+## v22.11.6 — JT #713 (prac.): jazyk hlavičky specifikace OCK = Jazyk tisku nabídky, větev claude/jt-jazyk-tisku
+
+Nad integrací `05a496d` (v22.11.5). Verzi a číslo roadmapy přidělí koordinace. Cenu ani text dokumentů nemění (porovnání sestavení SHODA).
+
+- **Nové — obchodník (zadání J. V. 22. 11.):** přepnutí jazyka v hlavičce technické specifikace OCK
+  (CZ / EN / DE / FR) nastaví zároveň Jazyk tisku nabídky; změna Jazyka tisku u nabídky OCK přepne i náhled
+  specifikace („dle Nastavení“ nic nepřepíná). Pod cizojazyčným náhledem (pod „Print specification / PDF“)
+  je tatáž karta Cenová nabídka (OCK) jako v české verzi — úvodní fotka, kontroly „Než nabídku odešlete…“,
+  zábrany a tlačítka Kompletní náhled podkladů · Vytvořit nabídku (Word) · Kompletní náhled a tisk nabídky,
+  které tisknou rovnou v tom jazyce. Návrat do české verze už není potřeba.
+- **Beze změny:** PROJ a smlouva o dílo (jejich Jazyk tisku jazyk specifikace nepřepíná); uložení (Jazyk tisku
+  jen pro relaci, jazyk dokumentu v Nastavení jako dosud).
+- **Testy:** `src/test_jt_jazyk_tisku.js` 23 (pojistka nad 05a496d 10 FAIL), `overit_jt_jazyk_tisku.mjs` 19,
+  mutace jádra `[JT]` 9/9. Příručka obchodníka, kapitola 23 (tisk nabídky, jazykové verze).
+- **Kolo** (sloučeno s integrací 2b68f98): `--bez-mutaci --proti 2b68f98` VŠE ZELENÉ (sady 513/0/6, hodiny 415/0/1,
+  statické 10/10, porovnání SHODA 367/367).
 
 ## v22.11.5 — PR #707: Připomínky z aplikace, větev claude/pr-pripominky
 

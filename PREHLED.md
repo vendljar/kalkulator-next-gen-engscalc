@@ -7,70 +7,41 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 
 | prostředí | verze |
 |---|---|
-| ostrý web (`main`) | **v11.11.1** (`6c4bc80e`, 11. 11. 2026) |
-| testovací web (`test`) | **v19.11.11** (`cda289e2`, 19. 11. 2026) |
+| ostrý web (`main`) | **v19.11.11** (`cda289e2`, 19. 11. 2026) |
+| testovací web (`test`) | **v22.11.5** (`05a496d0`, 22. 11. 2026) |
 
-Test je proti main napřed o 363 commitů.
+Test je proti main napřed o 73 commitů.
 
 ## V testu, ještě ne v main
 
 | # | typ | co | verze |
 |---|---|---|---|
-| #689 (dřív D3-Q) | rozhodnutí | D3 objednávka PROJ: rozhodnutí J. V. k rozvržení (2 strany, Číslo zakázky, jen z odeslané CN) | v19.11.11 |
-| #688 (dřív D3) | úkol | D3: dokument „Objednávka / Smlouva“ PROJ z nabídky PROJ (tisk/PDF + Word bez šablony) | v19.11.11 |
-| #675 (dřív DO) | úkol | Dotazy obchodu D1, D2, D4–D7: opláštění po celé výšce, „bez opláštění“, přechodové plechy (MATERIÁL), materiál+montáž, ukládání dodatkového… | v19.11.6 |
-| #672 (dřív VZF1-I1) | nález | VZF1-I1: soubor plné moci u OPR zakázek bez čísla zakázky (PLNA-MOC_2026-OPR-CN-PROJ-CZ) | v19.11.4 |
-| #671 (dřív K50-N1-R) | úkol | Ceník: buňka Zahraničí u statiky opláštění a dialog zveřejnění po K50-N1 | v19.11.5 |
-| #670 (dřív K50-N1) | nález | K50-N1: statika opláštění u zahraniční řady ceníku počítána českou sazbou (od v19.11.1) | v19.11.3 |
-| #669 (dřív T1) | úkol | VZ T1: řídící varianta a řídící zákazník v hlavičce (2+ zákazníků), karta ★/☆, náhled poznámky dealu | v19.11.2 |
-| #664 | úkol | UE: úprava existujícího účtu v Nastavení → Uživatelé (titul, jméno, funkce, telefon; e-mail jen ke čtení) | v18.11.9 |
-| #663 | úkol | Zmrazit zástupce a DIČ dalšího zákazníka po odeslání jeho SoD (po zákaznících, klient i server) | v19.11.4 |
-| #662 (dřív VZ-F1-R4) | úkol | Test v prohlížeči: otevřený zákazník C, zápis zástupce v krycím listu, tisk SoD A bez údajů C | v19.11.4 |
-| #661 (dřív VZ-F1-R3) | úkol | Krycí list PROJ u otevřeného dalšího zákazníka ukazuje název a firmu řídícího (smíšená obrazovka) | v19.11.4 |
-| #660 (dřív VZ-F1-R1) | úkol | Kontrola duplicitního IČO u víc zákazníků jde obejít (doplnění IČO dodatečně, změna IČO řídícího, pořadí v poli) | v19.11.4 |
-| #659 (dřív VZ-F1) | dávka | Dávka VZ-F1: opravy nálezů ruční zkoušky víc zákazníků na testu (18. 11. 2026) | v18.11.8 |
-| #658 | úkol | Controlling: řádek prodeje dalšímu zákazníkovi nese číslo s písmenem (…9801-B) jako nabídka a deal | v18.11.8 |
-| #657 | úkol | Krycí list BO (i PROJ a Techdata) tiskl prázdnou sekci Zástupci a kontakty zákazníka i banku, účet a zápis v rejstříku | v18.11.8 |
-| #656 (dřív VZ-N4) | úkol | VZ-N4: název souboru krycího listu vlastní varianty bez přípony varianty (…9801-C místo …9801.2-C) | v18.11.8 |
-| #655 (dřív VZ-N2) | úkol | VZ-N2: výběr „Otevřená varianta“ v hlavičce nabízel při otevřeném A i vlastní variantu C | v18.11.8 |
-| #654 (dřív VZ-N1) | úkol | VZ-N1: „Přidat zákazníka“ se stejným IČO, jaké už v zakázce je, prošlo bez upozornění | v18.11.8 |
-| #653 (dřív VZ-N3) | úkol | VZ-N3: zástupci a kontakty v krycím listu u otevřeného dalšího zákazníka se zapisovali do hlavičky řídícího (SoD A nesla zástupce C) | v18.11.8 |
-| #651 (dřív K49-I7) | úkol | Ověřit SoD u víc šachet a slevy v EUR (L3) na testu | v18.11.7 |
-| #645 (dřív NS) | úkol | NS: v Nastavení → Smlouvy / Šablony stojí správa šablon hned pod přepínačem OCK / PROJ, nad platebními podmínkami | v18.11.7 |
-| #632 (dřív B0.7, B6, K37-N6, K38-I2) | úkol | Ceník a termíny firmy v testu srovnané podle main — ověřit v kole 49 | v18.11.7 |
-| #618 (dřív B4, C8, B0.9, K39-I1, K38-I1) | úkol | Obnovit TEST sadu v databázi testu nástrojem test_sada_obnov.mjs | v18.11.7 |
-| #615 (dřív K48-N1, B1, C7) | nález | Smlouva o dílo v5 DE/EN vychází převážně česky — pojistka jazyka SoD (C7: výroba jazykové verze z češtiny zrušena, kontrola podílu češtiny) | v18.11.7 |
-| #614 (dřív K40-N1) | nález | Vada ceny v main: po přepnutí typu šachty se čelní sklo přejmenuje a zůstane vyřazené (opraveno v testu v12.11.1) | v12.11.1 |
-| #613 | úkol | S6 + S8: jedna evidence v roadmap.json (typ, čeká na, kolo, větev, verze, dopad na cenu, aliasy), živý výpis, PREHLED.md a NOVINKY.md | v18.11.5 |
-| #612 | úkol | S7: startovní podklady — CLAUDE.md podle schváleného návrhu, PREDAVKA jen živý stav, archiv předávek, log rozhodnutí J. V. | v18.11.4 |
-| #611 | úkol | S3: porovnání dvou sestavení nad pevnou sadou kalkulací (nastroje/porovnej_sestaveni.sh, krok kola „porovnani“) | v18.11.3 |
-| #610 | úkol | SL: kontrola nevyplněných míst SoD dělí „Chybí“ a „Nepovinné“ | v18.11.6 |
-| #609 | úkol | SL: SoD realizace v6 se žlutým podbarvením symbolů; ve smlouvě žluté zůstanou jen tečky | v18.11.6 |
-| #608 (dřív C9) | úkol | C9: prohlížečové harnessy pod zátěží čekají na stav stránky; limity z KNG_HARNESS_TIMEOUT_MS | v18.11.1 |
-| #606 | úkol | VZ-E6: rejstřík a Přehled (štítek, hledání podle dalšího zákazníka), controlling, překlady, příručky, celé kolo s mutacemi po částech | v17.11.2 |
-| #604 | úkol | VZ-E5: Pipedrive: přepisovaná poznámka „Další zákazníci na zakázce“ u dealu (zobecnění pd_poznamka.mjs, společný časový rozpočet se šachtam… | v16.11.2 |
-| #602 | úkol | VZ-E3: zámek po zákaznících: razítko „komu“ se snímkem adresáta, stav nabídky zákazníka, vlastní varianta, dotisk; odstranění zákazníka s o… | v16.11.6 |
-| #601 | úkol | VZ-E2: čísla nabídek s písmenem zákazníka (…9940-B), tisk z pohledu zákazníka, kontroly před tiskem, test úniku údajů s kanárky (revize por… | v16.11.4 |
-| #600 | úkol | VZ-E1: obrazovka: tlačítko „Přidat zákazníka“ a formulář v hlavičce (ARES a databáze zákazníků — zobecnění ares_ui.js na cíl), od 2. zákazn… | v16.11.2 |
-| #599 | úkol | VZ-E0: vypínač viceZakazniku, jádro vice_zakazniku.js (model, písmena, pohled zákazníka, invarianty), import, serverová kontrola tvaru, zla… | v16.11.1 |
-| #589 | úkol | SL: řádek slevy v rozpisu šachet ve smlouvě o dílo realizace | v18.11.6 |
-| #588 | úkol | VSD: seznam šachet nabídky do poznámky dealu Pipedrive (jedna poznámka na deal a zakázku) | v12.11.5 |
-| #587 (dřív K43-T1) | úkol | K43-T1: overit_lista_cekani.mjs čeká na stav aplikace, ne pevný čas | v12.11.5 |
-| #586 | úkol | VSD: upozornění vsTvar — víc šachet mimo meze uložení (K47-I3) | v12.11.5 |
-| #585 (dřív C5) | úkol | C5: nástroj obnovy testovací sady zakázek TEST do testovací databáze (test_sada_obnov.mjs) | v12.11.4 |
-| #584 (dřív C3) | úkol | C3: tečky „……“ místo nevyplněných symbolů smlouvy, kontrola před tiskem SoD (upozornění) | v12.11.6 |
-| #583 (dřív C2) | úkol | C2: SoD realizace v5 se šachtami (předmět díla a rozpis ceny), upozornění u staré šablony | v12.11.6 |
-| #582 (dřív C1) | úkol | C1: šablona CN v17 CZ/EN/DE/FR ke zveřejnění a jednotné nadpisy USAZENÍ OCK (DE, EN) | v12.11.3 |
-| #581 (dřív K40c) | úkol | K40c: vazba kalkulace na deal z webhooku (upozornění, pojistka „Zrušit vazbu“), firma z ARES na serveru, „Opravit firmu v Pipedrive“ | v12.11.7 |
-| #580 (dřív K40b, K40-S1, K40-N3, K40-S2) | úkol | K40b: dolní mez data prodeje z razítka přijetí zámku serverem (K40-S1, K40-N3) a levná diagnostika rozdílu zámku (K40-S2) | v12.11.2 |
-| #579 (dřív K40a) | úkol | K40a: opravy kola 40 bez ceny — čelní sklo a sklo u šachet 2+, ořez konce textu, ceník můstků, kopie na Disku, hygiena testů | v12.11.1 |
+| #707 (dřív PR) | úkol | Připomínky z aplikace: tlačítko Připomínka (obchodník), Nastavení → Připomínky (správce), klíč pro koordinaci | v22.11.5 |
+| #701 (dřív B195) | nález | B195: nulová ruční cena jen se zdrojem — ověřeno, text meze opraven | v22.11.3 |
+| #700 (dřív B235, B236, IN-1, IN-2) | nález | B235/B236: vypínač zápisu do Pipedrive (výchozí vypnuto), deal musí patřit zakázce | v22.11.3 |
+| #699 (dřív B234, AD-1) | nález | B234: kartu zákazníka mění jen autor a správce, návrhy změn, historie verzí | v22.11.3 |
+| #698 (dřív B233, AU-1) | nález | B233: počítadla pokusů o přihlášení serializovaná (vyhradne) | v22.11.3 |
+| #697 (dřív B232, AZ-2) | nález | B232: přísné ověření zmrazeného výsledku vyžaduje všechna čísla | v22.11.3 |
+| #696 (dřív B231, AZ-1) | nález | B231: příznak strany zakázky (jenProj/jenOck) po zámku a Prodáno zmrazený | v22.11.3 |
+| #695 (dřív HN-5) | úkol | Kolo: chybějící playwright = selhání s návodem; částečně přeskočená sada (PRESKOCENO_CAST) v souhrnu „Přeskočené sady“ | v22.11.2 |
+| #691 (dřív NPT-N2, NPT-N3, NPT-N4) | nález | NPT-N2–N4: drobné odchylky náhledu od Wordu (verzálky jednotek, dvojtečka EN/DE, IČ/Tel. v bloku Kancelář) | v21.11.4 |
+| #690 (dřív NPT-N1) | nález | NPT-N1: řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ je v náhledu podkladů, ale Word CN v17 ho nemá | v21.11.4 |
+| #683 (dřív D8-I1) | nález | D8-I1: nabídka PROJ a krycí list rozhodují o „nabízí studii“ jinak (studie vyřazená s cenou 0) | v22.11.1 |
+| #680 (dřív DO-N1) | nález | DO-N1: návrh obchodníka do číselníku u příplatku přechodových plechů (MATERIÁL) správce v Ceník → číselník nevidí | v21.11.4 |
+| #674 (dřív VZ-F2-R2) | úkol | Víc zákazníků drobnosti po VZ-F2: pojistka v plnaMocData, IČO s úvodními nulami, dvojité „Neuloženo:“ | v22.11.1 |
+| #673 (dřív VZ-F2-R1) | úkol | Suchý běh Pipedrive ukazuje ruční pole KL dalšího zákazníka jako údaje řídící varianty | v22.11.1 |
+| #665 | úkol | Dotisk odeslané nabídky bere blok „Vypracoval“ z dnešního přihlášeného účtu, ne z doby odeslání | v22.11.1 |
+| #647 (dřív K49-I4) | úkol | Pevná sada porovnání sestavení: přidat případ přepnutí typu šachty a zasklení (K40-N1) | v22.11.2 |
+| #646 (dřív K49-I2) | úkol | Harness overit_sod.mjs: aktualizovat očekávání na šablony v4–v6 a tečky místo symbolů | v22.11.2 |
+| #644 | úkol | Občasné selhání src/test_vz_unik.js: „výměna řídícího (B)“ — kanár „cena varianty A“ v JSON pohledu PROJ C EN/DE/FR | v22.11.2 |
+| #638 | úkol | Nestabilní harnessy: overit_zobrazeni.mjs a overit_zaporne.mjs (limit přihlášení), test_577_kopie_skript.mjs T4 v mutacích | v22.11.2 |
+| #635 | úkol | VZ: u upozornění sdílené varianty v krycím listu tlačítko „vlastní varianta“ | v22.11.1 |
 
 ## Otevřené vady s dopadem na cenu
 
 | # | co | kolo | stav | čeká na |
 |---|---|---|---|---|
-| #614 (dřív K40-N1) | Vada ceny v main: po přepnutí typu šachty se čelní sklo přejmenuje a zůstane vyřazené (opraveno v testu v12.11.1) | 40 | opraveno v testu (v12.11.1), v main ne | J. V.: pokyn ke sloučení do main (kolo 49 18. 11.: test_k40_celni_sklo nad test 75/0, nad main 47/28; ceny main × test jinak shodné) |
-| #670 (dřív K50-N1) | K50-N1: statika opláštění u zahraniční řady ceníku počítána českou sazbou (od v19.11.1) | 50 | opraveno v testu (v19.11.3), v main ne | — |
+| #696 (dřív B231, AZ-1) | B231: příznak strany zakázky (jenProj/jenOck) po zámku a Prodáno zmrazený | 50 | opraveno v testu (v22.11.3), v main ne | — |
 
 ## Čeká na J. V.
 
@@ -85,10 +56,7 @@ Test je proti main napřed o 363 commitů.
 | #172 | úkol | Dokončení auditu mimo cloud: zámek závislostí, etag, brzda v Netlify | lokální `npm install --package-lock-only` a pár kliknutí v administraci Netlify |
 | #222 | otázka | Nálezy čekající na rozhodnutí J. V.: V8, N1, N5, V9, V10, V11, V13, V17, V24 | rozhodnutí J. V. — sloupec „Rozhodnutí J. V.“ na listu Nálezy (sešit VYHODNOCENI_TESTU_KALKULACE); testem se do té doby jen potvrzuje, že se chování nezměnilo |
 | #598 | úkol | VZ: Víc zákazníků na jedné zakázce (souhrn etap E0–E6, zkušební funkce viceZakazniku) | ruční zkouška víc zákazníků na testu (vypínač viceZakazniku zapíná administrátor) |
-| #614 (dřív K40-N1) | nález | Vada ceny v main: po přepnutí typu šachty se čelní sklo přejmenuje a zůstane vyřazené (opraveno v testu v12.11.1) | pokyn ke sloučení do main (kolo 49 18. 11.: test_k40_celni_sklo nad test 75/0, nad main 47/28; ceny main × test jinak shodné) |
-| #616 (dřív B2, C10) | rozhodnutí | Kdy sloučit test → main | termín (doporučeno spojit s rychlou cestou #614, zbytek po kole 49) |
 | #617 (dřív B3, B0.1) | rozhodnutí | Víc šachet na ostrém webu (main) — po ruční zkoušce na testu se zapnutým vypínačem | ruční zkouška víc šachet na testu; rozhodnutí odloženo do 25. 11. 2026 |
-| #619 (dřív B5, B0.6) | úkol | SoD projekce v4 zveřejnit i v main (main tiskne starší znění smlouvy) | datový úkol v main |
 | #621 | otázka | SoD v5: umístění řádků šachet, řádek slevy v rozpisu, žluté tečky v realizaci, šum kontroly nevyplněných polí | rozhodnout (u řádku slevy doporučeno a) |
 | #623 (dřív K40c-N6) | úkol | Token Pipedrive na test a první zkušební zápis (poznámka šachet, organizace) nad dealem TEST | dodat token, nebo odložit s datem (blokuje #510 a #16) |
 | #624 (dřív K40c-N5) | otázka | Zakázka bez autora dostane autora z relace prvního ukládajícího (B73) | zvážit nedoplňovat autora u existující zakázky (na později) |
@@ -102,11 +70,16 @@ Test je proti main napřed o 363 commitů.
 | #637 | úkol | Ověřit hledání organizace (itemSearch) proti ostrému účtu Pipedrive — jen čtení | ověření (automat na ostrý účet nesmí) |
 | #639 | otázka | Ruční cena: příloha PDF nabídky dodavatele a ruční cena v ceníku PROJ | rozhodnout, zda je potřeba |
 | #640 (dřív B221) | otázka | Role jen ke čtení: „kdo smí ukládat“ je dnes každý přihlášený | zavést roli jen ke čtení? (doporučeno až s kolegou s rolí administrátora) |
-| #642 | úkol | Zeštíhlení roadmap.json: hotové položky starší 60 dní do archivu (živý soubor kolem 60 položek) | souhlas (návrh režie S6 d; soubor má 1,2 MB) |
 | #643 | úkol | Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6) | nahrát upravený skill (mimo repo) |
+| #702 (dřív B237, B238, B239, B240, B241, B242, B243, B244, B245, B246, B247, B248, B249, B250, B251, B252, B253, B254, B255, B256) | nález | Nízké nálezy auditu 20. 11. 2026 (B237–B256) — souhrnná položka k pozdější dávce | zařadit do dávky (nízké nálezy, dnes neopravovat) |
+| #703 (dřív B233-zbytek) | nález | B233 zbytek: počítadla pokusů mezi dvěma instancemi funkce (podmíněný zápis Blobs) | přijmout jako zbytkovou mez, nebo zadat povýšení @netlify/blobs (doporučeno povýšit v samostatné dávce) |
+| #704 (dřív BZ-Q) | otázka | BZ: otevřené otázky pro J. V. po dávce BZ | (1) doporučeno až po revizi Fable a zkoušce na testu; (2) doporučeno odmítnout 409 s radou Ctrl+F5; (3) doporučeno zmrazit vedoucí stranu odvozenou celkově; (4… |
+| #705 (dřív BZ-R6, BZ-R7) | nález | Revize BZ, nízké: dvojče karty zákazníka pod jiným klíčem; souběh návrhů/historie a pole zalozen v historii | zařadit do dávky nízkých nálezů (#702) |
+| #709 (dřív PR-E) | otázka | PR-E: odesílání e-mailu správci o nové připomínce | zvolit službu odesílání e-mailů (dop. až s dalším e-mailovým požadavkem) |
+| #710 (dřív PR-Q) | otázka | PR-Q: připomínky v záloze a v kopii na Disk, uchovávání | potvrdit (1)–(4) |
 
 K tomu 12 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
 
 ## Nehotové položky evidence
 
-Celkem 50: J. V. 40, kolega 5, koordinace 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 55: J. V. 42, kolega 4, koordinace 7, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.

@@ -92,7 +92,7 @@ function tsJazykBar() {
   const akt = jazyk();
   const btns = JAZYKY.map(j =>
     `<button class="mini${j.kod === akt ? ' aktivni' : ''}" title="${esc(j.nazev)}"
-       onclick="jazykSet('${escJs(j.kod)}')">${j.vlajka}</button>`).join(' ');
+       onclick="tsJazykPrepni('${escJs(j.kod)}')">${j.vlajka}</button>`).join(' ');
   const pokr = akt === 'cz' ? null : prekladPokryti(tsVsechnyFraze(), akt);
   const stav = pokr
     ? `<span class="pill ${pokr.procenta >= 90 ? 'ok' : 'warn'}" title="přeloženo ${pokr.prelozeno} z ${pokr.celkem} frází">
@@ -102,6 +102,15 @@ function tsJazykBar() {
          onclick="tsChybejiciExport()">⤓ chybí ${pokr.chybi.length}</button>` : '';
   return `<div class="btns noprint" style="margin-bottom:10px;align-items:center">
     <span class="mut">Jazyk dokumentu:</span> ${btns} ${stav}${dopl}</div>`;
+}
+
+/* JT (J. V. 22. 11. 2026): přepnutí jazyka v hlavičce specifikace nastaví
+ * zároveň Jazyk tisku nabídky OCK (stejná hodnota) — EN náhled tiskne rovnou
+ * anglickou nabídku, zpět CZ tiskne česky. Opačný směr: tiskJazykNastavOck
+ * v common.js. Tisk pak čte tiskJazyk() jako dřív. */
+function tsJazykPrepni(k) {
+  tiskJazykNastav(k);
+  jazykSet(k);
 }
 
 /* všechny fráze dokumentu (popisky i hodnoty) – podklad pro měření pokrytí */
@@ -227,8 +236,10 @@ function renderTechspecPreklad() {
         <button onclick="prepniTab('spec'); ${vzTiskSpecOnclick('jazyk()')}">${esc(T('Tisk specifikace / PDF'))}</button>
       </div>
       <div class="note noprint">Náhled v cizím jazyce je jen ke čtení – obsah se edituje v české verzi
-      (přepněte na CZ). Tečkovaně zvýrazněné fráze zatím nemají překlad ve slovníku a zůstávají česky.</div>
-    </div>`;
+      (přepněte na CZ). Tečkovaně zvýrazněné fráze zatím nemají překlad ve slovníku a zůstávají česky.
+      Nabídku v tomto jazyce vytisknete rovnou tlačítky níže (Jazyk tisku se nastavil sám).</div>
+    </div>
+    ${tsNabidkaKarta()}`;
 }
 
 /* NÁZEV AKCE (14. 10. 2026): výchozí z hlavičky zakázky, ruční přepis se
@@ -389,7 +400,15 @@ function renderTechspec() {
       Jakmile pole přepíšete, platí ruční hodnota (štítek „ručně“); tlačítkem ↺ vrátíte automatiku.
       Vlastní hodnoty lze psát do všech polí, rozbalovací návrhy odpovídají číselníkům ze šablony.</div>
     </div>
-    ${typeof nabidkaDokumentyBlok === 'function'
-      ? `<div class="noprint" style="margin-top:14px">${card('Cenová nabídka (OCK)', nabidkaDokumentyBlok())}</div>`
-      : ''}`;
+    ${tsNabidkaKarta()}`;
+}
+
+/* Karta „Cenová nabídka (OCK)" pod specifikací — v české verzi i v náhledu
+ * EN/DE/FR (JT, J. V. 22. 11. 2026) TÝŽ blok: úvodní fotka, kontroly před
+ * odesláním (žlutý blok „Než nabídku odešlete…"), zábrany a tři tlačítka
+ * tisku se svými funkcemi. Nic se neobchází, tisk jde v tiskJazyk(). */
+function tsNabidkaKarta() {
+  return typeof nabidkaDokumentyBlok === 'function'
+    ? `<div class="noprint" style="margin-top:14px">${card('Cenová nabídka (OCK)', nabidkaDokumentyBlok())}</div>`
+    : '';
 }

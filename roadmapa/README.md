@@ -35,6 +35,31 @@ to dělá sám).
 - `odemyka` se do zdroje **nepíše** — obrácené vazby si stránka dopočítá ze
   `zavisi` sama, aby nešlo zapsat půlku vazby a druhou zapomenout.
 
+## Archiv hotových položek (#642, od 22. 11. 2026)
+
+Hotové položky dokončené před víc než 60 dny leží v `roadmap_archiv.json`
+(každá na jednom řádku, beze změny). Živý `roadmap.json` nese otevřenou
+a čerstvou práci, takže se rychle čte a souběžné větve se při slučování
+nehádají o megabajt textu.
+
+```
+python3 roadmapa/roadmapa.py --archivuj --nanecisto   # co by se přesunulo
+python3 roadmapa/roadmapa.py --archivuj               # přesun (k dnešku, 60 dní)
+python3 roadmapa/roadmapa.py --archivuj --k 22.11.2026 --dni 60
+```
+
+- Archiv je **část evidence**: `--kontrola` i `src/test_roadmapa.js` čtou
+  živý soubor a archiv dohromady — číslo z archivu se znovu nepoužije,
+  závislost na archivované položce není viselec, alias z archivu nedostane
+  jiná položka. V archivu smějí být jen hotové položky.
+- `--hledej` hledá i v archivu; `ROADMAPA.html` a `ROADMAPA.md` se vyrábějí
+  z obojího. `--zive`, `PREHLED.md` a `NOVINKY.md` čtou jen živý soubor.
+- Datum dokončení = verze (`verze`, jinak první vDEN.MĚSÍC.pořadí
+  v `hotovoV`), jinak datum „D. M. RRRR“ v `hotovoV`. Hotová položka bez
+  zjistitelného data zůstává v živém souboru.
+- Do archivu se ručně nepíše; položka, kterou je potřeba znovu otevřít,
+  se vrátí do živého souboru (stejné číslo) a změní stav.
+
 ## Žádné ceny
 
 Repozitář je veřejný. Do roadmapy proto **nepatří skutečné částky, sazby ani
