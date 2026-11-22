@@ -10,7 +10,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## v22.11.9 — RJ revize (koordinace 22. 11.): N1, N2, I3, větev claude/rj-rozhodnuti
 
-Navazuje na v22.11.7 (revize koordinace = SLOUČIT). Roadmapa #716 (pracovní číslo — přečísluje koordinace po LAK). Cenu nemění.
+Navazuje na v22.11.7 (revize koordinace = SLOUČIT), sloučeno s integrací `60086f7` (LAK v22.11.8). Roadmapa #717. Cenu nemění.
 
 - **N1 (Pipedrive, před zapnutím `PIPEDRIVE_ZAPIS`):** zápis do dealu dokládá jen vazba z webhooku „potvrzeno“ („V pořádku“)
   nebo „webhook“ u zakázky, kterou webhook sám založil; nepotvrzená „ceka“ zápis zastaví i s odkazem v dealu (ten tam
@@ -24,6 +24,28 @@ Navazuje na v22.11.7 (revize koordinace = SLOUČIT). Roadmapa #716 (pracovní č
   `--bez-mutaci --proti 36e2681`: VŠE ZELENÉ (sady 514/0/6, hodiny 416/0/1, statické 11/11, porovnání SHODA 367/367).
 - **Mez (k rozhodnutí J. V. před zapnutím zápisu):** „V pořádku“ smí stisknout i autor zakázky, který deal připojil
   sám — potvrzením si zápis do dealu pustí.
+
+## v22.11.8 — LAK #666: lakování — cena z nabídky lakovny jako částka řádku, větev claude/lak-lakovani
+
+Nad integrací `05a496d` (v22.11.5), sloučeno s integrací `36e2681` (v22.11.7). Verze přidělena koordinací. Rozhodnutí J. V. 18. 11. 2026 (audit #668, bod B2);
+vzor #667 / #561. Bez ruční částky se cena nemění (porovnání sestavení SHODA).
+
+- **Nové — obchodník:** u souhrnného řádku LAKOVÁNÍ (ŠACHTA, PLECHY, ZASKLENÍ, OPLECHOVÁNÍ) tlačítko „✎ cena z nabídky“:
+  částka z nabídky lakovny (za šachtu, Kč) se zdrojem (dodavatel / č. nabídky) a potvrzením. Nahradí výpočet lakování
+  z ceníku (režim lakovna / lakovna B); vlastní položky lakování se přičítají dál; lak sloupů můstků beze změny.
+- **Data:** cesta `C.lak.nabidkaKc` v ceníku varianty, mimo ceník a Nastavení (vzor ceníku ji nenese, import ji nedoplní);
+  záznam `rucniCeny` jako u #561. „↺ vrátit na ceník“ klíč smaže.
+- **Server:** B112 pustí částku jen se záznamem (bez něj 403), razítko z relace, ověření zámku přepočtem.
+  Částka **bez zdroje = nepotvrzená**: zábrana tisku a 403 u nového zámku s větou, co doplnit (ceník částku nezná,
+  schválení jako směs ceníků nejde) — svěřené LAK-1, čeká na potvrzení J. V.
+- **Controlling:** řádek lakování (klíč `C.lak.*`, skupina beze změny) nese zdroj a odchylku od výpočtu z ceníku.
+  Detail výpočtu ukazuje „Cena z nabídky lakovny“. Word, náhled a krycí list berou částku z řádku výsledku.
+- **Revize Fable (fe690e0 → opraveno):** L1 částka bez záznamu po druhém uložení / klonem / importem prošla (uložená
+  verze byla kandidátem B112) → hodnota na cestě částky musí mít platný záznam u každé role (`rucniCenyCastkyBezDokladu`:
+  server 403, zábrana tisku a zámek jako nepotvrzená); L2 zveřejněný ceník (i zahraniční řada) klíč nenese
+  (`cenikZverejneniOcisti`). L3 a L4 zapsány k otázkám #716.
+- **Testy:** `src/test_666_lakovani.js` (53), `netlify/test_666_lakovani.mjs` (31), `overit_lakovani.mjs` (13);
+  pojistky proti 05a496d v commitech. Mutace `[LAK]` jádro 10/10, server 12/12. Kolo `--bez-mutaci --proti 36e2681` VŠE ZELENÉ (517/0/6, hodiny 418/0/1, statické 11/11, porovnání SHODA 367/367).
 
 ## v22.11.7 — RJ: zapracování rozhodnutí J. V. z 22. 11. 2026, větev claude/rj-rozhodnuti
 

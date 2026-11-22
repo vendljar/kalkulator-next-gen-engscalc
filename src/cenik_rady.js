@@ -447,6 +447,14 @@ function cenikZverejneniOcisti(cenik) {
   const k = JSON.parse(JSON.stringify(cenik));
   delete k.rada;
   delete k.jenZahr;
+  /* L2 (revize Fable 22. 11. 2026): částka řádku z nabídky (#666, lakování)
+   * patří jen zakázce s dokladem — do zveřejněného ceníku nikdy. */
+  const castky = (typeof RC_CASTKY_RADKU !== 'undefined') ? Object.keys(RC_CASTKY_RADKU) : ['C.lak.nabidkaKc'];
+  castky.forEach(cesta => {
+    const ks = String(cesta).split('.').slice(1), last = ks.pop();
+    const cil = ks.reduce((o, x) => (o && typeof o === 'object' ? o[x] : undefined), k);
+    if (cil && typeof cil === 'object') delete cil[last];
+  });
   /* Příznaky „cena dle nabídky" (S13): jen známé cesty OCK s true. Prázdná
    * mapa zůstává — „výslovně nic" (návrh v Nastavení se pak nevnucuje);
    * otisk ji nenese, takže na shodě verzí nic nemění. */

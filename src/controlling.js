@@ -278,13 +278,18 @@ function ctrlRozvrhOck(vysledek, opts) {
   const P = ctrlPlatne(o.data);
   const out = [];
   if (!vysledek || !vysledek.sekce) return out;
+  /* #666: částka souhrnného řádku z nabídky lakovny — jen když ji výsledek
+   * nese (bez ní tvar řádků beze změny). Ceníkový výpočet = základ odchylky. */
+  const lakN = vysledek.lakovani && typeof vysledek.lakovani.nabidka === 'number' ? vysledek.lakovani : null;
   const radek = (r, sekce, vZakladu) => {
     const klic = ctrlKlicRadku(r, sekce);
+    const rcC = lakN && !r.cenaPath && typeof rucniCenaCestaRadku === 'function' ? rucniCenaCestaRadku(r) : '';
     if (P.mapa[klic] === CTRL_NENI_NAKLAD) return;
     const s = ctrlSkupinaKlice(P.mapa, klic, r.sekce || sekce);
     out.push({ oblast: 'ock', sekce, nazev: String(r.nazev || r.origNazev || ''), klic,
       ...(sekce === 'priplatky' && r.key ? { pKey: String(r.key) } : {}),
       ...(r.cenaPath && !r.vlastni ? { cenaPath: String(r.cenaPath) } : {}),
+      ...(rcC ? { rucniCesta: rcC, rucniHodnota: lakN.nabidka, rucniZaklad: typeof lakN.dleCeniku === 'number' ? lakN.dleCeniku : null } : {}),
       skupina: s.skupina, zarazeno: s.zarazeno, vZakladu,
       vlastni: !!r.vlastni, mnozstvi: +r.mnozstvi || 0, cena: +r.cena || 0,
       naklad: +r.naklad || 0, prodej: +r.sMarzi || 0 });
@@ -674,9 +679,14 @@ function ctrlExportVarianty(zak, v, opts) {
    * ta ruční (táž hodnota) — přepis množství nebo ceny řádku nic nemění. */
   const rc = (d.rucniCeny && typeof d.rucniCeny === 'object' && !Array.isArray(d.rucniCeny)) ? d.rucniCeny : {};
   radky.forEach(r => {
-    const x = r.cenaPath && Object.prototype.hasOwnProperty.call(rc, r.cenaPath) ? rc[r.cenaPath] : null;
-    if (!x || typeof x !== 'object' || typeof x.hodnota !== 'number' || Math.abs(x.hodnota - r.cena) > 1e-9) return;
-    const z = typeof x.zaklad === 'number' && isFinite(x.zaklad) ? x.zaklad : null;
+    /* #666: souhrnný řádek lakování nese částku z nabídky v `rucniHodnota`
+     * (k ní se přičítají vlastní položky lakování); základ = výpočet z ceníku. */
+    const cesta = r.cenaPath || r.rucniCesta;
+    const x = cesta && Object.prototype.hasOwnProperty.call(rc, cesta) ? rc[cesta] : null;
+    const cena = r.rucniCesta ? r.rucniHodnota : r.cena;
+    if (!x || typeof x !== 'object' || typeof x.hodnota !== 'number' || Math.abs(x.hodnota - cena) > 1e-9) return;
+    const z0 = r.rucniCesta ? r.rucniZaklad : x.zaklad;
+    const z = typeof z0 === 'number' && isFinite(z0) ? z0 : null;
     r.rucni = { zdroj: typeof rucniCenaZdrojText === 'function' ? rucniCenaZdrojText(x) : 'nabídka dodavatele',
       odchylka: z == null ? null : x.hodnota - z, pct: z ? (x.hodnota - z) / z * 100 : null };
   });

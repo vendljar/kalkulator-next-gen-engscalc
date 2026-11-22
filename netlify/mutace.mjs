@@ -105,6 +105,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      '../src/test_d8_lhuty.js', 'test_d8_lhuty.mjs',
      /* [SP] #667 (18. 11. 2026): statika opláštění — nulová cena z nabídky, tvar zaškrtnutí, přepočet (rychlá sada). */
      '../src/test_667_statika_opl.js', 'test_667_statika_opl.mjs',
+     /* [LAK] #666 (22. 11. 2026): lakování — cena z nabídky lakovny jako částka řádku (rychlá sada). */
+     '../src/test_666_lakovani.js', 'test_666_lakovani.mjs',
      /* #560 SV (4. 11. 2026): zrušená volba světlíku „zajistí stavba" — rychlé sady. */
      '../src/test_svetliky_stavba.js', 'test_560_svetliky_stavba.mjs',
      /* #553 PW (3. 11. 2026): webhook „Vygenerovat nabídku" z Pipedrive — rychlá sada (< 1 s). */
@@ -1044,6 +1046,59 @@ const MUTACE = [
     hledej: '    if (!/^https:\\/\\/[a-z0-9.-]+(:\\d+)?$/i.test(url))',
     nahrad: '    if (false)',
     proc: 'token by šel po síti nešifrovaně', sady: ['test_577_apps_script.mjs', '../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs'] },
+  /* [LAK] #666 (22. 11. 2026): cena z nabídky lakovny jako částka řádku —
+   * B112 jen se záznamem, zábrana zámku u částky bez zdroje a nepotvrzené.
+   * Hlídají netlify/test_666_lakovani.mjs a src/test_666_lakovani.js. */
+  /* [LAK] Mutace „B112 pustí částku lakování bez záznamu“ vyřazena (revize L1, 22. 11.): tentýž případ
+   * dřív zachytí kontrola dokladu v rucniCenyServer (403 u každé role) — ekvivalentní mutant. */
+  { nazev: '[LAK] server: částka bez zdroje projde zámkem', soubor: '../src/rucni_ceny.js',
+    hledej: "    else if (st === RC_BEZ_ZDROJE && !rucniCenaCastkaRadku(cesta)) out.bezZdroje.push(pol);",
+    nahrad: "    else if (st === RC_BEZ_ZDROJE) out.bezZdroje.push(pol);",
+    proc: 'nabídka s cenou lakování bez zdroje by odešla bez schválení i bez potvrzení', sady: ['test_666_lakovani.mjs', '../src/test_666_lakovani.js'] },
+  { nazev: '[LAK] server: hláška zámku neřekne, co doplnit', soubor: '../src/rucni_ceny.js',
+    hledej: "    + (bezZ ? 'u ceny z nabídky lakovny ' + RC_ZDROJ_HLASKA + ', pak ' : '')",
+    nahrad: "",
+    proc: 'obchodník by nevěděl, že u lakování chybí dodavatel nebo číslo nabídky', sady: ['test_666_lakovani.mjs', '../src/test_666_lakovani.js'] },
+  { nazev: '[LAK] server: cesta lakování není ruční cena', soubor: '../src/rucni_ceny.js',
+    hledej: "  if (rucniCenaCastkaRadku(c)) return true;\n",
+    nahrad: "",
+    proc: 'cena z nabídky lakovny by nešla uložit', sady: ['test_666_lakovani.mjs', '../src/test_666_lakovani.js'] },
+  { nazev: '[LAK] ↺ vrátit nechá částku v ceníku', soubor: '../src/rucni_ceny.js',
+    hledej: "  if (rucniCenaCastkaRadku(cesta)) rcSmaz(data.cenik, cesta);\n  else if",
+    nahrad: "  if",
+    proc: 'po ↺ vrátit by částka zůstala bez dokladu a server by uložení odmítl', sady: ['../src/test_666_lakovani.js', 'test_666_lakovani.mjs'] },
+  { nazev: '[LAK] mazání klíče nic nesmaže', soubor: '../src/rucni_ceny.js',
+    hledej: "  if (cil && typeof cil === 'object' && rcMa(cil, last)) delete cil[last];",
+    nahrad: "",
+    proc: 'po ↺ vrátit by lakování zůstalo z nabídky', sady: ['../src/test_666_lakovani.js', 'test_666_lakovani.mjs'] },
+  { nazev: '[LAK] řádek lakování nemá cestu ruční ceny', soubor: '../src/rucni_ceny.js',
+    hledej: "  const k = Object.keys(RC_CASTKY_RADKU).find(c => RC_CASTKY_RADKU[c].radek === r.origNazev);",
+    nahrad: "  const k = '';",
+    proc: 'u souhrnného řádku lakování by chybělo tlačítko ceny z nabídky', sady: ['../src/test_666_lakovani.js', 'test_666_lakovani.mjs'] },
+  { nazev: '[LAK] vlastní položka dostane cestu lakování', soubor: '../src/rucni_ceny.js',
+    hledej: "  if (!r || typeof r !== 'object' || r.vlastni) return '';\n  if (r.cenaPath)",
+    nahrad: "  if (!r || typeof r !== 'object') return '';\n  if (r.cenaPath)",
+    proc: 'vlastní položka s názvem lakování by nabízela cenu z nabídky celého řádku', sady: ['../src/test_666_lakovani.js', 'test_666_lakovani.mjs'] },
+  { nazev: '[LAK] L1: server pustí částku bez dokladu', soubor: '../src/rucni_ceny.js',
+    hledej: "      if (bez.length) return { ok: false, status: 403,",
+    nahrad: "      if (false) return { ok: false, status: 403,",
+    proc: 'obchodník by druhým uložením (záznam smazán) nechal libovolnou částku lakování (revize Fable L1)', sady: ['test_666_lakovani.mjs', '../src/test_666_lakovani.js'] },
+  { nazev: '[LAK] L1: kontrola dokladu jen u varianty se záznamy', soubor: '../src/rucni_ceny.js',
+    hledej: "      const tmp = { cenik: v.data.cenik, rucniCeny: o.mapa || {} };",
+    nahrad: "      const tmp = o.mapa ? { cenik: v.data.cenik, rucniCeny: o.mapa } : { cenik: {} };",
+    proc: 'varianta bez jediného záznamu by částku lakování bez dokladu uložila', sady: ['test_666_lakovani.mjs', '../src/test_666_lakovani.js'] },
+  { nazev: '[LAK] L1: bez dokladu jen číselná částka', soubor: '../src/rucni_ceny.js',
+    hledej: "  return Object.keys(RC_CASTKY_RADKU).filter(k => rcGet(c, k) !== undefined && !rucniCenaPlati(data, k));",
+    nahrad: "  return Object.keys(RC_CASTKY_RADKU).filter(k => typeof rcGet(c, k) === 'number' && !rucniCenaPlati(data, k));",
+    proc: 'hodnota jiného typu na cestě částky by prošla bez dokladu', sady: ['test_666_lakovani.mjs', '../src/test_666_lakovani.js'] },
+  { nazev: '[LAK] L1: zámek částku bez dokladu pustí', soubor: '../src/rucni_ceny.js',
+    hledej: "    if (!out.nepotvrzene.some(x => x.cesta === cesta)) out.nepotvrzene.push({ cesta, popis: rucniCenaPopis(cesta) });",
+    nahrad: "",
+    proc: 'zábrana tisku a server u zámku by částku lakování bez dokladu nepoznaly', sady: ['test_666_lakovani.mjs', '../src/test_666_lakovani.js'] },
+  { nazev: '[LAK] server: jádro částku ignoruje', soubor: '../src/engine.js',
+    hledej: "  const lakovaniKc = (lakNabidka !== null ? lakNabidka : lakDleCeniku) + lakVlastniKc;",
+    nahrad: "  const lakovaniKc = lakDleCeniku + lakVlastniKc;",
+    proc: 'server by zámek s cenou z nabídky lakovny ověřil proti výpočtu z ceníku', sady: ['test_666_lakovani.mjs', '../src/test_666_lakovani.js'] },
   /* #561 RC (4. 11. 2026, rozhodnutí J. V.): ruční nákupní cena položky
    * z nabídky dodavatele s potvrzením obchodníkem — B112 jen na krytou cestu,
    * razítko z relace, zábrana zámku, směs ceníků, přepočet, controlling.
