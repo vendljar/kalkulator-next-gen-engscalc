@@ -67,22 +67,31 @@ function objednavkaProjHtml(o) {
     <b>${esc(r[0])}</b>${r.slice(1).map(x => `<br>${esc(x)}`).join('')}</div>`;
   const blokDod = strana('Dodavatel', objednavkaProjStranaRadky(o.dodavatel));
   const blokObj = strana('Místo určení / Objednatel', objednavkaProjStranaRadky(o.objednatel, objednavkaProjMisto(o)));
-  const radky = o.radky.map(x => `<tr class="radek" data-sekce="${esc(x.sekce)}"><td>${esc(x.c)}</td><td>${esc(x.oznaceni)}</td>
-    <td><b>${esc(x.nazev)}</b>${x.popis.length ? `<div class="rozsah">${x.popis.map((t, i) => `${i ? '<br>' : ''}${esc(t)}`).join('')}</div>` : ''}</td>
-    <td class="c">${esc(x.mnozstvi)}</td><td class="c">${esc(x.mj)}</td><td class="c">${esc(kc(x.cenaJedn))}</td>
+  /* D3-N1 (19. 11. 2026): rozvržení jako vzor účetního systému — popis
+   * dodávky přes celou šířku řádku, číselné sloupce na samostatném řádku pod
+   * ním (Množ. · MJ · J. cena · C. cena · celkem bez DPH · DPH % · celkem
+   * s DPH). Plný rozsah prací se tak vejde na méně stran (nezkracuje se). */
+  const radky = o.radky.map(x => `<tbody class="polozka"><tr class="radek" data-sekce="${esc(x.sekce)}"><td>${esc(x.c)}</td><td>${esc(x.oznaceni)}</td>
+    <td class="popis" colspan="7"><b>${esc(x.nazev)}</b>${x.popis.length ? `<div class="rozsah">${x.popis.map((t, i) => `${i ? '<br>' : ''}${esc(t)}`).join('')}</div>` : ''}</td></tr>
+    <tr class="radek-cisla"><td></td><td></td><td class="c">${esc(x.mnozstvi)}</td><td class="c">${esc(x.mj)}</td><td class="c">${esc(kc(x.cenaJedn))}</td>
     <td class="c">${esc(kc(x.cenaCelkem))}</td><td class="c">${esc(kc(x.celkemBezDph))}</td><td class="c">${esc(x.dphPct)} %</td>
-    <td class="c">${esc(kc(x.celkemSDph))}</td></tr>`).join('');
-  const sleva = o.sleva ? `<tr class="sleva"><td></td><td></td><td>Sleva ${esc(o.sleva.pct)} %</td><td></td><td></td><td></td>
+    <td class="c">${esc(kc(x.celkemSDph))}</td></tr></tbody>`).join('');
+  const sleva = o.sleva ? `<tbody class="polozka"><tr class="sleva"><td></td><td></td><td colspan="3">Sleva ${esc(o.sleva.pct)} %</td>
     <td class="c">${esc(kc(o.sleva.bezDph))}</td><td class="c">${esc(kc(o.sleva.bezDph))}</td><td class="c">${esc(o.souhrn.dphPct)} %</td>
-    <td class="c">${esc(kc(o.sleva.sDph))}</td></tr>` : '';
+    <td class="c">${esc(kc(o.sleva.sDph))}</td></tr></tbody>` : '';
+  /* Záhlaví ve dvou řádcích jako tělo: Č. · Označení · Popis dodávky, pod ním číselné sloupce. */
+  const S = OBJ_PROJ_SLOUPCE;
+  const hlavicka = `<tr><th>${esc(S[0])}</th><th>${esc(S[1])}</th><th colspan="7">${esc(S[2])}</th></tr>
+    <tr class="hl-cisla"><th></th><th></th>${S.slice(3).map(t => `<th>${esc(t)}</th>`).join('')}</tr>`;
   return `<table class="hlava"><tr><td style="width:58%">${dokLogoHtml()}${blokDod}${blokObj}</td>
       <td class="vpravo"><h1>${esc(o.nazev)}</h1>
         <div>Číslo dokladu: <b id="objCislo">${esc(o.cislo)}</b></div>
         ${o.cisloZakazky ? `<div>Zakázka: <b id="objZakazka">${esc(o.cisloZakazky)}</b></div>` : ''}</td></tr></table>
     <div class="datum">Datum případu: <b>${esc(o.datumVystaveni)}</b></div>
-    <table class="polozky"><thead><tr>${OBJ_PROJ_SLOUPCE.map(t => `<th>${esc(t)}</th>`).join('')}</tr></thead>
-      <tbody>${radky}${sleva}
-      <tr class="soucet"><td colspan="6" class="c">Součet</td><td class="c">${esc(o.texty.bezDph)}</td><td class="c">${esc(o.texty.bezDph)}</td>
+    <table class="polozky"><colgroup><col style="width:3.5%"><col style="width:6.5%"><col style="width:8%"><col style="width:5%">
+        <col style="width:14%"><col style="width:14%"><col style="width:16%"><col style="width:7%"><col style="width:26%"></colgroup>
+      <thead>${hlavicka}</thead>${radky}${sleva}
+      <tbody><tr class="soucet"><td colspan="5" class="c">Součet</td><td class="c">${esc(o.texty.bezDph)}</td><td class="c">${esc(o.texty.bezDph)}</td>
         <td></td><td class="c">${esc(o.texty.sDph)}</td></tr></tbody></table>
     <div class="pod-tabulkou"><div class="mimo">${o.mimoCenu.length ? `Mimo celkovou cenu (podle cenové nabídky): ${o.mimoCenu.map(esc).join('; ')}` : ''}</div>
       <table class="ramecek"><tr><td>Celkem bez DPH</td><td class="c">${esc(o.texty.bezDph)}</td></tr>
@@ -104,10 +113,12 @@ function objednavkaProjCss() {
     .stitek{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#6b7686;border-bottom:1px solid #dfe4ec;margin-bottom:2px;max-width:340px}
     .datum{margin:10px 0 4px}
     table.polozky{margin-top:6px} table.polozky th{background:#2b3850;color:#fff;font-size:9.5px;padding:4px;text-align:left}
-    table.polozky td{border-bottom:1px solid #dfe4ec;padding:4px;vertical-align:top}
-    td.c,table.polozky th:nth-child(n+4){text-align:right;white-space:nowrap}
+    table.polozky td{padding:3px 4px;vertical-align:top}
+    table.polozky tr.radek-cisla td,table.polozky tr.sleva td{border-bottom:1px solid #dfe4ec}
+    table.polozky tr.radek td{padding-bottom:1px}
+    td.c,table.polozky tr.hl-cisla th{text-align:right;white-space:nowrap}
     .rozsah{font-size:9px;line-height:1.3;color:#4b5563;margin-top:2px}
-    tr.radek{page-break-inside:avoid} tr.soucet td{background:#eef2f8;font-weight:700}
+    tbody.polozka{break-inside:avoid;page-break-inside:avoid} tr.soucet td{background:#eef2f8;font-weight:700}
     .pod-tabulkou{display:flex;gap:16px;justify-content:space-between;align-items:flex-start;margin-top:8px;page-break-inside:avoid}
     .mimo{font-size:10px;color:#4b5563;flex:1}
     table.ramecek{width:auto;min-width:300px;border:2px solid #2b3850} table.ramecek td{padding:3px 8px}
@@ -134,7 +145,7 @@ function objednavkaProjNahled() {
   w.document.write(`<!DOCTYPE html><html lang="cs"><head><meta charset="utf-8"><title>${esc(o.nazevSouboru)}</title>
     <style>${objednavkaProjCss()}</style></head><body>
     ${o.upozorneni.map(t => `<div class="obj-upoz noprint">⚠ ${esc(t)}</div>`).join('')}
-    ${tiskListaHtml({ dph: false, pozn: 'Objednávku lze před uložením do PDF ručně upravit; do zakázky se změny nepropíšou.' })}
+    ${tiskListaHtml({ dph: false, kontrolyTyp: 'objednavkaProj', pozn: 'Objednávku lze před uložením do PDF ručně upravit; do zakázky se změny nepropíšou.' })}
     <div id="dok">${objednavkaProjHtml(o)}</div>
     ${tiskListaSkript({}, null)}</body></html>`);
   w.document.close();

@@ -8,9 +8,9 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v21.11.1 — VZD: drobnosti víc zákazníků a dokumentů (#673, #674, #665, #683, #635), větev claude/vzd-drobnosti
+## v22.11.1 — VZD: drobnosti víc zákazníků a dokumentů (#673, #674, #665, #683, #635), větev claude/vzd-drobnosti
 
-Nad integrací `cda289e` (v19.11.11). Cenu nemění. Mění text dotisku odeslané nabídky („Vypracoval“, #665, rozhodnutí
+Nad integrací `cda289e` (v19.11.11), sloučeno s integrací `885577e` (v21.11.4). Cenu nemění. Mění text dotisku odeslané nabídky („Vypracoval“, #665, rozhodnutí
 J. V.) a krycí list PROJ jen u slevy PROJ 100 % (#683). Verzi a čísla přečísluje koordinace.
 
 - **#673 suchý běh Pipedrive za řídícího zákazníka:** `pdnPodklad` skládá krycí listy OCK i PROJ z pohledu řídícího
@@ -31,6 +31,69 @@ J. V.) a krycí list PROJ jen u slevy PROJ 100 % (#683). Verzi a čísla přeč�
 - **Testy (pojistka v commitech):** `src/test_vzd_pd_unik.js` 23, `src/test_vzd_drobnosti.js` 19,
   `netlify/test_vz_server.mjs` +8, `src/test_665_vypracoval.js` 19, `netlify/test_665_vypracoval.mjs` 6,
   `src/test_683_nabizi_studii.js` 8, `src/test_635_vlastni_varianta.js` 8.
+## v21.11.4 — DOS: drobnosti DO-N1 #680 a náhled podkladů NPT-N1–N4 #690/#691, větev claude/dos-drobnosti
+
+Nad integrací `cda289e` (v19.11.11). Cenu ani text Wordu nemění (porovnání sestavení SHODA). Verzi přečísluje koordinace.
+
+- **DO-N1 #680 — návrhy k položkám mimo číselník** (rozhodnutí J. V. 21. 11.): Ceník → číselník dodatkových textů má
+  po „Najít texty v uložených zakázkách“ nový oddíl **„Návrhy k položkám mimo číselník“** se všemi návrhy a texty
+  ze zakázek ke klíčům, které v číselníku řádek nemají (výchozí šachta je nepočítá — např. příplatek
+  „PŘECHODOVÉ PLECHY - NEREZ (MATERIÁL)“). Převzetí stejně jako u ostatních. Kandidáti k osiřelým textům se nově
+  vypisují pod jejich řádkem. `popisyNavrhyMimo` v `src/cenik.js`, `cenikPopisyKarta` v `src/ui/cenik_ui.js`.
+- **NPT-N1 #690 — světlíky v náhledu podkladů:** Word CN v17 řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ nemá a nedostane
+  (J. V. 21. 11.: cena světlíků se počítá v kalkulaci) → náhled řádek vynechá. Kalkulace i cena nabídky beze změny.
+- **NPT-N2 #691:** popisky technické specifikace v náhledu bez CSS verzálek — `[m]`, `[mm]`, vlastní řádky
+  DALŠÍ UJEDNÁNÍ a DE „(inkl. Revisionsbericht)“ jako ve Wordu.
+- **NPT-N3 #691:** EN/DE/FR hlavička náhledu s dvojtečkou jako šablona („Site address / project:“,
+  „Baustellenadresse / Projekt:“); koncová interpunkce podle českého textu i u celých odstavců (`nwInterpunkce`),
+  stejně u „Popis záměru:“ a „Vypracoval:“.
+- **NPT-N4:** beze změny náhledu (IČ/Tel. už překládá); Word přeloží nové šablony v18 v dávce SB.
+- **Testy:** `src/test_do_n1_navrhy.js` (16 OK; před opravou 10 FAIL), `src/test_np_nahled_word.js` oddíl F
+  (syntetická šablona v17 bez řádku světlíků; před opravou 148 FAIL, po 184 OK). Mutace jádra [DOS] 6/6.
+- **Kolo** `--bez-mutaci --proti origin/claude/integrace-16-10`: VŠE ZELENÉ (sady 496/0/7, hodiny 402/0/1,
+  statické 9/9, porovnání sestavení SHODA 359/359).
+## v21.11.3 — DS #648–#650: název šachty v cizím jazyce, texty správy šablon, větev claude/ds-sablony
+
+Nad integrací `cda289e` (v19.11.11). Cenu nemění; mění text cizojazyčné nabídky a SoD (jen název nepřejmenované šachty).
+Verzi přečísluje koordinace.
+
+- **#648 (K49-I6): výchozí název šachty v jazyce dokumentu.** Nepřejmenovaná šachta — prázdný název i uložený
+  výchozí tvar „Šachta N“, který zapisuje tlačítko „+ přidat šachtu“ — se v EN/DE/FR nabídce (Word, smyčka šachet,
+  online náhled, náhled podkladů) i ve smlouvě o dílo (předmět a rozpis šachet) tiskne jako **Shaft N / Schacht N /
+  Gaine N**. Dřív CN EN tiskla „Shaft 1“, ale „Šachta 2“ a SoD EN/DE „Šachta 1/2“. Ručně zadaný název zůstává beze
+  změny; česky beze změny. `vsNazevPreloz` / `vsNazevL` v `vice_sachet.js`.
+- **#649 (K49-I8): úvodní věta správy šablon po C7.** Místo „Česká šablona je zdroj, ze kterého se vyrábějí jazykové
+  verze“ říká, že se jazykové verze nahrávají jako přeložené soubory a smlouva z víc než 20 % česky nejde zveřejnit
+  ani vytisknout; totéž ve větě průvodce a v manuálu správce.
+- **#650 (K49-I9): popisek chybějící jazykové šablony.** U smluv (SoD realizace, SoD projekce, plná moc) „chybí —
+  nevytiskne se“ (shodně se zábranou `sodJazykZabrana`), u nabídek dál „chybí — tiskne se česky“.
+- **Testy:** `src/test_ds_sachta_nazev.js` (30 OK; před opravou 15 FAIL), `src/test_sablony_online.js` +10 (před
+  opravou 6 FAIL).
+## v21.11.2 — OP1 drobnosti ze zkoušek testovacího sezení (PG-N1, #682, D3-N1, D3-N2), větev claude/op1-drobnosti
+
+Nad integrací `cda289e` (v19.11.11). Cenu nemění; mění vzhled náhledu podkladů OCK, Word CN v EN/DE/FR (prázdný
+pruh pryč) a rozvržení objednávky PROJ. Verzi a pracovní čísla roadmapy (#692–#694) přečísluje koordinace.
+
+- **PG-N1 (#692 prac.) — Kompletní náhled podkladů:** vlastní řádek přepnutý na SOUČÁSTÍ DODÁVKY NENÍ se už neukazuje
+  podruhé pod DALŠÍ UJEDNÁNÍ a jen s řádky NENÍ náhled nemá pruh DALŠÍ UJEDNÁNÍ (jako Word). `nwBloky` filtr `!e.neni`.
+- **#682 — Word CN v EN/DE/FR:** prázdný pruh sekce technické části (typicky BRIDGES… / BRÜCKEN… u šachty bez
+  skladebných můstků) zmizí jako v češtině. `odstranPrazdneTsRadky` pozná pruh i podle překladu ze slovníku
+  (`tsSekceNazvy`: živý i zabudovaný PREKLAD, všechny jazyky, bez ohledu na velikost písmen).
+- **D3-N1 (#693 prac.) — objednávka PROJ na 2 strany:** popis dodávky přes celou šířku řádku a pod ním řádek čísel
+  (Množ. · MJ · J. cena · C. cena · celkem bez DPH · DPH % · celkem s DPH) jako vzor účetního systému, v náhledu
+  i ve Wordu stejně; záhlaví ve Wordu se opakuje, popis drží s čísly. Rozsah prací se nezkracuje. Zkušební ceník:
+  4 činnosti PDF 2 / Word 2 strany (dřív 3 / 2), 7 činností PDF 2 / Word 2 (dřív 4 / 3).
+- **D3-N2 (#694 prac.) — okno náhledu objednávky:** lišta „Kontrola před odesláním“ ukazuje jen kontroly, které se
+  objednávky týkají (strana PROJ, bez nálezů SoD OCK a SoD PROJ) — `kontrolyProDokument`. Do tisku nejde.
+- **Testy (s pojistkou):** `test_np_nahled_word.js` C2 (před opravou 9 FAIL → 183/0), `test_docxgen.js` (d2) (4 FAIL
+  → vše OK), `test_objednavka_proj.js` D3-N2 (2 FAIL → 78/0), nový harness `overit_objednavka_strany.mjs`
+  (6/6 FAIL → 6/6 OK; PDF z Chromia, Word orientačně přes LibreOffice).
+## v21.11.1 — SB: šablony CN v18 a PROJ v9 (nástroj), větev claude/sb-sablony
+
+Nad integrací `cda289e` (v19.11.11). Rozhodnutí J. V. 21. 11. 2026 (NPT-N4 #691). Cenu ani aplikaci nemění — jen nástroj výroby šablon.
+
+- `nastroje/vyrob_sablony.js --cn-v18`: v EN/DE/FR šabloně CN přeloží v bloku „Kancelář“ popisky IČ/Tel. ze slovníku náhledu (jako „Kompletní náhled podkladů“); CZ beze změny, řádek SVĚTLÍKY se nepřidává (J. V.: ve Wordu ho nepotřebuje). Test `src/test_sb_kancelar.js` 25/25 (pojistka: s popiskem česky 20 FAIL), mutace [SB] 2/2.
+- Šablony CN v18 (CZ/EN/DE/FR) a PROJ v9 (CZ/EN/DE/FR) vyrobeny z test v17/v8 a předány J. V. (mimo repo) — nahrát na test až po odeslání do main. Číslo stránky v CN v18 ověřit ve Wordu (LibreOffice pole ve VML textovém poli nepřepočítává).
 
 ## v19.11.11 — D3 #688: Objednávka / Smlouva PROJ z nabídky PROJ, větev claude/d3-objednavka-proj
 

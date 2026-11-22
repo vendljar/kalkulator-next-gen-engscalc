@@ -22,14 +22,20 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/on-online` | (tato dávka) | v19.11.8 | #ON kdo je online (Nastavení → Uživatelé) nad 042fcbc; verzi přečísluje koordinace |
 | `claude/d8-lhuty` | (tato dávka) | v19.11.7 | D8 #677 (pracovní) lhůty PROJ → termíny krycího listu; nad integrací 042fcbc; verzi přečísluje koordinace |
 | `claude/vz-f1` | (tato dávka) | v18.11.8 | VZ-F1 #659 opravy nálezů ruční zkoušky VZ; nad ec5bbac, sloučeno s integrací 41bbe99 |
-| `claude/vzd-drobnosti` | (tato dávka) | v21.11.1 | VZD #673 #674 #665 #683 #635 nad cda289e; viz CHANGELOG |
+| `claude/vzd-drobnosti` | (tato dávka) | v22.11.1 | VZD #673 #674 #665 #683 #635, sloučeno s integrací 885577e; viz CHANGELOG |
+| `claude/dos-drobnosti` | (tato dávka) | v21.11.4 | DOS #680 #690 #691 nad cda289e |
 | `claude/pg-tisk` | (tato dávka) | v19.11.10 | PG #684–#687 nad integrací 042fcbc; čísla a verzi přečísluje koordinace |
+| `claude/ds-sablony` | (tato dávka) | v21.11.3 | DS #648–#650 nad cda289e; verzi přečísluje koordinace |
+| `claude/op1-drobnosti` | (tato dávka) | v21.11.2 | OP1: PG-N1, #682, D3-N1, D3-N2 nad cda289e; kolo --bez-mutaci VŠE ZELENÉ, S3 SHODA 359/359, mutace [OP1] 9/9, [D3] 18/18, [NP] 16/16, [PG] 16/16; #692–#694 a verzi přečísluje koordinace |
 
 Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tagu: `python3 nastroje/release_odkaz.py --chybejici`
 (18. 11.: žádná).
 
 ## Běžící dávky
 
+- **DOS** (`claude/dos-drobnosti`, v21.11.4, nad cda289e): #680 návrhy mimo číselník; #690 náhled bez světlíků;
+  #691 bez verzálek, EN/DE dvojtečka; N4 → šablony v18 (SB). Kolo VŠE ZELENÉ, SHODA 359/359, mutace [DOS] 6/6. HOTOVO.
+- **SB** (`claude/sb-sablony`, 8996260): `--cn-v18` EN/DE/FR + IČ/Tel. Kancelář ze slovníku (#691). Šablony u J. V. (zip). Kolo: sady/hodiny zelené, SHODA 359/359; statické 8/9 = verze.txt 19.11.11 (číslo dá koordinace).
 - **PG** (`claude/pg-tisk`, v19.11.10, nad 042fcbc): #684 tlačítka tisku CN OCK (náhled podkladů → Word modře → náhled
   a tisk), #685 vlastní řádek TS v SOUČÁSTÍ DODÁVKY NENÍ (`extra[i].sekce='neni'`), #686 DALŠÍ UJEDNÁNÍ v nabídce PROJ
   (`PJ.dalsiUjednani`, Word přes šablonu PROJ v9 `--proj-v9`, kontrola `dalsiUjednaniWordProj`), #687 číslo stránky: vada šablony CN v9–v17 (pevná „1“ v záhlaví) → `--cn-v18`,
@@ -57,22 +63,11 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   #663 zástupci+DIČ dalšího zákazníka zmrazení po JEHO SoD, hlavičku zmrazí jen SoD řídícímu, #661 KL PROJ v pohledu
   otevřeného zákazníka, #662 `overit_vz_f2.mjs`, VZF1-I1 název plné moci. Kolo VŠE ZELENÉ (475/0/7, 385/0/1, 9/9, SHODA 353/353),
   mutace [VZ F2] jádro 19/19, server 5/5. Detail v CHANGELOG. HOTOVO, slučuje koordinace.
-- **NP #681** (`claude/np-nahled`, v19.11.9, nad 6092af3): „Kompletní náhled podkladů" = dokument ve vzhledu Wordu CN v17
-  (`src/nahled_word.js`, `src/ui/nahled_word_ui.js`): stránky A4, záhlaví/zápatí, pořadí Wordu, **řádek slevy** (oprava
-  nálezu), příplatky za cenou, pruh (Jazyk tisku, upozornění, Word se zábranami). Data jako Word, cenu ani Word nemění.
-  Pojistka shody `test_np_nahled_word.js` (náhled = text Wordu ze syntetické CN v17), `test_np_okno.js`,
-  `overit_np_nahled.mjs`, snímky `podklady/kola/np_nahled_2026-11-19/`. Nález #682 (prac.): cizojazyčný Word nechá
-  prázdný pruh sekce — čeká na J. V. Kolo `--bez-mutaci --proti integrace` VŠE ZELENÉ (483/0/7, hodiny 391/0/1,
-  statické 9/9, porovnání SHODA 359/359), mutace [NP] 16/16 + VZ-E2 1/1. Testovací sezení: porovnat s Wordem z pravé CN v17.
-- **ON** (`claude/on-online`, v19.11.8, nad 042fcbc): čas poslední aktivity (jen čas, 1×/min, best-effort, úložiště
-  `aktivita` mimo zálohu), výpis jen správci, sloupec „Naposledy aktivní“ se zelenou tečkou. Testy test_on_aktivita,
-  test_prava #ON, test_on_naposledy, overit_on_online; mutace [ON] 11/11. Kolo 480/0/7, 9/9, SHODA 359/359, hodiny 389/0/1 (na 2. pokus; občasné selhání test_vz_unik). Mez B — návrh v BEZPECNOST_MEZE.md. HOTOVO.
-- **D8 #677** (`claude/d8-lhuty`, v19.11.7, nad 042fcbc): tabulka lhůt PROJ v Nastavení → Firma (zveřejní se s firmou),
-  čísla v textu termínů nabídky PROJ z tabulky (online i Word, 4 jazyky; s výchozí tabulkou beze změny), po Prodáno
-  dopočet termínů krycího listu PROJ (řetěz, horní mez, 4,3 t/měsíc, ruční přednost, ↺, zdroj u data), lhůty zamrzne
-  prodej. Šablona v8 pevné týdny nemá → nová šablona netřeba. Otázky J. V. #678 (pracovní). Kolo VŠE ZELENÉ (427/0/59, 389/0/1, 9/9, SHODA 359/359), mutace [D8] 19/19 + 6/6. HOTOVO.
 
-- **VZD** (`claude/vzd-drobnosti`): hotovo, detail v CHANGELOG v21.11.1; #674 d a #665 podpis k potvrzení J. V.
+- **DS** (`claude/ds-sablony`, v21.11.3, nad cda289e): #648 „Šachta N“ v EN/DE/FR nabídce a SoD jako Shaft/Schacht/Gaine N
+  (`vsNazevPreloz`), #649 věta správy šablon po C7, #650 „nevytiskne se“ u smlouvy bez jazykové šablony. Cenu nemění.
+
+- **VZD** (`claude/vzd-drobnosti`): hotovo, detail v CHANGELOG v22.11.1; #674 d a #665 podpis k potvrzení J. V.
 
 ## Čeká na J. V.
 

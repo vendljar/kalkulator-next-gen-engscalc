@@ -202,7 +202,13 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   'nahled_word.js', 'ui/nahled_word_ui.js',
   /* VZD (21. 11. 2026): suchý běh Pipedrive za řídícího zákazníka (#673)
    * a snímek zpracovatele v zámku drží i klientská kontrola zámků (#665). */
-  'pd_nanecisto.js', 'uloziste.js'];
+  'pd_nanecisto.js', 'uloziste.js',
+  /* ui/objednavka_proj_ui.js (OP1 D3-N1, 21. 11. 2026): rozvržení náhledu
+   * objednávky PROJ (popis přes celou šířku, čísla pod ním) a lišta kontrol
+   * jen objednávky (D3-N2). Hlídá src/test_objednavka_proj.js. */
+  'ui/objednavka_proj_ui.js',
+  /* [DOS] DO-N1 #680: oddíl návrhů mimo číselník (test_do_n1_navrhy.js) */
+  'ui/cenik_ui.js'];
 /* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
  * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
  * nastroje/mutace_cast.mjs). */
@@ -361,6 +367,14 @@ const MUTACE = [
     hledej: "  if (n) chyba('CN: běh s textem „1\" stojí v záhlaví mimo textové pole (' + n + '×) — nic nehádám');",
     nahrad: "",
     proc: 'nástroj by tiše nechal šablonu, jejíž vada je jinde, než ukázala diagnostika', sady: ['test_pg_cislo_stranky.js'] },
+  { nazev: 'SB: v18 EN/DE/FR — popisek Kancelář natvrdo česky (bez slovníku) [SB]', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: "    cz: popisekPred(nw.NW_TEXT[k]), cil: popisekPred(nw.nwPreloz(nw.NW_TEXT[k], L)) })) };",
+    nahrad: "    cz: popisekPred(nw.NW_TEXT[k]), cil: popisekPred(nw.NW_TEXT[k]) })) };",
+    proc: 'jazyková CN by v bloku Kancelář dál nesla české „IČ:" a „Tel.:" (NPT-N4)', sady: ['test_sb_kancelar.js'] },
+  { nazev: 'SB: v18 — blok Kancelář nekončí prázdným odstavcem [SB]', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: "  for (let i = iNad[0] + 1; i < odst.length && norm(odst[i].text) !== ''; i++) blok.push(odst[i]);",
+    nahrad: "  for (let i = iNad[0] + 1; i < odst.length; i++) blok.push(odst[i]);",
+    proc: 'nástroj by přepsal „IČ:" i mimo podpisový blok Kancelář', sady: ['test_sb_kancelar.js'] },
   { nazev: 'PG: kontrola šablony nepozná pevné číslo stránky [PG]', soubor: 'docxgen.js',
     hledej: "      if (/^\\d+$/.test(x)) out.pevne.push(x);",
     nahrad: "      if (/^\\d{2,}$/.test(x)) out.pevne.push(x);",
@@ -854,8 +868,8 @@ const MUTACE = [
     nahrad: '      if (!vs || true) return null;',
     proc: 'nabídka víc šachet v Modelu 1 by odešla s cenou jedné šachty', sady: ['test_vs_kontroly.js'] },
   { nazev: 'VS-E5: zábrana šablony v16 zastaví všechny dokumenty [#570 E5]', soubor: 'kontroly.js',
-    hledej: '    && (!Array.isArray(n.dokumenty) || n.dokumenty.indexOf(zakl) >= 0));',
-    nahrad: '    );',
+    hledej: "    && (!Array.isArray(n.dokumenty) || n.dokumenty.indexOf(zakl) >= 0));\n  if (!zab.length) return '';",
+    nahrad: "    );\n  if (!zab.length) return '';",
     proc: 'stará šablona CN by zbytečně zastavila i krycí list, SoD a náhled', sady: ['test_vs_kontroly.js'] },
   { nazev: 'VS-E5: šablona bez rozpisu šachet projde [#570 E5]', soubor: 'kontroly.js',
     hledej: "      if (!zab) return null;\n      return { uroven: KONTROLY_UROVEN_ZABRANA, dokumenty: ['nabidka'],",
@@ -5554,6 +5568,24 @@ const MUTACE = [
     hledej: "  return `<b class=\"rejstrik-hlavni rejstrik-adresa\">${esc(adresa)}</b>${akce\n    ? `<div class=\"rejstrik-akce\" style=\"font-size:11px;color:#6b7686\">${esc(akce)}</div>` : ''}`;",
     nahrad: "  return `<b class=\"rejstrik-hlavni\">${esc(akce || '—')}</b><div class=\"rejstrik-adresa\" style=\"font-size:11px;color:#6b7686\">${esc(adresa)}</div>`;",
     proc: "seznam nabídek by dál vedl popisem akce místo adresy (D7)", sady: ["test_do_obrazovka.js"] },
+  /* DS #648–#650 (21. 11. 2026): výchozí název šachty v jazyce dokumentu, popisek
+   * chybějící jazykové šablony smlouvy. Hlídá src/test_ds_sachta_nazev.js
+   * a src/test_sablony_online.js. [DS] */
+  { nazev: "DS: uložený „Šachta N“ se nepřekládá [DS]", soubor: "vice_sachet.js",
+    hledej: "  return m ? slovo + ' ' + m[1] : t;", nahrad: "  return t;",
+    proc: "šachta přidaná tlačítkem (+ přidat šachtu) by v EN nabídce zůstala „Šachta 2“ (K49-I6)", sady: ["test_ds_sachta_nazev.js"] },
+  { nazev: "DS: nabídka zase jen s prázdným názvem [DS]", soubor: "nabidka.js",
+    hledej: "    const nazev = VS.vsNazevL(zs, i, o.L || 'cz');",
+    nahrad: "    const nazev = String(zs.nazev || '').trim() || (P('Šachta') + ' ' + (i + 1));",
+    proc: "CN EN by tiskla „Shaft 1“, ale „Šachta 2“", sady: ["test_ds_sachta_nazev.js"] },
+  { nazev: "DS: SoD bez překladu názvu šachty [DS]", soubor: "sod.js",
+    hledej: "  const nazvy = vo.sachty.map(x => NZ(x.nazev, L || 'cz'));",
+    nahrad: "  const nazvy = vo.sachty.map(x => x.nazev);",
+    proc: "SoD EN/DE/FR by v předmětu a rozpisu tiskla „Šachta 1/2“", sady: ["test_ds_sachta_nazev.js"] },
+  { nazev: "DS: smlouva bez jazykové šablony „tiskne se česky“ [DS]", soubor: "ui/sablony_sprava_ui.js",
+    hledej: "SABL_SMLOUVY.includes(typ) ? 'nevytiskne se' : 'tiskne se česky'",
+    nahrad: "'tiskne se česky'",
+    proc: "tabulka šablon by slibovala český tisk smlouvy, kterou sodJazykZabrana nevyrobí (K49-I9)", sady: ["test_sablony_online.js"] },
   /* D3 #688 (19. 11. 2026): Objednávka / Smlouva PROJ. Hlídá src/test_objednavka_proj.js. [D3] */
   { nazev: "D3: číslo OBJ bez náhrady CN [D3]", soubor: "objednavka_proj.js",
     hledej: "  casti[i] = 'OBJ';", nahrad: "",
@@ -5638,6 +5670,66 @@ const MUTACE = [
   { nazev: "VZD #635: upozornění bez tlačítka [VZD]", soubor: "ui/vice_zakazniku_ui.js",
     hledej: "${esc(t)}${vzKlSdilenaTlacitka()}</div>", nahrad: "${esc(t)}</div>",
     proc: "obchodník by vlastní variantu musel hledat v hlavičce", sady: ["test_635_vlastni_varianta.js"] },
+  /* [OP1] dávka OP1 (21. 11. 2026): nálezy zkoušek testovacího sezení 19. 11. —
+   * PG-N1, #682, D3-N1, D3-N2. */
+  { nazev: '[OP1] PG-N1: náhled zase zdvojí řádek NENÍ pod DALŠÍ UJEDNÁNÍ', soubor: 'nahled_word.js',
+    hledej: "  const extra = (data.tsExtra || []).filter(e => e && !e.neni);",
+    nahrad: "  const extra = (data.tsExtra || []).filter(e => e);",
+    proc: 'řádek NENÍ by byl v náhledu 2× a jen s řádky NENÍ by svítil pruh DALŠÍ UJEDNÁNÍ, který Word nemá', sady: ['test_np_nahled_word.js'] },
+  { nazev: '[OP1] #682: pruh sekce TS jen podle českých názvů', soubor: 'docxgen.js',
+    hledej: "    [pr.PREKLAD, pr.PREKLAD_ZABUDOVANY].forEach(sl => {",
+    nahrad: "    [].forEach(sl => {",
+    proc: 've Wordu EN/DE/FR by zůstal prázdný přeložený pruh (BRIDGES…)', sady: ['test_docxgen.js'] },
+  { nazev: '[OP1] #682: pruh sekce TS citlivý na velikost písmen', soubor: 'docxgen.js',
+    hledej: "replace(/\\s+/g, ' ').trim().toUpperCase(); }",
+    nahrad: "replace(/\\s+/g, ' ').trim(); }",
+    proc: 'ručně psaný pruh šablony v jiné velikosti písmen by zůstal prázdný', sady: ['test_docxgen.js'] },
+  { nazev: '[OP1] D3-N2: kontroly dokumentu bez filtru strany', soubor: 'kontroly.js',
+    hledej: "  const nalezy = vysl.nalezy.filter(n => (!Array.isArray(n.strany) || n.strany.indexOf(strana) >= 0)\n",
+    nahrad: "  const nalezy = vysl.nalezy.filter(n => true\n",
+    proc: 'okno objednávky by ukázalo i nálezy OCK (SoD OCK)', sady: ['test_objednavka_proj.js'] },
+  { nazev: '[OP1] D3-N2: kontroly dokumentu bez filtru dokumentů nálezu', soubor: 'kontroly.js',
+    hledej: "    && (!Array.isArray(n.dokumenty) || n.dokumenty.indexOf(zakl) >= 0));\n  const zabrany = nalezy.filter(",
+    nahrad: "    && true);\n  const zabrany = nalezy.filter(",
+    proc: 'okno objednávky by ukázalo chybějící údaje SoD PROJ', sady: ['test_objednavka_proj.js'] },
+  { nazev: '[OP1] D3-N2: okno objednávky bez typu dokumentu pro lištu kontrol', soubor: 'ui/objednavka_proj_ui.js',
+    hledej: "tiskListaHtml({ dph: false, kontrolyTyp: 'objednavkaProj', pozn:",
+    nahrad: "tiskListaHtml({ dph: false, pozn:",
+    proc: 'okno objednávky by zase vyjmenovalo všechny kontroly zakázky', sady: ['test_objednavka_proj.js'] },
+  { nazev: '[OP1] D3-N1: Word — popis dodávky jen v jedné buňce', soubor: 'objednavka_proj.js',
+    hledej: "wPopis, { span: SPAN }) + '</w:tr>';",
+    nahrad: "wPopis) + '</w:tr>';",
+    proc: 'Word by měl popis v úzké buňce a tabulka by se rozjela (víc stran)', sady: ['test_objednavka_proj.js'] },
+  { nazev: '[OP1] D3-N1: Word — čísla řádku se smí rozdělit na dvě strany', soubor: 'objednavka_proj.js',
+    hledej: "      V(kc(x.celkemBezDph)), V(x.dphPct + ' %'), V(kc(x.celkemSDph))], '<w:cantSplit/>');",
+    nahrad: "      V(kc(x.celkemBezDph)), V(x.dphPct + ' %'), V(kc(x.celkemSDph))]);",
+    proc: 'řádek čísel by se mohl roztrhnout přes stranu', sady: ['test_objednavka_proj.js'] },
+  { nazev: '[OP1] D3-N1: náhled — popis dodávky zase úzký sloupec', soubor: 'ui/objednavka_proj_ui.js',
+    hledej: '<td class="popis" colspan="7">',
+    nahrad: '<td class="popis">',
+    proc: 'tisk/PDF objednávky by zase přetekl na 3–4 strany', sady: ['test_objednavka_proj.js'] },
+  /* [DOS] dávka DOS (21. 11. 2026, rozhodnutí J. V.): DO-N1 #680 návrhy k položkám
+   * mimo číselník, NPT-N1–N3 #690/#691 náhled podkladů = Word CN v17. */
+  { nazev: "[DOS] DO-N1: návrhy mimo číselník zase nikde", soubor: "cenik.js",
+    hledej: "  return Object.keys(sber).filter(k => !ma.has(k) && Array.isArray(sber[k]) && sber[k].length)",
+    nahrad: "  return [].filter(k => !ma.has(k) && Array.isArray(sber[k]) && sber[k].length)",
+    proc: "návrh obchodníka k příplatku mimo číselník by správce zase neviděl", sady: ["test_do_n1_navrhy.js"] },
+  { nazev: "[DOS] DO-N1: oddíl mimo zdvojí klíče s řádkem", soubor: "cenik.js",
+    hledej: "  ((cis && cis.radky) || []).forEach(r => ma.add(r.klic));", nahrad: "",
+    proc: "kandidát by stál dvakrát (pod řádkem i v oddílu mimo) a převzetí by se zdvojilo", sady: ["test_do_n1_navrhy.js"] },
+  { nazev: "[DOS] DO-N1: obrazovka oddíl nevykreslí", soubor: "ui/cenik_ui.js",
+    hledej: "        ${osirele}\n        ${mimoHtml}", nahrad: "        ${osirele}",
+    proc: "funkce by návrhy našla, ale číselník by je neukázal", sady: ["test_do_n1_navrhy.js"] },
+  { nazev: "[DOS] NPT-N1: řádek světlíků zase v náhledu", soubor: "nahled_word.js",
+    hledej: "  if (popis === P('SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ')) return null;", nahrad: "",
+    proc: "náhled by ukázal řádek světlíků, který Word CN v17 nemá", sady: ["test_np_nahled_word.js"] },
+  { nazev: "[DOS] NPT-N3: celý odstavec bez koncové dvojtečky", soubor: "nahled_word.js",
+    hledej: "    return nwInterpunkce(t, String(st.text), L);", nahrad: "    return String(st.text);",
+    proc: "EN/DE hlavička by zase byla bez dvojtečky (Site address / project)", sady: ["test_np_nahled_word.js"] },
+  { nazev: "[DOS] NPT-N2: popisky zase verzálkami", soubor: "ui/nahled_word_ui.js",
+    hledej: ".nw-ts-l{background:var(--nw-popisek);font-weight:700;font-size:7.2pt}",
+    nahrad: ".nw-ts-l{background:var(--nw-popisek);font-weight:700;text-transform:uppercase;font-size:7.2pt}",
+    proc: "náhled by psal [M]/[MM] a vlastní řádky verzálkami, Word ne", sady: ["test_np_nahled_word.js"] },
 ];
 
 /* ============================================================

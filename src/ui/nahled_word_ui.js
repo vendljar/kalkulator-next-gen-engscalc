@@ -75,7 +75,7 @@ function nwCss() {
   .nw-ts-pozn-titul td{border:1px solid #c9d3e0 !important;color:#7f7f7f;font-size:7.5pt}
   .nw-ts-pruh td{background:var(--nw-pruh);color:#fff;font-weight:700;font-size:8.5pt;padding:1mm 1.5mm}
   .nw-ts-sachta td{background:#2f5597}
-  .nw-ts-l{background:var(--nw-popisek);font-weight:700;text-transform:uppercase;font-size:7.2pt}
+  .nw-ts-l{background:var(--nw-popisek);font-weight:700;font-size:7.2pt}
   .nw-ts-pod .nw-ts-l{background:var(--nw-popisek)}
   .nw-ts-pozn td{border:none !important;color:#8c8c8c;font-style:italic;font-size:6.8pt;padding:.4mm 1mm}
   .nw-cena table,table.nw-priplatek{width:100%;border-collapse:collapse;border:1.5px solid #000;margin-bottom:0}
