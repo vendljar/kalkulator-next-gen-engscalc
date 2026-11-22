@@ -35,7 +35,7 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   (falešná shoda ceny s razítkem času, ne únik), #646 overit_sod + syntetické šablony (`nastroje/smlouvy_syntet.mjs`),
   #647 případy `k40:*` v porovnání sestavení (+ `podklady/porovnani/ocekavane_k40n1_main_2026-11-21.txt` pro main × test),
   #695 (prac.) kolo bez playwrightu = chyba s návodem (`KNG_BEZ_PROHLIZECE=1`), `PRESKOCENO_CAST` v souhrnu.
-  Statické kontroly nově 10. Svěřená HN-T1/T2. Tabulka S7 přesunuta do archivu `2026-11.md`. Výsledek kola v CHANGELOG / zprávě.
+  Statické kontroly nově 10. Svěřená HN-T1/T2. Tabulka S7 přesunuta do archivu `2026-11.md`. Kolo VŠE ZELENÉ (496/0/6, hodiny 401/0/1, 10/10, SHODA 367/367 proti 885577e). HOTOVO, předáno koordinaci.
 - **PG** (`claude/pg-tisk`, v19.11.10, nad 042fcbc): #684 tlačítka tisku CN OCK (náhled podkladů → Word modře → náhled
   a tisk), #685 vlastní řádek TS v SOUČÁSTÍ DODÁVKY NENÍ (`extra[i].sekce='neni'`), #686 DALŠÍ UJEDNÁNÍ v nabídce PROJ
   (`PJ.dalsiUjednani`, Word přes šablonu PROJ v9 `--proj-v9`, kontrola `dalsiUjednaniWordProj`), #687 číslo stránky: vada šablony CN v9–v17 (pevná „1“ v záhlaví) → `--cn-v18`,

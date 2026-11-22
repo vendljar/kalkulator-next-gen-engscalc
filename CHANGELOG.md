@@ -43,6 +43,10 @@ dokumenty se nemění (porovnání sestavení proti integraci SHODA). Verzi pře
   `nastroje/test_kolo_preskoceni.sh` ve statických kontrolách (10 z 10); pojistka nad původními skripty 8 FAIL, po 10/0.
   Svěřené rozhodnutí HN-T1.
 
+Kolo `--bez-mutaci --proti origin/claude/integrace-16-10` (porovnání proběhlo už proti nové integraci 885577e, v21.11.4):
+**VŠE ZELENÉ** — sady 496/0/6, hodiny 401/0/1, statické 10/10, porovnání SHODA 367/367 (nově i `k40:*`). Přeskočené jen
+test.js a 5 harnessů bez `KNG_PODKLADY` (`overit_sod.mjs` už ne). Mutace nespuštěny — dávka nesahá do jádra ani serveru.
+
 ## v19.11.11 — D3 #688: Objednávka / Smlouva PROJ z nabídky PROJ, větev claude/d3-objednavka-proj
 
 Nad integrací `042fcbc` (v19.11.5). Nový dokument, cenu ani text nabídky a SoD nemění. Verzi přečísluje koordinace.
