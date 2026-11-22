@@ -2139,7 +2139,7 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   5 minutách, a relace ukončená změnou hesla nebo zásahem správce zhasne až po 5 minutách (bez
   záznamu odhlášení). Údaj je pro přehled správce, ne doklad o docházce ani o přítomnosti.
 
-## BZ — opravy bezpečnostního auditu 20. 11. 2026 (dávka BZ, v21.11.1, 21. 11. 2026)
+## BZ — opravy bezpečnostního auditu 20. 11. 2026 (dávka BZ, v22.11.1, 21.–22. 11. 2026)
 
 Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md`, rozhodnutí J. V. 21. 11. 2026
 (`podklady/ROZHODNUTI_LOG.md`). Testy `netlify/test_bz_bezpecnost.mjs`, `netlify/test_bz_pipedrive.mjs`,

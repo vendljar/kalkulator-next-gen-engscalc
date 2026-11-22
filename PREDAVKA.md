@@ -23,29 +23,29 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/d8-lhuty` | (tato dávka) | v19.11.7 | D8 #677 (pracovní) lhůty PROJ → termíny krycího listu; nad integrací 042fcbc; verzi přečísluje koordinace |
 | `claude/vz-f1` | (tato dávka) | v18.11.8 | VZ-F1 #659 opravy nálezů ruční zkoušky VZ; nad ec5bbac, sloučeno s integrací 41bbe99 |
 | `claude/pg-tisk` | (tato dávka) | v19.11.10 | PG #684–#687 nad integrací 042fcbc; čísla a verzi přečísluje koordinace |
+| `claude/bz-bezpecnost` | (tato dávka) | v22.11.1 | BZ audit B231–B236, B195 nad cda289e; revize Fable |
 
 Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tagu: `python3 nastroje/release_odkaz.py --chybejici`
 (18. 11.: žádná).
 
 ## Běžící dávky
 
-- **PG** (`claude/pg-tisk`, v19.11.10, nad 042fcbc): #684 tlačítka tisku CN OCK (náhled podkladů → Word modře → náhled
-  a tisk), #685 vlastní řádek TS v SOUČÁSTÍ DODÁVKY NENÍ (`extra[i].sekce='neni'`), #686 DALŠÍ UJEDNÁNÍ v nabídce PROJ
-  (`PJ.dalsiUjednani`, Word přes šablonu PROJ v9 `--proj-v9`, kontrola `dalsiUjednaniWordProj`), #687 číslo stránky: vada šablony CN v9–v17 (pevná „1“ v záhlaví) → `--cn-v18`,
-  upozornění v průvodci šablon (`docxCisloStranky`). Testy `test_pg_*.js`. Kolo `--bez-mutaci --proti integrace`
-  VŠE ZELENÉ (sady 482/0/7, hodiny 392/0/1, statické 9/9, porovnání SHODA), mutace jádra [PG] 16/16. HOTOVO, předáno koordinaci.
-  Šablony PROJ v9 a CN v18 vyrobí a nahraje J. V. (`podklady/SABLONA_PROJ_V9_19_11.md`, `SABLONA_CN_V18_19_11.md`).
-
-  | | cesta / položka | sdílí / chybí | stav |
-  |---|---|---|---|
-  | A1 | `C.statikaKc` | statika OCK + opláštění | opraveno #667 |
-  | A2 | `C.priplatky.madlaBmKc` | madla boky + zadní stěna | J. V. (dop. ponechat) |
-  | A3 | `C.leseniFix` | fix lešení vnitřní + vnější, bez ceny z nabídky | J. V. (dop. ponechat) |
-  | A4 | `C.profilasKgKc` | profily + sloupy můstků | J. V. (dop. ponechat) |
-  | A5–A7 | powertech, `oplechPracKc`, sklo | týž materiál / sazba | ponechat |
-  | B1–B2 | spojovací materiál, lakování | souhrn skupiny, bez ceny z nabídky | J. V. (lak: dop. cena z nabídky) |
-  | B6 | nulová cena z nabídky | dřív odmítnuta | opraveno #667 |
-
+- **BZ** (`claude/bz-bezpecnost`, v22.11.1, nad cda289e): opravy auditu 20. 11. (rozhodnutí J. V. 21. 11.), #692–#700
+  prac. Testy `netlify/test_bz_bezpecnost.mjs`, `test_bz_pipedrive.mjs`, mutace [BZ] 21. **Před sloučením revize Fable.**
+  Rozhodnutí v dávce (k revizi): (1) B231: zmrazeny jen příznaky `jenProj`/`jenOck`, pro každou roli, ven = odemčení
+  správcem; snímek `zamek.strana` je razítko mimo klíč (drží server); obnova příznak bere ze zálohy; změna strany
+  číslem nabídky NEzmrazena (#700-3). Dotisk nově hlídá i `rucniCenyZamekProblem`. (2) B232: „nesouhlasí“ dál jen
+  varuje (B59), neodmítá (#700-2); test P6 v `test_prava` zúžen na texty a klíče bez čísel. (3) B233: Blobs 8.2.0
+  nemá podmíněný zápis → `vyhradne` v instanci; mezi instancemi mez (#699). (4) B234: návrh změny = pole `navrhy`
+  na kartě (vzor `popisyNavrhy`), převzetí/zamítnutí autor nebo administrátor; „správce“ = role Administrátor;
+  historie `zakaznici/h/<klíč>` (50), v záloze (N4) i obnově. (5) B235/B236: jednotný vypínač nebyl → nová proměnná
+  Netlify `PIPEDRIVE_ZAPIS=ano` (výchozí VYP, simulátor nehlídá) v `pdZavolej`; vazba dealu (`lib/pd_overeni.mjs`):
+  vazba z webhooku / odkaz na kalkulaci / číslo nabídky (pole CN, jinak z názvu); strop 30 nových dealů/h na
+  uživatele; dvě zakázky s různým číslem na dealu píše jen ta s číslem dealu; oprava firmy (B209) beze změny
+  (#700-4). (6) B195: kód beze změny, ověřeno testem; mez opravena. Upravené cizí testy: `test_koncova_cena` N4,
+  `test_vyjimky` B153/B155 (stav „před B231“ zapsán přímo do úložiště), přípravky Pipedrive (deal nese číslo
+  nabídky zakázky), `test_vsd_pd_poznamka` 10 (N3 → jedna poznámka).
+  Oddíl PG přesunut do archivu (limit 15 kB).
 - **D3 #688** (`claude/d3-objednavka-proj`, v19.11.11, nad 042fcbc): nový dokument „Objednávka / Smlouva“ PROJ
   (`src/objednavka_proj.js`, `src/ui/objednavka_proj_ui.js`; karta v KL PROJ pod SoD PROJ; tisk/PDF + Word bez šablony;
   číslo CN → OBJ; ceny = nabídka PROJ). Sdílené soubory jen po řádku: `build.py`, `kryci_proj_ui.js` (karta),

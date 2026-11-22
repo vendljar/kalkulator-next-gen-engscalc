@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v21.11.1 — BZ: opravy bezpečnostního auditu 20. 11. 2026 (B231–B236, B195), větev claude/bz-bezpecnost
+## v22.11.1 — BZ: opravy bezpečnostního auditu 20. 11. 2026 (B231–B236, B195), větev claude/bz-bezpecnost
 
 Nad integrací `cda289e` (v19.11.11). Rozhodnutí J. V. 21. 11. 2026 (přes koordinaci). Mění bezpečnostní meze a chování
 zámků, ceny ani text dokumentů nemění. Před sloučením revize poradce (Fable). Verzi přečísluje koordinace.
