@@ -1,7 +1,7 @@
 # Předávka dávky PR — Připomínky z aplikace (21. 11. 2026)
 
-Větev `claude/pr-pripominky` nad integrací `cda289e`. Pracovní čísla roadmapy #706 (úkol, hotovo),
-#707 (nález PR-N1), #708 (otázka e-mail), #709 (otázka záloha) (přidělila koordinace). Verze v22.11.4
+Větev `claude/pr-pripominky` nad integrací `cda289e`. Pracovní čísla roadmapy #707 (úkol, hotovo),
+#708 (nález PR-N1), #709 (otázka e-mail), #710 (otázka záloha) (přidělila koordinace). Verze v22.11.5
 (přečísluje koordinace). Revizi rozdílu před sloučením dělá poradce.
 
 ## Co je hotové
@@ -16,7 +16,7 @@ Větev `claude/pr-pripominky` nad integrací `cda289e`. Pracovní čísla roadma
   strom (render() rozepsaný text nesmaže).
 - **Snímek obrazovky — rozhodnutí:** serializace viditelné části DOM do SVG `<foreignObject>` → `<canvas>`
   → JPEG (≤ 1280 px, ≤ 700 kB). Bez knihoven (CSP `script-src 'self' 'unsafe-inline'` nepustí CDN, aplikace je jeden soubor). V Chromiu ověřeno (plátno se
-  nezašpiní). Neplatná jména atributů se z klonu odfiltrují (nález #707 rozbíjel XML). Hesla se nevkládají.
+  nezašpiní). Neplatná jména atributů se z klonu odfiltrují (nález #708 rozbíjel XML). Hesla se nevkládají.
   Selhání nebo > 4 s = odeslat bez snímku; strukturovaný kontext jde vždy.
 - **Správce**: Nastavení → „💬 Připomínky (N)“ hned za Uživateli (jen admin, natvrdo jako Analytika),
   tlačítko „💬 Připomínky N“ v liště; čipy filtrů s počty, zdroj, hledání, tabulka (nepřečtené tučně),
@@ -50,7 +50,7 @@ Větev `claude/pr-pripominky` nad integrací `cda289e`. Pracovní čísla roadma
 - N2 STŘEDNÍ: `pripominkyReset()` při odhlášení a přihlášení (text, náhled snímku, stav správce, klíč); nový klíč
   zmizí po opuštění záložky nebo zavření Nastavení.
 - N3 NÍZKÁ: cesta klíče jen pro `Bearer` nebo `?pro=koordinace`. N6 NÍZKÁ: čerstvý snímek při odeslání.
-- I2 text CSP opraven, I3 mez přečíslována B231 → B257. N4, I1 do roadmapy (#710, #711), N5 otázka v #709.
+- I2 text CSP opraven, I3 mez přečíslována B231 → B257. N4, I1 do roadmapy (#711, #712), N5 otázka v #710.
 - Pojistky: jádro 7 FAIL → 72/0, server 3 FAIL → 76/0, harness N1/N2/N6 FAIL → 55/0; mutace [PR] +4.
 
 ## Výsledky
@@ -71,5 +71,5 @@ Větev `claude/pr-pripominky` nad integrací `cda289e`. Pracovní čísla roadma
 
 ## Čeká na J. V.
 
-- #708 e-mail správci (aplikace e-maily neumí — dop. až s dalším e-mailovým požadavkem).
-- #709 (1) snímky mimo zálohu, (2) klíč mimo zálohu, (3) uchovávání 365 dní — dop. vše ponechat.
+- #709 e-mail správci (aplikace e-maily neumí — dop. až s dalším e-mailovým požadavkem).
+- #710 (1) snímky mimo zálohu, (2) klíč mimo zálohu, (3) uchovávání 365 dní — dop. vše ponechat.
