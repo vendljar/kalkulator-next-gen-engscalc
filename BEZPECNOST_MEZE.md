@@ -2229,7 +2229,7 @@ Rozhodnutí v `podklady/ROZHODNUTI_LOG.md`, roadmapa #704, #710, #714, #715. Tes
   **Revize RJ N1 (v22.11.9):** vazba z webhooku dokládá zápis jen ve stavu „potvrzeno“, nebo „webhook“
   u zakázky založené webhookem (`pdVazbaDokladaZapis`); nepotvrzená „ceka“ na týž deal zápis zastaví i s odkazem
   v dealu (odkaz zapsal webhook sám); webhook dá „webhook“ jen kalkulaci, kterou zakládá (existující s ručně
-  zadaným dealem = „ceka“). **Revize RJ R2:** deal odmítnutý u zakázky (`pdDealyOdmitnute`) nebo s vazbou
+  zadaným dealem = „ceka“). **Revize RJ R2 (v22.11.11):** deal odmítnutý u zakázky (`pdDealyOdmitnute`) nebo s vazbou
   „zruseno“ odkaz v dealu nedoloží (`PD_DEAL_ZRUSENO`) — mazání odkazu při zrušení vazby může selhat (chyba,
   časová mez 2,5 s, strop 20/h; zrušení se přesto dokončí) a odkaz od webhooku by po novém připojení dealu
   pustil zápis. *Mez R1 (k rozhodnutí J. V. před zapnutím zápisu):* „V pořádku“ smí stisknout kdokoli

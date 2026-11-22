@@ -8,6 +8,20 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.11.11 — RJ R2 (ověření revize Fable 22. 11.): odkaz v dealu po zrušení vazby, větev claude/rj-rozhodnuti
+
+Nad integrací `6d3f3b4` (v22.11.9). Roadmapa #719 (R2) a otázka #718 (R1) — pracovní čísla, přečísluje koordinace. Cenu nemění.
+
+- **R2 (Pipedrive, ověření revize Fable):** deal, jehož vazbu u zakázky někdo zrušil (deal odmítnutý nebo vazba „zruseno“),
+  odkaz v dealu nedoloží — mazání odkazu při zrušení může selhat a odkaz od webhooku by po novém připojení dealu
+  pustil zápis.
+- **Mez R1 (k rozhodnutí J. V. před zapnutím zápisu):** „V pořádku“ smí stisknout kdokoli s přístupem k zakázce,
+  i autor, který deal připojil sám — potvrzením si zápis do dealu pustí. Návrh revize: u kalkulace existující
+  před webhookem nesmí potvrdit její autor (jen správce nebo jiný uživatel), případně potvrzení dokládat z CRM.
+- **Testy:** `test_bz_pipedrive` R2 (webhook naváže předem založenou zakázku → autor vazbu zruší → odkaz vrácen do dealu
+  → deal znovu připojen; + starší data bez seznamu odmítnutých, odmítnutý deal bez vazby). Mutace [RJ] 22/22 (R2 ×2).
+  Kolo `--bez-mutaci --proti 60086f7` (= kód 6d3f3b4): VŠE ZELENÉ (sady 517/0/6, hodiny 418/0/1, statické 11/11, SHODA 367/367).
+
 ## v22.11.9 — RJ revize (koordinace 22. 11.): N1, N2, I3, větev claude/rj-rozhodnuti
 
 Navazuje na v22.11.7 (revize koordinace = SLOUČIT), sloučeno s integrací `60086f7` (LAK v22.11.8). Roadmapa #717. Cenu nemění.
@@ -16,18 +30,14 @@ Navazuje na v22.11.7 (revize koordinace = SLOUČIT), sloučeno s integrací `600
   nebo „webhook“ u zakázky, kterou webhook sám založil; nepotvrzená „ceka“ zápis zastaví i s odkazem v dealu (ten tam
   zapsal webhook sám). Webhook dává „webhook“ jen kalkulaci, kterou zakládá — existující kalkulace s ručně zadaným
   dealem dostane „ceka“. PoC revize (zakázka předem s číslem cizího dealu → webhook → poznámka) je regresní test.
-- **R2 (Pipedrive, ověření revize Fable):** deal, jehož vazbu u zakázky někdo zrušil (deal odmítnutý nebo vazba „zruseno“),
-  odkaz v dealu nedoloží — mazání odkazu při zrušení může selhat a odkaz od webhooku by po novém připojení dealu
-  pustil zápis.
 - **N2 (připomínky):** uzavřeno správcem = v posledním úseku stavu je jakýkoli záznam správce (uzavřela koordinace
   a správce odpověděl → koordinace už nemění stav ani odpověď).
 - **I3 (kolo):** kontrola značek konfliktu chytí i „=======“ na řádku s CRLF.
 - **Testy:** `test_bz_pipedrive` (PoC N1, model), `test_k40c_webhook` (N2 K40c → „ceka“; oprava firmy až po „V pořádku“),
-  `test_pripominky`, `test_rj_rozhodnuti`. Mutace [RJ] 22/22 (mutace [K40c] N2 odebrána — rozhodnutí obrácené). Kolo
+  `test_pripominky`, `test_rj_rozhodnuti`. Mutace [RJ] 20/20 (mutace [K40c] N2 odebrána — rozhodnutí obrácené). Kolo
   `--bez-mutaci --proti 60086f7`: VŠE ZELENÉ (sady 517/0/6, hodiny 418/0/1, statické 11/11, porovnání SHODA 367/367).
-- **Mez R1 (k rozhodnutí J. V. před zapnutím zápisu):** „V pořádku“ smí stisknout kdokoli s přístupem k zakázce,
-  i autor, který deal připojil sám — potvrzením si zápis do dealu pustí. Návrh revize: u kalkulace existující
-  před webhookem nesmí potvrdit její autor (jen správce nebo jiný uživatel), případně potvrzení dokládat z CRM.
+- **Mez (k rozhodnutí J. V. před zapnutím zápisu):** „V pořádku“ smí stisknout i autor zakázky, který deal připojil
+  sám — potvrzením si zápis do dealu pustí.
 
 ## v22.11.8 — LAK #666: lakování — cena z nabídky lakovny jako částka řádku, větev claude/lak-lakovani
 
