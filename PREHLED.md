@@ -7,41 +7,20 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 
 | prostředí | verze |
 |---|---|
-| ostrý web (`main`) | **v19.11.11** (`cda289e2`, 19. 11. 2026) |
-| testovací web (`test`) | **v22.11.5** (`05a496d0`, 22. 11. 2026) |
-
-Test je proti main napřed o 73 commitů.
+| ostrý web (`main`) | `origin/main` nedostupné (reference chybí) |
+| testovací web (`test`) | `origin/test` nedostupné (reference chybí) |
 
 ## V testu, ještě ne v main
 
-| # | typ | co | verze |
-|---|---|---|---|
-| #707 (dřív PR) | úkol | Připomínky z aplikace: tlačítko Připomínka (obchodník), Nastavení → Připomínky (správce), klíč pro koordinaci | v22.11.5 |
-| #701 (dřív B195) | nález | B195: nulová ruční cena jen se zdrojem — ověřeno, text meze opraven | v22.11.3 |
-| #700 (dřív B235, B236, IN-1, IN-2) | nález | B235/B236: vypínač zápisu do Pipedrive (výchozí vypnuto), deal musí patřit zakázce | v22.11.3 |
-| #699 (dřív B234, AD-1) | nález | B234: kartu zákazníka mění jen autor a správce, návrhy změn, historie verzí | v22.11.3 |
-| #698 (dřív B233, AU-1) | nález | B233: počítadla pokusů o přihlášení serializovaná (vyhradne) | v22.11.3 |
-| #697 (dřív B232, AZ-2) | nález | B232: přísné ověření zmrazeného výsledku vyžaduje všechna čísla | v22.11.3 |
-| #696 (dřív B231, AZ-1) | nález | B231: příznak strany zakázky (jenProj/jenOck) po zámku a Prodáno zmrazený | v22.11.3 |
-| #695 (dřív HN-5) | úkol | Kolo: chybějící playwright = selhání s návodem; částečně přeskočená sada (PRESKOCENO_CAST) v souhrnu „Přeskočené sady“ | v22.11.2 |
-| #691 (dřív NPT-N2, NPT-N3, NPT-N4) | nález | NPT-N2–N4: drobné odchylky náhledu od Wordu (verzálky jednotek, dvojtečka EN/DE, IČ/Tel. v bloku Kancelář) | v21.11.4 |
-| #690 (dřív NPT-N1) | nález | NPT-N1: řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ je v náhledu podkladů, ale Word CN v17 ho nemá | v21.11.4 |
-| #683 (dřív D8-I1) | nález | D8-I1: nabídka PROJ a krycí list rozhodují o „nabízí studii“ jinak (studie vyřazená s cenou 0) | v22.11.1 |
-| #680 (dřív DO-N1) | nález | DO-N1: návrh obchodníka do číselníku u příplatku přechodových plechů (MATERIÁL) správce v Ceník → číselník nevidí | v21.11.4 |
-| #674 (dřív VZ-F2-R2) | úkol | Víc zákazníků drobnosti po VZ-F2: pojistka v plnaMocData, IČO s úvodními nulami, dvojité „Neuloženo:“ | v22.11.1 |
-| #673 (dřív VZ-F2-R1) | úkol | Suchý běh Pipedrive ukazuje ruční pole KL dalšího zákazníka jako údaje řídící varianty | v22.11.1 |
-| #665 | úkol | Dotisk odeslané nabídky bere blok „Vypracoval“ z dnešního přihlášeného účtu, ne z doby odeslání | v22.11.1 |
-| #647 (dřív K49-I4) | úkol | Pevná sada porovnání sestavení: přidat případ přepnutí typu šachty a zasklení (K40-N1) | v22.11.2 |
-| #646 (dřív K49-I2) | úkol | Harness overit_sod.mjs: aktualizovat očekávání na šablony v4–v6 a tečky místo symbolů | v22.11.2 |
-| #644 | úkol | Občasné selhání src/test_vz_unik.js: „výměna řídícího (B)“ — kanár „cena varianty A“ v JSON pohledu PROJ C EN/DE/FR | v22.11.2 |
-| #638 | úkol | Nestabilní harnessy: overit_zobrazeni.mjs a overit_zaporne.mjs (limit přihlášení), test_577_kopie_skript.mjs T4 v mutacích | v22.11.2 |
-| #635 | úkol | VZ: u upozornění sdílené varianty v krycím listu tlačítko „vlastní varianta“ | v22.11.1 |
+Nelze určit — chybí reference main nebo test.
 
 ## Otevřené vady s dopadem na cenu
 
 | # | co | kolo | stav | čeká na |
 |---|---|---|---|---|
-| #696 (dřív B231, AZ-1) | B231: příznak strany zakázky (jenProj/jenOck) po zámku a Prodáno zmrazený | 50 | opraveno v testu (v22.11.3), v main ne | — |
+| #614 (dřív K40-N1) | Vada ceny v main: po přepnutí typu šachty se čelní sklo přejmenuje a zůstane vyřazené (opraveno v testu v12.11.1) | 40 | oprava ve verzi v12.11.1, v testu ještě ne | — |
+| #670 (dřív K50-N1) | K50-N1: statika opláštění u zahraniční řady ceníku počítána českou sazbou (od v19.11.1) | 50 | oprava ve verzi v19.11.3, v testu ještě ne | — |
+| #696 (dřív B231, AZ-1) | B231: příznak strany zakázky (jenProj/jenOck) po zámku a Prodáno zmrazený | 50 | oprava ve verzi v22.11.3, v testu ještě ne | — |
 
 ## Čeká na J. V.
 
@@ -71,15 +50,11 @@ Test je proti main napřed o 73 commitů.
 | #639 | otázka | Ruční cena: příloha PDF nabídky dodavatele a ruční cena v ceníku PROJ | rozhodnout, zda je potřeba |
 | #640 (dřív B221) | otázka | Role jen ke čtení: „kdo smí ukládat“ je dnes každý přihlášený | zavést roli jen ke čtení? (doporučeno až s kolegou s rolí administrátora) |
 | #643 | úkol | Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6) | nahrát upravený skill (mimo repo) |
-| #702 (dřív B237, B238, B239, B240, B241, B242, B243, B244, B245, B246, B247, B248, B249, B250, B251, B252, B253, B254, B255, B256) | nález | Nízké nálezy auditu 20. 11. 2026 (B237–B256) — souhrnná položka k pozdější dávce | zařadit do dávky (nízké nálezy, dnes neopravovat) |
-| #703 (dřív B233-zbytek) | nález | B233 zbytek: počítadla pokusů mezi dvěma instancemi funkce (podmíněný zápis Blobs) | přijmout jako zbytkovou mez, nebo zadat povýšení @netlify/blobs (doporučeno povýšit v samostatné dávce) |
-| #704 (dřív BZ-Q) | otázka | BZ: otevřené otázky pro J. V. po dávce BZ | (1) doporučeno až po revizi Fable a zkoušce na testu; (2) doporučeno odmítnout 409 s radou Ctrl+F5; (3) doporučeno zmrazit vedoucí stranu odvozenou celkově; (4… |
-| #705 (dřív BZ-R6, BZ-R7) | nález | Revize BZ, nízké: dvojče karty zákazníka pod jiným klíčem; souběh návrhů/historie a pole zalozen v historii | zařadit do dávky nízkých nálezů (#702) |
-| #709 (dřív PR-E) | otázka | PR-E: odesílání e-mailu správci o nové připomínce | zvolit službu odesílání e-mailů (dop. až s dalším e-mailovým požadavkem) |
-| #710 (dřív PR-Q) | otázka | PR-Q: připomínky v záloze a v kopii na Disk, uchovávání | potvrdit (1)–(4) |
+| #716 (dřív LAK-Q) | otázka | LAK: otázky pro J. V. k ceně lakování z nabídky lakovny (#666) | rozhodnout 4 doporučené varianty (zvolené v dávce LAK) |
+| #718 (dřív RJ-R1) | otázka | RJ-R1: kdo smí potvrdit vazbu dealu z webhooku („V pořádku“) před zapnutím PIPEDRIVE_ZAPIS | rozhodnout před zapnutím PIPEDRIVE_ZAPIS (dop. autor nepotvrzuje, jen administrátor) |
 
-K tomu 12 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
+K tomu 13 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
 
 ## Nehotové položky evidence
 
-Celkem 55: J. V. 42, kolega 4, koordinace 7, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 51: J. V. 39, kolega 4, koordinace 6, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.

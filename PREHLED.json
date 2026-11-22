@@ -1,197 +1,39 @@
 {
  "main": {
   "ref": "origin/main",
-  "sha": "cda289e2",
-  "verze": "v19.11.11",
-  "datum": "19. 11. 2026"
+  "chybi": true
  },
  "test": {
   "ref": "origin/test",
-  "sha": "05a496d0",
-  "verze": "v22.11.5",
-  "datum": "22. 11. 2026"
+  "chybi": true
  },
- "test_navic_commitu": 73,
- "v_testu_ne_v_main": [
-  {
-   "id": "707",
-   "typ": "ukol",
-   "nazev": "Připomínky z aplikace: tlačítko Připomínka (obchodník), Nastavení → Připomínky (správce), klíč pro koordinaci",
-   "alias": [
-    "PR"
-   ],
-   "verze": "v22.11.5"
-  },
-  {
-   "id": "701",
-   "typ": "nalez",
-   "nazev": "B195: nulová ruční cena jen se zdrojem — ověřeno, text meze opraven",
-   "alias": [
-    "B195"
-   ],
-   "verze": "v22.11.3"
-  },
-  {
-   "id": "700",
-   "typ": "nalez",
-   "nazev": "B235/B236: vypínač zápisu do Pipedrive (výchozí vypnuto), deal musí patřit zakázce",
-   "alias": [
-    "B235",
-    "B236",
-    "IN-1",
-    "IN-2"
-   ],
-   "verze": "v22.11.3"
-  },
-  {
-   "id": "699",
-   "typ": "nalez",
-   "nazev": "B234: kartu zákazníka mění jen autor a správce, návrhy změn, historie verzí",
-   "alias": [
-    "B234",
-    "AD-1"
-   ],
-   "verze": "v22.11.3"
-  },
-  {
-   "id": "698",
-   "typ": "nalez",
-   "nazev": "B233: počítadla pokusů o přihlášení serializovaná (vyhradne)",
-   "alias": [
-    "B233",
-    "AU-1"
-   ],
-   "verze": "v22.11.3"
-  },
-  {
-   "id": "697",
-   "typ": "nalez",
-   "nazev": "B232: přísné ověření zmrazeného výsledku vyžaduje všechna čísla",
-   "alias": [
-    "B232",
-    "AZ-2"
-   ],
-   "verze": "v22.11.3"
-  },
-  {
-   "id": "696",
-   "typ": "nalez",
-   "nazev": "B231: příznak strany zakázky (jenProj/jenOck) po zámku a Prodáno zmrazený",
-   "alias": [
-    "B231",
-    "AZ-1"
-   ],
-   "verze": "v22.11.3"
-  },
-  {
-   "id": "695",
-   "typ": "ukol",
-   "nazev": "Kolo: chybějící playwright = selhání s návodem; částečně přeskočená sada (PRESKOCENO_CAST) v souhrnu „Přeskočené sady“",
-   "alias": [
-    "HN-5"
-   ],
-   "verze": "v22.11.2"
-  },
-  {
-   "id": "691",
-   "typ": "nalez",
-   "nazev": "NPT-N2–N4: drobné odchylky náhledu od Wordu (verzálky jednotek, dvojtečka EN/DE, IČ/Tel. v bloku Kancelář)",
-   "alias": [
-    "NPT-N2",
-    "NPT-N3",
-    "NPT-N4"
-   ],
-   "verze": "v21.11.4"
-  },
-  {
-   "id": "690",
-   "typ": "nalez",
-   "nazev": "NPT-N1: řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ je v náhledu podkladů, ale Word CN v17 ho nemá",
-   "alias": [
-    "NPT-N1"
-   ],
-   "verze": "v21.11.4"
-  },
-  {
-   "id": "683",
-   "typ": "nalez",
-   "nazev": "D8-I1: nabídka PROJ a krycí list rozhodují o „nabízí studii“ jinak (studie vyřazená s cenou 0)",
-   "alias": [
-    "D8-I1"
-   ],
-   "verze": "v22.11.1"
-  },
-  {
-   "id": "680",
-   "typ": "nalez",
-   "nazev": "DO-N1: návrh obchodníka do číselníku u příplatku přechodových plechů (MATERIÁL) správce v Ceník → číselník nevidí",
-   "alias": [
-    "DO-N1"
-   ],
-   "verze": "v21.11.4"
-  },
-  {
-   "id": "674",
-   "typ": "ukol",
-   "nazev": "Víc zákazníků drobnosti po VZ-F2: pojistka v plnaMocData, IČO s úvodními nulami, dvojité „Neuloženo:“",
-   "alias": [
-    "VZ-F2-R2"
-   ],
-   "verze": "v22.11.1"
-  },
-  {
-   "id": "673",
-   "typ": "ukol",
-   "nazev": "Suchý běh Pipedrive ukazuje ruční pole KL dalšího zákazníka jako údaje řídící varianty",
-   "alias": [
-    "VZ-F2-R1"
-   ],
-   "verze": "v22.11.1"
-  },
-  {
-   "id": "665",
-   "typ": "ukol",
-   "nazev": "Dotisk odeslané nabídky bere blok „Vypracoval“ z dnešního přihlášeného účtu, ne z doby odeslání",
-   "verze": "v22.11.1"
-  },
-  {
-   "id": "647",
-   "typ": "ukol",
-   "nazev": "Pevná sada porovnání sestavení: přidat případ přepnutí typu šachty a zasklení (K40-N1)",
-   "alias": [
-    "K49-I4"
-   ],
-   "verze": "v22.11.2"
-  },
-  {
-   "id": "646",
-   "typ": "ukol",
-   "nazev": "Harness overit_sod.mjs: aktualizovat očekávání na šablony v4–v6 a tečky místo symbolů",
-   "alias": [
-    "K49-I2"
-   ],
-   "verze": "v22.11.2"
-  },
-  {
-   "id": "644",
-   "typ": "ukol",
-   "nazev": "Občasné selhání src/test_vz_unik.js: „výměna řídícího (B)“ — kanár „cena varianty A“ v JSON pohledu PROJ C EN/DE/FR",
-   "verze": "v22.11.2"
-  },
-  {
-   "id": "638",
-   "typ": "ukol",
-   "nazev": "Nestabilní harnessy: overit_zobrazeni.mjs a overit_zaporne.mjs (limit přihlášení), test_577_kopie_skript.mjs T4 v mutacích",
-   "verze": "v22.11.2"
-  },
-  {
-   "id": "635",
-   "typ": "ukol",
-   "nazev": "VZ: u upozornění sdílené varianty v krycím listu tlačítko „vlastní varianta“",
-   "verze": "v22.11.1"
-  }
- ],
+ "test_navic_commitu": null,
+ "v_testu_ne_v_main": [],
  "vady_ceny": [
+  {
+   "id": "614",
+   "typ": "nalez",
+   "nazev": "Vada ceny v main: po přepnutí typu šachty se čelní sklo přejmenuje a zůstane vyřazené (opraveno v testu v12.11.1)",
+   "alias": [
+    "K40-N1"
+   ],
+   "verze": "v12.11.1",
+   "kolo": "40",
+   "stav": "oprava ve verzi v12.11.1, v testu ještě ne",
+   "cekaNa": "—"
+  },
+  {
+   "id": "670",
+   "typ": "nalez",
+   "nazev": "K50-N1: statika opláštění u zahraniční řady ceníku počítána českou sazbou (od v19.11.1)",
+   "alias": [
+    "K50-N1"
+   ],
+   "verze": "v19.11.3",
+   "kolo": "50",
+   "stav": "oprava ve verzi v19.11.3, v testu ještě ne",
+   "cekaNa": "—"
+  },
   {
    "id": "696",
    "typ": "nalez",
@@ -202,7 +44,7 @@
    ],
    "verze": "v22.11.3",
    "kolo": "50",
-   "stav": "opraveno v testu (v22.11.3), v main ne",
+   "stav": "oprava ve verzi v22.11.3, v testu ještě ne",
    "cekaNa": "—"
   }
  ],
@@ -380,86 +222,30 @@
    "cekaNa": "nahrát upravený skill (mimo repo)"
   },
   {
-   "id": "702",
-   "typ": "nalez",
-   "nazev": "Nízké nálezy auditu 20. 11. 2026 (B237–B256) — souhrnná položka k pozdější dávce",
-   "alias": [
-    "B237",
-    "B238",
-    "B239",
-    "B240",
-    "B241",
-    "B242",
-    "B243",
-    "B244",
-    "B245",
-    "B246",
-    "B247",
-    "B248",
-    "B249",
-    "B250",
-    "B251",
-    "B252",
-    "B253",
-    "B254",
-    "B255",
-    "B256"
-   ],
-   "cekaNa": "zařadit do dávky (nízké nálezy, dnes neopravovat)"
-  },
-  {
-   "id": "703",
-   "typ": "nalez",
-   "nazev": "B233 zbytek: počítadla pokusů mezi dvěma instancemi funkce (podmíněný zápis Blobs)",
-   "alias": [
-    "B233-zbytek"
-   ],
-   "cekaNa": "přijmout jako zbytkovou mez, nebo zadat povýšení @netlify/blobs (doporučeno povýšit v samostatné dávce)"
-  },
-  {
-   "id": "704",
+   "id": "716",
    "typ": "otazka",
-   "nazev": "BZ: otevřené otázky pro J. V. po dávce BZ",
+   "nazev": "LAK: otázky pro J. V. k ceně lakování z nabídky lakovny (#666)",
    "alias": [
-    "BZ-Q"
+    "LAK-Q"
    ],
-   "cekaNa": "(1) doporučeno až po revizi Fable a zkoušce na testu; (2) doporučeno odmítnout 409 s radou Ctrl+F5; (3) doporučeno zmrazit vedoucí stranu odvozenou celkově; (4…"
+   "cekaNa": "rozhodnout 4 doporučené varianty (zvolené v dávce LAK)"
   },
   {
-   "id": "705",
-   "typ": "nalez",
-   "nazev": "Revize BZ, nízké: dvojče karty zákazníka pod jiným klíčem; souběh návrhů/historie a pole zalozen v historii",
-   "alias": [
-    "BZ-R6",
-    "BZ-R7"
-   ],
-   "cekaNa": "zařadit do dávky nízkých nálezů (#702)"
-  },
-  {
-   "id": "709",
+   "id": "718",
    "typ": "otazka",
-   "nazev": "PR-E: odesílání e-mailu správci o nové připomínce",
+   "nazev": "RJ-R1: kdo smí potvrdit vazbu dealu z webhooku („V pořádku“) před zapnutím PIPEDRIVE_ZAPIS",
    "alias": [
-    "PR-E"
+    "RJ-R1"
    ],
-   "cekaNa": "zvolit službu odesílání e-mailů (dop. až s dalším e-mailovým požadavkem)"
-  },
-  {
-   "id": "710",
-   "typ": "otazka",
-   "nazev": "PR-Q: připomínky v záloze a v kopii na Disk, uchovávání",
-   "alias": [
-    "PR-Q"
-   ],
-   "cekaNa": "potvrdit (1)–(4)"
+   "cekaNa": "rozhodnout před zapnutím PIPEDRIVE_ZAPIS (dop. autor nepotvrzuje, jen administrátor)"
   }
  ],
- "ceka_na_jv_odlozene": 12,
+ "ceka_na_jv_odlozene": 13,
  "nehotove_podle_kdo": {
-  "J. V.": 42,
+  "J. V.": 39,
   "kolega": 4,
-  "koordinace": 7,
+  "koordinace": 6,
   "integrátor": 2
  },
- "nehotovych": 55
+ "nehotovych": 51
 }
