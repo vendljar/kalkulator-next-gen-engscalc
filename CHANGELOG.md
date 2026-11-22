@@ -8,6 +8,19 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.11.1 — PR #692 (prac.): Připomínky z aplikace, větev claude/pr-pripominky
+
+Nad integrací `cda289e`. Cenu ani dokumenty nemění (porovnání sestavení SHODA). Funkce je výchozí VYPNUTÁ. Verzi přečísluje koordinace.
+
+- **Nové — obchodník:** tlačítko „Připomínka“ vpravo dole (číslo nových odpovědí), panel s typem (chyba, cena,
+  návrh, dotaz), textem, označením místa na obrazovce a automatickým kontextem a snímkem obrazovky; záložka
+  Moje připomínky s průběhem a odpověďmi.
+- **Nové — správce:** Nastavení → „💬 Připomínky (N)“ a tlačítko v liště; filtry, detail se snímkem, akce
+  (do fronty oprav, odpovědět a uzavřít, odložit, zamítnout, duplicitní), nastavení a klíč pro koordinaci.
+- **Server:** `/api/pripominky`, záloha a obnova bez snímků, mez B231. Testy `test_pripominky` (jádro 66, server 74),
+  `overit_pripominky` 47, mutace `[PR]` 23/23.
+- **Nález #693 (prac.):** useknutá bublina „Opláštit i prohlubeň“ (rovná uvozovka v title) — neopraveno, mimo rozsah.
+
 ## v19.11.11 — D3 #688: Objednávka / Smlouva PROJ z nabídky PROJ, větev claude/d3-objednavka-proj
 
 Nad integrací `042fcbc` (v19.11.5). Nový dokument, cenu ani text nabídky a SoD nemění. Verzi přečísluje koordinace.
