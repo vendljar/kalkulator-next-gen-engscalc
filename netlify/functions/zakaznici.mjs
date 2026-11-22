@@ -64,7 +64,10 @@ export default async (req) => {
     const klic = url.searchParams.get('klic');
     if (!klic) return json({ ok: false, chyba: 'Chybí klíč zákazníka.' }, 400);
     if (!klicZAdresyPlatny(klic)) return json({ ok: false, chyba: 'Neplatný klíč zákazníka.' }, 400);   // SEC-I4
-    if (typeof s.smaz === 'function') await s.smaz('z/' + klic);
+    if (typeof s.smaz === 'function') {
+      await s.smaz('z/' + klic);
+      await s.smaz('h/' + klic);   // revize Fable R5: historie smazané karty nezůstane ani ji nová karta nezdědí
+    }
     return json({ ok: true, smazano: klic });
   }
 

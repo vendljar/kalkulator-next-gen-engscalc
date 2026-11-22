@@ -180,6 +180,38 @@ console.log('\n===== B231: STRANA ZAKÁZKY PO ZÁMKU A PRODÁNO =====\n');
     rd.status === 403 && /není potvrzená/.test(rd.chyba || ''), rd.status + ' ' + (rd.chyba || ''));
 }
 
+{
+  /* Revize Fable R1: pravdivá nebooleovská hodnota příznaku (1, "ano", {}, [1]). */
+  const z = nova('B231 R1'); zamkni(z, z.varianty[0], 'nabidka');
+  const r = await uloz(z, cO); let g = await nacti(r.soubor, cO);
+  let a = kopie(g); a.varianty[0].prodano = { datum: dnes }; await uloz(a, cO, g.uloRazitko);
+  g = await nacti(r.soubor, cO);
+  const stavy = [];
+  for (const h of [1, 'ano', {}, [1]]) { a = kopie(g); a.jenProj = h; stavy.push((await uloz(a, cO2, g.uloRazitko)).status); }
+  const g2 = await nacti(r.soubor, cO);
+  test('B231 R1: jenProj = 1 / "ano" / {} / [1] u prodané nabídky cizím obchodníkem → 403', stavy.every(x => x === 403)
+    && strany(g2).ctrl === 'ock', JSON.stringify(stavy));
+  const zn = nova('B231 R1 bez zámku'); zn.jenProj = 'ano';
+  const rn = await uloz(zn, cO); const gn = await nacti(rn.soubor, cO);
+  test('B231 R1: server ukládá příznak strany jen jako pravda / nepravda', gn.jenProj === true, JSON.stringify(gn.jenProj));
+  const st1 = { jenProj: false, jenOck: false, cislo: '2026 - OPR - CN - 1', varianty: [{ id: 'v', zamek: { zamceno: true } }] };
+  test('B231 R1: model — pravdivá nebooleovská hodnota příznaku je změna strany', ['ano', 1, {}].every(h => !!zam.zamekStranaZmena(st1, Object.assign(kopie(st1), { jenProj: h }))));
+}
+{
+  /* Revize Fable R2: strana určená číslem nabídky (bez příznaků). „ÓVP" dává týž
+   * soubor jako „OVP", ale vedoucí stranu OCK místo PROJ. */
+  const z = nova('B231 R2'); z.cislo = '2026 - OVP - CN - ' + (n++) + ' - TEST'; zamkni(z, z.varianty[0], 'nabidkaProj');
+  const r = await uloz(z, cO);
+  test('B231 R2: příprava — zámek PROJ u čísla OVP (OCK vyřazená)', r.status === 200, r.status + ' ' + (r.chyba || ''));
+  const g = await nacti(r.soubor, cA); const a = kopie(g); a.cislo = a.cislo.replace('OVP', 'ÓVP');
+  const ra = await uloz(a, cA, g.uloRazitko);
+  test('B231 R2: ani správce změnou čísla nabídky nepřepne vedoucí stranu odeslané zakázky (403)', ra.status === 403
+    && /strana zakázky/.test(ra.chyba || ''), ra.status + ' ' + (ra.chyba || ''));
+  const st = { jenProj: false, jenOck: false, cislo: '2026 - OVP - CN - 1', varianty: [{ id: 'v', zamek: { zamceno: true } }] };
+  test('B231 R2: model — změna vyřazené strany číslem je změna strany', !!zam.zamekStranaZmena(st, Object.assign(kopie(st), { cislo: '2026 - ÓVP - CN - 1' }))
+    && zam.zamekStranaZmena(st, Object.assign(kopie(st), { cislo: '2026 - OVP - CN - 1 ' })) === '');
+}
+
 /* ============================================================ */
 console.log('\n===== B232: PŘÍSNÉ OVĚŘENÍ VYŽADUJE VŠECHNA ČÍSLA =====\n');
 {
@@ -209,6 +241,21 @@ console.log('\n===== B232: PŘÍSNÉ OVĚŘENÍ VYŽADUJE VŠECHNA ČÍSLA =====
   test('B232: přísné porovnání objekt s čísly proti null počítá', zam.zamekVysledekRozdily(a2, c, 5, { prisne: true }).pocet > zaklad2
     && zam.zamekVysledekRozdily(c, a2, 5, { prisne: true }).pocet > zaklad2, zaklad2);
   test('B232: volné porovnání objekt proti null dál přeskočí', zam.zamekVysledekRozdily(a2, c).pocet === 0);
+  /* Revize Fable R3: podstrom s čísly zaměněný za text / true. */
+  for (const nahrada of ['x', true]) {
+    const d2 = kopie(a2); d2.ock.odvozene = nahrada;
+    test('B232 R3: přísné porovnání objekt s čísly proti ' + JSON.stringify(nahrada) + ' počítá',
+      zam.zamekVysledekRozdily(a2, d2, 5, { prisne: true }).pocet > zaklad2 && zam.zamekVysledekRozdily(d2, a2, 5, { prisne: true }).pocet > zaklad2);
+  }
+  /* Serverem: 53 podstromů → "x" (PoC revize) dostane „nesouhlasi". */
+  const z3 = nova('B232 R3'); zamkni(z3, z3.varianty[0]);
+  const vy3 = z3.varianty[0].zamek.vysledek; let nahrazeno = 0;
+  const zamen = (o, h) => { if (!o || typeof o !== 'object' || h > 3) return; for (const k of Object.keys(o)) {
+    if (o[k] && typeof o[k] === 'object' && !Array.isArray(o[k]) && k !== 'souhrn' && h >= 1) { o[k] = 'x'; nahrazeno++; } else zamen(o[k], h + 1); } };
+  zamen(vy3.ock, 0);
+  const r3 = await uloz(z3, cO); const g3 = await nacti(r3.soubor, cO);
+  test('B232 R3: výsledek s podstromy zaměněnými za text (' + nahrazeno + ') dostane „nesouhlasi"', nahrazeno > 0
+    && g3.varianty[0].zamek.overeni.stav === 'nesouhlasi', JSON.stringify(g3.varianty[0].zamek.overeni));
 }
 
 /* ============================================================ */
@@ -298,6 +345,11 @@ console.log('\n===== B234: KARTA ZÁKAZNÍKA — MĚNÍ AUTOR A SPRÁVCE, HISTOR
   /* Podvržený návrh v těle od autora se neuloží (návrhy drží server). */
   await zk1({ zakaznik: Object.assign({}, po6, { navrhy: [{ id: 'x', kdo: 'podvrh@priklad.cz', kdy: '', zmeny: { ucet: '1' } }] }) }, cO);
   test('B234: podvržený návrh v těle se neuloží', !JSON.parse(pamet.get('zakaznici/z/' + r1.klic)).navrhy);
+  /* Revize Fable R5: smazání karty smaže i její historii (nová karta ji nezdědí). */
+  const rd = await zakaznici(new Request('http://x/api/zakaznici?klic=' + encodeURIComponent(r1.klic), { method: 'DELETE', headers: { cookie: cA } }));
+  const rh2 = await (await get(zakaznici, 'http://x/api/zakaznici?klic=' + encodeURIComponent(r1.klic) + '&historie=1', cO2)).json();
+  test('B234 R5: DELETE karty smaže i historii verzí', rd.status === 200 && !pamet.has('zakaznici/h/' + r1.klic)
+    && Array.isArray(rh2.historie) && rh2.historie.length === 0, JSON.stringify(rh2).slice(0, 120));
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);

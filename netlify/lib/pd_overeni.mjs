@@ -12,7 +12,7 @@
  *      založilo CRM samo (pd_webhook.mjs, #553), ne obchodník;
  *   2. pole „Odkaz na kalkulaci" v dealu míří na tuto zakázku (pdWebhookOdkaz);
  *   3. číslo nabídky v dealu (pole „Číslo nabídky (CN)", jinak z názvu dealu) sedí s číslem
- *      zakázky — totéž pravidlo jako webhook (pdWebhookCisloSedi), ale obě
+ *      zakázky, ze kterého je klíč jejího souboru (revize R4) — totéž pravidlo jako webhook (pdWebhookCisloSedi), ale obě
  *      čísla musí být neprázdná.
  * Jinak se nezapisuje nic (stav „neověřeno"). Čte se jen deal (GET).
  * ============================================================ */
@@ -42,11 +42,11 @@ export async function pdDealPatriZakazce(zak, dealId, { zavolej, poleMapa, odkaz
   if (odkaz && mapa.odkazKalkulace && pdHodnota(cf[mapa.odkazKalkulace]).trim() === odkaz) return { ok: true, zdroj: 'odkaz' };
   /* Pole CN, jinak číslo z názvu dealu (`CN-84 …`) — totéž jako webhook (pdWebhookZadani). */
   const cnDealu = (mapa.cisloNabidky ? pdHodnota(cf[mapa.cisloNabidky]).trim() : '') || pdCisloZNazvu(d.title);
-  if (cnDealu) {
-    for (const strana of ['ock', 'proj']) {
-      const cislo = String(pdWebhookHlavicka(JSON.parse(JSON.stringify(zak)), strana).cislo || '').trim();
-      if (pdWebhookCisloKlic(cislo) && pdWebhookCisloSedi(cislo, cnDealu, zak)) return { ok: true, zdroj: 'cislo' };
-    }
-  }
+  /* Revize Fable R4: jen číslo, ze kterého je KLÍČ SOUBORU zakázky (uloJmenoSouboru:
+   * číslo OCK, jinak číslo PROJ) — to cizí zakázce nepatří (kolize 409).
+   * Číslo PROJ vedle čísla OCK autor volně přepisuje, proto se nepočítá. */
+  const cislo = String(((G.uloCisloVyplneno ? G.uloCisloVyplneno(zak.cislo) : String(zak.cislo || '').trim())
+    ? zak.cislo : pdWebhookHlavicka(JSON.parse(JSON.stringify(zak)), 'proj').cislo) || '').trim();
+  if (cnDealu && pdWebhookCisloKlic(cislo) && pdWebhookCisloSedi(cislo, cnDealu, zak)) return { ok: true, zdroj: 'cislo' };
   return { ok: false, duvod: PD_DEAL_NEPATRI };
 }

@@ -580,12 +580,15 @@ function zamekZakStav(zak) {
  * mimo klíč, drží ho uloZamekRazitkaDrz) a změnu odmítne (403) — pro každou
  * roli; cesta ven je odemčení (administrátor) nebo nová zakázka. */
 const ZAMEK_STRANA_CESTY = ['ZAK.jenProj', 'ZAK.jenOck'];
+/* Pravdivost příznaku = totéž pravidlo jako zakazkaVedouciStrana (jakákoli
+ * pravdivá hodnota, revize Fable R1: `jenProj: 1` / "ano" / {} se dřív
+ * neporovnávalo, a přitom stranu přepnulo). */
 function zamekStranaZnak(zak) {
-  return { jenProj: !!(zak && zak.jenProj === true), jenOck: !!(zak && zak.jenOck === true) };
+  return { jenProj: !!(zak && zak.jenProj), jenOck: !!(zak && zak.jenOck) };
 }
-const ZAMEK_STRANA_HLASKA = 'Zakázka má odeslanou (uzamčenou) nabídku — strana zakázky (jen projekce / jen realizace) '
-  + 'se už nemění, rozhoduje o ceně, controllingu i hodnotě dealu. Pokračujte novou zakázkou, nebo požádejte '
-  + 'administrátora o odemčení.';
+const ZAMEK_STRANA_HLASKA = 'Zakázka má odeslanou (uzamčenou) nabídku — strana zakázky (jen projekce / jen realizace, '
+  + 'vedoucí strana podle čísla nabídky) se už nemění, rozhoduje o ceně, controllingu i hodnotě dealu. '
+  + 'Pokračujte novou zakázkou, nebo požádejte administrátora o odemčení.';
 /* Serverová pojistka: změnil se příznak strany zakázky se zamčenou variantou?
  * Zámek se bere z ULOŽENÉ verze; varianta, kterou v témže uložení odemkl
  * správce, se nepočítá (jako zamekZakZmeny). Vrací důvod nebo ''. */
@@ -597,7 +600,11 @@ function zamekStranaZmena(stara, nova) {
   });
   if (!zamcene.length) return '';
   const a = zamekStranaZnak(stara), b = zamekStranaZnak(nova);
-  if (a.jenProj === b.jenProj && a.jenOck === b.jenOck) return '';
+  /* Revize Fable R2: zmrazí se i VÝSLEDEK — počítaná (vyřazená) strana, kterou
+   * bez příznaků určuje číslo nabídky (doplněné číslo OCK u zakázky jen
+   * s PROJ by jinak stranu přepnulo). Snímek zamek.strana je doklad téhož. */
+  const vyr = (z) => (typeof zakazkaVyrazenaStrana === 'function' ? zakazkaVyrazenaStrana(z) : '') || '';
+  if (a.jenProj === b.jenProj && a.jenOck === b.jenOck && vyr(stara) === vyr(nova)) return '';
   return ZAMEK_STRANA_HLASKA;
 }
 /* Snímek příznaků strany do NOVÉHO zámku (píše jen server). */
@@ -970,9 +977,6 @@ function zamekVysledekRozdily(klient, server, max, opts) {
     return Object.keys(x).some(k => maCislo(x[k], (h || 0) + 1));
   };
   const projdi = (a, b, c) => {
-    if (prisne && (a === undefined || a === null) !== (b === undefined || b === null)) {
-      if (maCislo(a === undefined || a === null ? b : a)) { pridej(c); return; }
-    }
     /* B146 (audit 12. 10. 2026): v přísném porovnání je pole řádků proti
      * čemukoli jinému (objekt, null, chybějící klíč) rozdíl — tatáž verze
      * dává týž tvar; podvržené řádky (ock.priplatky) se změnou tvaru
@@ -980,6 +984,10 @@ function zamekVysledekRozdily(klient, server, max, opts) {
     if (prisne && Array.isArray(a) !== Array.isArray(b)) { pridej(c); return; }
     if (a === undefined || b === undefined) return;          // klíč jen v jednom výsledku
     if (cislo(a) || cislo(b)) { if (!(cislo(a) && cislo(b) && stejneCislo(a, b))) pridej(c); return; }
+    /* Revize Fable R3: v přísném porovnání je objekt / pole s číslem proti
+     * čemukoli, co objekt není (null, text, true…), rozdíl — dřív se podstrom
+     * s čísly zaměnil za "x" a razítko bylo „shoda“ (B232). */
+    if (prisne && (!!a && typeof a === 'object') !== (!!b && typeof b === 'object') && (maCislo(a) || maCislo(b))) { pridej(c); return; }
     if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return;   // texty, příznaky, null
     if (Array.isArray(a) !== Array.isArray(b)) return;       // jiný tvar = jiná verze, ne jiná čísla
     if (Array.isArray(a)) {

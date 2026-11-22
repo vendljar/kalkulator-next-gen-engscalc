@@ -516,6 +516,11 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
     return odmitni(400, veta('rozměr profilu není v katalogu jeklů (' + nezname.join('; ')
       + '). Vyberte v zadání šachty platný rozměr'));
 
+  /* Revize Fable R1 (B231): příznaky strany se ukládají jen jako pravda /
+   * nepravda — pravdivá nebooleovská hodnota (1, "ano", {}) jinak stranu
+   * přepnula a porovnání ji mohlo přehlédnout. */
+  for (const k of ['jenProj', 'jenOck']) if (zak && Object.prototype.hasOwnProperty.call(zak, k)) zak[k] = !!zak[k];
+
   ocistiZnacky(zak);
   ocistiZnacky(stara);
 

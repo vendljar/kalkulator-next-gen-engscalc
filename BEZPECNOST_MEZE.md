@@ -2151,12 +2151,14 @@ Roadmapa #692–#700 (pracovní čísla).
   varianta odemčená správcem v témže uložení se nepočítá). Nový zámek nese snímek `zamek.strana`
   (`jenProj`, `jenOck`, vyřazená strana) — razítko mimo klíč, píše a drží ho server (`uloZamekRazitkaDrz`).
   Klient zmrazí `ZAK.jenProj` / `ZAK.jenOck` (`zamekZakCestaZmrazena`). Dotisk dokumentu nové strany hlídá
-  i nepotvrzenou ruční cenu (`rucniCenyZamekProblem`) — pro zakázky z doby před BZ. *Mez:* obnova ze zálohy
-  příznak bere jako doklad; strana se dál mění i **číslem nabídky** (vedoucí strana podle čísla OCK / PROJ,
-  `zakazkaVedouciStrana`) — číslo odeslané nabídky mění jen administrátor (B56), PROJ číslo u zámku OCK
-  ne vždy; otázka pro J. V. #700 (3).
+  i nepotvrzenou ruční cenu (`rucniCenyZamekProblem`) — pro zakázky z doby před BZ. Revize Fable (R1, R2):
+  server příznaky ukládá jen jako pravda / nepravda (pravdivá hodnota `1`, „ano“, `{}` dřív stranu přepnula
+  a porovnání ji přehlédlo) a zmrazí se i **výsledná vyřazená strana** (`zakazkaVyrazenaStrana` uložené
+  × ukládané verze) — změna strany číslem nabídky (např. „ÓVP“ místo „OVP“ = týž soubor, jiná strana)
+  je taky 403, i pro administrátora. *Mez:* obnova ze zálohy příznak bere jako doklad.
 - **B232 — přísné ověření zmrazeného výsledku — OPRAVENO.** Nový zámek: číslo jen v jednom z výsledků
-  (vypuštěné, přidané, číslo proti `null`) je rozdíl → razítko „nesouhlasi“ a varování po uložení.
+  (vypuštěné, přidané) a objekt / pole s číslem proti čemukoli jinému (`null`, text, `true`; revize R3)
+  je rozdíl → razítko „nesouhlasi“ a varování po uložení.
   Tolerance P6 (jiná verze stránky) platí jen pro texty, příznaky a klíče bez čísel. *Mez:* nesouhlas
   uložení neodmítá (B59 — rozpor je zapsaný v zámku a hlášený), controlling a dokumenty čtou zmrazený
   výsledek dál; zda nový zámek s „nesouhlasi“ odmítat, rozhodne J. V. (#700 (2)).
@@ -2169,7 +2171,9 @@ Roadmapa #692–#700 (pracovní čísla).
   (`navrhy`, nejvýš 20; drží je server, klient je nepřepíše ani nesmaže); převezme / zamítne ho autor
   nebo administrátor (`akce: navrhPrijmout | navrhZamitnout`, jinak 403). Každá změna karty uloží
   předchozí verzi do **historie** `zakaznici/h/<klíč>` (nejvýš 50; čte každý přihlášený jako kartu;
-  záloha celé úložiště, obnova touž očistou). *Mez:* karta bez autora (data před B29) mění jen
+  záloha celé úložiště, obnova touž očistou; smazání karty smaže i historii — revize R5). *Mez (revize
+  R6, R7, #701):* dvojče karty pod jiným klíčem (IČO × název) autora obejde; návrhy a historie se
+  zapisují bez výhradního úseku. *Mez:* karta bez autora (data před B29) mění jen
   administrátor; mazání dál jen administrátor; strop počtu karet a pole `zalozen` (B244) zůstávají
   k pozdější dávce (#698).
 - **B235 / B236 — zápis do Pipedrive — OPRAVENO, ZÁPIS VYPNUTÝ.** Jednotný vypínač dřív neexistoval
@@ -2180,8 +2184,9 @@ Roadmapa #692–#700 (pracovní čísla).
   Statická pojistka v testu: každé zápisové volání jde přes `pdZavolej`. Před prvním zápisem poznámky
   do dealu (B235) a před přepojením organizace akcí `vitez` (B236) server ověří, že **deal patří
   zakázce** (`lib/pd_overeni.mjs`): živá vazba z webhooku, pole „Odkaz na kalkulaci“ míří na zakázku,
-  nebo číslo nabídky v dealu (pole CN, jinak z názvu) sedí s číslem zakázky (pravidlo webhooku
-  `pdWebhookCisloSedi`, obě čísla neprázdná) — jinak stav „neovereno“ a nic se nezapíše. Strop prvních
+  nebo číslo nabídky v dealu (pole CN, jinak z názvu) sedí s číslem, ze kterého je **klíč souboru**
+  zakázky (číslo OCK, jinak PROJ — revize R4: číslo PROJ vedle čísla OCK autor volně přepisuje; pravidlo
+  webhooku `pdWebhookCisloSedi`, obě čísla neprázdná) — jinak stav „neovereno“ a nic se nezapíše. Strop prvních
   zápisů poznámek do nového dealu **na uživatele** 30/h (vedle 20/h na deal). *Mez:* poznámka, kterou
   server do téhož dealu už zapsal, se dál upravuje bez nového ověření; dvě zakázky s různým číslem
   na jednom dealu — píše jen ta s číslem dealu; oprava firmy (`akce: zapis`, B209) vazbu dealu

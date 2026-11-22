@@ -159,6 +159,22 @@ const uloz = async (z, c) => { const r = await post(zakazky, 'http://x/api/zakaz
   test('B235: odkaz na kalkulaci v dealu = vazba doložená, poznámka zapsána', t3.pdPoznamka === 'zalozeno', t3.pdPoznamka);
 }
 {
+  /* Revize Fable R4: číslo PROJ (projHlavicka.cislo) vedle čísla OCK autor volně
+   * přepisuje — vazbu dealu nedokládá (jen číslo, ze kterého je klíč souboru). */
+  const z = nova(); const cizi = D().dealy.find(d => d.id === dealy[60]);
+  cizi.custom_fields[CN] = 'CN-777-CIZI';
+  z.projHlavicka = Object.assign(z.projHlavicka || {}, { cislo: 'CN-777-CIZI' });
+  z.pdDealId = String(dealy[60]);
+  const pred = notes().length;
+  const t = await uloz(z, cO);
+  test('B235 R4: číslo PROJ shodné s cizím dealem vazbu nedoloží (neovereno, nic nezapsáno)', t.pdPoznamka === 'neovereno' && notes().length === pred, t.pdPoznamka);
+  /* Zakázka jen s číslem PROJ (to je klíč jejího souboru) — vazba platí. */
+  const zp = nova(); zp.cislo = ''; zp.projHlavicka = Object.assign(zp.projHlavicka || {}, { cislo: '2026 - OVP - CN - 9977 - TEST' });
+  const dp = D().dealy.find(d => d.id === dealy[61]); dp.custom_fields[CN] = '2026 - OVP - CN - 9977 - TEST'; zp.pdDealId = String(dealy[61]);
+  const tp = await uloz(zp, cO);
+  test('B235 R4: číslo PROJ jako klíč souboru zakázky vazbu doloží (pojistka)', tp.pdPoznamka === 'zalozeno', tp.pdPoznamka + ' ' + (tp.chyba || ''));
+}
+{
   /* Strop na uživatele: první zápisy do nových dealů. */
   const s = G.__TEST_ULOZISTE('pd_cache');
   await s.zapis('strop:poznamka:bz.pd@priklad.cz', { od: Date.now(), pocet: (PP.PD_POZNAMKA_STROP_UZIVATEL || 30) });

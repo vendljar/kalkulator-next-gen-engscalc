@@ -34,6 +34,12 @@ zámků, ceny ani text dokumentů nemění. Před sloučením revize poradce (Fa
   `test_koncova_cena` N4, `test_vyjimky` B153/B155 (stav před B231 zapsán přímo), Pipedrive sady (deal nese číslo
   nabídky zakázky). Mutace [BZ] 21. PoC auditu B231 (2×), B232, B233, B234, B235, B236: před ZRANITELNÉ, po ODOLNÉ.
 - **Roadmapa:** #692–#700 (pracovní čísla); #698 souhrn nízkých nálezů B237–B256, #699 zbytek B233, #700 otázky J. V.
+- **Opravy po revizi Fable (22. 11.):** R1 příznak strany s pravdivou nebooleovskou hodnotou (`1`, „ano“, `{}`) —
+  server ho ukládá jako pravda/nepravda a porovnává pravdivost; R2 zmrazena i výsledná strana (změna čísla nabídky,
+  např. „ÓVP“ × „OVP“, je 403 i pro správce); R3 přísné ověření: objekt s čísly proti textu / `true` / `null` = rozdíl;
+  R4 vazbu dealu dokládá jen číslo, ze kterého je klíč souboru zakázky (ne číslo PROJ vedle OCK); R5 smazání karty
+  zákazníka smaže i historii; nestabilní kontrola rejstříku v `test_vyjimky` (hledala sazbu i v ms razítku). Testy
+  R1–R5 před opravou 8 selhání, po opravě zelené; mutace [BZ] 25/25. Roadmapa #701 (R6, R7), #700 otázky (5), (6).
 
 ## v19.11.11 — D3 #688: Objednávka / Smlouva PROJ z nabídky PROJ, větev claude/d3-objednavka-proj
 

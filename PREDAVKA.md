@@ -34,7 +34,7 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   prac. Testy `netlify/test_bz_bezpecnost.mjs`, `test_bz_pipedrive.mjs`, mutace [BZ] 21. **Před sloučením revize Fable.**
   Rozhodnutí v dávce (k revizi): (1) B231: zmrazeny jen příznaky `jenProj`/`jenOck`, pro každou roli, ven = odemčení
   správcem; snímek `zamek.strana` je razítko mimo klíč (drží server); obnova příznak bere ze zálohy; změna strany
-  číslem nabídky NEzmrazena (#700-3). Dotisk nově hlídá i `rucniCenyZamekProblem`. (2) B232: „nesouhlasí“ dál jen
+  po revizi zmrazena i strana podle čísla (R2). Dotisk nově hlídá i `rucniCenyZamekProblem`. (2) B232: „nesouhlasí“ dál jen
   varuje (B59), neodmítá (#700-2); test P6 v `test_prava` zúžen na texty a klíče bez čísel. (3) B233: Blobs 8.2.0
   nemá podmíněný zápis → `vyhradne` v instanci; mezi instancemi mez (#699). (4) B234: návrh změny = pole `navrhy`
   na kartě (vzor `popisyNavrhy`), převzetí/zamítnutí autor nebo administrátor; „správce“ = role Administrátor;
@@ -45,7 +45,7 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   (#700-4). (6) B195: kód beze změny, ověřeno testem; mez opravena. Upravené cizí testy: `test_koncova_cena` N4,
   `test_vyjimky` B153/B155 (stav „před B231“ zapsán přímo do úložiště), přípravky Pipedrive (deal nese číslo
   nabídky zakázky), `test_vsd_pd_poznamka` 10 (N3 → jedna poznámka).
-  Oddíl PG přesunut do archivu (limit 15 kB).
+  Revize Fable „sloučit po opravě“: R1–R5 + flake opraveno (22. 11.), #701, #700 (5)(6). PG v archivu.
 - **D3 #688** (`claude/d3-objednavka-proj`, v19.11.11, nad 042fcbc): nový dokument „Objednávka / Smlouva“ PROJ
   (`src/objednavka_proj.js`, `src/ui/objednavka_proj_ui.js`; karta v KL PROJ pod SoD PROJ; tisk/PDF + Word bez šablony;
   číslo CN → OBJ; ceny = nabídka PROJ). Sdílené soubory jen po řádku: `build.py`, `kryci_proj_ui.js` (karta),

@@ -261,13 +261,35 @@ const filtr = filtrZArgv(process.argv.slice(2));
  * chybu někdo udělal doopravdy. */
 const MUTACE = [
   /* BZ (21. 11. 2026): opravy bezpečnostního auditu 20. 11. 2026 — B231–B236, B195.
-   * Hlídají netlify/test_bz_bezpecnost.mjs a netlify/test_bz_pipedrive.mjs. [BZ] */
+   * Hlídají netlify/test_bz_bezpecnost.mjs a netlify/test_bz_pipedrive.mjs. [BZ]
+   * Model R1 (=== true) a samostatná větev „číslo proti null“ jsou ekvivalentní mutace
+   * (pokrývá je porovnání výsledné strany R2 a pravidlo R3), proto tu nejsou. */
+  { nazev: "BZ R1: server nenormalizuje příznak strany [BZ]", soubor: "lib/zakazka_kontrola.mjs",
+    hledej: "  for (const k of ['jenProj', 'jenOck']) if (zak && Object.prototype.hasOwnProperty.call(zak, k)) zak[k] = !!zak[k];",
+    nahrad: "",
+    proc: "pravdivá nebooleovská hodnota (1, \"ano\") by se uložila a stranu přepnula (revize R1)", sady: ['test_bz_bezpecnost.mjs'] },
+  { nazev: "BZ R2: strana určená číslem se nezmrazí [BZ]", soubor: "../src/zamek.js",
+    hledej: "  if (a.jenProj === b.jenProj && a.jenOck === b.jenOck && vyr(stara) === vyr(nova)) return '';",
+    nahrad: "  if (a.jenProj === b.jenProj && a.jenOck === b.jenOck) return '';",
+    proc: "změnou čísla nabídky by šla přepnout vedoucí strana odeslané i prodané zakázky (revize R2)", sady: ['test_bz_bezpecnost.mjs'] },
+  { nazev: "BZ R3: přísné ověření pustí podstrom s čísly zaměněný za text [BZ]", soubor: "../src/zamek.js",
+    hledej: "    if (prisne && (!!a && typeof a === 'object') !== (!!b && typeof b === 'object') && (maCislo(a) || maCislo(b))) { pridej(c); return; }",
+    nahrad: "",
+    proc: "podstromy s čísly zaměněné za \"x\" by dostaly „shoda“ (revize R3)", sady: ['test_bz_bezpecnost.mjs'] },
+  { nazev: "BZ R4: vazbu dealu doloží i číslo PROJ vedle OCK [BZ]", soubor: "lib/pd_overeni.mjs",
+    hledej: "  if (cnDealu && pdWebhookCisloKlic(cislo) && pdWebhookCisloSedi(cislo, cnDealu, zak)) return { ok: true, zdroj: 'cislo' };",
+    nahrad: "  if (cnDealu && [cislo, String((zak.projHlavicka || {}).cislo || '')].some(c => pdWebhookCisloKlic(c) && pdWebhookCisloSedi(c, cnDealu, zak))) return { ok: true, zdroj: 'cislo' };",
+    proc: "autor by přepsal číslo PROJ na číslo cizího dealu a psal do něj (revize R4)", sady: ['test_bz_pipedrive.mjs'] },
+  { nazev: "BZ R5: smazaná karta nechá historii [BZ]", soubor: "functions/zakaznici.mjs",
+    hledej: "      await s.smaz('h/' + klic);   // revize Fable R5: historie smazané karty nezůstane ani ji nová karta nezdědí",
+    nahrad: "",
+    proc: "historie smazané karty by zůstala čitelná a nová karta téhož klíče by ji zdědila (revize R5)", sady: ['test_bz_bezpecnost.mjs'] },
   { nazev: "BZ: server pustí změnu strany zakázky po zámku [BZ]", soubor: "lib/zakazka_kontrola.mjs",
     hledej: "      if (strana) return odmitni(403, 'Neuloženo: ' + strana);",
     nahrad: "      if (false) return odmitni(403, 'Neuloženo: ' + strana);",
     proc: "obchodník by po zámku nebo Prodáno přepnul stranu zakázky — obchvat schválení ruční ceny a jiná strana v controllingu a hodnotě dealu (B231)", sady: ['test_bz_bezpecnost.mjs'] },
   { nazev: "BZ: model strany nepozná změnu příznaku [BZ]", soubor: "../src/zamek.js",
-    hledej: "  if (a.jenProj === b.jenProj && a.jenOck === b.jenOck) return '';",
+    hledej: "  if (a.jenProj === b.jenProj && a.jenOck === b.jenOck && vyr(stara) === vyr(nova)) return '';",
     nahrad: "  if (true) return '';",
     proc: "změna jenProj/jenOck po zámku by prošla (B231)", sady: ['test_bz_bezpecnost.mjs'] },
   { nazev: "BZ: klient nezmrazí příznak strany [BZ]", soubor: "../src/zamek.js",
@@ -294,10 +316,6 @@ const MUTACE = [
     hledej: "      if (!Object.prototype.hasOwnProperty.call(a, k) && (Array.isArray(b[k]) || maCislo(b[k]))) pridej(c + '.' + k);",
     nahrad: "      if (!Object.prototype.hasOwnProperty.call(a, k) && Array.isArray(b[k])) pridej(c + '.' + k);",
     proc: "výsledek s vypuštěnými čísly by dostal „shoda“ a controlling ukázal náklad 0 (B232)", sady: ['test_bz_bezpecnost.mjs'] },
-  { nazev: "BZ: přísné ověření nepočítá číslo proti null [BZ]", soubor: "../src/zamek.js",
-    hledej: "      if (maCislo(a === undefined || a === null ? b : a)) { pridej(c); return; }",
-    nahrad: "      if (false) { pridej(c); return; }",
-    proc: "číslo nahrazené null by prošlo jako shoda (B232)", sady: ['test_bz_bezpecnost.mjs'] },
   { nazev: "BZ: počítadlo pokusů bez výhradního úseku [BZ]", soubor: "lib/sdilene.mjs",
     hledej: "  return vyhradne(POKUSY_FRONTA + klic, async () => {\n    const s = await uloziste(POKUSY_ULOZISTE);\n    const z = { n:",
     nahrad: "  return (async (_k, f) => f())(POKUSY_FRONTA + klic, async () => {\n    const s = await uloziste(POKUSY_ULOZISTE);\n    const z = { n:",
