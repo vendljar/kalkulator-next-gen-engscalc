@@ -13,6 +13,7 @@
  *          k29:*, k36:*  scénáře nálezů K29-N1 (zastřešení vyřazené, měď,
  *                      #451) a K36-N2 (zahraniční montáž můstků, #550)
  *          k50:*       K50-N1 (statika opláštění v zahraniční řadě)
+ *          k40:*       K40-N1 (přepnutí typu šachty / zasklení, čelní sklo; #647)
  *          ukazka:*    smyšlené zakázky testovacího webu (src/testdata.js)
  *          fuzz:*      generátor fuzz invariantů, pevné semínko 20261110
  *        Model 1 i Model 2. Ceník: zkušební ceník testů (src/zkusebni_cenik.js
@@ -253,6 +254,40 @@ async function otisky(src, volby) {
     }
   }
 
+  /* 3c) K40-N1 (#614, #647): přepnutí typu šachty / zasklení s vyřazeným nebo
+   *     přepsaným čelním sklem. Sada dřív neměla zakázku, kde se po přepnutí
+   *     řádek čelního skla přejmenuje (VSG 4.4.2 ↔ 4.4.1), takže porovnání
+   *     main × test vadu ceny K40-N1 nevidělo (kolo 49). Přepnutí se dělá jako
+   *     v UI `set('Z.typSachty' | 'Z.zaskleni')`: název čelního skla PŘED změnou,
+   *     změna zadání, `skloMigraceNazvu(data, { predCelni, zadani })`. Jádro bez
+   *     opravy K40-N1 (main v11.11.1) dvojici ignoruje — vyřazené sklo zůstane
+   *     pod starým názvem a nové se počítá (jiná cena a řádky). Čísla smyšlená. */
+  const K40 = [
+    ['k40:int-terce-na-ext-vyrazene', { typSachty: 'interiérová', zaskleni: 'na terče' }, { typSachty: 'exteriérová' }, 'nepocitat'],
+    ['k40:int-terce-na-prictniky-vyrazene', { typSachty: 'interiérová', zaskleni: 'na terče' }, { zaskleni: 'mezi příčníky' }, 'nepocitat'],
+    ['k40:int-prictniky-na-terce-vyrazene', { typSachty: 'interiérová', zaskleni: 'mezi příčníky' }, { zaskleni: 'na terče' }, 'nepocitat'],
+    ['k40:ext-na-int-terce-mnozstvi', { typSachty: 'exteriérová', zaskleni: 'na terče' }, { typSachty: 'interiérová' }, 'mnozstvi'],
+  ];
+  for (const [jm, pred, po, druh] of K40) {
+    for (const f of [true, false]) {
+      const zak = nova('2026-OPR-CN-9592', 'Porovnání sestavení ' + jm);
+      const v = zak.varianty[0];
+      const z = v.data.ock.zadani;
+      Object.assign(z, ZAD, pred, { profily: kop((global.PROFILY_VYCHOZI || {})[pred.typSachty] || z.profily) });
+      v.data.ock.fixes = f;
+      v.data.cenik = cenikZ(false);
+      const predCelni = zkus(() => skloVolba(z, v.data.cenik).celni.nazev);
+      if (typeof predCelni === 'string') {
+        if (druh === 'nepocitat') z.nepocitat = (Array.isArray(z.nepocitat) ? z.nepocitat : []).concat([predCelni]);
+        else z.mnozstviPrepis = Object.assign({}, z.mnozstviPrepis, { [predCelni]: 2.5 });
+      }
+      Object.assign(z, po);
+      if (po.typSachty) z.profily = kop((global.PROFILY_VYCHOZI || {})[po.typSachty] || z.profily);
+      zkus(() => skloMigraceNazvu(v.data, { predCelni, zadani: z }));
+      out[jm + ':' + (f ? 'm2' : 'm1')] = await scenar(zak, v, J);
+    }
+  }
+
   /* 4) smyšlené zakázky testovacího webu (src/testdata.js TOHOTO stromu) */
   const TD = require(path.join(KOREN, 'src', 'testdata.js'));
   for (const p of TD.TESTDATA_ZAKAZKY) {
@@ -318,7 +353,7 @@ function rozdilyPripadu(a, b) {
 
 function skupinaPripadu(jm) {
   const p = jm.split(':')[0];
-  return { fixtura: 'fixtury', scenar: 'scénáře #560 + můstky', k29: 'K29-N1 / #451', k36: 'K36-N2 / #550', k50: 'K50-N1', ukazka: 'ukázkové zakázky', fuzz: 'fuzz (semínko)' }[p] || p;
+  return { fixtura: 'fixtury', scenar: 'scénáře #560 + můstky', k29: 'K29-N1 / #451', k36: 'K36-N2 / #550', k50: 'K50-N1', k40: 'K40-N1 / #614', ukazka: 'ukázkové zakázky', fuzz: 'fuzz (semínko)' }[p] || p;
 }
 
 function porovnej(A, B, volby) {

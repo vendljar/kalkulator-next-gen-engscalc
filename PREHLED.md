@@ -109,4 +109,4 @@ K tomu 12 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --ziv
 
 ## Nehotové položky evidence
 
-Celkem 59: J. V. 40, kolega 5, koordinace 9, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 50: J. V. 40, kolega 5, koordinace 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.

@@ -8,9 +8,9 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v22.11.2 — BZ: opravy bezpečnostního auditu 20. 11. 2026 (B231–B236, B195), větev claude/bz-bezpecnost
+## v22.11.3 — BZ: opravy bezpečnostního auditu 20. 11. 2026 (B231–B236, B195), větev claude/bz-bezpecnost
 
-Nad integrací `cda289e` (v19.11.11), sloučeno s integrací `1254bb6` (v22.11.1). Rozhodnutí J. V. 21. 11. 2026 (přes koordinaci). Mění bezpečnostní meze a chování
+Nad integrací `cda289e` (v19.11.11), sloučeno s integrací `cedb857` (v22.11.2). Rozhodnutí J. V. 21. 11. 2026 (přes koordinaci). Mění bezpečnostní meze a chování
 zámků, ceny ani text dokumentů nemění. Před sloučením revize poradce (Fable). Verzi přečísluje koordinace.
 
 - **B231 (vysoká) — strana zakázky po zámku zmrazená:** příznaky `jenProj` / `jenOck` u zakázky se zamčenou variantou
@@ -20,7 +20,7 @@ zámků, ceny ani text dokumentů nemění. Před sloučením revize poradce (Fa
 - **B232 — ověření zmrazeného výsledku:** přísné porovnání nového zámku počítá chybějící i přidané číslo → „nesouhlasí“
   s varováním (dřív „shoda“ i výsledku bez 782 čísel).
 - **B233 — přihlášení:** počítadla pokusů (e-mail i adresa) se počítají ve výhradním úseku — souběžná vlna z jedné
-  adresy limit 60/15 min neobejde (PoC 400 souběžných → 390× 429). Zbytek mezi instancemi funkce = mez (#702).
+  adresy limit 60/15 min neobejde (PoC 400 souběžných → 390× 429). Zbytek mezi instancemi funkce = mez (#703).
 - **B234 — karta zákazníka:** mění jen autor a administrátor; ostatním se úprava uloží jako **návrh změny** (převezme
   nebo zamítne autor / administrátor, tlačítka na kartě). **Historie verzí** karty (tlačítko „Historie verzí“,
   50 verzí, v záloze i obnově).
@@ -33,13 +33,51 @@ zámků, ceny ani text dokumentů nemění. Před sloučením revize poradce (Fa
   `netlify/test_bz_pipedrive.mjs` (20; před opravou 13 selhání), `test_prava.mjs` (B232, B234), upravené přípravky
   `test_koncova_cena` N4, `test_vyjimky` B153/B155 (stav před B231 zapsán přímo), Pipedrive sady (deal nese číslo
   nabídky zakázky). Mutace [BZ] 21. PoC auditu B231 (2×), B232, B233, B234, B235, B236: před ZRANITELNÉ, po ODOLNÉ.
-- **Roadmapa:** #695–#703 (pracovní čísla); #701 souhrn nízkých nálezů B237–B256, #702 zbytek B233, #703 otázky J. V.
+- **Roadmapa:** #696–#704 (pracovní čísla); #702 souhrn nízkých nálezů B237–B256, #703 zbytek B233, #704 otázky J. V.
 - **Opravy po revizi Fable (22. 11.):** R1 příznak strany s pravdivou nebooleovskou hodnotou (`1`, „ano“, `{}`) —
   server ho ukládá jako pravda/nepravda a porovnává pravdivost; R2 zmrazena i výsledná strana (změna čísla nabídky,
   např. „ÓVP“ × „OVP“, je 403 i pro správce); R3 přísné ověření: objekt s čísly proti textu / `true` / `null` = rozdíl;
   R4 vazbu dealu dokládá jen číslo, ze kterého je klíč souboru zakázky (ne číslo PROJ vedle OCK); R5 smazání karty
   zákazníka smaže i historii; nestabilní kontrola rejstříku v `test_vyjimky` (hledala sazbu i v ms razítku). Testy
-  R1–R5 před opravou 8 selhání, po opravě zelené; mutace [BZ] 25/25. Roadmapa #704 (R6, R7), #703 otázky (5), (6).
+  R1–R5 před opravou 8 selhání, po opravě zelené; mutace [BZ] 25/25. Roadmapa #705 (R6, R7), #704 otázky (5), (6).
+## v22.11.2 — HN: zpevnění testů kola (#638, #644, #646, #647, #695), větev claude/hn-harnessy
+
+Nad integrací `cda289e` (v19.11.11). Jen testy, harnessy a nástroje kola — **kód aplikace beze změny**, cena ani
+dokumenty se nemění (porovnání sestavení proti integraci SHODA). Verzi přečísluje koordinace.
+
+- **#638 — nestabilní `overit_zobrazeni.mjs` a `overit_zaporne.mjs`:** „limit přihlášení" byl ve skutečnosti chybějící
+  `ADMIN_EMAIL`: `netlify/lib/sdilene.mjs` ho čte při importu, harness ho nastavoval až v těle modulu (statické importy
+  běží dřív) → přihlášení správce 401, timeout 10 s. V kole to zakrýval export ve `spust_testy.sh`. Nový
+  `nastroje/harness_prostredi.mjs` (importuje se první; i `overit_cenik_prava`, `overit_neulozene`,
+  `netlify/test_prihlaseni`). `harness_cekani.js`: `cekejNaStart`, `prihlasVProhlizeci` (čeká na přihlášení nebo
+  odmítnutí a vypíše hlášku aplikace s návodem). Oba harnessy bez `waitForTimeout` (30 pauz) a pevných limitů — čeká
+  se na klid (dotazy API, akce, odložené samoukládání matice). B168 v `overit_zobrazeni` procházel jen díky časování;
+  scénář „heslo poprvé" se nastaví výslovně (HN-T2). Pojistka: `test_harness_cekani.js` nad cda289e padá, po 46/0;
+  bez `ADMIN_EMAIL` zaporne pád → 15/0, zobrazeni timeout → 159/0, test_prihlaseni 37/30 → 67/0; souběh 6 harnessů zelený.
+  Třetí nestabilní test z #638, `netlify/test_577_kopie_skript.mjs` T4 (padl i v kole této dávky): „špatný token"
+  `TOKEN.slice(0, -1) + 'X'` se při náhodném TOKENu končícím „X" (1 : 64) shodoval se správným → 200. Poslední znak
+  se teď vždy změní (`pokazToken`, kontrola T4a); reprodukce `KNG_577_TOKEN=<…X>`: před 52/1, po 54/0.
+- **#644 — občasné selhání `test_vz_unik.js` („výměna řídícího (B)"):** žádný únik. Pětimístná cena varianty v EUR
+  se náhodně shodovala s číslicemi razítka času `v.vytvoreno`/`v.upraveno` v JSON pohledu (např. 10:49:23.2xx ∋ 49232);
+  záleželo na čase dne, ne na posunu hodin. Detektor ceny vynechává ISO časy a id z `Date.now()`; nová pojistka
+  zmrazí hodiny na čas nesoucí cenu (před 2 FAIL, po 0); posuny +400/−30/+1000 dní a 64 zmrazených časů 0 FAIL.
+- **#646 — `overit_sod.mjs` na šablony v4–v6:** očekávání podle verze šablony (SoD realizace v2+), tečky „……" místo
+  `{{SODP_*}}`/`{{PM_*}}` (C3 #584). Nový `nastroje/smlouvy_syntet.mjs` vyrobí smyšlené šablony (SoD realizace v4–v6,
+  SoD PROJ v2–v4, plná moc v1–v2) týmiž nástroji jako `vyrob_sablony.js` — bez `KNG_PODKLADY` harness běží nad nimi
+  a už se nepřeskakuje. Pojistka: starý harness nad syntetickými v6 46/5, nový 51/0; bez podkladů 55/0.
+- **#647 — pevná sada porovnání sestavení:** `porovnani_sada.js` oddíl 3c (`k40:*`), přepnutí typu šachty / zasklení
+  s vyřazeným nebo přepsaným čelním sklem. `origin/main × origin/claude/rychla-k40n1`: stará sada 79/79 SHODA,
+  nová 8 rozdílných (jen `k40:*`); seznam `podklady/porovnani/ocekavane_k40n1_main_2026-11-21.txt` → kód 0.
+- **#695 — přeskočení v kole je vidět:** `testovaci_kolo.sh` bez načitatelného playwrightu skončí hned
+  kódem 2 s návodem, přeskočené harnessy = selhání, vědomě `KNG_BEZ_PROHLIZECE=1` → „ZELENÁ BEZ PROHLÍŽEČE".
+  `test_354_mustky.js` si staré jádro dotáhne podle plného SHA, jinak vypíše `PRESKOCENO_CAST:` a `spust_testy.sh`
+  ho přenese do „Přeskočené sady" (v mělkém klonu teď srovnání opravdu běží: 67/0 → 69/0). Nový
+  `nastroje/test_kolo_preskoceni.sh` ve statických kontrolách (10 z 10); pojistka nad původními skripty 8 FAIL, po 10/0.
+  Svěřené rozhodnutí HN-T1.
+
+Kolo `--bez-mutaci --proti origin/claude/integrace-16-10` (porovnání proběhlo už proti nové integraci 885577e, v21.11.4):
+**VŠE ZELENÉ** — sady 496/0/6, hodiny 401/0/1, statické 10/10, porovnání SHODA 367/367 (nově i `k40:*`). Přeskočené jen
+test.js a 5 harnessů bez `KNG_PODKLADY` (`overit_sod.mjs` už ne). Mutace nespuštěny — dávka nesahá do jádra ani serveru.
 ## v22.11.1 — VZD: drobnosti víc zákazníků a dokumentů (#673, #674, #665, #683, #635), větev claude/vzd-drobnosti
 
 Nad integrací `cda289e` (v19.11.11), sloučeno s integrací `885577e` (v21.11.4). Cenu nemění. Mění text dotisku odeslané nabídky („Vypracoval“, #665, rozhodnutí

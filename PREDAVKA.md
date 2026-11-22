@@ -22,10 +22,11 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/on-online` | (tato dávka) | v19.11.8 | #ON kdo je online (Nastavení → Uživatelé) nad 042fcbc; verzi přečísluje koordinace |
 | `claude/d8-lhuty` | (tato dávka) | v19.11.7 | D8 #677 (pracovní) lhůty PROJ → termíny krycího listu; nad integrací 042fcbc; verzi přečísluje koordinace |
 | `claude/vz-f1` | (tato dávka) | v18.11.8 | VZ-F1 #659 opravy nálezů ruční zkoušky VZ; nad ec5bbac, sloučeno s integrací 41bbe99 |
+| `claude/hn-harnessy` | (tato dávka) | v22.11.2 | HN zpevnění testů kola (#638, #644, #646, #647, #695) nad cda289e; aplikace beze změny; verzi přečísluje koordinace |
 | `claude/vzd-drobnosti` | (tato dávka) | v22.11.1 | VZD #673 #674 #665 #683 #635, sloučeno s integrací 885577e; viz CHANGELOG |
 | `claude/dos-drobnosti` | (tato dávka) | v21.11.4 | DOS #680 #690 #691 nad cda289e |
 | `claude/pg-tisk` | (tato dávka) | v19.11.10 | PG #684–#687 nad integrací 042fcbc; čísla a verzi přečísluje koordinace |
-| `claude/bz-bezpecnost` | (tato dávka) | v22.11.2 | BZ audit B231–B236, B195 nad cda289e; revize Fable |
+| `claude/bz-bezpecnost` | (tato dávka) | v22.11.3 | BZ audit B231–B236, B195 nad cda289e; revize Fable |
 | `claude/ds-sablony` | (tato dávka) | v21.11.3 | DS #648–#650 nad cda289e; verzi přečísluje koordinace |
 | `claude/op1-drobnosti` | (tato dávka) | v21.11.2 | OP1: PG-N1, #682, D3-N1, D3-N2 nad cda289e; kolo --bez-mutaci VŠE ZELENÉ, S3 SHODA 359/359, mutace [OP1] 9/9, [D3] 18/18, [NP] 16/16, [PG] 16/16; #692–#694 a verzi přečísluje koordinace |
 
@@ -34,25 +35,31 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 
 ## Běžící dávky
 
-- **BZ** (`claude/bz-bezpecnost`, v22.11.2, nad cda289e): opravy auditu 20. 11. (rozhodnutí J. V. 21. 11.), #695–#703
+- **BZ** (`claude/bz-bezpecnost`, v22.11.3, nad cda289e): opravy auditu 20. 11. (rozhodnutí J. V. 21. 11.), #696–#704
   prac. Testy `netlify/test_bz_bezpecnost.mjs`, `test_bz_pipedrive.mjs`, mutace [BZ] 21. **Před sloučením revize Fable.**
   Rozhodnutí v dávce (k revizi): (1) B231: zmrazeny jen příznaky `jenProj`/`jenOck`, pro každou roli, ven = odemčení
   správcem; snímek `zamek.strana` je razítko mimo klíč (drží server); obnova příznak bere ze zálohy; změna strany
   po revizi zmrazena i strana podle čísla (R2). Dotisk nově hlídá i `rucniCenyZamekProblem`. (2) B232: „nesouhlasí“ dál jen
-  varuje (B59), neodmítá (#703-2); test P6 v `test_prava` zúžen na texty a klíče bez čísel. (3) B233: Blobs 8.2.0
-  nemá podmíněný zápis → `vyhradne` v instanci; mezi instancemi mez (#702). (4) B234: návrh změny = pole `navrhy`
+  varuje (B59), neodmítá (#704-2); test P6 v `test_prava` zúžen na texty a klíče bez čísel. (3) B233: Blobs 8.2.0
+  nemá podmíněný zápis → `vyhradne` v instanci; mezi instancemi mez (#703). (4) B234: návrh změny = pole `navrhy`
   na kartě (vzor `popisyNavrhy`), převzetí/zamítnutí autor nebo administrátor; „správce“ = role Administrátor;
   historie `zakaznici/h/<klíč>` (50), v záloze (N4) i obnově. (5) B235/B236: jednotný vypínač nebyl → nová proměnná
   Netlify `PIPEDRIVE_ZAPIS=ano` (výchozí VYP, simulátor nehlídá) v `pdZavolej`; vazba dealu (`lib/pd_overeni.mjs`):
   vazba z webhooku / odkaz na kalkulaci / číslo nabídky (pole CN, jinak z názvu); strop 30 nových dealů/h na
   uživatele; dvě zakázky s různým číslem na dealu píše jen ta s číslem dealu; oprava firmy (B209) beze změny
-  (#703-4). (6) B195: kód beze změny, ověřeno testem; mez opravena. Upravené cizí testy: `test_koncova_cena` N4,
+  (#704-4). (6) B195: kód beze změny, ověřeno testem; mez opravena. Upravené cizí testy: `test_koncova_cena` N4,
   `test_vyjimky` B153/B155 (stav „před B231“ zapsán přímo do úložiště), přípravky Pipedrive (deal nese číslo
   nabídky zakázky), `test_vsd_pd_poznamka` 10 (N3 → jedna poznámka).
-  Revize Fable: R1–R5 + flake opraveno, #704, #703 (5)(6). PG v archivu.
+  Revize Fable: R1–R5 + flake opraveno, #705, #704 (5)(6). PG v archivu.
 - **DOS** (`claude/dos-drobnosti`, v21.11.4, nad cda289e): #680 návrhy mimo číselník; #690 náhled bez světlíků;
   #691 bez verzálek, EN/DE dvojtečka; N4 → šablony v18 (SB). Kolo VŠE ZELENÉ, SHODA 359/359, mutace [DOS] 6/6. HOTOVO.
 - **SB** (`claude/sb-sablony`, 8996260): `--cn-v18` EN/DE/FR + IČ/Tel. Kancelář ze slovníku (#691). Šablony u J. V. (zip). Kolo: sady/hodiny zelené, SHODA 359/359; statické 8/9 = verze.txt 19.11.11 (číslo dá koordinace).
+- **HN** (`claude/hn-harnessy`, v22.11.2, nad cda289e = v19.11.11): jen testy a nástroje kola. #638 harnessy zobrazení /
+  záporné bez pauz + test_577 T4 (náhodný token končící X) (příčina: `ADMIN_EMAIL` čtený při importu → `nastroje/harness_prostredi.mjs`), #644 test_vz_unik
+  (falešná shoda ceny s razítkem času, ne únik), #646 overit_sod + syntetické šablony (`nastroje/smlouvy_syntet.mjs`),
+  #647 případy `k40:*` v porovnání sestavení (+ `podklady/porovnani/ocekavane_k40n1_main_2026-11-21.txt` pro main × test),
+  #695 kolo bez playwrightu = chyba s návodem (`KNG_BEZ_PROHLIZECE=1`), `PRESKOCENO_CAST` v souhrnu.
+  Statické kontroly nově 10. Svěřená HN-T1/T2. Tabulka S7 přesunuta do archivu `2026-11.md`. Kolo VŠE ZELENÉ (496/0/6, hodiny 401/0/1, 10/10, SHODA 367/367 proti 885577e). HOTOVO, předáno koordinaci.
 - **D3 #688** (`claude/d3-objednavka-proj`, v19.11.11, nad 042fcbc): nový dokument „Objednávka / Smlouva“ PROJ
   (`src/objednavka_proj.js`, `src/ui/objednavka_proj_ui.js`; karta v KL PROJ pod SoD PROJ; tisk/PDF + Word bez šablony;
   číslo CN → OBJ; ceny = nabídka PROJ). Sdílené soubory jen po řádku: `build.py`, `kryci_proj_ui.js` (karta),
@@ -117,22 +124,3 @@ Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.)
    sloučených mezitím jdou do `podklady/predavky/2026-11.md`, živý stav sem).
 2. J. V. nahraje skill `testovaci-procedura-kng`; skill `kalkulator-next-gen` zkrátit do 25 kB (návrh S7, mimo repo).
 3. Rychlá cesta K40-N1 do `test` (nad integrací) → J. V. ověří rozdíly cen → do `main` jen na jeho pokyn se sloučením testu.
-
-## S7: co bylo přesunuto kam
-
-| co (dřív) | kam (teď) |
-|---|---|
-| `PREDAVKA.md` 557 kB, 202 oddílů (předávky dávek 1. 10.–17. 11. 2026 a stav koordinace 12. 11.) | beze změny textu do `podklady/predavky/2026-11.md` (60 oddílů), `2026-10.md` (143), `2026-09.md` (oddíl „Předchozí stav (30. 9. 2026)“ odtržený od předávky 1. 10.); ověřeno řádek po řádku |
-| předávka S3 #611 (přišla se sloučením integrace dcb1678) | nahoru do archivu `2026-11.md`; navržené pravidlo porovnání → CLAUDE.md, Testy |
-| stav koordinace 12. 11. (integrace v12.11.3–v12.11.7, pokyny 10. a 11. 11., B0 po kole 47) | archiv `2026-11.md`; platné pokyny → `CLAUDE.md` (Větve, Kdo rozhoduje) a `ROZHODNUTI_LOG.md`; otevřené body → tabulka „Čeká na J. V.“ výš |
-| „Pravidla komunikace s integrátorem Pipedrive“ | archiv `2026-11.md` + zkráceně „Trvalé pokyny“ výš + `ROZHODNUTI_LOG.md` |
-| datovaná rozhodnutí J. V. v předávkách | `podklady/ROZHODNUTI_LOG.md` (výtah, plné znění v archivu) |
-| CLAUDE.md: `test-draft` jako integrační a předávací větev | `ROZHODNUTI_LOG.md` (25. 9., nahrazeno); CLAUDE.md: integrace `claude/integrace-…`, `test-draft` se nepoužívá |
-| CLAUDE.md: výjimka `k16-nalezy` (splněno) | `ROZHODNUTI_LOG.md` (25. 9., neplatné) |
-| CLAUDE.md: „do `test` jen na pokyn J. V.“ | nahrazeno schváleným „do `test` posílá koordinace po celém zeleném kole“ (pokyny 10. a 11. 11., návrh S7) |
-| CLAUDE.md: „ke každé verzi, která má dostat tag, odkaz na release“ | „jen stav pro `main`“ (J. V. 18. 11.); postup s `release_odkaz.py`, `&body=`, kontrolou tagu a `--upravit` zůstal v CLAUDE.md |
-| CLAUDE.md: datované závorky (25. 9., 29. 9., 13. 10., 15. 10., W2 20. 10., P2 23. 10., SEC-M1 1. 11., T2 #543 a čísla běhů Actions, K8-W2/W3/W9) | `ROZHODNUTI_LOG.md`; pravidla samotná v CLAUDE.md beze změny |
-| CLAUDE.md: důvod předávky (pád 25. 9., 1,58 M tokenů) | `ROZHODNUTI_LOG.md` (25. 9.) |
-| CLAUDE.md: body 1–4 Předávacího souboru (číst na `test-draft`, přepisovat celou PREDAVKA, limit 60/75 %, WIP) | CLAUDE.md, Předávací soubor body 1–7 (čte se na integraci; předávka dávky do 3 kB a archiv; limit 60/75 % a WIP beze změny) |
-| ponecháno beze změny obsahu | kontrola údajů a hook `pre-push`, zákaz `--no-verify`, mutace po částech, restart kontejneru, N46, mazání větví tlačítkem v Actions, `release_odkaz.py`, pojistka testů, lightweight tagy, 403 z cloudu |
-| nové v CLAUDE.md (schváleno 18. 11.) | Rychlá cesta (podle změny zadání J. V. 18. 11.: do test, ne do main), Kdo rozhoduje (s úpravami J. V.; kolegu jmenuje J. V., jen test), stupně kol, automat z testengscalc jen čte, STAV kol v `podklady/kola/`, `NOVINKY.md` po sloučení do main, limit 4 sezení, poradce, `main` předkem integrace |

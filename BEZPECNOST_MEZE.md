@@ -1478,7 +1478,7 @@ zámku).
   jako sleva, ale nejde přes schvalování slev ani cenové výjimky. *Co to
   hlídá:* cena nesmí být záporná; **nula je povolená, ale jen se zdrojem**
   (#667, J. V. 18. 11. 2026; potvrzeno J. V. 21. 11. 2026, dávka BZ, roadmapa
-  #700): ruční cena bez zdroje (dodavatel ani číslo nabídky) je cenová
+  #701): ruční cena bez zdroje (dodavatel ani číslo nabídky) je cenová
   výjimka ke schválení (N3, `vyjimkyObsah` → `bezZdroje`) — nový zámek ji
   obchodníkovi i vedoucímu odmítne 403, odeslat ji smí jen administrátor
   (správce, `vyjimkyZamekProblem`). Každá změna shodí potvrzení, kdo a kdy
@@ -2139,12 +2139,12 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   5 minutách, a relace ukončená změnou hesla nebo zásahem správce zhasne až po 5 minutách (bez
   záznamu odhlášení). Údaj je pro přehled správce, ne doklad o docházce ani o přítomnosti.
 
-## BZ — opravy bezpečnostního auditu 20. 11. 2026 (dávka BZ, v22.11.2, 21.–22. 11. 2026)
+## BZ — opravy bezpečnostního auditu 20. 11. 2026 (dávka BZ, v22.11.3, 21.–22. 11. 2026)
 
 Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md`, rozhodnutí J. V. 21. 11. 2026
 (`podklady/ROZHODNUTI_LOG.md`). Testy `netlify/test_bz_bezpecnost.mjs`, `netlify/test_bz_pipedrive.mjs`,
 `netlify/test_prava.mjs` (B232, B234), mutace [BZ] (21). PoC auditu před opravou ZRANITELNÉ, po ODOLNÉ.
-Roadmapa #695–#703 (pracovní čísla).
+Roadmapa #696–#704 (pracovní čísla).
 
 - **B231 — strana zakázky po zámku — OPRAVENO.** Příznaky `jenProj` / `jenOck` se u zakázky se zamčenou
   variantou nemění: server změnu odmítne 403 pro každou roli (`zamekStranaZmena`, zámek z ULOŽENÉ verze;
@@ -2161,26 +2161,26 @@ Roadmapa #695–#703 (pracovní čísla).
   je rozdíl → razítko „nesouhlasi“ a varování po uložení.
   Tolerance P6 (jiná verze stránky) platí jen pro texty, příznaky a klíče bez čísel. *Mez:* nesouhlas
   uložení neodmítá (B59 — rozpor je zapsaný v zámku a hlášený), controlling a dokumenty čtou zmrazený
-  výsledek dál; zda nový zámek s „nesouhlasi“ odmítat, rozhodne J. V. (#703 (2)).
+  výsledek dál; zda nový zámek s „nesouhlasi“ odmítat, rozhodne J. V. (#704 (2)).
 - **B233 — počítadla pokusů o přihlášení při souběhu — OPRAVENO V INSTANCI.** Čtení–změna–zápis počítadel
   (e-mail i adresa) běží ve výhradním úseku nad klíčem (`vyhradne`, vzor B158). *Mez:* Netlify Blobs
   8.2.0 nemá podmíněný zápis — dvě různé instance funkce se navzájem nevidí, souběh mezi nimi může
-  zápis ztratit (zbytek B4/B158; úplná oprava = novější `@netlify/blobs` s `onlyIfMatch`, roadmapa #702).
+  zápis ztratit (zbytek B4/B158; úplná oprava = novější `@netlify/blobs` s `onlyIfMatch`, roadmapa #703).
 - **B234 — karta zákazníka — OPRAVENO.** Kartu ZALOŽÍ kdokoli přihlášený, MĚNÍ jen její autor
   a administrátor (`zakaznikSmiMenit`). Úprava od jiného se uloží jako **návrh změny** na kartě
   (`navrhy`, nejvýš 20; drží je server, klient je nepřepíše ani nesmaže); převezme / zamítne ho autor
   nebo administrátor (`akce: navrhPrijmout | navrhZamitnout`, jinak 403). Každá změna karty uloží
   předchozí verzi do **historie** `zakaznici/h/<klíč>` (nejvýš 50; čte každý přihlášený jako kartu;
   záloha celé úložiště, obnova touž očistou; smazání karty smaže i historii — revize R5). *Mez (revize
-  R6, R7, #704):* dvojče karty pod jiným klíčem (IČO × název) autora obejde; návrhy a historie se
+  R6, R7, #705):* dvojče karty pod jiným klíčem (IČO × název) autora obejde; návrhy a historie se
   zapisují bez výhradního úseku. *Mez:* karta bez autora (data před B29) mění jen
   administrátor; mazání dál jen administrátor; strop počtu karet a pole `zalozen` (B244) zůstávají
-  k pozdější dávce (#701).
+  k pozdější dávce (#702).
 - **B235 / B236 — zápis do Pipedrive — OPRAVENO, ZÁPIS VYPNUTÝ.** Jednotný vypínač dřív neexistoval
   (zrušení vazby a odkaz z webhooku šly ven s pouhým tokenem). Teď `pdZavolej` — jediné místo, kde se
   sahá na síť — odmítne každé volání jiné než GET do skutečného Pipedrive bez proměnné Netlify
   **`PIPEDRIVE_ZAPIS` = „ano“** (503, žádný požadavek); výchozí stav = vypnuto (J. V. 21. 11. 2026:
-  do opravy vypnuto; zapnout smí jen J. V., #703 (1)). Simulátor (#536) ven nejde, vypínač ho nehlídá.
+  do opravy vypnuto; zapnout smí jen J. V., #704 (1)). Simulátor (#536) ven nejde, vypínač ho nehlídá.
   Statická pojistka v testu: každé zápisové volání jde přes `pdZavolej`. Před prvním zápisem poznámky
   do dealu (B235) a před přepojením organizace akcí `vitez` (B236) server ověří, že **deal patří
   zakázce** (`lib/pd_overeni.mjs`): živá vazba z webhooku, pole „Odkaz na kalkulaci“ míří na zakázku,
@@ -2190,7 +2190,7 @@ Roadmapa #695–#703 (pracovní čísla).
   zápisů poznámek do nového dealu **na uživatele** 30/h (vedle 20/h na deal). *Mez:* poznámka, kterou
   server do téhož dealu už zapsal, se dál upravuje bez nového ověření; dvě zakázky s různým číslem
   na jednom dealu — píše jen ta s číslem dealu; oprava firmy (`akce: zapis`, B209) vazbu dealu
-  neověřuje (#703 (4)).
+  neověřuje (#704 (4)).
 - **Nulová ruční cena (mez B195) — UPRAVENO (text meze).** Viz oddíl RC #561 výš: nula jen se zdrojem,
   bez zdroje jen administrátor.
 

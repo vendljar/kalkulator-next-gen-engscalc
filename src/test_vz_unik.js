@@ -205,9 +205,20 @@ function kanarky(text, L) {
     if (n.indexOf(cislice(z.dic)) >= 0) out.push({ druh: 'dic', kdo: z.pism, pole: 4 });
   });
   const c = CENY[L || 'cz'] || {};
-  Object.keys(c).forEach(p => { if (c[p] && n.indexOf(c[p]) >= 0) out.push({ druh: 'cena', kdo: p, pole: 99 }); });
+  const nc = norm(bezCasu(text));
+  Object.keys(c).forEach(p => { if (c[p] && nc.indexOf(c[p]) >= 0) out.push({ druh: 'cena', kdo: p, pole: 99 }); });
   return out;
 }
+/* #644: kanárek ceny je jen číslo (v EUR pětimístné) a hledá se v textu
+ * bez oddělovačů. Strojová razítka času (v.vytvoreno / v.upraveno a další
+ * ISO časy) a id z Date.now() (varianta 'v…', protokol 'z…') nesou číslice
+ * podle skutečných hodin: v 00:49:23.2xx dá ISO čas „…T00:49:23.2…Z“ po
+ * normalizaci „004923200“, a v něm „49232“ = cena V1 v EUR — falešný únik
+ * („cena varianty A/D“ v JSON pohledu, jen při určitém času běhu). Pro hledání
+ * ceny se proto nahradí slovem (číslice kolem se nespojí); kanárky zákazníků a variant (písmena) to nemění. */
+const bezCasu = t => String(t == null ? '' : t)
+  .replace(/\d{4}-\d\d-\d\dT\d\d:\d\d(:\d\d(\.\d+)?)?(Z|[+-]\d\d:?\d\d)?/g, ' cas ')
+  .replace(/\b[vz](?=[0-9a-z]*\d)[0-9a-z]{8,}\b/g, ' id ');   // písmena: okolní číslice se nespojí
 /* Cizí kanárky ve výstupu zákazníka `pism`; `povolene` = písmena variant,
  * které smí jeho výstupy nést (např. 'AD' u řídícího). */
 function cizi(nalezy, pism, povolene) {
@@ -636,6 +647,49 @@ async function hlavni() {
       !volne.length, volne.slice(0, 6));
     test('výměna řídícího (B): jinak žádný únik ani chyba v dokumentech všech zákazníků (OCK cz/en, PROJ cz/en/de/fr)',
       !sOboji.length, sOboji.slice(0, 12));
+  }
+
+  /* --- #644 POJISTKA: hodiny, jejichž čas nese cenu varianty. Kanárek ceny
+   * (EUR, pět číslic) se dřív našel v ISO razítku v.vytvoreno / v.upraveno
+   * JSON pohledu (např. 00:49:23.200 → „004923200“ ∋ cena V1 „49232“) a test
+   * „výměna řídícího (B)“ padl jen při určitém času běhu. Tady se hodiny
+   * zmrazí natvrdo na takový čas — regrese detektoru je vidět vždy. --- */
+  {
+    const casSCenou = cena => {   // platný čas dne HHMMSSmmm, který cenu obsahuje
+      for (let k = 0; k + cena.length <= 9; k++) {
+        const x = '0'.repeat(k) + cena + '0'.repeat(9 - k - cena.length);
+        if (+x.slice(0, 2) < 24 && +x.slice(2, 4) < 60 && +x.slice(4, 6) < 60)
+          return '2026-11-21T' + x.slice(0, 2) + ':' + x.slice(2, 4) + ':' + x.slice(4, 6) + '.' + x.slice(6) + 'Z';
+      }
+      return null;
+    };
+    const Puvodni = Date;
+    const zmraz = iso => { const T = Puvodni.parse(iso);
+      class Z extends Puvodni { constructor(...a) { if (a.length) super(...a); else super(T); } static now() { return T; } }
+      global.Date = new Proxy(Z, { apply: () => new Z().toString() }); };
+    const pripady = ['A', 'D'].map(pv => ({ pv, cas: casSCenou(CENY.en[pv]) })).filter(x => x.cas);
+    test('#644 pojistka: pro cenu V1 i V3 (EUR) existuje čas dne, který ji nese', pripady.length === 2, pripady);
+    for (const { pv, cas } of pripady) {
+      let json = '', chyba = '';
+      zmraz(cas);
+      try {
+        const z = zakazka(true);
+        const r = vzVymenRidiciho(z, 'z2');
+        if (!r.ok) chyba = r.chyba;
+        const pz = vzTiskPohled(z, 'z3');
+        const bez = Object.assign({}, pz); delete bez.protokol;
+        json = JSON.stringify(bez);
+      } catch (e) { chyba = String(e && e.message || e); } finally { global.Date = Puvodni; }
+      test('#644 pojistka: hodiny ' + cas + ' — JSON pohledu C po výměně nese ten čas (číslice ceny V' + (pv === 'A' ? 1 : 3) + ' ' + CENY.en[pv] + ' v razítku)',
+        !chyba && json.indexOf(cas) >= 0 && norm(json).indexOf(CENY.en[pv]) >= 0, chyba || cas);
+      const c = cizi(kanarky(json, 'en'), 'C', povoleneVar(zakazka(true), 'z3'));
+      test('#644 pojistka: hodiny ' + cas + ' — detektor nehlásí falešnou cenu varianty z razítka času',
+        !c.length, c.map(popisNalezu));
+    }
+    /* detektor ceny dál zabírá: cena ve formátu dokumentu i jako číslo v JSON */
+    test('#644 pojistka: cena V1 v textu i v JSON (číslo) se dál najde, i vedle razítka času',
+      kanarky('Cena: ' + CENY.en.A.slice(0, 2) + ',' + CENY.en.A.slice(2) + ' EUR', 'en').some(k => k.druh === 'cena' && k.kdo === 'A')
+      && kanarky(JSON.stringify({ vytvoreno: '2026-11-21T10:00:00.000Z', cena: +CENY.en.A }), 'en').some(k => k.druh === 'cena' && k.kdo === 'A'));
   }
 
   /* --- VZ-E4 Z1 (revize poradce): kopie varianty v tiskovém pohledu nese
