@@ -30,6 +30,7 @@
 #                  a tajemství mimo povolený seznam (nastroje/kontrola_udaju.py),
 #                  výběr sloučených větví ke smazání (nastroje/test_sloucene_vetve.sh),
 #                  hook pre-push s kontrolou údajů (nastroje/test_pre_push.sh, SEC-M1),
+#                  krok workflow kontroly údajů (nastroje/test_workflow_udaju.sh, B252),
 #                  test nástroje porovnání sestavení (nastroje/test_porovnej_sestaveni.sh, S3),
 #                  přeskočení v kole je vidět (nastroje/test_kolo_preskoceni.sh, HN),
 #                  PREDAVKA.md do 15 kB (chyba), main předkem HEAD (upozornění; S7),
@@ -194,6 +195,8 @@ staticke() {
   bash nastroje/test_sloucene_vetve.sh || chyb=$((chyb + 1))
   echo "— hook pre-push s kontrolou údajů (nastroje/test_pre_push.sh, SEC-M1 #542)"
   bash nastroje/test_pre_push.sh || chyb=$((chyb + 1))
+  echo "— workflow kontroly údajů: nové větve a tagy (nastroje/test_workflow_udaju.sh, B252)"
+  bash nastroje/test_workflow_udaju.sh || chyb=$((chyb + 1))
   echo "— nástroj porovnání sestavení (nastroje/test_porovnej_sestaveni.sh, S3)"
   bash nastroje/test_porovnej_sestaveni.sh || chyb=$((chyb + 1))
   echo "— únik mezi zákazníky: generátory dokumentů bez dalsiZakaznici (nastroje/kontrola_vz_unik.sh, VZ-E2 #601)"
@@ -204,7 +207,7 @@ staticke() {
   { bash nastroje/kontrola_podkladu.sh && bash nastroje/kontrola_podkladu.sh --pojistka; } || chyb=$((chyb + 1))
   echo "— evidence a přehled: roadmap.json podle schématu S6, PREHLED.md jde vyrobit a odpovídá stavu (S6/S8 #613)"
   { python3 roadmapa/roadmapa.py --kontrola && python3 nastroje/prehled_stavu.py --kontrola; } || chyb=$((chyb + 1))
-  echo "STATICKE_KONTROLY: $((10 - chyb)) z 10 prošly"
+  echo "STATICKE_KONTROLY: $((11 - chyb)) z 11 prošly"
   return "$chyb"
 }
 # S3 (18. 11. 2026): pevná sada kalkulací nad <ref> × pracovní kopie (.).

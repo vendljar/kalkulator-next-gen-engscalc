@@ -12,7 +12,13 @@
 # Rychlý (bez instalace balíčků, bez mutací): Python z obrazu runneru.
 #   1. celý strom špičky (kontrola_udaju.py),
 #   2. každý pushnutý commit (před..po; u nové větve nebo tagu commity, které
-#      na jiných větvích originu nejsou) — soubory i zprávy.
+#      nejsou na origin/main ani origin/test) — soubory i zprávy, u tagu
+#      i zpráva anotovaného tagu.
+# B252 (audit 20. 11. 2026, NS-1): nová větev se dřív srovnávala se VŠEMI
+# ostatními větvemi originu — dvě nové větve se stejnými commity pushnuté
+# naráz se tak navzájem vyloučily a nezkontrolovalo se nic. Teď jen proti
+# dlouhodobým větvím main a test (ty mají vlastní běh před..po). Cena:
+# commity, které už jsou na jiné pomocné větvi, se zkontrolují znovu.
 # Výpis nálezu tajemství je zkrácený (log veřejného repa je veřejný).
 name: Kontrola údajů
 
@@ -47,11 +53,22 @@ jobs:
             ''|*[!0]*) ;;
             *) PRED="" ;;
           esac
+          # Tag: revize je sám tag, aby se přečetla i zpráva anotovaného tagu.
+          case "$REF" in
+            refs/tags/*) git cat-file -e "$REF" 2>/dev/null && PO="$REF" ;;
+          esac
           if [ -n "$PRED" ] && git cat-file -e "$PRED^{commit}" 2>/dev/null; then
             python3 nastroje/kontrola_udaju.py --rozsah "$PRED..$PO"
           else
-            # Nová větev nebo tag: commity, které nejsou na jiném refu originu.
-            jine=$(git for-each-ref --format='%(refname)' refs/remotes/origin | grep -vx "refs/remotes/origin/${REF#refs/heads/}" | grep -v '/HEAD$' || true)
+            # Nová větev nebo tag: commity, které nejsou na origin/main ani
+            # origin/test (B252 — ne „na žádné jiné větvi“).
+            jine=""
+            for v in main test; do
+              [ "$REF" = "refs/heads/$v" ] && continue
+              if git rev-parse -q --verify "refs/remotes/origin/$v^{commit}" >/dev/null; then
+                jine="$jine refs/remotes/origin/$v"
+              fi
+            done
             if [ -n "$jine" ]; then
               python3 nastroje/kontrola_udaju.py --rozsah "$PO" --not $jine
             else
