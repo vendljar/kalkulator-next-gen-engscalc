@@ -12,8 +12,8 @@ Použití:
   python3 nastroje/release_odkaz.py 12.10.4 <plný SHA>        odkaz na nový release
   python3 nastroje/release_odkaz.py 12.10.4 --upravit         odkaz na úpravu vydaného
                                                               releasu + text k vložení
-  python3 nastroje/release_odkaz.py --chybejici               verze z CHANGELOG, které prošly
-                                                              do main a nemají tag
+  python3 nastroje/release_odkaz.py --chybejici               nasazená verze (HEAD origin/main),
+                                                              pokud nemá tag
   --changelog <soubor>   jiný CHANGELOG (testy)
   --jen-text             vypíše jen popis (bez odkazu)
   --od <verze>           popis začne novinkami `novinky.py <od> <verze>` (S8)
@@ -27,9 +27,10 @@ nástroj jen varuje a odkaz vyrobí.
 
 Tag a release jen pro stav, který jde do main (J. V. 18. 11. 2026): verze,
 které byly jen v testu nebo integraci, zůstávají v CHANGELOG bez tagu.
-Proto `--chybejici` hlásí jen verze, které prošly do main — tj. verze.txt
-některého commitu v historii origin/main. Pro testy jde seznam podstrčit
-proměnnou KNG_VERZE_MAIN="1.2.3,1.2.4".
+Od 22. 11. 2026 (J. V.) jen verze NASAZENÁ do main: mezilehlé verze, které
+do main přišly s ní (fast-forward na test), se netagují. `--chybejici` proto
+hlásí jen verzi v HEAD origin/main, pokud nemá tag (viz verze_main). Pro
+testy jde podstrčit KNG_VERZE_MAIN="1.2.3", nebo KNG_REPO a KNG_MAIN_REF.
 
 Popis začíná textem pro kolegy z NOVINKY.md (S8, 18. 11. 2026), aby release
 a novinky říkaly totéž: `--od <verze>` ho vyrobí nástrojem
@@ -191,25 +192,30 @@ def tagy_origin():
 
 
 def verze_main():
-    """Verze, které prošly do main (verze.txt v historii origin/main); None, když se nedá zjistit."""
+    """Nasazená verze: verze.txt v HEAD origin/main (množina o jednom prvku);
+    None, když se nedá zjistit.
+
+    Jen HEAD, ne celá historie (J. V. 22. 11. 2026): main se posouvá dopředu
+    (fast-forward) na test, takže v jeho historii leží i každá mezilehlá verze
+    integrace — ty se netagují. Který commit byl kdy HEAD main, git po
+    fast-forwardu nepamatuje; spolehlivě je známá jen nasazená verze teď.
+    Proto `--chybejici` patří spustit po každém nasazení. Pro testy:
+    KNG_VERZE_MAIN="1.2.3" (podstrčené nasazené verze), KNG_REPO a
+    KNG_MAIN_REF (jiný repozitář a větev)."""
     podstrc = os.environ.get('KNG_VERZE_MAIN')
     if podstrc is not None:
         return {x.strip().lstrip('v') for x in podstrc.split(',') if x.strip()}
     import subprocess
-    koren = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+    koren = os.environ.get('KNG_REPO') or os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+    ref = os.environ.get('KNG_MAIN_REF') or 'origin/main'
     try:
-        r = subprocess.run(['git', 'log', '--format=%H', 'origin/main', '--', 'verze.txt'],
-                           capture_output=True, text=True, timeout=60, cwd=koren)
-        if r.returncode != 0:
-            return None
-        vstup = ''.join(c + ':verze.txt\n' for c in r.stdout.split())
-        b = subprocess.run(['git', 'cat-file', '--batch'], input=vstup, capture_output=True,
-                           text=True, timeout=60, cwd=koren)
+        r = subprocess.run(['git', 'show', ref + ':verze.txt'], capture_output=True, text=True,
+                           timeout=60, cwd=koren)
     except (OSError, subprocess.TimeoutExpired):
         return None
-    if b.returncode != 0:
+    if r.returncode != 0:
         return None
-    return set(re.findall(r'^(\d{1,2}\.\d{1,2}\.\d{1,2})\s*$', b.stdout, re.M))
+    return set(re.findall(r'^(\d{1,2}\.\d{1,2}\.\d{1,2})\s*$', r.stdout, re.M))
 
 
 def verze_changelogu(text):
@@ -244,9 +250,10 @@ def main(argv):
             print('verze v origin/main nejde zjistit (git fetch origin main)'); return 2
         kandidati = [v for v in verze_changelogu(text) if v in v_main][:15]
         chybi = [v for v in kandidati if 'v' + v not in tagy]
-        print('Bez tagu (nejnovějších 15 verzí z CHANGELOG, které prošly do main): '
+        print('Bez tagu (verze nasazená v main = HEAD origin/main): '
               + (', '.join('v' + v for v in chybi) or 'žádná'))
-        print('Verze jen v testu nebo integraci se netagují (J. V. 18. 11. 2026).')
+        print('Mezilehlé verze, které do main přišly s nasazenou, ani verze jen v testu '
+              'nebo integraci se netagují (J. V. 18. a 22. 11. 2026).')
         return 0
     if not args:
         print(__doc__); return 2

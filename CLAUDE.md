@@ -77,8 +77,9 @@ Cloudové sezení může spadnout a s ním zmizí vše, co není na GitHubu. Pro
 
 ## Tagy, releasy a mazání větví
 
-- Tag a release dostává jen stav, který jde do `main`. Mezilehlé verze
-  integrace a testu zůstávají v CHANGELOG bez tagu.
+- Tag a release dostává jen verze nasazená do `main` (HEAD `main`). Mezilehlé
+  verze integrace a testu — i ty, které do `main` přišly s nasazenou —
+  zůstávají v CHANGELOG bez tagu.
 - Tagy jsou jednoduché (lightweight) ve tvaru `vDEN.MĚSÍC.pořadí`.
 - Z cloudového sezení nejde pushnout tag ani smazat vzdálenou větev (proxy
   vrací HTTP 403) — neobcházet, udělá to J. V.
@@ -92,8 +93,9 @@ Cloudové sezení může spadnout a s ním zmizí vše, co není na GitHubu. Pro
   a vypíše odkaz na vydaný release. U vydaného releasu bez popisu poslat odkaz
   na úpravu a text k vložení (`release_odkaz.py <verze> --upravit`).
 - Verze bez tagu: `python3 nastroje/release_odkaz.py --chybejici` (hlásí jen
-  verze, které prošly do `main`). Na konci dávky vypsat verze pro `main`, které
-  release ještě nemají; tagy a releasy ověřovat přes GitHub, ne odhadem.
+  nasazenou verzi = HEAD `origin/main`, pokud nemá tag; pustit po každém
+  nasazení). Na konci dávky vypsat, jestli nasazená verze release ještě nemá;
+  tagy a releasy ověřovat přes GitHub, ne odhadem.
 - Po každém sloučení do `main` koordinace vyrobí `NOVINKY.md` (5–10 řádků
   česky: co je nové, co opravené, co má uživatel udělat jinak; bez cen).
 - Sloučené pomocné větve maže J. V. tlačítkem v Actions: GitHub → Actions →
