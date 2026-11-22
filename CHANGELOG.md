@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v22.11.1 — HN: zpevnění testů kola (#638, #644, #646, #647, #695 prac.), větev claude/hn-harnessy
+## v22.11.2 — HN: zpevnění testů kola (#638, #644, #646, #647, #695), větev claude/hn-harnessy
 
 Nad integrací `cda289e` (v19.11.11). Jen testy, harnessy a nástroje kola — **kód aplikace beze změny**, cena ani
 dokumenty se nemění (porovnání sestavení proti integraci SHODA). Verzi přečísluje koordinace.
@@ -36,7 +36,7 @@ dokumenty se nemění (porovnání sestavení proti integraci SHODA). Verzi pře
 - **#647 — pevná sada porovnání sestavení:** `porovnani_sada.js` oddíl 3c (`k40:*`), přepnutí typu šachty / zasklení
   s vyřazeným nebo přepsaným čelním sklem. `origin/main × origin/claude/rychla-k40n1`: stará sada 79/79 SHODA,
   nová 8 rozdílných (jen `k40:*`); seznam `podklady/porovnani/ocekavane_k40n1_main_2026-11-21.txt` → kód 0.
-- **#695 (prac.) — přeskočení v kole je vidět:** `testovaci_kolo.sh` bez načitatelného playwrightu skončí hned
+- **#695 — přeskočení v kole je vidět:** `testovaci_kolo.sh` bez načitatelného playwrightu skončí hned
   kódem 2 s návodem, přeskočené harnessy = selhání, vědomě `KNG_BEZ_PROHLIZECE=1` → „ZELENÁ BEZ PROHLÍŽEČE".
   `test_354_mustky.js` si staré jádro dotáhne podle plného SHA, jinak vypíše `PRESKOCENO_CAST:` a `spust_testy.sh`
   ho přenese do „Přeskočené sady" (v mělkém klonu teď srovnání opravdu běží: 67/0 → 69/0). Nový
