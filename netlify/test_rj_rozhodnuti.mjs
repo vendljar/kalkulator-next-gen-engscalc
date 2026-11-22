@@ -188,7 +188,32 @@ console.log('\n===== #665: PODPIS PŮVODNÍHO ZPRACOVATELE VE SNÍMKU ZÁMKU ===
   const gb = rb.status === 200 ? await nacti(rb.soubor, cO2) : null;
   test('#665: zpracovatel bez podpisu — snímek bez otisku, 404 (jako dřív)', !!gb && !gb.varianty[0].zamek.zpracovatel.podpisOtisk
     && (await ctiPodpis(rb.soubor, gb.varianty[0].id, cO)).status === 404);
+  /* Zfalšovaná kopie (obsah nesedí s otiskem, např. z upravené zálohy) se nevydá. */
+  if (zs) {
+    const pravy = pamet.get(kopieKlic);
+    pamet.set(kopieKlic, JSON.stringify({ obrazek: PNG('podvrh') }));
+    test('#665: kopie, jejíž obsah nesedí s otiskem, se nevydá (404)', (await ctiPodpis(r.soubor, g.varianty[0].id, cO2)).status === 404);
+    pamet.set(kopieKlic, pravy);
+  }
   test('#665: bez přihlášení podpis nevydá (401)', g ? (await ctiPodpis(r.soubor, g.varianty[0].id, undefined)).status === 401 : false);
+}
+
+/* ============================================================ */
+console.log('\n===== #710-4: KDO UZAVŘEL PŘIPOMÍNKU (model) =====\n');
+{
+  const PR = require('../src/pripominky.js');
+  const u = PR.pripominkaUzavrelSpravce;
+  test('#710-4: model — otevřená (fronta) není uzavřená', u({ stav: 'fronta', prubeh: [{ stav: 'fronta', kdo: 'správce' }] }) === false);
+  test('#710-4: model — hotovo bez průběhu (starší data) = správce', u({ stav: 'hotovo' }) === true && u({ stav: 'zamitnuto', prubeh: [] }) === true);
+  test('#710-4: model — hotovo, poslední záznam jiný stav = správce (bezpečná výchozí)', u({ stav: 'hotovo', prubeh: [{ stav: 'resi', kdo: 'koordinace' }] }) === true);
+  test('#710-4: model — uzavřela koordinace', u({ stav: 'hotovo', prubeh: [{ stav: 'resi', kdo: 'koordinace' }, { stav: 'hotovo', kdo: 'koordinace' }] }) === false);
+  test('#710-4: model — uzavřel správce, pak koordinace doplnila roadmapu (týž stav) = pořád správce',
+    u({ stav: 'hotovo', prubeh: [{ stav: 'resi', kdo: 'koordinace' }, { stav: 'hotovo', kdo: 'správce' }, { stav: 'hotovo', kdo: 'koordinace' }] }) === true);
+  test('#710-4: model — duplicitní od správce', u({ stav: 'duplicitni', prubeh: [{ stav: 'duplicitni', kdo: 'správce' }] }) === true);
+  const r = PR.pripominkaZmen({ id: 'P-0009', stav: 'hotovo', odpoved: 'A', prubeh: [{ stav: 'hotovo', kdo: 'správce' }] }, { stav: 'fronta' }, 'koordinace', '2026-11-22T10:00:00.000Z');
+  test('#710-4: pripominkaZmen koordinace → 403', r.ok === false && r.kod === 403, r);
+  const r2 = PR.pripominkaZmen({ id: 'P-0009', stav: 'hotovo', odpoved: 'A', prubeh: [{ stav: 'hotovo', kdo: 'správce' }] }, { akce: 'fronta' }, 'správce', '2026-11-22T10:00:00.000Z');
+  test('#710-4: správce svou uzavřenou vrátit smí', r2.ok === true && r2.pripominka.stav === 'fronta', r2);
 }
 
 //RJ-DALSI

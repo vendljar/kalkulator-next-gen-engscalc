@@ -188,6 +188,8 @@ test('RJ N5: … ani nepřepíše odpověď správce (403)', (await patch({ id: 
 test('RJ N5: … ani stav a odpověď s „hotovo" znovu (403)', (await patch({ id: 'P-0001', stav: 'hotovo', odpoved: 'X' }, undefined, B(KLIC))).status === 403);
 const kr = await patch({ id: 'P-0001', roadmapa: '#713' }, undefined, B(KLIC));
 test('RJ N5: číslo roadmapy koordinace doplnit smí (200), stav beze změny', kr.status === 200 && kr.pripominka.stav === 'hotovo' && kr.pripominka.roadmapa === '#713', kr);
+test('RJ N5: ani po doplnění roadmapy koordinací (záznam průběhu „koordinace“) stav nezmění (403)',
+  (await patch({ id: 'P-0001', stav: 'test' }, undefined, B(KLIC))).status === 403);
 /* N3 revize (22. 11. 2026): hlavička Authorization jiného schématu (Basic od
  * hesla webu nebo proxy) nesmí běžný požadavek přesměrovat na cestu klíče.
  * Pojistka: před opravou GET se správcovou cookie a Basic → 400. */

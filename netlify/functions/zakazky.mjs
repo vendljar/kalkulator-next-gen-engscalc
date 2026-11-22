@@ -186,8 +186,8 @@ export default async (req) => {
   const podpisZamku = await podpisZamkuPriprav(stara, zak, relace, globalThis.variantaUzamcena);
   const kontrola = zakazkaServerKontrola(stara, zak, relace,
     { ULO, SCHV, JEKLY, slevyNast, verzeServeru: serverVerze(), rezim: 'ulozeni',
-      program: prog, matice: (zobr && zobr.matice) || null,
-      viceSachet, viceZakazniku, podpisOtisk: podpisZamku ? podpisZamku.otisk : '' });   // VS #570 / VZ #598: vypínače správce
+      program: prog, matice: (zobr && zobr.matice) || null, podpisOtisk: podpisZamku ? podpisZamku.otisk : '',   // #665 (RJ)
+      viceSachet, viceZakazniku });   // VS #570 / VZ #598: vypínače správce
   if (!kontrola.ok) return { odpoved: json(Object.assign({ ok: false, chyba: kontrola.chyba }, kontrola.kod ? { kod: kontrola.kod } : {}), kontrola.status) };
   /* #665: kopie podpisu dřív než zakázka — otisk ve snímku nikdy nevisí naprázdno. */
   if (podpisZamku && (zak.varianty || []).some(v => v && v.zamek && v.zamek.zpracovatel && v.zamek.zpracovatel.podpisOtisk === podpisZamku.otisk))
