@@ -28,7 +28,7 @@ vzor #667 / #561. Bez ruční částky se cena nemění (porovnání sestavení 
   server 403, zábrana tisku a zámek jako nepotvrzená); L2 zveřejněný ceník (i zahraniční řada) klíč nenese
   (`cenikZverejneniOcisti`). L3 a L4 zapsány k otázkám #716.
 - **Testy:** `src/test_666_lakovani.js` (53), `netlify/test_666_lakovani.mjs` (31), `overit_lakovani.mjs` (13);
-  pojistky proti 05a496d v commitech. Mutace `[LAK]` jádro 9/9, server 9/9. Kolo `--bez-mutaci --proti 2b68f98` VŠE ZELENÉ (514/0/6, hodiny 416/0/1, statické 10/10, porovnání SHODA 367/367).
+  pojistky proti 05a496d v commitech. Mutace `[LAK]` jádro 10/10, server 12/12. Kolo `--bez-mutaci --proti 36e2681` VŠE ZELENÉ (517/0/6, hodiny 418/0/1, statické 11/11, porovnání SHODA 367/367).
 
 ## v22.11.7 — RJ: zapracování rozhodnutí J. V. z 22. 11. 2026, větev claude/rj-rozhodnuti
 
