@@ -174,6 +174,12 @@ export default async (req) => {
    * jen pro ostatní role. */
   const zobr = relace.role === 'Administrátor' ? null : await sProg.cti('zobrazeni');
   const { viceSachet, viceZakazniku } = await funkceCti(sProg);   // VS #570 / VZ #598: vypínače správce
+  /* NN B238 (audit 20. 11. 2026): snímek lhůt PROJ (D8) píše SERVER.
+   * Dřív ho psal klient bez kontroly tvaru a původu — u odeslané neprodané
+   * varianty ho přepsal kdokoli a Prodáno ho zmrazilo. Teď: varianta prodaná
+   * už v uložené verzi drží zmrazený snímek (změnu odmítne zámek); varianta prodávaná tímto uložením
+   * dostane platnou tabulku Firmy ze serveru; neprodaná snímek nenese. */
+  lhutyProjServerDrz(stara, zak, await sProg.cti('firma'));
   const kontrola = zakazkaServerKontrola(stara, zak, relace,
     { ULO, SCHV, JEKLY, slevyNast, verzeServeru: serverVerze(), rezim: 'ulozeni',
       program: prog, matice: (zobr && zobr.matice) || null,
@@ -340,3 +346,25 @@ export default async (req) => {
     : { ok: true, soubor: jmeno, razitko, slevy, zamkyPrijato, ...pdP });
 };
 export const config = { path: '/api/zakazky' };
+
+/* NN B238: snímek lhůt PROJ drží server (viz volání výš). */
+export function lhutyProjServerDrz(stara, zak, firma) {
+  const G = globalThis;
+  if (!zak || !Array.isArray(zak.varianty) || typeof G.lhutyProjEf !== 'function' || typeof G.variantaProdana !== 'function') return;
+  const obj = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
+  const ulozene = new Map(((stara && Array.isArray(stara.varianty)) ? stara.varianty : []).filter(obj).map(v => [v.id, v]));
+  const tabulka = obj(firma) && obj(firma.udaje) ? firma.udaje.lhutyProj : (obj(firma) ? firma.lhutyProj : null);
+  for (const v of zak.varianty) {
+    if (!obj(v) || !obj(v.data)) continue;
+    const sv = ulozene.get(v.id);
+    let snimek;
+    /* Prodaná už v uložené verzi: snímek je zmrazený v porovnání zámku —
+     * změnu odmítne kontrola (403), tady se nesahá. */
+    if (sv && G.variantaProdana(sv)) continue;
+    if (G.variantaProdana(v) && obj(v.data.proj)) snimek = G.lhutyProjEf(tabulka);
+    else snimek = undefined;
+    if (snimek === undefined) { if (obj(v.data.kryciProj)) delete v.data.kryciProj.lhutyProj; continue; }
+    if (!obj(v.data.kryciProj)) v.data.kryciProj = { hodnoty: {} };
+    v.data.kryciProj.lhutyProj = JSON.parse(JSON.stringify(snimek));
+  }
+}

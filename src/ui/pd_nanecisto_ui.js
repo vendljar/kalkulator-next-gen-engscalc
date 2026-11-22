@@ -91,7 +91,7 @@ function pdnUiObsah(kde) {
       případu v Pipedrive, s jakou hodnotou a odkud ji bere. <b>Nic se neodesílá</b> — zápis do Pipedrive zatím není
       zapnutý (#115).</div>${chybaBlok}<div class="btns">${btn}</div>`;
   const s = d.souhrn || {};
-  const stitek = (k) => `<span class="pill ${esc(PDN_STAVY[k].pill)}" data-pdn-souhrn="${k}">${esc(PDN_STAVY[k].text)}: ${s[k] || 0}</span>`;
+  const stitek = (k) => `<span class="pill ${esc(PDN_STAVY[k].pill)}" data-pdn-souhrn="${k}">${esc(PDN_STAVY[k].text)}: ${esc(s[k] || 0)}</span>`;
   const upoz = ((PDN_UI.podklad && PDN_UI.podklad.upozorneni) || []).concat(d.varovani || [])
     .map(t => `<li>${esc(t)}</li>`).join('');
   return `<div class="note" id="pdnInfo_${kde}"><b>Nic se neodeslalo.</b> Režim: ${esc(PDN_REZIM[d.rezim] || d.rezim)}${d.deal
@@ -100,7 +100,7 @@ function pdnUiObsah(kde) {
     ${stare}${chybaBlok}
     <div id="pdnSouhrn_${kde}" style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0">
       ${stitek('zapise')} ${stitek('nelze')} ${stitek('chybiPole')} ${stitek('neovereno')} ${stitek('prazdne')}
-      <span class="pill warn" data-pdn-souhrn="kolize">kolize: ${s.kolize || 0}</span></div>
+      <span class="pill warn" data-pdn-souhrn="kolize">kolize: ${esc(s.kolize || 0)}</span></div>
     ${upoz ? `<ul class="note" id="pdnUpozorneni_${kde}">${upoz}</ul>` : ''}
     <div class="btns" style="margin:8px 0">${btn}
       <button id="pdnStahni_${kde}" onclick="pdnUiStahni()">Stáhnout tabulku (CSV)</button></div>

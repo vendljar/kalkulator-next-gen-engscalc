@@ -172,10 +172,11 @@ function analytikaSrovnani(poMesicich) {
   if (!mesice.length) return '';
   const radek = (m) => {
     const p = (poMesicich[m] || analytikaNovyDen()).pocty;
-    return `<tr><td>${esc(m)}</td><td style="text-align:right">${p.zakazky}</td>
-      <td style="text-align:right">${p.kalkulace}</td><td style="text-align:right">${p.tiskyWord}</td>
-      <td style="text-align:right">${p.tiskyNahled}</td><td style="text-align:right">${p.prihlaseni}</td>
-      <td style="text-align:right">${p.chyby}</td></tr>`;
+    /* NN B256: čísla ze serveru přes esc() — druhá vrstva proti XSS. */
+    return `<tr><td>${esc(m)}</td><td style="text-align:right">${esc(p.zakazky)}</td>
+      <td style="text-align:right">${esc(p.kalkulace)}</td><td style="text-align:right">${esc(p.tiskyWord)}</td>
+      <td style="text-align:right">${esc(p.tiskyNahled)}</td><td style="text-align:right">${esc(p.prihlaseni)}</td>
+      <td style="text-align:right">${esc(p.chyby)}</td></tr>`;
   };
   return `<table style="max-width:640px;margin-top:6px">
     <tr><th>Měsíc</th><th>Zakázky</th><th>Kalkulace</th><th>Tisky Word</th><th>Tisky náhled</th><th>Přihlášení</th><th>Chyby</th></tr>
@@ -246,20 +247,20 @@ function nastAnalytika() {
           onchange="analytikaPrehledObdobi('${v}')"> ${t}</label>`).join('')}
     </div>
     <table style="max-width:640px">
-      <tr><td>Založené zakázky</td><td style="text-align:right"><b>${c.zakazky}</b></td></tr>
-      <tr><td>Nové kalkulace (varianty)</td><td style="text-align:right"><b>${c.kalkulace}</b></td></tr>
-      <tr><td>Tisky do Wordu (nabídky + smlouvy)</td><td style="text-align:right"><b>${c.tiskyWord}</b></td></tr>
-      <tr><td>Tisky přes náhled</td><td style="text-align:right"><b>${c.tiskyNahled}</b></td></tr>
-      <tr><td>Přihlášení</td><td style="text-align:right"><b>${c.prihlaseni}</b></td></tr>
-      <tr><td>Chybové hlášky v prohlížeči</td><td style="text-align:right"><b>${c.chyby}</b></td></tr>
-      <tr><td class="note">Dnů se záznamem</td><td class="note" style="text-align:right">${p.dnu}</td></tr>
+      <tr><td>Založené zakázky</td><td style="text-align:right"><b>${esc(c.zakazky)}</b></td></tr>
+      <tr><td>Nové kalkulace (varianty)</td><td style="text-align:right"><b>${esc(c.kalkulace)}</b></td></tr>
+      <tr><td>Tisky do Wordu (nabídky + smlouvy)</td><td style="text-align:right"><b>${esc(c.tiskyWord)}</b></td></tr>
+      <tr><td>Tisky přes náhled</td><td style="text-align:right"><b>${esc(c.tiskyNahled)}</b></td></tr>
+      <tr><td>Přihlášení</td><td style="text-align:right"><b>${esc(c.prihlaseni)}</b></td></tr>
+      <tr><td>Chybové hlášky v prohlížeči</td><td style="text-align:right"><b>${esc(c.chyby)}</b></td></tr>
+      <tr><td class="note">Dnů se záznamem</td><td class="note" style="text-align:right">${esc(p.dnu)}</td></tr>
     </table>
     <div class="note" style="font-weight:600;margin-top:8px">Vývoj po měsících (srovnání měsíc/měsíc, rok/rok):</div>
     ${analytikaSrovnani(p.poMesicich)}
     <div class="note" style="font-weight:600;margin-top:8px">Nejotevíranější záložky${kdo ? ' — ' + esc(kdo) : ''}:</div>
-    <div class="note">${zalozky.length ? zalozky.map(([t, n]) => esc(t) + ' (' + n + '×)').join(', ') : 'zatím nic'}</div>
+    <div class="note">${zalozky.length ? zalozky.map(([t, n]) => esc(t) + ' (' + esc(n) + '×)').join(', ') : 'zatím nic'}</div>
     <div class="note" style="font-weight:600;margin-top:8px">Nejpoužívanější prvky${kdo ? ' — ' + esc(kdo) : ''}:</div>
-    <div class="note">${top.length ? top.map(([k, n]) => esc(k.split('|').pop()) + ' (' + n + '×)').join(', ') : 'zatím nic'}</div>
+    <div class="note">${top.length ? top.map(([k, n]) => esc(k.split('|').pop()) + ' (' + esc(n) + '×)').join(', ') : 'zatím nic'}</div>
 
     <div class="sec-title">Čas nad kalkulacemi (#25)</div>
     <div class="note">Aktivní práce (mezera nad 2 minuty se nepočítá), odděleně OCK a PROJ. Čas se váže

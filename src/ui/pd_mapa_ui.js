@@ -65,12 +65,12 @@ function pdmUiJenProblemy(v) { PDM_STAV.jenProblemy = !!v; pdmUiPrekresli(); }
 
 function pdmUiSouhrn(p) {
   const s = p.souhrn || {};
-  const stitek = (k, n) => `<span class="pill ${esc(PDM_STAVY[k].pill)}" data-pdm-souhrn="${k}" title="${esc(PDM_STAVY[k].popis)}">${esc(PDM_STAVY[k].text)}: ${n || 0}</span>`;
+  const stitek = (k, n) => `<span class="pill ${esc(PDM_STAVY[k].pill)}" data-pdm-souhrn="${k}" title="${esc(PDM_STAVY[k].popis)}">${esc(PDM_STAVY[k].text)}: ${esc(n || 0)}</span>`;
   return `<div id="pdmSouhrn" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0">
-      <b>${s.celkem || 0} polí kalkulace:</b>
+      <b>${esc(s.celkem || 0)} polí kalkulace:</b>
       ${stitek('sparovano', s.sparovano)} ${stitek('chybi', s.chybi)} ${stitek('typNesedi', s.typNesedi)}
       ${stitek('nejednoznacne', s.nejednoznacne)}
-      <span class="pill mut" data-pdm-souhrn="nezarazeno" title="vlastní pole v CRM, která kalkulátor nezná">nezařazená v CRM: ${s.nezarazeno || 0}</span>
+      <span class="pill mut" data-pdm-souhrn="nezarazeno" title="vlastní pole v CRM, která kalkulátor nezná">nezařazená v CRM: ${esc(s.nezarazeno || 0)}</span>
     </div>`;
 }
 
