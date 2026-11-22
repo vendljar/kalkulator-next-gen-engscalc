@@ -22,6 +22,8 @@ Nad integrací `05a496d` (v22.11.5). Verzi a číslo roadmapy přidělí koordin
   jen pro relaci, jazyk dokumentu v Nastavení jako dosud).
 - **Testy:** `src/test_jt_jazyk_tisku.js` 23 (pojistka nad 05a496d 10 FAIL), `overit_jt_jazyk_tisku.mjs` 19,
   mutace jádra `[JT]` 9/9. Příručka obchodníka, kapitola 23 (tisk nabídky, jazykové verze).
+- **Kolo** (sloučeno s integrací 2b68f98): `--bez-mutaci --proti 2b68f98` VŠE ZELENÉ (sady 513/0/6, hodiny 415/0/1,
+  statické 10/10, porovnání SHODA 367/367).
 
 ## v22.11.5 — PR #707: Připomínky z aplikace, větev claude/pr-pripominky
 

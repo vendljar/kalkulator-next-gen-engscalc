@@ -20,7 +20,10 @@ roadmapy #713 (alias JT) — přečísluje koordinace. Zadání J. V. 22. 11. 20
 
 - `src/test_jt_jazyk_tisku.js` 23 OK (nad 05a496d 10 FAIL / 5 OK), `overit_jt_jazyk_tisku.mjs` 19 OK
   (nad 05a496d selže body 1 a 3), mutace jádra `[JT]` 9/9.
-- Kolo: viz zpráva koordinaci / CHANGELOG v22.11.6.
+- Sloučeno s integrací 2b68f98. Kolo `--bez-mutaci --proti 2b68f98` VŠE ZELENÉ (sady 513/0/6, hodiny 415/0/1,
+  statické 10/10, porovnání SHODA 367/367); mutace [JT] po sloučení 9/9.
+- OP1-I1 (harness `pg.js` ze zkoušky na testu): skript v repu není; tlačítka #684 v repu zelená
+  (`test_pg_tlacitka` 15/0, `overit_np_nahled` 19/0, `overit_jt_jazyk_tisku` bod 0 i nad 05a496d) — čeká na skript/log.
 
 ## Co ověřit na testu
 
