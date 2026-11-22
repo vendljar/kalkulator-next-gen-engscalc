@@ -35,6 +35,9 @@ import zakazky from './functions/zakazky.mjs';
 import funkce from './functions/funkce.mjs';
 import uzivatele from './functions/uzivatele.mjs';
 import orgFn from './functions/pd_organizace.mjs';
+import webhookFn from './functions/pd_webhook.mjs';
+import vazbaFn from './functions/pd_vazba.mjs';
+import { pdVazbaDokladaZapis } from './lib/pd_vazba.mjs';
 import { ADMIN_EMAIL } from './lib/sdilene.mjs';
 import { jadro } from './lib/jadro.mjs';
 import * as PD from './lib/pipedrive.mjs';
@@ -253,6 +256,43 @@ const uloz = async (z, c) => { const r = await post(zakazky, 'http://x/api/zakaz
       t.status === 200 && t.pdPoznamka === 'neovereno', { s: t.status, p: t.pdPoznamka });
   }
   test('RJ #704-7 PoC: do cizích dealů nic nezapsáno', notes().length === pred && !notes().some(p => p.deal_id === cizi.id || p.deal_id === cizi2.id));
+}
+{
+  /* RJ N1 (revize koordinace 22. 11. 2026) — PoC: obchodník PŘEDEM založí zakázku
+   * s číslem cizího dealu a deal k ní připojí; po „Vygenerovat nabídku“ v CRM
+   * webhook deal naváže na jeho zakázku (a zapíše do dealu odkaz na ni). Do RJ N1
+   * dostala vazba stav „webhook“ a jeho další uložení poznámku do cizího dealu
+   * zapsalo. Teď „ceka“ a neověřeno, dokud vazbu někdo nepotvrdí. */
+  process.env.PIPEDRIVE_WEBHOOK_KLIC = 'testovaci-webhook-klic-rj-n1-nic-neplati';
+  const cizi = D().dealy.find((d) => d.status === 'open' && d.org_id && d.id > 1215 && !d.custom_fields[CN]);
+  const cislo = '2026 - OPR - CN - 9985 - CIZI';
+  cizi.custom_fields[CN] = cislo;
+  const z = nova(); z.cislo = cislo; z.pdDealId = String(cizi.id);
+  const t0 = await uloz(z, cO);
+  test('RJ N1 PoC: příprava — zakázka s číslem cizího dealu uložena, zápis neověřen', t0.status === 200 && t0.pdPoznamka === 'neovereno', t0.pdPoznamka);
+  const w = await webhookFn(new Request('http://x/api/pd/webhook', { method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-kalkulator-klic': process.env.PIPEDRIVE_WEBHOOK_KLIC }, body: JSON.stringify({ dealId: cizi.id }) }));
+  const ul = JSON.parse(pamet.get('zakazky/z/' + t0.soubor));
+  test('RJ N1 PoC: webhook naváže EXISTUJÍCÍ kalkulaci s pdDealId jen jako „ceka“ (ne „webhook“)', w.status === 200
+    && ul.pdVazbaWebhook && ul.pdVazbaWebhook.stav === 'ceka', { w: w.status, t: await w.clone().text(), v: ul.pdVazbaWebhook });
+  const pred = notes().length;
+  z.uloRazitko = ul.uloRazitko; z.varianty[0].data.ock.dalsi[0].nazev = 'Výtah N1';
+  const t1 = await uloz(z, cO);
+  test('RJ N1 PoC: další uložení útočníka do cizího dealu nic nezapíše (neovereno), i s odkazem v dealu od webhooku', t1.status === 200
+    && t1.pdPoznamka === 'neovereno' && /čeká na potvrzení/.test(t1.varovani || '') && notes().length === pred, { s: t1.pdPoznamka, v: t1.varovani });
+  /* Pojistka: po potvrzení („V pořádku“, tady správce) se zapíše. */
+  const rp = await (await post(vazbaFn, 'http://x/api/pd/vazba', { soubor: t0.soubor, akce: 'potvrdit' }, cA)).json();
+  const ul2 = JSON.parse(pamet.get('zakazky/z/' + t0.soubor));
+  z.uloRazitko = ul2.uloRazitko; z.varianty[0].data.ock.dalsi[0].nazev = 'Výtah N1b';
+  const t2 = await uloz(z, cO);
+  test('RJ N1: po „V pořádku“ vazba zápis doloží (pojistka)', rp.ok === true && ul2.pdVazbaWebhook.stav === 'potvrzeno' && t2.pdPoznamka === 'zalozeno', { rp, s: t2.pdPoznamka });
+  /* Model: „webhook“ jen u zakázky založené webhookem. */
+  const norm = (x) => String(x || '');
+  const zw = (autor, stav) => ({ autor, pdDealId: '77', pdVazbaWebhook: { deal: '77', stav, kdy: '2026-11-22T08:00:00.000Z' } });
+  test('RJ N1: model — „webhook“ u zakázky založené webhookem doloží, u ručně založené ne; „ceka“ nikdy',
+    !!pdVazbaDokladaZapis(zw('pipedrive-webhook', 'webhook'), norm) && !pdVazbaDokladaZapis(zw('bz.pd@priklad.cz', 'webhook'), norm)
+    && !pdVazbaDokladaZapis(zw('pipedrive-webhook', 'ceka'), norm) && !!pdVazbaDokladaZapis(zw('bz.pd@priklad.cz', 'potvrzeno'), norm));
+  delete process.env.PIPEDRIVE_WEBHOOK_KLIC;
 }
 {
   /* RJ (#704-4, J. V. 22. 11. 2026): „Opravit firmu v Pipedrive" (pd_organizace,

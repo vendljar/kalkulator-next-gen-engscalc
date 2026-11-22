@@ -209,6 +209,11 @@ console.log('\n===== #710-4: KDO UZAVŘEL PŘIPOMÍNKU (model) =====\n');
   test('#710-4: model — uzavřela koordinace', u({ stav: 'hotovo', prubeh: [{ stav: 'resi', kdo: 'koordinace' }, { stav: 'hotovo', kdo: 'koordinace' }] }) === false);
   test('#710-4: model — uzavřel správce, pak koordinace doplnila roadmapu (týž stav) = pořád správce',
     u({ stav: 'hotovo', prubeh: [{ stav: 'resi', kdo: 'koordinace' }, { stav: 'hotovo', kdo: 'správce' }, { stav: 'hotovo', kdo: 'koordinace' }] }) === true);
+  /* RJ N2 (revize koordinace): uzavřela koordinace, správce pak odpověděl / potvrdil
+   * v témže stavu → úsek nese záznam správce = uzavřeno správcem. */
+  test('#710-4 N2: model — uzavřela koordinace, správce pak odpověděl (týž stav) = správce',
+    u({ stav: 'hotovo', prubeh: [{ stav: 'resi', kdo: 'koordinace' }, { stav: 'hotovo', kdo: 'koordinace' }, { stav: 'hotovo', kdo: 'správce' }] }) === true);
+  test('#710-4 N2: model — správce dřív v jiném stavu se nepočítá', u({ stav: 'hotovo', prubeh: [{ stav: 'fronta', kdo: 'správce' }, { stav: 'hotovo', kdo: 'koordinace' }] }) === false);
   test('#710-4: model — duplicitní od správce', u({ stav: 'duplicitni', prubeh: [{ stav: 'duplicitni', kdo: 'správce' }] }) === true);
   const r = PR.pripominkaZmen({ id: 'P-0009', stav: 'hotovo', odpoved: 'A', prubeh: [{ stav: 'hotovo', kdo: 'správce' }] }, { stav: 'fronta' }, 'koordinace', '2026-11-22T10:00:00.000Z');
   test('#710-4: pripominkaZmen koordinace → 403', r.ok === false && r.kod === 403, r);

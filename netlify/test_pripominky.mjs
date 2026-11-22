@@ -179,6 +179,14 @@ test('RJ N5: P-0004 duplicitní (správce) — koordinace odpověď 403', (await
 const kh = await patch({ id: 'P-0001', stav: 'hotovo', odpoved: 'Opraveno ve v22.11.6.' }, undefined, B(KLIC));
 test('RJ N5: koordinace uzavře sama (hotovo) — 200', kh.status === 200 && kh.pripominka.stav === 'hotovo', kh);
 test('RJ N5: uzavřenou koordinací vrátí koordinace do testu — 200', (await patch({ id: 'P-0001', stav: 'test' }, undefined, B(KLIC))).status === 200);
+/* RJ N2 (revize koordinace): uzavře koordinace, správce pak odpoví v témže stavu →
+ * koordinace už stav ani odpověď nemění (403). Pojistka: před opravou 200. */
+test('RJ N2: koordinace uzavře znovu (hotovo) — 200', (await patch({ id: 'P-0001', stav: 'hotovo', odpoved: 'Hotovo podruhé.' }, undefined, B(KLIC))).status === 200);
+const so = await patch({ id: 'P-0001', akce: 'odpovedet', odpoved: 'Správce potvrzuje.' }, cAdmin);
+test('RJ N2: správce odpoví v témže stavu', so.status === 200 && so.pripominka.stav === 'hotovo', so);
+test('RJ N2: koordinace pak stav nezmění (403)', (await patch({ id: 'P-0001', stav: 'test' }, undefined, B(KLIC))).status === 403);
+test('RJ N2: … ani nepřepíše odpověď správce (403)', (await patch({ id: 'P-0001', odpoved: 'Přepis' }, undefined, B(KLIC))).status === 403
+  && JSON.parse(pamet.get('pripominky/p/P-0001')).odpoved === 'Správce potvrzuje.');
 const su = await patch({ id: 'P-0001', akce: 'uzavrit', odpoved: 'Uzavírá správce.' }, cAdmin);
 test('RJ N5: správce uzavře P-0001', su.status === 200 && su.pripominka.stav === 'hotovo', su);
 const k403 = await patch({ id: 'P-0001', stav: 'resi' }, undefined, B(KLIC));

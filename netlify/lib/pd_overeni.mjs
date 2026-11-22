@@ -8,20 +8,25 @@
  *
  * Teď se před ZÁPISEM ověří, že deal opravdu patří zakázce, jedním z pravidel,
  * která už aplikace zná (návrh čočky IN):
- *   1. živá vazba z webhooku (pdVazbaWebhook) právě na tento deal — vazbu
- *      založilo CRM samo (pd_webhook.mjs, #553), ne obchodník;
- *   2. pole „Odkaz na kalkulaci" v dealu míří na tuto zakázku (pdWebhookOdkaz);
+ *   1. vazba z webhooku (pdVazbaWebhook) právě na tento deal — POTVRZENÁ
+ *      („V pořádku“), nebo u zakázky, kterou webhook sám založil (RJ N1:
+ *      „ceka“ nestačí; pd_vazba.mjs pdVazbaDokladaZapis);
+ *   2. pole „Odkaz na kalkulaci" v dealu míří na tuto zakázku (pdWebhookOdkaz) —
+ *      ale ne u nepotvrzené vazby „ceka“ na týž deal (odkaz zapsal webhook sám);
  *   (3. číslo nabídky v dealu — ZRUŠENO v RJ, rozhodnutí J. V. 22. 11. 2026, #704-7:
  *      novou zakázkou s klíčem = číslem cizího dealu šlo zapsat do cizího dealu;
  *      číslo nabídky si autor zakázky volí sám, vazbu tedy nedokládá.)
  * Jinak se nezapisuje nic (stav „neověřeno"). Čte se jen deal (GET).
  * ============================================================ */
 import { pdHodnota } from './pd_mapa.mjs';
-import { pdVazbaZiva } from './pd_vazba.mjs';
+import { pdVazbaDokladaZapis, pdVazbaZiva } from './pd_vazba.mjs';
 
 export const PD_DEAL_NEPATRI = 'Deal v Pipedrive nepatří této zakázce (zakázka nemá vazbu z Pipedrive na tento deal '
   + 'a pole „Odkaz na kalkulaci" v dealu nemíří na tuto zakázku) — do dealu se nic nezapsalo. '
   + 'Zkontrolujte číslo obchodního případu v Controllingu, nebo v dealu vyplňte odkaz na kalkulaci.';
+
+export const PD_DEAL_CEKA = 'Vazba zakázky na deal v Pipedrive čeká na potvrzení „V pořádku“ (navázal ji webhook) — '
+  + 'do dealu se nic nezapsalo. Vazbu potvrďte v liště zakázky, nebo ji označte jako chybnou.';
 
 /* Vrací { ok: true, zdroj: 'vazba'|'odkaz' } nebo { ok: false, duvod }.
  * `zavolej(cesta)` = čtení Pipedrive (s časovou mezí volajícího),
@@ -31,8 +36,12 @@ export async function pdDealPatriZakazce(zak, dealId, { zavolej, poleMapa, odkaz
   const id = String(dealId || '');
   if (!/^[1-9][0-9]{0,11}$/.test(id) || !zak || typeof zak !== 'object') return { ok: false, duvod: PD_DEAL_NEPATRI };
   const norm = (x) => (typeof G.ctrlPdDealIdNorm === 'function' ? G.ctrlPdDealIdNorm(x) : String(x || '')) || '';
-  const vazba = pdVazbaZiva(zak, norm);
+  const vazba = pdVazbaDokladaZapis(zak, norm);   // RJ N1: „ceka“ nestačí
   if (vazba && String(vazba.deal) === id) return { ok: true, zdroj: 'vazba' };
+  /* RJ N1: nepotvrzená vazba z webhooku na TENTO deal zastaví zápis i s odkazem
+   * v dealu — odkaz tam zapsal sám webhook při navázání, vazbu tedy nedokládá. */
+  const ziva = pdVazbaZiva(zak, norm);
+  if (ziva && String(ziva.deal) === id && ziva.stav === 'ceka') return { ok: false, duvod: PD_DEAL_CEKA };
   if (typeof zavolej !== 'function' || typeof poleMapa !== 'function') return { ok: false, duvod: PD_DEAL_NEPATRI };
   const pole = await poleMapa();
   const mapa = (pole && pole.mapa) || {};

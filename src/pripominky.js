@@ -211,8 +211,8 @@ function pripominkaNova(vstup, relace, ted, zdroj, cislo) {
  * fronty (stav ≠ nova). Vrací { ok, pripominka } nebo { ok:false, chyba, kod }. */
 const PRIPOMINKA_STAVY_KOORDINACE = ['fronta', 'resi', 'test', 'hotovo', 'odlozeno', 'zamitnuto'];
 /* RJ (#710-4 / N5, J. V. 22. 11. 2026; mez B257): připomínka UZAVŘENÁ SPRÁVCEM.
- * Uzavřené stavy: hotovo, zamítnuto, duplicitní. Kdo uzavřel, říká první záznam
- * průběhu v posledním souvislém úseku s dnešním stavem (vstup do stavu).
+ * Uzavřené stavy: hotovo, zamítnuto, duplicitní. Uzavřeno správcem = poslední
+ * souvislý úsek průběhu s dnešním stavem nese aspoň jeden záznam správce (RJ N2).
  * Záznam bez průběhu (starší data) = správce (bezpečná výchozí). */
 const PRIPOMINKA_UZAVRENE = ['hotovo', 'zamitnuto', 'duplicitni'];
 function pripominkaUzavrelSpravce(p) {
@@ -220,8 +220,10 @@ function pripominkaUzavrelSpravce(p) {
   const pr = Array.isArray(p.prubeh) ? p.prubeh : [];
   let i = pr.length - 1;
   if (i < 0 || !pr[i] || pr[i].stav !== p.stav) return true;
-  while (i > 0 && pr[i - 1] && pr[i - 1].stav === p.stav) i--;
-  return pr[i].kdo !== 'koordinace';
+  /* RJ N2 (revize koordinace): celý poslední úsek s dnešním stavem — stačí jediný
+   * záznam správce (uzavřel, nebo potvrdil / odpověděl po uzavření koordinací). */
+  for (; i >= 0 && pr[i] && pr[i].stav === p.stav; i--) if (pr[i].kdo !== 'koordinace') return true;
+  return false;
 }
 
 function pripominkaZmen(stara, zmena, kdo, ted, existujeId) {

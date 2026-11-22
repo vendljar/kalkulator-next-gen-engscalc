@@ -1641,7 +1641,17 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     .map(vl => ({ nazev: vl.nazev, ks: +vl.mnozstvi || 0, cena: +vl.cena || 0,
                   celkem: (+vl.mnozstvi || 0) * (+vl.cena || 0), vlastni: true }));
   const lakVlastniKc = vlLakRows.reduce((a, r) => a + r.celkem, 0);
-  const lakovaniKc = (L.rezim === 'tomas' ? tomas : lakovna) + lakVlastniKc;
+  /* CENA Z NABÍDKY LAKOVNY (#666, J. V. 18. 11. 2026 — audit #668 bod B2).
+   * `C.lak.nabidkaKc` = částka řádku z nabídky lakovny pro tuto zakázku
+   * (za šachtu). Vyplněné číslo NAHRADÍ výpočet lakování z ceníku (režim
+   * lakovna / lakovna B); vlastní položky lakování se přičítají dál. Klíč
+   * není ve vzoru ceníku (DEFAULT_CENIK), import ho tedy nedoplní —
+   * chybí = počítá se jako dřív. Variantě ho zapíše jen ruční cena se
+   * záznamem (rucni_ceny.js, RC_CASTKY_RADKU); server ho bez záznamu
+   * nepustí (B112, rucniCenaPlati). */
+  const lakNabidka = lakNabidkaCastka(L);
+  const lakDleCeniku = L.rezim === 'tomas' ? tomas : lakovna;
+  const lakovaniKc = (lakNabidka !== null ? lakNabidka : lakDleCeniku) + lakVlastniKc;
 
   /* SLOUPY NAVÍC POD MŮSTKY (#560, A-Q5 — J. V.: „To jsou jakly, stejné
    * jako v rozích šachty … naceňují se stejným způsobem jako sloupky
@@ -2807,7 +2817,9 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     strecha: { m2: ext ? strechaM2 : 0, mustekNahore, mustekM2: strechaMustekM2, vNabidce: zastreseniVNabidce },
     /* #354: rozměr a tvar ceny můstků pro specifikaci, nabídku a kontroly. */
     mustky: mustkyR,
-    lakovani: { lakovna, tomas, pouzito: lakovaniKc, rezim: L.rezim, vlastniRows: vlLakRows, vlastniKc: lakVlastniKc },
+    lakovani: { lakovna, tomas, pouzito: lakovaniKc, rezim: L.rezim, vlastniRows: vlLakRows, vlastniKc: lakVlastniKc,
+      /* #666: jen s cenou z nabídky lakovny — bez ní tvar výsledku beze změny. */
+      ...(lakNabidka !== null ? { nabidka: lakNabidka, dleCeniku: lakDleCeniku } : {}) },
     montaz: { hodinyNavic: hn, hodinyNavicCelkem: hodinyNavic, hod1osoba: montazHod1, hodCelkem: montazHod, dni: montazHod1 / 8 },
     nazvyPolozek,
     /* PÁSY OPLÁŠTĚNÍ TAK, JAK JE SPOČÍTALO JÁDRO (#268).
@@ -2944,6 +2956,13 @@ function statikaOplSazba(c) {
     && c.statikaOplKc !== '' && isFinite(+c.statikaOplKc)) return +c.statikaOplKc;
   return c ? c.statikaKc : 0;
 }
+/* Částka z nabídky lakovny (#666): číslo ≥ 0, jinak null (= dle ceníku).
+ * Prázdné pole, null, text nebo záporné číslo částkou nejsou. */
+function lakNabidkaCastka(L) {
+  if (!L || typeof L !== 'object' || !Object.prototype.hasOwnProperty.call(L, 'nabidkaKc')) return null;
+  const h = L.nabidkaKc;
+  return (typeof h === 'number' && isFinite(h) && h >= 0) ? h : null;
+}
 /* MIGRACE CENÍKU: nový klíč `statikaOplKc` se předvyplní sazbou statiky OCK
  * (`statikaKc`) — v ceníku sestavení po načtení zveřejněné verze, v ceníku
  * uložené varianty při importu i v kandidátech serverové kontroly B112.
@@ -2980,4 +2999,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, mustkySkupiny, mustekSkupinaOciste, mustekSkupinaNova, mustkyNaSkupiny, mustkyCenikSkladebny, mustkyProvedeniMimoVychozi, MUSTEK_PODLAHY, MUSTEK_ZABRADLI, MUSTEK_KOTVENI, MUSTKY_SKLADBA_KLICE, MUSTEK_RADEK, MUSTKY_SKUPIN_MAX, MUSTEK_TEXT_MAX, mustkyCenikNovy, mustkyRozpad, mustekDelkaMm, mustekSloupVychoziM, MUSTEK_SLOUP_ODPOCET_M, cenikMigraceMustku, mustkyCenikKontrola, MUSTEK_REF_SIRKA_MIN_MM, MUSTEK_REF_SIRKA_MAX_MM, MUSTKY_CENIK_KLICE, MUSTEK_DELKA_VYCHOZI_MM, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, NAD_DVERMI_NABIDKA, svetlikyStavbaNaBez, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniPasyMeze, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikMigraceStatikyOpl, statikaOplZahrnuta, statikaOplSazba, statikaOplVolby, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
+if (typeof module !== 'undefined') module.exports = { vypocet, lakNabidkaCastka, profilyNezname, mustkyPocet, mustkySkupiny, mustekSkupinaOciste, mustekSkupinaNova, mustkyNaSkupiny, mustkyCenikSkladebny, mustkyProvedeniMimoVychozi, MUSTEK_PODLAHY, MUSTEK_ZABRADLI, MUSTEK_KOTVENI, MUSTKY_SKLADBA_KLICE, MUSTEK_RADEK, MUSTKY_SKUPIN_MAX, MUSTEK_TEXT_MAX, mustkyCenikNovy, mustkyRozpad, mustekDelkaMm, mustekSloupVychoziM, MUSTEK_SLOUP_ODPOCET_M, cenikMigraceMustku, mustkyCenikKontrola, MUSTEK_REF_SIRKA_MIN_MM, MUSTEK_REF_SIRKA_MAX_MM, MUSTKY_CENIK_KLICE, MUSTEK_DELKA_VYCHOZI_MM, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, NAD_DVERMI_NABIDKA, svetlikyStavbaNaBez, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniPasyMeze, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikMigraceStatikyOpl, statikaOplZahrnuta, statikaOplSazba, statikaOplVolby, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };

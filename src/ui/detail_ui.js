@@ -429,7 +429,10 @@ function renderDetail() {
       'profily bm + lišty bm + m² (plechy + oplechování + terče); jiné jednotky než režim „lakovna B"'],
     ...lakVl,
     ...(r.lakovani.vlastniKc ? [['Vlastní položky celkem', K(r.lakovani.vlastniKc), 'přičítá se k oběma režimům']] : []),
-    ['Použito ve výpočtu', `${K(r.lakovani.pouzito)} (${r.lakovani.rezim})`,
+    /* #666: cena z nabídky lakovny nahrazuje výpočet režimu. */
+    ...(typeof r.lakovani.nabidka === 'number' ? [['Cena z nabídky lakovny', K(r.lakovani.nabidka),
+      'částka řádku z nabídky lakovny (Kalkulace OCK, ✎ cena z nabídky) — nahrazuje výpočet režimu; vlastní položky se přičítají']] : []),
+    ['Použito ve výpočtu', `${K(r.lakovani.pouzito)} (${typeof r.lakovani.nabidka === 'number' ? 'nabídka lakovny' : r.lakovani.rezim})`,
       'režim se přepíná v ceníku, sekce LAKOVÁNÍ; druhý režim se jen zobrazuje pro srovnání'],
   ]), 'dv-10');
 

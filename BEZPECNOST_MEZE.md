@@ -2232,6 +2232,11 @@ Rozhodnutí v `podklady/ROZHODNUTI_LOG.md`, roadmapa #704, #710, #714, #715. Tes
   regresní test „neovereno“). Druhá zakázka na témž dealu (jiné číslo) poznámku zapíše jako dřív (N3),
   má-li sama platnou vazbu (#704 (6)). *Mez:* dokud CRM nevyplní odkaz na kalkulaci ani nepošle webhook,
   zakázka s ručně zadaným dealem do Pipedrive nepíše (stav „neovereno“, varování, uložení projde).
+  **Revize RJ N1 (v22.11.9):** vazba z webhooku dokládá zápis jen ve stavu „potvrzeno“, nebo „webhook“
+  u zakázky založené webhookem (`pdVazbaDokladaZapis`); nepotvrzená „ceka“ na týž deal zápis zastaví i s odkazem
+  v dealu (odkaz zapsal webhook sám); webhook dá „webhook“ jen kalkulaci, kterou zakládá (existující s ručně
+  zadaným dealem = „ceka“). *Mez:* „V pořádku“ smí stisknout kdokoli s přístupem k zakázce, i její autor —
+  potvrzení vazby obchodníkem, který deal připojil sám, zápis pustí (rozhodne J. V. před zapnutím zápisu).
   Vypínač `PIPEDRIVE_ZAPIS` dál VYPNUTÝ — zapíná jen J. V. (#704 (1)). S vypnutým zápisem poznámka dealu
   vrací stav „bez“ a varování `PD_ZAPIS_VYPNUTY` (jen má-li co psát a uživatel právo; nic se neodešle ani nečerpá).
 - **B209 (doplněk) — oprava firmy ověřuje vazbu dealu.** `POST /api/pd/organizace` `akce: nahled | zapis`
@@ -2240,7 +2245,8 @@ Rozhodnutí v `podklady/ROZHODNUTI_LOG.md`, roadmapa #704, #710, #714, #715. Tes
 - **B257 (doplněk) — klíč koordinace a uzavřené připomínky.** Připomínku, kterou uzavřel SPRÁVCE (stav
   hotovo / zamítnuto / duplicitní; kdo uzavřel = vstup do stavu v průběhu, bez průběhu = správce), klíč
   koordinace nevrátí do fronty ani nepřepíše odpověď → 403; číslo roadmapy doplnit smí. Uzavřenou
-  koordinací si koordinace otevřít smí (#710 (4)). #710 (1)–(3) potvrzeno beze změny.
+  koordinací si koordinace otevřít smí (#710 (4)) — jen dokud v témže stavu nepřibyl záznam správce
+  (revize RJ N2). #710 (1)–(3) potvrzeno beze změny.
 
 ## PR — připomínky z aplikace (dávka PR, 21. 11. 2026) — B257
 
@@ -2388,7 +2394,7 @@ Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md` (tabulka �
   a prodaná varianta pak termíny počítá z aktuální tabulky Firmy (stav před D8). Odmítnout to nejde:
   skutečný klient snímek v cestě „Prodáno po neuloženém tisku klonu“ neposílá (`overit_klon_tisk` #555)
   a server ho doplnit nemůže — rozbil by snímek zámku spočítaný klientem. Podvržený (nesedící) snímek
-  u nového zámku se odmítne 409. Úplná oprava = klient pošle snímek vždy (navrženo k dávce).
+  u nového zámku se odmítne 409. Úplná oprava = klient pošle snímek vždy (#721).
 - **#711 — počítadla klíče koordinace — OPRAVENO.** Viz B257.
 - **#712 — připomínky při VYP — OPRAVENO.** Přihlášení a `/api/ja` nesou `pripominky {zapnuto,
   smiOdesilat}`; při vypnuté funkci klient nic nenačítá a tlačítko do stránky nevkládá.

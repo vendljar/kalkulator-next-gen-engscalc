@@ -253,9 +253,11 @@ async function zpracuj(req, dealId, ULO, G) {
      * (upozornění při otevření); kalkulace založená webhookem ne. */
     const doplneno = zmena.zmeneno.slice();
     const vazba = { deal: dealId, kdy: vazbaPlati && vazbaPlati.kdy ? vazbaPlati.kdy : kdy, cislo: zadani.cislo, strana: zadani.strana,
-      /* Revize K40c N2: „ceka“ jen u NOVÉ vazby existující kalkulace; vazba z doby
-       * před K40c (pdDealId bez pdVazbaWebhook) dostane „webhook“ bez čekání. */
-      stav: vazbaPlati ? vazbaPlati.stav : (novaVazba && stara ? 'ceka' : 'webhook'), ares,
+      /* Revize K40c N2: „ceka“ u nové vazby existující kalkulace. RJ N1 (revize
+       * 22. 11. 2026): „webhook“ jen kalkulaci, kterou webhook právě ZAKLÁDÁ —
+       * existující kalkulace s pdDealId bez vazby (pdDealId zadal obchodník,
+       * třeba předem s číslem cizího dealu) dostane taky „ceka“. */
+      stav: vazbaPlati ? vazbaPlati.stav : (stara ? 'ceka' : 'webhook'), ares,
       /* Revize K40c N1: po výpadku ARES se otisk IČO NEUKLÁDÁ — další doručení
        * se stejným IČO se zeptá znovu (u 'neplatne' / 'nenalezeno' ne). */
       icoOtisk: aresVolano && ares !== 'vypadek' ? icoOtisk : (vazbaPlati ? vazbaPlati.icoOtisk : ''),

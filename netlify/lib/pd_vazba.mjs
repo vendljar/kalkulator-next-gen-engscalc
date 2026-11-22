@@ -72,6 +72,19 @@ export function pdVazbaZiva(zak, normDeal) {
   return !!v && v.stav !== 'zruseno' && (n(zak.pdDealId) || '') === v.deal ? v : null;
 }
 
+/* RJ N1 (revize koordinace 22. 11. 2026): vazba, která DOKLÁDÁ zápis do dealu
+ * (pd_overeni.mjs). Živá nestačí: „ceka“ (webhook navázal existující
+ * kalkulaci, nikdo nepotvrdil) zápis nepustí — útočník mohl předem založit
+ * zakázku s číslem cizího dealu a po „Vygenerovat nabídku“ v CRM by webhook
+ * deal navázal na jeho zakázku. Platí „potvrzeno“ a „webhook“ jen u zakázky,
+ * kterou webhook SÁM založil (autor pipedrive-webhook). */
+export function pdVazbaDokladaZapis(zak, normDeal) {
+  const v = pdVazbaZiva(zak, normDeal);
+  if (!v) return null;
+  if (v.stav === 'potvrzeno') return v;
+  return v.stav === 'webhook' && zak && zak.autor === PD_WEBHOOK_AUTOR ? v : null;
+}
+
 /* Kdo smí vazbu zrušit, měnit deal a opravit firmu v Pipedrive: administrátor,
  * nebo autor zakázky — `autor` z ULOŽENÉ verze = e-mail relace. Zakázka
  * založená webhookem (autor pipedrive-webhook) jen administrátor. */

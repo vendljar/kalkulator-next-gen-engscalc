@@ -244,14 +244,16 @@ r = await volej(D2.id);
 test('… přejmenování organizace v Pipedrive firmu z ARES nepřepíše (ARES se nevolá)', zakazka(S2).objednatel === 'Druhá Zkušební s.r.o. (smyšlené)'
   && ares.volani === n0 + 1, [zakazka(S2).objednatel, ares.volani - n0]);
 
-/* Revize K40c N2: vazba z doby před K40c (pdDealId bez pdVazbaWebhook) nečeká na „V pořádku“. */
+/* Revize K40c N2: vazba z doby před K40c (pdDealId bez pdVazbaWebhook) nečekala na „V pořádku“.
+ * RJ N1 (revize 22. 11. 2026): pdDealId zadává obchodník (i s číslem cizího dealu předem),
+ * proto i taková kalkulace čeká na „V pořádku“ — stav „ceka“. */
 const cn6 = D6.title.split(' ')[0];
 nastavIco(D6, '1000');
 const r6 = await zalozRucne(cn6);
 { const z6 = zakazka(r6.soubor); z6.pdDealId = String(D6.id); zapisZakazku(r6.soubor, z6); }
 r = await volej(D6.id);
-test('N2: stará vazba (pdDealId bez pdVazbaWebhook) dostane stav „webhook“, ne „ceka“', r.status === 200
-  && zakazka(r6.soubor).pdVazbaWebhook.stav === 'webhook' && zakazka(r6.soubor).protokol.some((p) => /Aktualizace z dealu/.test(p.co)),
+test('N2 + RJ N1: kalkulace s pdDealId bez pdVazbaWebhook dostane „ceka“ (ne „webhook“)', r.status === 200
+  && zakazka(r6.soubor).pdVazbaWebhook.stav === 'ceka' && zakazka(r6.soubor).protokol.some((p) => /Aktualizace z dealu/.test(p.co)),
   [r.status, zakazka(r6.soubor).pdVazbaWebhook]);
 
 /* ---------- 4. VÝPADKY ARES A ZMRAZENÁ HLAVIČKA ---------- */
@@ -440,6 +442,13 @@ r = await opravOrg(S3, 'nahled', cAutor);
 test('autor bez práva Pipedrive (matice B80) → 403', r.status === 403, r);
 pamet.delete('program/zobrazeni');
 test('… a do ARES ani Pipedrive se nešlo', ares.volani === n0 && pdPatche('/organizations/') === pO);
+/* RJ N1 (revize 22. 11. 2026): vazba existující kalkulace z webhooku je „ceka“ —
+ * oprava firmy (#704-4, totéž pravidlo jako poznámky) projde až po „V pořádku“. */
+r = await opravOrg(S3, 'nahled', cAutor);
+test('RJ N1: nepotvrzená vazba („ceka“) — oprava firmy 409 neověřeno, do Pipedrive nic', r.status === 409 && r.stav === 'neovereno'
+  && /čeká na potvrzení/.test(r.chyba || '') && pdPatche('/organizations/') === pO, r);
+r = await vazba(S3, 'potvrdit', cAutor);
+test('RJ N1: autor vazbu potvrdí („V pořádku“)', r.status === 200 && zakazka(S3).pdVazbaWebhook.stav === 'potvrzeno', r);
 r = await opravOrg(S3, 'nahled', cAutor);
 test('náhled autorem: rozdíly název a adresa, DIČ chybí v účtu → věta v dialogu', r.status === 200
   && r.rozdily.map((x) => x.klic).join() === 'nazev,adresa' && r.dicChybi === true && /DIČ se do Pipedrive nezapíše/.test(r.dicVeta)
