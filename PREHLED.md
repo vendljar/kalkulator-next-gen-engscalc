@@ -7,20 +7,42 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 
 | prostředí | verze |
 |---|---|
-| ostrý web (`main`) | `origin/main` nedostupné (reference chybí) |
-| testovací web (`test`) | `origin/test` nedostupné (reference chybí) |
+| ostrý web (`main`) | **v19.11.11** (`cda289e2`, 19. 11. 2026) |
+| testovací web (`test`) | **v22.11.5** (`05a496d0`, 22. 11. 2026) |
+
+Test je proti main napřed o 73 commitů.
 
 ## V testu, ještě ne v main
 
-Nelze určit — chybí reference main nebo test.
+| # | typ | co | verze |
+|---|---|---|---|
+| #707 (dřív PR) | úkol | Připomínky z aplikace: tlačítko Připomínka (obchodník), Nastavení → Připomínky (správce), klíč pro koordinaci | v22.11.5 |
+| #701 (dřív B195) | nález | B195: nulová ruční cena jen se zdrojem — ověřeno, text meze opraven | v22.11.3 |
+| #700 (dřív B235, B236, IN-1, IN-2) | nález | B235/B236: vypínač zápisu do Pipedrive (výchozí vypnuto), deal musí patřit zakázce | v22.11.3 |
+| #699 (dřív B234, AD-1) | nález | B234: kartu zákazníka mění jen autor a správce, návrhy změn, historie verzí | v22.11.3 |
+| #698 (dřív B233, AU-1) | nález | B233: počítadla pokusů o přihlášení serializovaná (vyhradne) | v22.11.3 |
+| #697 (dřív B232, AZ-2) | nález | B232: přísné ověření zmrazeného výsledku vyžaduje všechna čísla | v22.11.3 |
+| #696 (dřív B231, AZ-1) | nález | B231: příznak strany zakázky (jenProj/jenOck) po zámku a Prodáno zmrazený | v22.11.3 |
+| #695 (dřív HN-5) | úkol | Kolo: chybějící playwright = selhání s návodem; částečně přeskočená sada (PRESKOCENO_CAST) v souhrnu „Přeskočené sady“ | v22.11.2 |
+| #691 (dřív NPT-N2, NPT-N3, NPT-N4) | nález | NPT-N2–N4: drobné odchylky náhledu od Wordu (verzálky jednotek, dvojtečka EN/DE, IČ/Tel. v bloku Kancelář) | v21.11.4 |
+| #690 (dřív NPT-N1) | nález | NPT-N1: řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ je v náhledu podkladů, ale Word CN v17 ho nemá | v21.11.4 |
+| #683 (dřív D8-I1) | nález | D8-I1: nabídka PROJ a krycí list rozhodují o „nabízí studii“ jinak (studie vyřazená s cenou 0) | v22.11.1 |
+| #680 (dřív DO-N1) | nález | DO-N1: návrh obchodníka do číselníku u příplatku přechodových plechů (MATERIÁL) správce v Ceník → číselník nevidí | v21.11.4 |
+| #674 (dřív VZ-F2-R2) | úkol | Víc zákazníků drobnosti po VZ-F2: pojistka v plnaMocData, IČO s úvodními nulami, dvojité „Neuloženo:“ | v22.11.1 |
+| #673 (dřív VZ-F2-R1) | úkol | Suchý běh Pipedrive ukazuje ruční pole KL dalšího zákazníka jako údaje řídící varianty | v22.11.1 |
+| #665 | úkol | Dotisk odeslané nabídky bere blok „Vypracoval“ z dnešního přihlášeného účtu, ne z doby odeslání | v22.11.1 |
+| #647 (dřív K49-I4) | úkol | Pevná sada porovnání sestavení: přidat případ přepnutí typu šachty a zasklení (K40-N1) | v22.11.2 |
+| #646 (dřív K49-I2) | úkol | Harness overit_sod.mjs: aktualizovat očekávání na šablony v4–v6 a tečky místo symbolů | v22.11.2 |
+| #644 | úkol | Občasné selhání src/test_vz_unik.js: „výměna řídícího (B)“ — kanár „cena varianty A“ v JSON pohledu PROJ C EN/DE/FR | v22.11.2 |
+| #638 | úkol | Nestabilní harnessy: overit_zobrazeni.mjs a overit_zaporne.mjs (limit přihlášení), test_577_kopie_skript.mjs T4 v mutacích | v22.11.2 |
+| #635 | úkol | VZ: u upozornění sdílené varianty v krycím listu tlačítko „vlastní varianta“ | v22.11.1 |
 
 ## Otevřené vady s dopadem na cenu
 
 | # | co | kolo | stav | čeká na |
 |---|---|---|---|---|
 | #614 (dřív K40-N1) | Vada ceny v main: po přepnutí typu šachty se čelní sklo přejmenuje a zůstane vyřazené (opraveno v testu v12.11.1) | 40 | oprava ve verzi v12.11.1, v testu ještě ne | — |
-| #670 (dřív K50-N1) | K50-N1: statika opláštění u zahraniční řady ceníku počítána českou sazbou (od v19.11.1) | 50 | oprava ve verzi v19.11.3, v testu ještě ne | — |
-| #696 (dřív B231, AZ-1) | B231: příznak strany zakázky (jenProj/jenOck) po zámku a Prodáno zmrazený | 50 | oprava ve verzi v22.11.3, v testu ještě ne | — |
+| #696 (dřív B231, AZ-1) | B231: příznak strany zakázky (jenProj/jenOck) po zámku a Prodáno zmrazený | 50 | opraveno v testu (v22.11.3), v main ne | — |
 
 ## Čeká na J. V.
 
