@@ -74,7 +74,7 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
   #710-4 koordinace 403 u uzavřené správcem; #706 `nastroje/kontrola_konfliktu.sh` (staticke 11). #709 → vlna F (stav
   „odlozeno“ schéma nezná). Testy `netlify/test_rj_rozhodnuti.mjs` + přípravky PD (odkaz místo čísla). Kolo proti 21eeffa
   VŠE ZELENÉ (514/0/6, hodiny 416/0/1, 11/11, SHODA 367/367), mutace [RJ] server 16/16, jádro 5/5. HOTOVO, k revizi.
-  v22.11.9 (#717): revize N1 („ceka“ zápis nedokládá), N2, I3; kolo proti 60086f7 VŠE ZELENÉ, [RJ] 20/20. Mez: „V pořádku“ smí i autor.
+  v22.11.9 (#717): revize N1 („ceka“), R2 (zrušená vazba), N2, I3; R1 → otázka #718; kolo proti 60086f7 VŠE ZELENÉ, [RJ] 20/20. Mez: „V pořádku“ smí i autor.
 - **VZD** (`claude/vzd-drobnosti`, v22.11.1, s integrací 885577e): HOTOVO. Kolo VŠE ZELENÉ (505/0/7, hodiny 410/0/1, 9/9, SHODA 359/359),
   mutace [VZD] jádro 16/16, server 4/4. #674 d a podpis u #665 k potvrzení J. V. Detail v CHANGELOG.
 

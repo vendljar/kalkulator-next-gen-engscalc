@@ -16,14 +16,18 @@ Navazuje na v22.11.7 (revize koordinace = SLOUČIT), sloučeno s integrací `600
   nebo „webhook“ u zakázky, kterou webhook sám založil; nepotvrzená „ceka“ zápis zastaví i s odkazem v dealu (ten tam
   zapsal webhook sám). Webhook dává „webhook“ jen kalkulaci, kterou zakládá — existující kalkulace s ručně zadaným
   dealem dostane „ceka“. PoC revize (zakázka předem s číslem cizího dealu → webhook → poznámka) je regresní test.
+- **R2 (Pipedrive, ověření revize Fable):** deal, jehož vazbu u zakázky někdo zrušil (deal odmítnutý nebo vazba „zruseno“),
+  odkaz v dealu nedoloží — mazání odkazu při zrušení může selhat a odkaz od webhooku by po novém připojení dealu
+  pustil zápis.
 - **N2 (připomínky):** uzavřeno správcem = v posledním úseku stavu je jakýkoli záznam správce (uzavřela koordinace
   a správce odpověděl → koordinace už nemění stav ani odpověď).
 - **I3 (kolo):** kontrola značek konfliktu chytí i „=======“ na řádku s CRLF.
 - **Testy:** `test_bz_pipedrive` (PoC N1, model), `test_k40c_webhook` (N2 K40c → „ceka“; oprava firmy až po „V pořádku“),
-  `test_pripominky`, `test_rj_rozhodnuti`. Mutace [RJ] 20/20 (mutace [K40c] N2 odebrána — rozhodnutí obrácené). Kolo
-  `--bez-mutaci --proti 60086f7`: VŠE ZELENÉ (sady 517/0/6, hodiny 418/0/1, statické 11/11, porovnání SHODA 367/367).
-- **Mez (k rozhodnutí J. V. před zapnutím zápisu):** „V pořádku“ smí stisknout i autor zakázky, který deal připojil
-  sám — potvrzením si zápis do dealu pustí.
+  `test_pripominky`, `test_rj_rozhodnuti`. Mutace [RJ] VYSLEDEK_MUTACI (mutace [K40c] N2 odebrána — rozhodnutí obrácené). Kolo
+  `--bez-mutaci --proti 60086f7`: VYSLEDEK_KOLA.
+- **Mez R1 (k rozhodnutí J. V. před zapnutím zápisu):** „V pořádku“ smí stisknout kdokoli s přístupem k zakázce,
+  i autor, který deal připojil sám — potvrzením si zápis do dealu pustí. Návrh revize: u kalkulace existující
+  před webhookem nesmí potvrdit její autor (jen správce nebo jiný uživatel), případně potvrzení dokládat z CRM.
 
 ## v22.11.8 — LAK #666: lakování — cena z nabídky lakovny jako částka řádku, větev claude/lak-lakovani
 

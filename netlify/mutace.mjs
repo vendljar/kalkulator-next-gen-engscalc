@@ -272,6 +272,14 @@ const MUTACE = [
    * #710-4 koordinace a uzavřené připomínky. Hlídají test_rj_rozhodnuti.mjs, test_bz_pipedrive.mjs,
    * test_vsd_pd_poznamka.mjs, test_pripominky.mjs. Přepis kopie podpisu týmž obsahem (klíč = otisk
    * obsahu) je ekvivalentní mutace, proto tu není. [RJ] */
+  { nazev: "RJ R2: odmítnutý deal doloží odkaz [RJ]", soubor: "lib/pd_overeni.mjs",
+    hledej: "  if (pdOdmitnuto(zak, id) || (vz && vz.deal === id && vz.stav === 'zruseno')) return",
+    nahrad: "  if ((vz && vz.deal === id && vz.stav === 'zruseno')) return",
+    proc: "po zrušení vazby (a nesmazaném odkazu v dealu) by znovu připojený deal přijal zápis", sady: ["test_bz_pipedrive.mjs"] },
+  { nazev: "RJ R2: zrušená vazba doloží odkaz [RJ]", soubor: "lib/pd_overeni.mjs",
+    hledej: "  if (pdOdmitnuto(zak, id) || (vz && vz.deal === id && vz.stav === 'zruseno')) return",
+    nahrad: "  if (pdOdmitnuto(zak, id)) return",
+    proc: "zakázka se zrušenou vazbou bez seznamu odmítnutých (starší data) by přes odkaz psala", sady: ["test_bz_pipedrive.mjs"] },
   { nazev: "RJ N2: uzavřenou koordinací nelze otevřít [RJ]", soubor: "../src/pripominky.js",
     hledej: "if (pr[i].kdo !== 'koordinace') return true;\n  return false;",
     nahrad: "if (pr[i].kdo !== 'koordinace') return true;\n  return true;",

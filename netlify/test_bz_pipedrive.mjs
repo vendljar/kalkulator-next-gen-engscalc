@@ -292,6 +292,39 @@ const uloz = async (z, c) => { const r = await post(zakazky, 'http://x/api/zakaz
   test('RJ N1: model — „webhook“ u zakázky založené webhookem doloží, u ručně založené ne; „ceka“ nikdy',
     !!pdVazbaDokladaZapis(zw('pipedrive-webhook', 'webhook'), norm) && !pdVazbaDokladaZapis(zw('bz.pd@priklad.cz', 'webhook'), norm)
     && !pdVazbaDokladaZapis(zw('pipedrive-webhook', 'ceka'), norm) && !!pdVazbaDokladaZapis(zw('bz.pd@priklad.cz', 'potvrzeno'), norm));
+  /* RJ R2 (revize Fable 22. 11. 2026): zrušení vazby autorem, mazání odkazu v dealu
+   * se nepovede (chyba / časová mez / strop — zrušení se přesto dokončí), odkaz od
+   * webhooku v dealu zůstane a míří na útočníkovu zakázku. Útočník deal připojí
+   * znovu → pravidlo 2 („odkaz“) nesmí zápis pustit (deal je v pdDealyOdmitnute,
+   * vazba „zruseno“). */
+  {
+    const cizi2 = D().dealy.find((d) => d.status === 'open' && d.org_id && d.id > cizi.id && !d.custom_fields[CN]);
+    const cislo2 = '2026 - OPR - CN - 9986 - CIZI';
+    cizi2.custom_fields[CN] = cislo2;
+    const za = nova(); za.cislo = cislo2; za.pdDealId = String(cizi2.id);
+    const ta = await uloz(za, cO);
+    await webhookFn(new Request('http://x/api/pd/webhook', { method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-kalkulator-klic': process.env.PIPEDRIVE_WEBHOOK_KLIC }, body: JSON.stringify({ dealId: cizi2.id }) }));
+    const hashOdkaz = D().pole.deal.find(p => p.field_name === 'Odkaz na kalkulaci').field_code;
+    const odkaz = cizi2.custom_fields[hashOdkaz];
+    const rz = await (await post(vazbaFn, 'http://x/api/pd/vazba', { soubor: ta.soubor, akce: 'zrusit' }, cO)).json();
+    cizi2.custom_fields[hashOdkaz] = odkaz;   // mazání odkazu se „nepovedlo“ — odkaz zůstal v dealu
+    const ulz = JSON.parse(pamet.get('zakazky/z/' + ta.soubor));
+    test('RJ R2: příprava — webhook zapsal odkaz, autor vazbu zrušil (deal odmítnutý), odkaz v dealu zůstal', /zakazka=/.test(String(odkaz || ''))
+      && rz.ok === true && ulz.pdVazbaWebhook.stav === 'zruseno' && (ulz.pdDealyOdmitnute || []).includes(String(cizi2.id)), { rz, v: ulz.pdVazbaWebhook });
+    const pred = notes().length;
+    const zb = JSON.parse(JSON.stringify(ulz)); zb.pdDealId = String(cizi2.id); zb.varianty[0].data.ock.dalsi[0].nazev = 'Výtah R2';
+    const tb = await uloz(zb, cO);
+    test('RJ R2: deal připojený znovu po zrušení vazby — odkaz od webhooku zápis nepustí (neovereno)', tb.status === 200
+      && tb.pdPoznamka === 'neovereno' && notes().length === pred, { s: tb.status, p: tb.pdPoznamka, v: tb.varovani, ch: tb.chyba });
+    /* Starší data: vazba „zruseno“ bez seznamu odmítnutých dealů — taky nic. */
+    const raw = JSON.parse(pamet.get('zakazky/z/' + ta.soubor)); delete raw.pdDealyOdmitnute; delete raw.pdPoznamkaSachty;
+    pamet.set('zakazky/z/' + ta.soubor, JSON.stringify(raw));
+    const zc = JSON.parse(JSON.stringify(raw)); zc.varianty[0].data.ock.dalsi[0].nazev = 'Výtah R2b';
+    const tc = await uloz(zc, cO);
+    test('RJ R2: vazba „zruseno“ bez seznamu odmítnutých (starší data) — odkaz zápis nepustí', tc.status === 200
+      && tc.pdPoznamka === 'neovereno' && notes().length === pred, { s: tc.status, p: tc.pdPoznamka, ch: tc.chyba });
+  }
   delete process.env.PIPEDRIVE_WEBHOOK_KLIC;
 }
 {
