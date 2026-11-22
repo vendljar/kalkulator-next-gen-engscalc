@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v22.11.4 — BZ Z2: nestabilní kontrola rejstříku výjimek (test_vyjimky), větev claude/bz-bezpecnost
+## v22.11.5 — BZ Z2: nestabilní kontrola rejstříku výjimek (test_vyjimky), větev claude/bz-bezpecnost
 
 Nad integrací `fe747c6` (v22.11.3). Jen test, kód aplikace beze změny.
 
