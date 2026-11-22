@@ -834,6 +834,9 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
     /* #665: blok „Vypracoval" odeslané nabídky = profil účtu z RELACE (ne od
      * klienta); dál ho drží uloZamekRazitkaDrz. Bez e-mailu klíč pryč. */
     { const zs = typeof globalThis.zamekZpracovatelSnimek === 'function' ? globalThis.zamekZpracovatelSnimek(relace) : null;
+      /* #665 (RJ, J. V. 22. 11. 2026): otisk zmrazené kopie skenu podpisu
+       * (připraví functions/zakazky.mjs z úložiště podpisů, ne klient). */
+      if (zs && /^[0-9a-f]{32}$/.test(String(ctx.podpisOtisk || ''))) zs.podpisOtisk = ctx.podpisOtisk;
       if (zs) v.zamek.zpracovatel = zs; else delete v.zamek.zpracovatel; }
     /* K40-S1 (#580): čas PRVNÍHO přijetí zámku serverem — dolní mez data
      * prodeje; příchozí hodnota se zahodí (píše ho jen server). */

@@ -685,6 +685,7 @@ async function nabidkaWordGeneruj(srv) {
     + (srv ? ' [serverová verze ' + srv.verze + ']' : ''));
   // varianta se určuje jednou dopředu – potřebujeme ji i pro zámek (#34)
   const varianta = await nabidkaVarianta();
+  if (typeof onlinePodpisZamkuPriprav === 'function') await onlinePodpisZamkuPriprav();   // #665 (RJ): podpis původního zpracovatele
   /* Zábrany z kontroly před nabídkou (#377) — hláška dřív než chyba z registru. */
   if (typeof dokumentZabranaHlas === 'function' && dokumentZabranaHlas('nabidka', varianta, nabidkaStavText)) return;
   if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol('nabidka', varianta))) { nabidkaStavText('Dokument nevznikl — nabídka je otevřená jen ke čtení.'); return; }   // P2 (K13-N54)

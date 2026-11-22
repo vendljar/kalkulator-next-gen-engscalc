@@ -1404,6 +1404,17 @@ function onlineOdeslanoSRazitkem(text, razitko, zamkyPrijato) {
   catch (e) { return text; }
 }
 
+/* #665 (RJ, J. V. 22. 11. 2026): zmrazené kopie skenu podpisu PŮVODNÍHO
+ * zpracovatele zamčených variant otevřené zakázky (zpracovatel.js). Po
+ * načtení se překreslí (online tisk). Vrací Promise s počtem načtených. */
+function onlinePodpisZamkuPriprav() {
+  if (typeof zpracovatelPodpisPriprav !== 'function' || !ONLINE_STAV.ja || !ONLINE_STAV.soubor || typeof ZAK === 'undefined') return Promise.resolve(0);
+  const soubor = ONLINE_STAV.soubor;
+  return zpracovatelPodpisPriprav(ZAK, id => onlineApi('/api/zakazky?soubor=' + encodeURIComponent(soubor)
+    + '&podpisZamku=' + encodeURIComponent(id)))
+    .then(n => { if (n && typeof render === 'function') render(); return n; }).catch(() => 0);
+}
+
 function onlineUloz(opts) {
   opts = opts || {};
   if (!ONLINE_STAV.ja) {
@@ -1824,6 +1835,7 @@ async function onlineOtevri(soubor) {
     ONLINE_STAV.razitko = (typeof uloRazitko === 'function') ? uloRazitko(ZAK) : '';
     ONLINE_STAV.posledni = JSON.stringify(ZAK);
     ONLINE_STAV.kdyUlozeno = null;
+    onlinePodpisZamkuPriprav();   // #665 (RJ): sken podpisu původního zpracovatele odeslaných nabídek
     /* Otevřená zakázka je JEN KE ČTENÍ, dokud ji uživatel vědomě neodemkne
      * (zadání J. V. 4. 9. 2026). Zapíná se PŘED přepočtem i renderem. */
     if (typeof zamekCteniZapni === 'function') zamekCteniZapni();

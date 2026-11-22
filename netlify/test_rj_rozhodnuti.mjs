@@ -147,6 +147,50 @@ console.log('\n===== #704-3: VEDOUCÍ STRANA ZMRAZENÁ I PŘI ZMĚNĚ ČÍSLA (R
     Object.assign(kopie(st), { cislo: '2026 - OPR - CN - 1', varianty: [{ id: 'v' }] })) === '');
 }
 
+/* ============================================================ */
+console.log('\n===== #665: PODPIS PŮVODNÍHO ZPRACOVATELE VE SNÍMKU ZÁMKU =====\n');
+{
+  const PNG = (x) => 'data:image/png;base64,' + Buffer.from('PODPIS-' + x).toString('base64');
+  const podpis = async (c, obr) => (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'podpis', obrazek: obr }, c)).status;
+  test('#665: příprava — obchodník nahraje podpis', (await podpis(cO, PNG('jedna-v1'))) === 200);
+  const z = nova('RJ 665'); zamkni(z, z.varianty[0]);
+  z.varianty[0].zamek.zpracovatel = { email: 'rj.obch1@priklad.cz', jmeno: 'Podvrh', podpisOtisk: 'f'.repeat(32) };   // podvrh z prohlížeče
+  const r = await uloz(z, cO);
+  const g = r.status === 200 ? await nacti(r.soubor, cO) : null;
+  const zs = g && g.varianty[0].zamek.zpracovatel;
+  test('#665: nový zámek nese otisk podpisu zpracovatele (server, podvrh zahozen)', !!zs && /^[0-9a-f]{32}$/.test(zs.podpisOtisk || '')
+    && zs.podpisOtisk !== 'f'.repeat(32) && zs.jmeno === 'Obch Jedna', JSON.stringify(zs));
+  const kopieKlic = zs ? 'podpisy/zamek/' + zs.podpisOtisk : '';
+  test('#665: zmrazená kopie skenu v úložišti podpisů (zamek/<otisk>)', !!zs && pamet.has(kopieKlic)
+    && JSON.parse(pamet.get(kopieKlic)).obrazek === PNG('jedna-v1'));
+  test('#665: sken v zakázce není (jen otisk)', !!g && !JSON.stringify(g).includes(PNG('jedna-v1')));
+  const ctiPodpis = async (soubor, varId, c) => { const x = await get(zakazky, 'http://x/api/zakazky?soubor=' + encodeURIComponent(soubor) + '&podpisZamku=' + encodeURIComponent(varId), c);
+    return { status: x.status, ...(await x.json()) }; };
+  const k1 = g ? await ctiPodpis(r.soubor, g.varianty[0].id, cO2) : {};
+  test('#665: kolega (jiný obchodník) dostane sken PŮVODNÍHO zpracovatele', k1.status === 200 && k1.obrazek === PNG('jedna-v1'), JSON.stringify(k1).slice(0, 200));
+  /* Autor podpis v účtu vymění — odeslaná nabídka drží původní. */
+  await podpis(cO, PNG('jedna-v2'));
+  const k2 = g ? await ctiPodpis(r.soubor, g.varianty[0].id, cO2) : {};
+  test('#665: po výměně podpisu v účtu dotisk dál nese původní sken', k2.status === 200 && k2.obrazek === PNG('jedna-v1'));
+  /* Další uložení kolegou otisk nezmění (drží uloZamekRazitkaDrz). */
+  if (g) {
+    const a = kopie(g); a.varianty[0].zamek.zpracovatel.podpisOtisk = 'a'.repeat(32); a.kontakt = 'Jiný kontakt';
+    const ra = await uloz(a, cA, g.uloRazitko);
+    const g2 = await nacti(r.soubor, cA);
+    test('#665: uložení s podvrženým otiskem projde a otisk se drží', ra.status === 200 && g2.varianty[0].zamek.zpracovatel.podpisOtisk === zs.podpisOtisk,
+      ra.status + ' ' + JSON.stringify(g2.varianty[0].zamek.zpracovatel));
+  }
+  /* Nezamčená varianta / cizí zakázka / bez podpisu → 404. */
+  const zn = nova('RJ 665 nezamčená'); const rn = await uloz(zn, cO);
+  test('#665: nezamčená varianta podpis nevydá (404)', (await ctiPodpis(rn.soubor, zn.varianty[0].id, cO2)).status === 404);
+  test('#665: neznámá varianta 404', g ? (await ctiPodpis(r.soubor, 'neni', cO2)).status === 404 : false);
+  const zb = nova('RJ 665 bez podpisu'); zamkni(zb, zb.varianty[0]); const rb = await uloz(zb, cO2);
+  const gb = rb.status === 200 ? await nacti(rb.soubor, cO2) : null;
+  test('#665: zpracovatel bez podpisu — snímek bez otisku, 404 (jako dřív)', !!gb && !gb.varianty[0].zamek.zpracovatel.podpisOtisk
+    && (await ctiPodpis(rb.soubor, gb.varianty[0].id, cO)).status === 404);
+  test('#665: bez přihlášení podpis nevydá (401)', g ? (await ctiPodpis(r.soubor, g.varianty[0].id, undefined)).status === 401 : false);
+}
+
 //RJ-DALSI
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
