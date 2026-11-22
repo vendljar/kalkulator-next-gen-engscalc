@@ -1404,6 +1404,9 @@ await page.waitForFunction(() => { try { return ONLINE_STAV.uzivatele.some(u => 
     ulozeny.titul === 'Bc.' && ulozeny.jmeno === 'Pavel Opravený' && ulozeny.funkce === 'Vedoucí obchodu'
       && ulozeny.email === 'obchodnik@priklad.cz', ulozeny);
 }
+/* NN (22. 11. 2026): pod zátěží kola se tabulka překreslí až po aktualizaci ONLINE_STAV —
+ * počkat na překreslení (dřív občas FAIL v kole, samostatně 3× zeleně). */
+await page.waitForFunction(() => (document.getElementById('nastaveni-panel') || {}).innerText.includes('Pavel Opravený'), null, { timeout: 5000 }).catch(() => {});
 test('UE: tabulka účtů ukazuje nové jméno', (await nastav()).includes('Pavel Opravený'));
 test('hláška potvrdí uložení údajů', (await nastav()).includes('Údaje účtu obchodnik@priklad.cz jsou uložené'));
 /* Zpět původní jméno, titul a funkce — pozdější kroky (roh po přihlášení

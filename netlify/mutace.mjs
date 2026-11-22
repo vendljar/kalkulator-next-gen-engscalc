@@ -363,8 +363,8 @@ const MUTACE = [
     nahrad: "      { await u.zapis(email, ucet); return ucet; }",
     proc: "souběžná změna hesla by se vrátila (B240)", sady: ["test_nn_poc.mjs"] },
   { nazev: "NN B238: snímek lhůt PROJ od klienta [NN]", soubor: "functions/zakazky.mjs",
-    hledej: "  lhutyProjServerDrz(stara, zak, await sProg.cti('firma'));",
-    nahrad: "  await sProg.cti('firma');",
+    hledej: "  { const lh = lhutyProjServerDrz(stara, zak, await sProg.cti('firma'));",
+    nahrad: "  { const lh = ''; await sProg.cti('firma');",
     proc: "klient by do odeslané nabídky zapsal vlastní lhůty a Prodáno je zmrazilo (B238)", sady: ["test_nn_poc.mjs", "test_d8_lhuty.mjs"] },
   /* BZ (21. 11. 2026): opravy bezpečnostního auditu 20. 11. 2026 — B231–B236, B195.
    * Hlídají netlify/test_bz_bezpecnost.mjs a netlify/test_bz_pipedrive.mjs. [BZ]

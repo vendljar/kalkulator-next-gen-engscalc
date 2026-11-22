@@ -179,7 +179,8 @@ export default async (req) => {
    * varianty ho přepsal kdokoli a Prodáno ho zmrazilo. Teď: varianta prodaná
    * už v uložené verzi drží zmrazený snímek (změnu odmítne zámek); varianta prodávaná tímto uložením
    * dostane platnou tabulku Firmy ze serveru; neprodaná snímek nenese. */
-  lhutyProjServerDrz(stara, zak, await sProg.cti('firma'));
+  { const lh = lhutyProjServerDrz(stara, zak, await sProg.cti('firma'));
+    if (lh) return { odpoved: json({ ok: false, chyba: lh }, 409) }; }
   const kontrola = zakazkaServerKontrola(stara, zak, relace,
     { ULO, SCHV, JEKLY, slevyNast, verzeServeru: serverVerze(), rezim: 'ulozeni',
       program: prog, matice: (zobr && zobr.matice) || null,
@@ -350,21 +351,31 @@ export const config = { path: '/api/zakazky' };
 /* NN B238: snímek lhůt PROJ drží server (viz volání výš). */
 export function lhutyProjServerDrz(stara, zak, firma) {
   const G = globalThis;
-  if (!zak || !Array.isArray(zak.varianty) || typeof G.lhutyProjEf !== 'function' || typeof G.variantaProdana !== 'function') return;
+  if (!zak || !Array.isArray(zak.varianty) || typeof G.lhutyProjEf !== 'function' || typeof G.variantaProdana !== 'function') return '';
   const obj = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
   const ulozene = new Map(((stara && Array.isArray(stara.varianty)) ? stara.varianty : []).filter(obj).map(v => [v.id, v]));
   const tabulka = obj(firma) && obj(firma.udaje) ? firma.udaje.lhutyProj : (obj(firma) ? firma.lhutyProj : null);
   for (const v of zak.varianty) {
     if (!obj(v) || !obj(v.data)) continue;
     const sv = ulozene.get(v.id);
-    let snimek;
     /* Prodaná už v uložené verzi: snímek je zmrazený v porovnání zámku —
      * změnu odmítne kontrola (403), tady se nesahá. */
     if (sv && G.variantaProdana(sv)) continue;
-    if (G.variantaProdana(v) && obj(v.data.proj)) snimek = G.lhutyProjEf(tabulka);
-    else snimek = undefined;
-    if (snimek === undefined) { if (obj(v.data.kryciProj)) delete v.data.kryciProj.lhutyProj; continue; }
-    if (!obj(v.data.kryciProj)) v.data.kryciProj = { hodnoty: {} };
-    v.data.kryciProj.lhutyProj = JSON.parse(JSON.stringify(snimek));
+    /* Zámek nový v tomto uložení (tisk + případně Prodáno najednou): data
+     * varianty ověřuje snímek zámku, který spočítal klient — přepis by ho
+     * rozbil (409). Snímek lhůt se proto jen OVĚŘÍ proti tabulce Firmy. */
+    const zamekNovy = !!(v.zamek && v.zamek.zamceno) && !(sv && sv.zamek && sv.zamek.zamceno);
+    const klientsky = obj(v.data.kryciProj) ? v.data.kryciProj.lhutyProj : undefined;
+    if (zamekNovy) {
+      if (G.variantaProdana(v) && klientsky !== undefined
+        && JSON.stringify(klientsky) !== JSON.stringify(G.lhutyProjEf(tabulka)))
+        return 'Neuloženo: lhůty PROJ v prodávané variantě nesedí s tabulkou Firmy. Načtěte Firmu znovu (obnovte stránku) a prodejte znovu.';
+      continue;
+    }
+    if (G.variantaProdana(v) && obj(v.data.proj)) {
+      if (!obj(v.data.kryciProj)) v.data.kryciProj = { hodnoty: {} };
+      v.data.kryciProj.lhutyProj = JSON.parse(JSON.stringify(G.lhutyProjEf(tabulka)));
+    } else if (obj(v.data.kryciProj)) delete v.data.kryciProj.lhutyProj;
   }
+  return '';
 }
