@@ -1082,10 +1082,12 @@ test('zámek nesmí být potichu vyměněn za jiný',
  * Změřeno před opravou: cena v zámku 912 000 → 1, klíč zámku SHODNÝ,
  * `uloKontrolaZamku` ok, `data` shodná. Zápis prošel. */
 const sVysledkem = zakazkaCislo('2026 - OPR - CN - 0906');
+/* RJ (#704-2, J. V. 22. 11. 2026): nový zámek s výsledkem, který nesouhlasí
+ * s výpočtem serveru, server odmítá (409) — zmrazený výsledek je proto
+ * poctivý (z jádra); B53 měří až jeho PŘEPIS po uložení. */
 zamkniJakoAplikace(sVysledkem, sVysledkem.varianty[0], {
   typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv',
-  vysledek: { ock: { souhrn: { zakladCena: 912000, celkemSDph: 1103520 } },
-              proj: null, kurzEurKc: 25 },
+  vysledek: zam.zamekVysledekSpocti(sVysledkem.varianty[0], require('../src/jekly.json'), 'v-b53'),
 });
 const ulozSVysledkem = await (await post(zakazky, 'http://x/api/zakazky',
   { zakazka: sVysledkem }, cObch)).json();
@@ -1131,8 +1133,9 @@ test('B53: zámek bez zmrazeného výsledku se ukládá dál (starší zakázky)
  *
  * Server teď výsledek nového zámku přepočítá týmž jádrem a porovnání zapíše
  * do zámku jako razítko `overeni` ('shoda' / 'nesouhlasi' / 'chyba').
- * Uložení NEODMÍTNE (papír už odešel a odmítnutí by nechalo variantu
- * odemčenou), ale rozpor zapíše natrvalo a ohlásí ho v odpovědi.
+ * Do RJ uložení NEODMÍTLO (papír už odešel), rozpor jen zapsalo a ohlásilo.
+ * Od RJ (#704-2, J. V. 22. 11. 2026) server nový zámek s rozporem ODMÍTNE
+ * (409, rada Ctrl+F5 a tisk znovu); u uloženého zámku razítko drží dál.
  *
  * Změřeno před opravou: podvržený výsledek (celkem s DPH 1 Kč) se uložil
  * jako řádný zámek, bez jediné stopy. */
@@ -1159,6 +1162,18 @@ function odesliB59(z, uprav) {
 }
 const nactiB59 = async (soubor) => (await (await get(zakazky,
   'http://x/api/zakazky?soubor=' + soubor, cAdmin)).json()).zakazka;
+/* RJ (#704-2, J. V. 22. 11. 2026): NOVÝ zámek, jehož výsledek nesouhlasí
+ * s výpočtem serveru, server ODMÍTNE (409, kód zamekNesouhlasi) a nic neuloží
+ * — dřív ho uložil s razítkem „nesouhlasi" a jen varoval. Rozdíly (stav,
+ * cesty) se proto čtou z téže funkce, kterou server volá (zamekOvereni přísně). */
+async function odmitnutyB59(z) {
+  const r = await post(zakazky, 'http://x/api/zakazky', { zakazka: z }, cObch);
+  const odp = await r.json();
+  const ov = globalThis.zamekOvereni(z.varianty[0], JEKLY_T, VERZE_SERVERU, undefined, { prisne: true });
+  return { status: r.status, odp, ov, ulozeno: pamet.has('zakazky/z/' + globalThis.uloJmenoSouboru(z)) };
+}
+const odmitnutoOk = (o) => o.status === 409 && o.odp.kod === 'zamekNesouhlasi' && !o.ulozeno
+  && /nesouhlasí/.test(String(o.odp.chyba || '')) && /Ctrl\+F5/.test(String(o.odp.chyba || ''));
 
 {
   const poctiva = odesliB59(zakazkaSCeny('2026 - OPR - CN - 0850'));
@@ -1180,19 +1195,26 @@ const nactiB59 = async (soubor) => (await (await get(zakazky,
   test('B59: podvrh mění opravdu jen zmrazený výsledek',
     zam.zamekVysledekRozdily(podvrh.varianty[0].zamek.vysledek,
       zam.zamekVysledekSpocti(podvrh.varianty[0], JEKLY_T, '')).pocet === 1);
-  const odp = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: podvrh }, cObch)).json();
-  test('B59: podvržený výsledek se uloží (papír už odešel) …', odp.ok === true, JSON.stringify(odp));
-  test('B59: … ale odpověď varuje, že čísla nesouhlasí', /nesouhlasí/.test(String(odp.varovani || ''))
-    && /0851/.test(String(odp.varovani || '')), odp.varovani);
-  const ulozena = await nactiB59('2026-OPR-CN-0851.json');
-  const ov = ulozena.varianty[0].zamek.overeni;
-  test('B59: rozpor je zapsaný v zámku (nesouhlasi)', ov && ov.stav === 'nesouhlasi' && ov.rozdilu === 1,
-    JSON.stringify(ov));
+  const o = await odmitnutyB59(podvrh);
+  test('B59 + RJ #704-2: podvržený výsledek nového zámku server odmítne (409, nic neuloženo)', odmitnutoOk(o), JSON.stringify(o));
+  test('B59 + RJ: hláška jmenuje nabídku a radí obnovit stránku (Ctrl+F5)', /0851/.test(String(o.odp.chyba || ''))
+    && /Ctrl\+F5/.test(String(o.odp.chyba || '')), o.odp.chyba);
+  test('B59: rozpor = nesouhlasi, 1 rozdíl', o.ov && o.ov.stav === 'nesouhlasi' && o.ov.rozdilu === 1, JSON.stringify(o.ov));
   test('B59: razítko jmenuje, kde se výsledek rozchází',
-    ov && ov.cesty.indexOf('ock.souhrn.zakladSDph') >= 0, JSON.stringify(ov));
-
-  /* Klient razítko nepřepíše ani nesmaže: u zámku, který už v databázi je,
-   * se bere z uložené verze. */
+    o.ov && o.ov.cesty.indexOf('ock.souhrn.zakladSDph') >= 0, JSON.stringify(o.ov));
+}
+{
+  /* Klient razítko nepřepíše ani nesmaže: u zámku, který už v databázi je
+   * (s „nesouhlasi" z doby před RJ nebo z obnovy ze souboru), se bere z uložené
+   * verze. Stav „před RJ" se zapíše přímo do úložiště. */
+  const poctiva = odesliB59(zakazkaSCeny('2026 - OPR - CN - 0856'));
+  const o0 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: poctiva }, cObch)).json();
+  test('B59: příprava — poctivý zámek uložen', o0.ok === true, JSON.stringify(o0));
+  const klic = 'zakazky/z/2026-OPR-CN-0856.json';
+  const raw = JSON.parse(pamet.get(klic));
+  raw.varianty[0].zamek.overeni = { stav: 'nesouhlasi', rozdilu: 1, cesty: ['ock.souhrn.zakladSDph'], kdy: raw.varianty[0].zamek.kdy, server: 'starsi', klient: 'v-klient-matice' };
+  pamet.set(klic, JSON.stringify(raw));
+  const ulozena = await nactiB59('2026-OPR-CN-0856.json');
   const prepis = JSON.parse(JSON.stringify(ulozena));
   prepis.kontakt = 'Jiný kontakt, zámku se to netýká';   // Z1: název akce je po odeslání zmrazený
   prepis.varianty[0].zamek.overeni = { stav: 'shoda', rozdilu: 0, cesty: [], server: 'x', klient: 'x' };
@@ -1200,11 +1222,11 @@ const nactiB59 = async (soubor) => (await (await get(zakazky,
   test('B59: uložení s podvrženým razítkem projde (razítko se zahodí)', odpPrepis.status === 200,
     String(odpPrepis.status));
   test('B59: podvržená „shoda" rozpor nepřepíše',
-    (await nactiB59('2026-OPR-CN-0851.json')).varianty[0].zamek.overeni.stav === 'nesouhlasi');
-  const bez = JSON.parse(JSON.stringify(ulozena));
+    (await nactiB59('2026-OPR-CN-0856.json')).varianty[0].zamek.overeni.stav === 'nesouhlasi');
+  const bez = JSON.parse(JSON.stringify(await nactiB59('2026-OPR-CN-0856.json')));
   delete bez.varianty[0].zamek.overeni;
   await post(zakazky, 'http://x/api/zakazky', { zakazka: bez }, cObch);
-  const poSmazani = (await nactiB59('2026-OPR-CN-0851.json')).varianty[0].zamek.overeni;
+  const poSmazani = (await nactiB59('2026-OPR-CN-0856.json')).varianty[0].zamek.overeni;
   test('B59: vynechané razítko rozpor nesmaže', poSmazani && poSmazani.stav === 'nesouhlasi',
     JSON.stringify(poSmazani));
 }
@@ -1241,31 +1263,27 @@ const nactiB59 = async (soubor) => (await (await get(zakazky,
   const z2 = odesliVerzi(zakazkaSCeny('2026 - OPR - CN - 1192'), tataz, podvrh);
   test('B119: pojistka — volné porovnání (P6) podvrh nepozná',
     zam.zamekVysledekRozdily(z2.varianty[0].zamek.vysledek, zam.zamekVysledekSpocti(z2.varianty[0], JEKLY_T, '')).pocet === 0);
-  const o2 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: z2 }, cObch)).json();
-  const ov2 = (await nactiB59('2026-OPR-CN-1192.json')).varianty[0].zamek.overeni;
-  test('B119: podvržený příplatek s unikátním názvem → nesouhlasí', o2.ok === true && ov2 && ov2.stav === 'nesouhlasi',
+  const o2 = await odmitnutyB59(z2), ov2 = o2.ov;
+  test('B119: podvržený příplatek s unikátním názvem → nesouhlasí', ov2 && ov2.stav === 'nesouhlasi',
     JSON.stringify(ov2));
-  test('B119: odpověď varuje', /nesouhlasí/.test(String(o2.varovani || '')), o2.varovani);
+  test('B119 + RJ #704-2: server ho odmítne (409, nic neuloženo)', odmitnutoOk(o2), JSON.stringify(o2.odp));
   /* řádek navíc (levný příplatek pod vymyšleným názvem), součty beze změny:
    * chytí ho jen to, že nespárovaný řádek zámku je rozdíl */
   const z5 = odesliVerzi(zakazkaSCeny('2026 - OPR - CN - 1195'), tataz, (r) => {
     r.ock.priplatky.push(Object.assign({}, r.ock.priplatky[0], { origNazev: 'Navíc', nazev: 'Navíc', key: 'navic', sMarzi: 1, naklad: 1 })); });
-  await post(zakazky, 'http://x/api/zakazky', { zakazka: z5 }, cObch);
-  const ov5 = (await nactiB59('2026-OPR-CN-1195.json')).varianty[0].zamek.overeni;
-  test('B119: řádek navíc ve zmrazeném výsledku → nesouhlasí', ov5 && ov5.stav === 'nesouhlasi', JSON.stringify(ov5));
+  const o5 = await odmitnutyB59(z5), ov5 = o5.ov;
+  test('B119: řádek navíc ve zmrazeném výsledku → nesouhlasí (odmítnuto 409)', ov5 && ov5.stav === 'nesouhlasi' && odmitnutoOk(o5), JSON.stringify(ov5));
   /* vynechaný součet příplatků (jádro přísného porovnání) */
   const z3 = odesliVerzi(zakazkaSCeny('2026 - OPR - CN - 1193'), tataz, (r) => { delete r.ock.souhrn.priplatkyCena; });
-  await post(zakazky, 'http://x/api/zakazky', { zakazka: z3 }, cObch);
-  const ov3 = (await nactiB59('2026-OPR-CN-1193.json')).varianty[0].zamek.overeni;
-  test('B119: chybějící součet příplatků → nesouhlasí', ov3 && ov3.stav === 'nesouhlasi'
+  const o3 = await odmitnutyB59(z3), ov3 = o3.ov;
+  test('B119: chybějící součet příplatků → nesouhlasí (odmítnuto 409)', ov3 && ov3.stav === 'nesouhlasi' && odmitnutoOk(o3)
     && ov3.cesty.indexOf('ock.souhrn.priplatkyCena') >= 0, JSON.stringify(ov3));
   /* Verzi ve výsledku posílá klient — jiný `build` nesmí přepnout na volné
    * porovnání (revize 6. 10. 2026: obchvat B119). */
   const z4 = odesliVerzi(zakazkaSCeny('2026 - OPR - CN - 1194'), 'v-starsi-stranka', podvrh);
-  await post(zakazky, 'http://x/api/zakazky', { zakazka: z4 }, cObch);
-  const ov4 = (await nactiB59('2026-OPR-CN-1194.json')).varianty[0].zamek.overeni;
-  test('B119: podvrh s jinou verzí ve výsledku → nesouhlasí (verze z klienta režim neurčuje)',
-    ov4 && ov4.stav === 'nesouhlasi' && !ov4.volne, JSON.stringify(ov4));
+  const o4 = await odmitnutyB59(z4), ov4 = o4.ov;
+  test('B119: podvrh s jinou verzí ve výsledku → nesouhlasí (verze z klienta režim neurčuje; odmítnuto 409)',
+    ov4 && ov4.stav === 'nesouhlasi' && !ov4.volne && odmitnutoOk(o4), JSON.stringify(ov4));
   const z6 = odesliVerzi(zakazkaSCeny('2026 - OPR - CN - 1196'), 'v-starsi-stranka');
   await post(zakazky, 'http://x/api/zakazky', { zakazka: z6 }, cObch);
   const ov6 = (await nactiB59('2026-OPR-CN-1196.json')).varianty[0].zamek.overeni;
@@ -1279,9 +1297,8 @@ const nactiB59 = async (soubor) => (await (await get(zakazky,
     ['vynechané', r => { delete r.ock.priplatky; }], ['navíc (jen v zámku)', r => { r.ock.radkyNavic = [{ nazev: 'x', sMarzi: 1 }]; }, 'ock.radkyNavic']]) {
     const c = String(cisloB146++);
     const z = odesliVerzi(zakazkaSCeny('2026 - OPR - CN - ' + c), tataz, uprav);
-    await post(zakazky, 'http://x/api/zakazky', { zakazka: z }, cObch);
-    const ov = (await nactiB59('2026-OPR-CN-' + c + '.json')).varianty[0].zamek.overeni;
-    test('B146: pole řádků ' + popis + ' → nesouhlasí', ov && ov.stav === 'nesouhlasi'
+    const o = await odmitnutyB59(z), ov = o.ov;
+    test('B146: pole řádků ' + popis + ' → nesouhlasí (odmítnuto 409)', ov && ov.stav === 'nesouhlasi' && odmitnutoOk(o)
       && ov.cesty.indexOf(cesta || 'ock.priplatky') >= 0, JSON.stringify(ov));
   }
   /* Volné porovnání (starý zámek, P6) tvar dál nehlídá — jiná verze aplikace. */
@@ -1294,10 +1311,9 @@ const nactiB59 = async (soubor) => (await (await get(zakazky,
   /* Podvržené razítko u NOVÉHO zámku: server ho spočítá sám. */
   const z = odesliB59(zakazkaSCeny('2026 - OPR - CN - 0852'), (r) => { r.ock.souhrn.zakladCena += 1000; });
   z.varianty[0].zamek.overeni = { stav: 'shoda', rozdilu: 0, cesty: [], server: 'x', klient: 'x' };
-  await post(zakazky, 'http://x/api/zakazky', { zakazka: z }, cObch);
-  const ov = (await nactiB59('2026-OPR-CN-0852.json')).varianty[0].zamek.overeni;
-  test('B59: podvržená „shoda" u nového zámku neprojde — server spočítá svou',
-    ov && ov.stav === 'nesouhlasi' && ov.server === VERZE_SERVERU, JSON.stringify(ov));
+  const o = await odmitnutyB59(z);
+  test('B59: podvržená „shoda" u nového zámku neprojde — server spočítá svou a odmítne (RJ 409)',
+    odmitnutoOk(o) && o.ov && o.ov.stav === 'nesouhlasi' && o.ov.server === VERZE_SERVERU, JSON.stringify(o.odp));
 }
 {
   /* Zámek bez zmrazeného výsledku (starší klient, chyba výpočtu v prohlížeči):
@@ -1337,19 +1353,17 @@ const nactiB59 = async (soubor) => (await (await get(zakazky,
     r.ock.klicZeStarsiVerze = { pocet: 3 };
     delete r.ock.odvozene;
   });
-  const odp = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: z }, cObch)).json();
-  const ov = (await nactiB59('2026-OPR-CN-0857.json')).varianty[0].zamek.overeni;
-  test('B232: číslo jen v jednom výsledku nového zámku = nesouhlasí (s varováním)',
-    odp.ok === true && !!odp.varovani && ov && ov.stav === 'nesouhlasi'
+  const o = await odmitnutyB59(z), ov = o.ov;
+  test('B232 + RJ #704-2: číslo jen v jednom výsledku nového zámku = nesouhlasí → odmítnuto 409',
+    odmitnutoOk(o) && ov && ov.stav === 'nesouhlasi'
       && ov.cesty.indexOf('ock.klicZeStarsiVerze') >= 0 && ov.cesty.indexOf('ock.odvozene') >= 0, JSON.stringify(ov));
 }
 {
   /* …ale podvrh, který jádro dokumentu vynechá, shodu nedostane. */
   const z = odesliB59(zakazkaSCeny('2026 - OPR - CN - 0855'), (r) => { delete r.ock.souhrn; });
-  await post(zakazky, 'http://x/api/zakazky', { zakazka: z }, cObch);
-  const ov = (await nactiB59('2026-OPR-CN-0855.json')).varianty[0].zamek.overeni;
-  test('P6: výsledek bez souhrnu OCK = nesouhlasí (jádro dokumentu chybí)',
-    ov && ov.stav === 'nesouhlasi' && ov.cesty.indexOf('ock.souhrn.zakladCena') >= 0, JSON.stringify(ov));
+  const o = await odmitnutyB59(z), ov = o.ov;
+  test('P6: výsledek bez souhrnu OCK = nesouhlasí (jádro dokumentu chybí; RJ: odmítnuto 409)',
+    odmitnutoOk(o) && ov && ov.stav === 'nesouhlasi' && ov.cesty.indexOf('ock.souhrn.zakladCena') >= 0, JSON.stringify(ov));
 }
 
 /* ============================================================

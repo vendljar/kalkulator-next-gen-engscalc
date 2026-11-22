@@ -1376,6 +1376,19 @@ function onlineTiskNeulozenDialog(duvod) {
   try { Promise.resolve(hlaska(ONLINE_TISK_NEULOZEN + '\n\nDůvod: ' + duvod,
     { nadpis: 'Odeslaná nabídka není uložená' })).catch(() => {}); } catch (x) { /* nevadí */ }
 }
+/* RJ (#704-2, J. V. 22. 11. 2026): server odmítl nový zámek, protože čísla
+ * odeslané nabídky nesouhlasí s jeho výpočtem (B232) — typicky stránka se
+ * starším jádrem po nasazení. Cesta ven: Ctrl+F5 a tisk znovu. */
+function onlineZamekNesouhlasi(e) { return !!(e && e.stav === 409 && e.data && e.data.kod === 'zamekNesouhlasi'); }
+const ONLINE_ZAMEK_NESOUHLASI = 'Server odeslanou nabídku nepřijal: její čísla nesouhlasí s výpočtem serveru. '
+  + 'Nejčastěji to znamená, že stránka běží ve starší verzi aplikace (mezitím vyšla nová).\n\n'
+  + 'Co udělat: 1) obnovte stránku klávesami Ctrl+F5, 2) otevřete zakázku znovu ze serveru, '
+  + '3) nabídku vytiskněte znovu. Dokument z tohoto tisku zákazníkovi neposílejte.';
+function onlineZamekNesouhlasiDialog(duvod) {
+  if (typeof hlaska !== 'function') return;
+  try { Promise.resolve(hlaska(ONLINE_ZAMEK_NESOUHLASI + '\n\nPodrobnosti: ' + duvod,
+    { nadpis: 'Odeslaná nabídka nesouhlasí — obnovte stránku (Ctrl+F5)' })).catch(() => {}); } catch (x) { /* nevadí */ }
+}
 const ONLINE_TISK_KOLIZE = 'zakázku mezitím uložil někdo jiný nebo jiné okno — zvolte „Přepsat serverovou verzi", '
   + 'jinak se záznam odeslání vytištěné nabídky ztratí';
 const ONLINE_TISK_NAHLED = 'díváte se na aplikaci v náhledu — ukončete náhled a uložte zakázku';
@@ -1558,6 +1571,13 @@ function onlineUloz(opts) {
     /* Server odmítá i pokus přepsat odeslanou (uzamčenou) nabídku – jeho
      * zdůvodnění se ukáže doslova, je z téhož kódu jako hláška u složky.
      * Selhání zápisu nikdy nekončí tichem. */
+    /* RJ (#704-2): nový zámek s čísly, která nesouhlasí s výpočtem serveru (409,
+     * kód zamekNesouhlasi) — „uložte znovu" nepomůže; vlastní dialog s radou Ctrl+F5. */
+    if (onlineZamekNesouhlasi(e)) {
+      onlineZprava(onlineChybaText(e), 'varovani');
+      if (opts.fronta || !opts.tiche) onlineZamekNesouhlasiDialog(onlineChybaText(e));   // automatické ukládání dialog neopakuje
+      return false;
+    }
     onlineZprava('Neuloženo online: ' + onlineChybaText(e), 'varovani');
     /* Uložení po tisku (Z1-4) nevyšlo (K7-K4): vytištěný dokument zatím nemá
      * v databázi záznam odeslání — obchodník to musí vědět hned, ne z panelu. */

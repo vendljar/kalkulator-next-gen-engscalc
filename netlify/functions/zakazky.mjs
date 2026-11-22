@@ -173,7 +173,7 @@ export default async (req) => {
     { ULO, SCHV, JEKLY, slevyNast, verzeServeru: serverVerze(), rezim: 'ulozeni',
       program: prog, matice: (zobr && zobr.matice) || null,
       viceSachet, viceZakazniku });   // VS #570 / VZ #598: vypínače správce
-  if (!kontrola.ok) return { odpoved: json({ ok: false, chyba: kontrola.chyba }, kontrola.status) };
+  if (!kontrola.ok) return { odpoved: json(Object.assign({ ok: false, chyba: kontrola.chyba }, kontrola.kod ? { kod: kontrola.kod } : {}), kontrola.status) };
   /* Stav dealu Pipedrive dosazuje server (P1) — z prohlížeče jen tvar. */
   await pdStavUlozeni(zak, stara);
 

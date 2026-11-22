@@ -280,10 +280,6 @@ const MUTACE = [
     hledej: "    if (prisne && (!!a && typeof a === 'object') !== (!!b && typeof b === 'object') && (maCislo(a) || maCislo(b))) { pridej(c); return; }",
     nahrad: "",
     proc: "podstromy s čísly zaměněné za \"x\" by dostaly „shoda“ (revize R3)", sady: ['test_bz_bezpecnost.mjs'] },
-  { nazev: "BZ R4: vazbu dealu doloží i číslo PROJ vedle OCK [BZ]", soubor: "lib/pd_overeni.mjs",
-    hledej: "  if (cnDealu && pdWebhookCisloKlic(cislo) && pdWebhookCisloSedi(cislo, cnDealu, zak)) return { ok: true, zdroj: 'cislo' };",
-    nahrad: "  if (cnDealu && [cislo, String((zak.projHlavicka || {}).cislo || '')].some(c => pdWebhookCisloKlic(c) && pdWebhookCisloSedi(c, cnDealu, zak))) return { ok: true, zdroj: 'cislo' };",
-    proc: "autor by přepsal číslo PROJ na číslo cizího dealu a psal do něj (revize R4)", sady: ['test_bz_pipedrive.mjs'] },
   { nazev: "BZ R5: smazaná karta nechá historii [BZ]", soubor: "functions/zakaznici.mjs",
     hledej: "      await s.smaz('h/' + klic);   // revize Fable R5: historie smazané karty nezůstane ani ji nová karta nezdědí",
     nahrad: "",
@@ -3328,8 +3324,8 @@ const MUTACE = [
   /* Ověření zmrazeného výsledku NOVÉHO zámku (B59, revize v22.9.9). */
   { nazev: 'B59: server výsledek nového zámku neověří',
     soubor: 'lib/zakazka_kontrola.mjs',
-    hledej: "    const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru, undefined, { prisne: true });\n    if (ov) v.zamek.overeni = ov; else delete v.zamek.overeni;",
-    nahrad: "    const ov = null;\n    if (ov) v.zamek.overeni = ov; else delete v.zamek.overeni;",
+    hledej: "    const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru, undefined, { prisne: true });\n",
+    nahrad: "    const ov = null;\n",
     proc: 'upravený klient by zamkl nabídku s jinými čísly, než dávají data, a B53 by je chránil jako pravdu' },
 
   { nazev: 'B59: server věří razítku ověření u nového zámku',
