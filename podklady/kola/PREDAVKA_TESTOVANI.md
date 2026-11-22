@@ -39,6 +39,15 @@ PG: 31 OK, nález PG-N1 (náhled podkladů zdvojí řádek NENÍ; `nwBloky` bez 
 v tisku 3–4 strany), D3-N2 (lišta kontroly SoD v náhledu objednávky). Nové TEST OVP 9821 (CN + SoD PROJ), 9822 (2 zákazníci).
 Harness `pg.js`, `d3.js`, `d3_doplnek.js`, `d3_spolecne.js`. Kontext sezení ~50 %.
 
+## 21.–22. 11.: kolo 51, main = v19.11.11, test v22.11.5 — hotovo
+
+- Kolo 51 (test cda289e × main v11.11.1, 408 kalk., sada F 100): bez nových cenových nálezů (`STAV_KOLO51.md`).
+- 22. 11. main = v19.11.11 (cda289e), test = v22.11.5 (05a496d). Kolo 52 (458 kalk., sada G 100): T × Mt 458/458, K40-N1 zmizel (`STAV_KOLO52.md`).
+- Ruční zkoušky 22. 11.: VZD (nález VZD-N1 = starý řádek DPZ ve Firmě testu), BZ (PIPEDRIVE_ZAPIS neověřen – chybí deal TEST),
+  PR (nález PR-N1 soukromí; připomínky VYPNUTÉ, klíč zrušen, 6 zkušebních připomínek zůstalo), HN 51/0, OP1/DS/DOS (opravy potvrzeny).
+- TEST zakázky navíc: OPR 9830–9832, OVP 9830. Balíček kola: upload `…/d1e88414-KNG_KOLO_BALICEK_K49.zip` (v kontejneru, ne v repu).
+- Čeká: nové zadání koordinace; tok Word znovu, až budou CN v18 / PROJ v9 na testu. Kontext sezení ~60 %.
+
 ## Harnessy (`podklady/kola/harness_testovani/`, spouštět z kořene repa)
 
 - `vzf1.js`, `vzf2.js`, `t1.js`: zkoušky VZ v živé stránce (přihlášení, `T(typ)` = tisk cestou tlačítek bez zámku, kanárky,
