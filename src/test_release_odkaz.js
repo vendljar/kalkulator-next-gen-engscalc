@@ -6,7 +6,8 @@
  * verzi; nese čísla nálezů a výsledek kola; řádek s částkou vynechá;
  * neplatná verze / SHA se odmítne; --upravit vrátí odkaz na úpravu;
  * --chybejici hlásí jen verze, které prošly do main (J. V. 18. 11. 2026:
- * tag a release jen pro stav, který jde do main). */
+ * tag a release jen pro stav, který jde do main), a od 22. 11. 2026 jen
+ * verzi NASAZENOU (HEAD main) — mezilehlé verze z historie main ne. */
 const { execFileSync, spawnSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -78,6 +79,31 @@ test('--chybejici: hlásí verzi, která prošla do main', jenMain.status === 0 
 test('--chybejici: verzi jen v testu nebo integraci nehlásí', !jenMain.stdout.includes('v14.10.2'), jenMain.stdout);
 const nicVMain = py(['--chybejici'], '', '');
 test('--chybejici: nic v main → žádná', nicVMain.status === 0 && /: žádná/.test(nicVMain.stdout), nicVMain.stdout);
+
+// J. V. 22. 11. 2026: tag jen pro verzi nasazenou do main (HEAD), ne pro
+// mezilehlé verze, které do main přišly s ní (fast-forward na test).
+// Umělý git: main 14.10.1 → 14.10.2 → 14.10.3 (HEAD), žádný tag.
+{
+  const repo = path.join(dir, 'repo-main');
+  fs.mkdirSync(repo);
+  const g = (...a) => execFileSync('git', ['-C', repo, '-c', 'user.name=t', '-c', 'user.email=t@t',
+    '-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null', ...a], { encoding: 'utf-8' });
+  g('init', '-q', '-b', 'main');
+  ['14.10.1', '14.10.2', '14.10.3'].forEach(v => {
+    fs.writeFileSync(path.join(repo, 'verze.txt'), v + '\n'); g('add', 'verze.txt'); g('commit', '-q', '-m', v);
+  });
+  const CL3 = path.join(dir, 'CHANGELOG_main.md');
+  fs.writeFileSync(CL3, ['# Changelog', '', '## v14.10.3 — nasazená', '- a', '', '## v14.10.2 — mezilehlá', '- b', '',
+    '## v14.10.1 — mezilehlá', '- c', ''].join('\n'));
+  const env = Object.assign({}, process.env, { KNG_TAGY: '', KNG_REPO: repo, KNG_MAIN_REF: 'main' });
+  delete env.KNG_VERZE_MAIN;
+  const r = spawnSync('python3', ['-I', NASTROJ, '--changelog', CL3, '--chybejici'], { encoding: 'utf-8', env });
+  test('--chybejici: hlásí nasazenou verzi (HEAD main) bez tagu', r.status === 0 && /: v14\.10\.3$/m.test(r.stdout), r.stdout + r.stderr);
+  test('--chybejici: mezilehlé verze z historie main nehlásí', !/v14\.10\.[12]\b/.test(r.stdout), r.stdout);
+  const r2 = spawnSync('python3', ['-I', NASTROJ, '--changelog', CL3, '--chybejici'], { encoding: 'utf-8',
+    env: Object.assign({}, env, { KNG_TAGY: 'v14.10.3' }) });
+  test('--chybejici: nasazená verze s tagem → žádná', r2.status === 0 && /: žádná/.test(r2.stdout), r2.stdout);
+}
 
 // Skutečný CHANGELOG: poslední verze se dá vyrobit a popis se vejde.
 const realny = spawnSync('python3', ['-I', NASTROJ, fs.readFileSync(path.join(__dirname, '..', 'verze.txt'), 'utf-8').trim(), '--jen-text'], { encoding: 'utf-8' });

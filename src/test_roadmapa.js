@@ -38,8 +38,26 @@ if (text !== null) {
   test('roadmap.json je platný JSON', db !== null, chybaCteni);
 }
 
-const polozky = (db && Array.isArray(db.polozky)) ? db.polozky : null;
-test('nese pole `polozky`', Array.isArray(polozky), db && Object.keys(db));
+const zive = (db && Array.isArray(db.polozky)) ? db.polozky : null;
+test('nese pole `polozky`', Array.isArray(zive), db && Object.keys(db));
+
+/* ---------- archiv hotových položek (#642, 22. 11. 2026) ----------
+ * Hotové položky starší 60 dní leží v `roadmap_archiv.json`
+ * (`roadmapa.py --archivuj`). Archiv je část evidence: pravidla níž platí
+ * pro živý soubor i archiv DOHROMADY — číslo z archivu nejde použít znovu,
+ * závislost na archivované položce není viselec, alias z archivu nemá jiná
+ * položka. V archivu smějí být jen hotové položky. */
+const SOUBOR_ARCHIV = path.join(__dirname, '..', 'roadmapa', 'roadmap_archiv.json');
+let archiv = [];
+if (fs.existsSync(SOUBOR_ARCHIV)) {
+  let a = null, chyba = '';
+  try { a = JSON.parse(fs.readFileSync(SOUBOR_ARCHIV, 'utf8')); } catch (e) { chyba = e.message; }
+  test('archiv roadmap_archiv.json je platný JSON s polem `polozky`', a && Array.isArray(a.polozky), chyba);
+  archiv = (a && Array.isArray(a.polozky)) ? a.polozky : [];
+  const nehotove = archiv.filter(p => !p || p.stav !== 'hotovo').map(p => p && p.id);
+  test('v archivu jsou jen hotové položky', nehotove.length === 0, nehotove);
+}
+const polozky = zive ? archiv.concat(zive) : null;
 
 if (polozky) {
   /* ---------- id: jedinečné a vyplněné ---------- */
