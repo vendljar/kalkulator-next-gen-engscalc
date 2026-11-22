@@ -722,7 +722,8 @@ function uloZamekRazitkaDrz(naDisku, kUlozeni) {
      * `hlavicka` (K7-S2, #508): zámek byl řídící — klient ho nesundá (doplnit ho umí server, zamekZakHlavickaOznac).
      * `prijato` (K40-S1, #580): čas, kdy server zámek poprvé přijal — dolní mez data prodeje (prodDatumMez);
      * mimo klíč zámku (uloZamekKlic), takže starší klient, který ho nezná, ukládá bez 409. */
-    ['kdo', 'popis', 'sablona', 'slovnik', 'hlavicka', 'prijato'].forEach(k => {
+    /* `zpracovatel` (#665): blok „Vypracoval" odeslané nabídky — píše ho server při prvním přijetí zámku. */
+    ['kdo', 'popis', 'sablona', 'slovnik', 'hlavicka', 'prijato', 'zpracovatel'].forEach(k => {
       if (!stejne(sz[k], nz[k])) {
         if (sz[k] === undefined) delete nz[k]; else nz[k] = JSON.parse(JSON.stringify(sz[k]));
         oprav++;

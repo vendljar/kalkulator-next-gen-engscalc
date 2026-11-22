@@ -413,6 +413,42 @@ test('sablonaPlatna snese chybějící rejstřík', sablonaPlatna(null, 'nabidka
         !S8.run(`SABL_UI.pruvodce.mutace.de`) && /z velké části česky/.test(S8.run(`SABL_UI.pruvodce.vlastniChyba.de`) || ''));
     }
 
+    /* #650 (K49-I9, dávka DS): chybějící jazyková šablona — popisek podle
+     * skutečného chování tisku. Smlouvy (SoD realizace, SoD projekce) se bez
+     * jazykové šablony nevytisknou (sodJazykZabrana), nabídka tiskne česky. */
+    {
+      const S9 = prostredi();
+      const sod = S9.run(`sablBunkaJazyk(ONLINE_STAV.sablonyRejstrik, 'sod', 'en')`);
+      const sodP = S9.run(`sablBunkaJazyk(sablonyZverejni(sablonyNovyRejstrik(), { typ: 'sodProj', nazev: 'p.docx', otisk: 'x', kdo: 's', kdy: '2026-11-01' }), 'sodProj', 'de')`);
+      const cn = S9.run(`sablBunkaJazyk(sablonyZverejni(sablonyNovyRejstrik(), { typ: 'nabidka', nazev: 'cn.docx', otisk: 'x', kdo: 's', kdy: '2026-11-01' }), 'nabidka', 'fr')`);
+      const cnP = S9.run(`sablBunkaJazyk(sablonyZverejni(sablonyNovyRejstrik(), { typ: 'nabidkaProj', nazev: 'cp.docx', otisk: 'x', kdo: 's', kdy: '2026-11-01' }), 'nabidkaProj', 'en')`);
+      test('#650 SoD realizace EN chybí → „nevytiskne se"', sod.label === 'chybí' && sod.sub === 'nevytiskne se', sod.sub);
+      test('#650 SoD projekce DE chybí → „nevytiskne se"', sodP.label === 'chybí' && sodP.sub === 'nevytiskne se', sodP.sub);
+      test('#650 nabídka OCK FR chybí → dál „tiskne se česky"', cn.sub === 'tiskne se česky', cn.sub);
+      test('#650 nabídka PROJ EN chybí → dál „tiskne se česky"', cnP.sub === 'tiskne se česky', cnP.sub);
+      /* popisek se shoduje se zábranou tisku v sod.js */
+      const { sodJazykZabrana } = require('./sod.js');
+      test('#650 popisek „nevytiskne se" = sodJazykZabrana bez mutace zastaví tisk',
+        !!sodJazykZabrana('sod', 'en', false, 0) && !!sodJazykZabrana('sodProj', 'de', false, 0) && !sodJazykZabrana('nabidka', 'fr', false, 0));
+    }
+
+    /* #649 (K49-I8, dávka DS): úvodní věta správy šablon po C7 — jazykové verze
+     * se z češtiny nevyrábějí. Platí pro online obrazovku (nastaveni_ui.js)
+     * i pro průvodce (sablony_sprava_ui.js). */
+    {
+      const nast = fs.readFileSync(path.join(__dirname, 'ui', 'nastaveni_ui.js'), 'utf8');
+      const sprava = fs.readFileSync(path.join(__dirname, 'ui', 'sablony_sprava_ui.js'), 'utf8');
+      const bezMezer = t => t.replace(/\s+/g, ' ');
+      test('#649 nastavení: věta „zdroj, ze kterého se vyrábějí jazykové verze" zmizela',
+        !/ze kterého se vyrábějí/.test(bezMezer(nast)));
+      test('#649 nastavení: věta říká, že jazykové verze se nahrávají jako přeložené soubory a nevyrábějí',
+        /se nahrávají jako přeložené soubory — z české šablony se nevyrábějí/.test(bezMezer(nast)));
+      test('#649 nastavení: věta zmiňuje zábranu smluv nad mezí češtiny (SABLONA_CESTINA_MEZ)',
+        /Smlouvu, která je z víc než \$\{Math\.round\(\(typeof SABLONA_CESTINA_MEZ/.test(bezMezer(nast)));
+      test('#649 průvodce: „vyrábějí všechny jazyky" zmizelo',
+        !/vyrábějí všechny jazyky/.test(bezMezer(sprava)) && /nahrávají jako přeložené soubory/.test(bezMezer(sprava)));
+    }
+
     console.log('\nPASS=' + passes + ' FAIL=' + fails);
     process.exit(fails ? 1 : 0);
   })().catch(e => { console.log('  FAIL #474 výjimka: ' + (e && e.stack || e)); process.exit(1); });

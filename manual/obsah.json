@@ -903,7 +903,7 @@
               }
             },
             {
-              "text": "Nad zadáním se objeví karta **Šachty varianty**. Přepínačem vyberte šachtu, vyplňte **Název** (do nabídky jde místo *Šachta 2*) a **Počet stejných kusů**. *Kopírovat šachtu* přidá další variantu, *Smazat šachtu* ji odebere — mazání i snížení počtu se potvrzuje přímo na stránce.",
+              "text": "Nad zadáním se objeví karta **Šachty varianty**. Přepínačem vyberte šachtu, vyplňte **Název** (do nabídky jde místo *Šachta 2*; nepřejmenovaná šachta se v anglické, německé a francouzské nabídce i smlouvě tiskne jako *Shaft 2*, *Schacht 2*, *Gaine 2*) a **Počet stejných kusů**. *Kopírovat šachtu* přidá další variantu, *Smazat šachtu* ji odebere — mazání i snížení počtu se potvrzuje přímo na stránce.",
               "snimek": "k25vs-karta",
               "klik": {
                 "obsahuje": "Počet stejných kusů"

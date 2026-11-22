@@ -706,6 +706,25 @@ function popisyCiselnik(vypocetFn, zadaniVychozi, cenik, texty) {
   return { radky, osirele };
 }
 
+/* NÁVRHY K POLOŽKÁM MIMO ČÍSELNÍK (DO-N1 #680, rozhodnutí J. V. 21. 11. 2026).
+ *
+ * Číselník staví řádky z výpočtu nad VÝCHOZÍM zadáním, takže položka, kterou
+ * výchozí šachta nemá (např. „PŘECHODOVÉ PLECHY - NEREZ (MATERIÁL)“), řádek
+ * nemá. Obchodník k ní přitom text navrhnout může a dostane hlášku, že ho
+ * administrátor uvidí — kandidáti ze sběru (`?sber=1`) se ale vypisovali jen
+ * pod řádky. Tahle funkce vrátí klíče sběru, které nemají řádek ani mezi
+ * položkami výpočtu, ani mezi osiřelými texty (tam se kandidáti vypíšou pod
+ * osiřelým řádkem). Seřazeno podle abecedy, ať se pořadí mezi kresleními
+ * nemění. */
+function popisyNavrhyMimo(cis, sber) {
+  if (!sber || typeof sber !== 'object') return [];
+  const ma = new Set();
+  ((cis && cis.radky) || []).forEach(r => ma.add(r.klic));
+  ((cis && cis.osirele) || []).forEach(o => ma.add(o.klic));
+  return Object.keys(sber).filter(k => !ma.has(k) && Array.isArray(sber[k]) && sber[k].length)
+    .sort((a, b) => a.localeCompare(b, 'cs'));
+}
+
 function cenikVychozi(c, klic, zaklad) {
   const v = c ? c[klic] : null;
   return (typeof v === 'number' && isFinite(v) && v > 0) ? v : zaklad;
@@ -868,6 +887,6 @@ if (typeof module !== 'undefined')
     cenikPopis, cenikPopisNastav,
     CENIK_DLE_NABIDKY_VYCHOZI, cenikDleNabidkySmi, cenikDleNabidkyProZverejneni, cenikDleNabidkyJe, cenikDleNabidkyNastav, cenikDleNabidkyOciste,
     cenikDleNabidkyMaMapu, cenikDleNabidkyNavrh, cenikDleNabidkyDoplnNavrh, cenikDleNabidkyRozpis,
-    POPISY_MAX_KLIC, POPISY_MAX_TEXT, POPISY_MAX_POLOZEK, popisyOciste, popisyVlij, popisyDoplnChybejici, popisyCiselnik,
+    POPISY_MAX_KLIC, POPISY_MAX_TEXT, POPISY_MAX_POLOZEK, popisyOciste, popisyVlij, popisyDoplnChybejici, popisyCiselnik, popisyNavrhyMimo,
     POPISY_JAZYKY, popisyJazykyOciste, cenikPopisJazyk, popisyJazykyDoplnChybejici, popisJazykySrovnej,
     cenikSheetRows, cenikToSheets, cenikDiffZeSheets, cenikAplikuj, CENIK_HLAVICKA };

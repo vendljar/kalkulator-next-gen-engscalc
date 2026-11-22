@@ -223,6 +223,26 @@ const TS_SEKCE_NAZVY = ['ZÁKLADNÍ PARAMETRY ŠACHTY', 'KONSTRUKČNÍ ŘEŠENÍ
   /* pruh vlastních řádků (docxRadkyNavic, obchodník 15. 10. 2026): sekce nad ním,
    * které nezbyl řádek, se pozná jako prázdná a zmizí */
   'DALŠÍ UJEDNÁNÍ'];
+/* #682 (19. 11. 2026): šablona EN/DE/FR nese pruhy PŘELOŽENÉ („BRIDGES BETWEEN
+ * THE BUILDING…“), takže porovnání jen s českými názvy prázdný pruh nepoznalo
+ * a ve Wordu zůstal. Pruh se pozná i podle překladu ze slovníku (živý PREKLAD
+ * i zabudovaný, všechny jazyky), bez ohledu na velikost písmen a mezery. */
+function tsSekceNorm(t) { return String(t == null ? '' : t).replace(/\s+/g, ' ').trim().toUpperCase(); }
+function tsSekceNazvy() {
+  let pr = null;
+  if (typeof PREKLAD === 'object' && PREKLAD) pr = { PREKLAD, PREKLAD_ZABUDOVANY: (typeof PREKLAD_ZABUDOVANY === 'object' ? PREKLAD_ZABUDOVANY : null) };
+  else if (typeof require === 'function') { try { pr = require('./preklad.js'); } catch (e) { pr = null; } }
+  const mn = new Set();
+  TS_SEKCE_NAZVY.forEach(cz => {
+    mn.add(tsSekceNorm(cz));
+    if (!pr) return;
+    [pr.PREKLAD, pr.PREKLAD_ZABUDOVANY].forEach(sl => {
+      const v = sl && Object.prototype.hasOwnProperty.call(sl, cz) ? sl[cz] : null;
+      if (Array.isArray(v)) v.forEach(x => { if (tsSekceNorm(x)) mn.add(tsSekceNorm(x)); });
+    });
+  });
+  return mn;
+}
 
 const DOCX_SLEVA_KLICE = ['CENA_PRED_SLEVOU', 'SLEVA_PROC', 'SLEVA_KC'];
 /* #560: cenové řádky šablony CN v16 — viz odstranPrazdneTsRadky. */
@@ -778,19 +798,21 @@ function odstranPrazdneTsRadky(xml, ph) {
   for (const sp of vyber) xml = xml.slice(0, sp.zac) + xml.slice(sp.kon);
 
   // fáze B – prázdné sekční pruhy (řádek = jen název sekce, po něm přímo další sekce/konec tabulky)
+  const nazvy = tsSekceNazvy();
+  const jeSekce = fr => nazvy.has(tsSekceNorm(textRadku(vlastniObsahRadku(fr))));
   const spany = radkoveSpany(xml).filter(sp => sp.hloubka === 0);
   const sekOdstr = [];
   for (let i = 0; i < spany.length; i++) {
     const radek = xml.slice(spany[i].zac, spany[i].kon);
     if (klicePlaceholderu(radek).length) continue;
-    if (!TS_SEKCE_NAZVY.includes(textRadku(vlastniObsahRadku(radek)))) continue;
+    if (!jeSekce(radek)) continue;
     const dalsi = spany[i + 1];
     let prazdna;
     if (!dalsi) prazdna = true;                                   // konec dokumentu
     else if (/<\/w:tbl>/.test(xml.slice(spany[i].kon, dalsi.zac))) prazdna = true;   // konec tabulky
     else {
       const dR = xml.slice(dalsi.zac, dalsi.kon);
-      prazdna = !klicePlaceholderu(dR).length && TS_SEKCE_NAZVY.includes(textRadku(vlastniObsahRadku(dR)));
+      prazdna = !klicePlaceholderu(dR).length && jeSekce(dR);
     }
     if (prazdna) sekOdstr.push(spany[i]);
   }

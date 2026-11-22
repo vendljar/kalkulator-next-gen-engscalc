@@ -378,7 +378,11 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   const odmitni = (status, chyba) => ({ ok: false, status, chyba });
   /* Věta odmítnutí: obchodníkovi „Neuloženo: … Pokračujte klonem varianty.",
    * do přehledu obnovy jen důvod. */
-  const veta = (duvod, klon) => (obnova ? duvod : 'Neuloženo: ' + duvod + (klon ? '. Pokračujte klonem varianty.' : ''));
+  /* #674 c: důvod s vlastní předponou („Neuloženo: …") ji nezdvojí. */
+  const veta = (duvod, klon) => {
+    const d = String(duvod == null ? '' : duvod).replace(/^Neuloženo:\s*/, '');
+    return obnova ? d : 'Neuloženo: ' + d + (klon ? '. Pokračujte klonem varianty.' : '');
+  };
   const zamcena = (v) => !!(globalThis.variantaUzamcena && globalThis.variantaUzamcena(v));
   const cisloVarianty = (z, v) => String((globalThis.variantaCislo && globalThis.variantaCislo(z, v)) || '');
 
@@ -806,6 +810,10 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
       return odmitni(400, 'Neuloženo: odeslaná nabídka nese ' + ULO.uloIdProblemyText(rozmerProblem)
         + '. Doplňte rozměry šachty a nabídku vytiskněte znovu.');
     v.zamek.kdo = razitkoKdo(relace);   // B95
+    /* #665: blok „Vypracoval" odeslané nabídky = profil účtu z RELACE (ne od
+     * klienta); dál ho drží uloZamekRazitkaDrz. Bez e-mailu klíč pryč. */
+    { const zs = typeof globalThis.zamekZpracovatelSnimek === 'function' ? globalThis.zamekZpracovatelSnimek(relace) : null;
+      if (zs) v.zamek.zpracovatel = zs; else delete v.zamek.zpracovatel; }
     /* K40-S1 (#580): čas PRVNÍHO přijetí zámku serverem — dolní mez data
      * prodeje; příchozí hodnota se zahodí (píše ho jen server). */
     v.zamek.prijato = tedServer;
