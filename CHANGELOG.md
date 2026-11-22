@@ -8,6 +8,21 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.11.6 — JT #713 (prac.): jazyk hlavičky specifikace OCK = Jazyk tisku nabídky, větev claude/jt-jazyk-tisku
+
+Nad integrací `05a496d` (v22.11.5). Verzi a číslo roadmapy přidělí koordinace. Cenu ani text dokumentů nemění (porovnání sestavení SHODA).
+
+- **Nové — obchodník (zadání J. V. 22. 11.):** přepnutí jazyka v hlavičce technické specifikace OCK
+  (CZ / EN / DE / FR) nastaví zároveň Jazyk tisku nabídky; změna Jazyka tisku u nabídky OCK přepne i náhled
+  specifikace („dle Nastavení“ nic nepřepíná). Pod cizojazyčným náhledem (pod „Print specification / PDF“)
+  je tatáž karta Cenová nabídka (OCK) jako v české verzi — úvodní fotka, kontroly „Než nabídku odešlete…“,
+  zábrany a tlačítka Kompletní náhled podkladů · Vytvořit nabídku (Word) · Kompletní náhled a tisk nabídky,
+  které tisknou rovnou v tom jazyce. Návrat do české verze už není potřeba.
+- **Beze změny:** PROJ a smlouva o dílo (jejich Jazyk tisku jazyk specifikace nepřepíná); uložení (Jazyk tisku
+  jen pro relaci, jazyk dokumentu v Nastavení jako dosud).
+- **Testy:** `src/test_jt_jazyk_tisku.js` 23 (pojistka nad 05a496d 10 FAIL), `overit_jt_jazyk_tisku.mjs` 19,
+  mutace jádra `[JT]` 9/9. Příručka obchodníka, kapitola 23 (tisk nabídky, jazykové verze).
+
 ## v22.11.5 — PR #707: Připomínky z aplikace, větev claude/pr-pripominky
 
 Nad integrací `cda289e`, sloučeno s integrací `6fa67af` (v22.11.4). Cenu ani dokumenty nemění (porovnání sestavení SHODA). Funkce je výchozí VYPNUTÁ.

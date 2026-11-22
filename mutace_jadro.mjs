@@ -312,6 +312,45 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* JT (J. V. 22. 11. 2026): jazyk hlavičky specifikace OCK = Jazyk tisku
+   * nabídky, tisk z cizojazyčného náhledu. Hlídá src/test_jt_jazyk_tisku.js
+   * (prohlížeč: overit_jt_jazyk_tisku.mjs). [JT] */
+  { nazev: 'JT: hlavička specifikace nenastaví Jazyk tisku [JT]', soubor: 'ui/techspec_ui.js',
+    hledej: "function tsJazykPrepni(k) {\n  tiskJazykNastav(k);\n  jazykSet(k);",
+    nahrad: "function tsJazykPrepni(k) {\n  jazykSet(k);",
+    proc: 'po dřívější volbě jiného Jazyka tisku by EN náhled tiskl nabídku v jiném jazyce', sady: ['test_jt_jazyk_tisku.js'] },
+  { nazev: 'JT: vlajky v hlavičce volají holé jazykSet [JT]', soubor: 'ui/techspec_ui.js',
+    hledej: "onclick=\"tsJazykPrepni('${escJs(j.kod)}')\"",
+    nahrad: "onclick=\"jazykSet('${escJs(j.kod)}')\"",
+    proc: 'přepnutí jazyka v hlavičce by Jazyk tisku nesrovnalo', sady: ['test_jt_jazyk_tisku.js'] },
+  { nazev: 'JT: Jazyk tisku OCK nepřepne náhled specifikace [JT]', soubor: 'ui/common.js',
+    hledej: "  if (TISK_JAZYK && TISK_JAZYK !== jazyk()) jazykSet(TISK_JAZYK);",
+    nahrad: "",
+    proc: 'Jazyk tisku a náhled specifikace by se rozešly', sady: ['test_jt_jazyk_tisku.js'] },
+  { nazev: 'JT: „dle Nastavení" přepne jazyk dokumentu na češtinu [JT]', soubor: 'ui/common.js',
+    hledej: "  if (TISK_JAZYK && TISK_JAZYK !== jazyk()) jazykSet(TISK_JAZYK);",
+    nahrad: "  if (TISK_JAZYK !== jazyk()) jazykSet(TISK_JAZYK || 'cz');",
+    proc: 'volba „dle Nastavení" by obchodníkovi přepnula jazyk dokumentu', sady: ['test_jt_jazyk_tisku.js'] },
+  { nazev: 'JT: select OCK volá tiskJazykNastav [JT]', soubor: 'ui/common.js',
+    hledej: "(ock === 'ock' ? 'tiskJazykNastavOck' : 'tiskJazykNastav')",
+    nahrad: "'tiskJazykNastav'",
+    proc: 'změna Jazyka tisku u nabídky OCK by náhled specifikace nepřepnula', sady: ['test_jt_jazyk_tisku.js'] },
+  { nazev: 'JT: PROJ/SoD dostanou synchronizovaný select [JT]', soubor: 'ui/common.js',
+    hledej: "(ock === 'ock' ? 'tiskJazykNastavOck' : 'tiskJazykNastav')",
+    nahrad: "'tiskJazykNastavOck'",
+    proc: 'Jazyk tisku v PROJ a SoD by přepínal jazyk dokumentu (PROJ má zůstat beze změny)', sady: ['test_jt_jazyk_tisku.js'] },
+  { nazev: 'JT: nabídka OCK kreslí select bez parametru [JT]', soubor: 'ui/zakazka_ui.js',
+    hledej: "tiskJazykVyber('ock')",
+    nahrad: "tiskJazykVyber()",
+    proc: 'select Jazyka tisku OCK by nepřepínal náhled specifikace', sady: ['test_jt_jazyk_tisku.js'] },
+  { nazev: 'JT: cizojazyčný náhled bez karty nabídky [JT]', soubor: 'ui/techspec_ui.js',
+    hledej: "      Nabídku v tomto jazyce vytisknete rovnou tlačítky níže (Jazyk tisku se nastavil sám).</div>\n    </div>\n    ${tsNabidkaKarta()}`;",
+    nahrad: "      Nabídku v tomto jazyce vytisknete rovnou tlačítky níže (Jazyk tisku se nastavil sám).</div>\n    </div>`;",
+    proc: 'z EN/DE/FR náhledu by nešlo nabídku vytisknout (dnešní stav)', sady: ['test_jt_jazyk_tisku.js'] },
+  { nazev: 'JT: karta specifikace bez bloku nabídky [JT]', soubor: 'ui/techspec_ui.js',
+    hledej: "${card('Cenová nabídka (OCK)', nabidkaDokumentyBlok())}",
+    nahrad: "${card('Cenová nabídka (OCK)', '')}",
+    proc: 'karta by neměla tlačítka, kontroly ani zábrany', sady: ['test_jt_jazyk_tisku.js'] },
   /* PG (19. 11. 2026): #2 vlastní řádek v SOUČÁSTÍ DODÁVKY NENÍ, #3 DALŠÍ
    * UJEDNÁNÍ v nabídce PROJ (šablona PROJ v9, kontrola chybějící kotvy).
    * Hlídají src/test_pg_neni_radky.js a src/test_pg_proj_dalsi.js. [PG] */
