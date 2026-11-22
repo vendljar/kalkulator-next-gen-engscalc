@@ -10,7 +10,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## v22.11.10 — NN: nízké nálezy auditu 20. 11. 2026 (#702), revize BZ a PR, větev claude/nn-nizke-nalezy
 
-Nad integrací `05a496d` (v22.11.5), sloučeno s integrací `36e2681` (v22.11.7). Verze v22.11.10 (koordinace). Cenu ani text dokumentů nemění
+Nad integrací `05a496d` (v22.11.5), sloučeno s integrací `ae0b542` (v22.11.9). Verze v22.11.10 (koordinace). Cenu ani text dokumentů nemění
 (porovnání sestavení viz STAV / zpráva koordinaci). Bezpečnostní meze v `BEZPECNOST_MEZE.md`, oddíl NN.
 
 - **Zakázky:** razítko verze je povinné — uložení bez něj nad existující zakázkou = 409 (B237); nejvýš 50 variant
@@ -43,8 +43,8 @@ Nad integrací `05a496d` (v22.11.5), sloučeno s integrací `36e2681` (v22.11.7)
   zablokovalo poctivý prodej; podvržený snímek u nového zámku = 409); hláška dvojčete karty jmenuje
   autora jménem (R3); meze R4 (stropy B239 i při obnově), R5 (`prepsat` u B237), dvojče jen podle názvu; nálezy
   šablon B270–B272 zapsány do roadmapy (#719–#721).
-- **Kolo** (`--bez-mutaci --proti 36e2681`): VŠE ZELENÉ — sady 519/0/6, hodiny 421/0/1, statické 12/12, porovnání
-  sestavení SHODA 367/367; mutace [NN] server 31/31, jádro 10/10.
+- **Kolo** (`--bez-mutaci --proti ae0b542`): VŠE ZELENÉ — sady 522/0/6, hodiny 423/0/1, statické 12/12, porovnání
+  sestavení SHODA 367/367; mutace [NN] server 33/33, jádro 10/10.
 ## v22.11.9 — RJ revize (koordinace 22. 11.): N1, N2, I3, větev claude/rj-rozhodnuti
 
 Navazuje na v22.11.7 (revize koordinace = SLOUČIT), sloučeno s integrací `60086f7` (LAK v22.11.8). Roadmapa #717. Cenu nemění.
