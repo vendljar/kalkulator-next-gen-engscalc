@@ -44,6 +44,7 @@ import firma from './netlify/functions/firma.mjs';
 import zobrazeni from './netlify/functions/zobrazeni.mjs';
 import popisyFn from './netlify/functions/popisy.mjs';
 import zakazniciFn from './netlify/functions/zakaznici.mjs';
+import pripominkyFn from './netlify/functions/pripominky.mjs';   // PR: klient se po přihlášení ptá na nastavení připomínek
 import zalohaVynuceno from './netlify/functions/zaloha_vynuceno.mjs';
 import { porizOtisk } from './netlify/lib/zalohovani.mjs';
 import sablonyFn from './netlify/functions/sablony.mjs';
@@ -93,7 +94,7 @@ const FUNKCE = {
    * bez ní by v každém průchodu svítilo 404 v konzoli. */
   '/api/zobrazeni': zobrazeni,
   '/api/popisy': popisyFn,
-  '/api/zakaznici': zakazniciFn,
+  '/api/zakaznici': zakazniciFn, '/api/pripominky': pripominkyFn,
   /* Vynucená (a ověřitelná) záloha databáze – 4. 8. 2026. Kdyby tu funkce
    * chyběla, volání z prohlížeče by skončilo na 404 a test by mlčel
    * o tom, že „vynucené zálohování" pořád nikam nevede. */

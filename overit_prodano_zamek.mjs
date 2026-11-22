@@ -52,6 +52,7 @@ const { default: firma } = await import('./netlify/functions/firma.mjs');
 const { default: zobrazeni } = await import('./netlify/functions/zobrazeni.mjs');
 const { default: popisyFn } = await import('./netlify/functions/popisy.mjs');
 const { default: zakazniciFn } = await import('./netlify/functions/zakaznici.mjs');
+const { default: pripominkyFn } = await import('./netlify/functions/pripominky.mjs');   // PR: klient se po přihlášení ptá na nastavení připomínek
 const { default: sablonyFn } = await import('./netlify/functions/sablony.mjs');
 const { default: analytikaFn } = await import('./netlify/functions/analytika.mjs');
 const { default: slovnikFn } = await import('./netlify/functions/slovnik.mjs');
@@ -67,7 +68,7 @@ catch (e) { console.error('Playwright není k dispozici. NODE_PATH=$(npm root -g
 const { default: funkceFn } = await import('./netlify/functions/funkce.mjs');
 const FUNKCE = { '/api/zdravi': zdravi, '/api/funkce': funkceFn, '/api/ja': ja, '/api/prihlaseni': prihlaseni, '/api/odhlaseni': odhlaseni,
   '/api/uzivatele': uzivatele, '/api/program': program, '/api/zakazky': zakazky, '/api/firma': firma,
-  '/api/zobrazeni': zobrazeni, '/api/popisy': popisyFn, '/api/zakaznici': zakazniciFn, '/api/sablony': sablonyFn,
+  '/api/zobrazeni': zobrazeni, '/api/popisy': popisyFn, '/api/zakaznici': zakazniciFn, '/api/pripominky': pripominkyFn, '/api/sablony': sablonyFn,
   '/api/analytika': analytikaFn, '/api/slovnik': slovnikFn, '/api/controlling': controllingFn, '/api/pd/stav': pdStavFn };
 
 let ok = 0, fail = 0;

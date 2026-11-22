@@ -1,8 +1,8 @@
 # Předávka dávky PR — Připomínky z aplikace (21. 11. 2026)
 
 Větev `claude/pr-pripominky` nad integrací `cda289e`. Pracovní čísla roadmapy #692 (úkol, hotovo),
-#693 (nález PR-N1), #694 (otázka e-mail), #695 (otázka záloha) — přečísluje koordinace. Verze v19.11.11
-(nezvyšována, přečísluje koordinace). Revizi rozdílu před sloučením dělá poradce.
+#693 (nález PR-N1), #694 (otázka e-mail), #695 (otázka záloha) — přečísluje koordinace. Verze v22.11.1
+(přečísluje koordinace). Revizi rozdílu před sloučením dělá poradce.
 
 ## Co je hotové
 

@@ -46,7 +46,7 @@ for (const [cesta, soubor] of Object.entries({
   '/api/zdravi': 'zdravi', '/api/funkce': 'funkce', '/api/ja': 'ja', '/api/prihlaseni': 'prihlaseni',
   '/api/odhlaseni': 'odhlaseni', '/api/uzivatele': 'uzivatele', '/api/program': 'program',
   '/api/zakazky': 'zakazky', '/api/firma': 'firma', '/api/zobrazeni': 'zobrazeni', '/api/popisy': 'popisy',
-  '/api/zakaznici': 'zakaznici', '/api/sablony': 'sablony', '/api/analytika': 'analytika',
+  '/api/zakaznici': 'zakaznici', '/api/pripominky': 'pripominky', '/api/sablony': 'sablony', '/api/analytika': 'analytika',
   '/api/pd/stav': 'pd_stav', '/api/slovnik': 'slovnik', '/api/controlling': 'controlling',
   '/api/zaloha_vynuceno': 'zaloha_vynuceno', '/api/zaloha': 'zaloha',
 })) FUNKCE[cesta] = (await import('./netlify/functions/' + soubor + '.mjs')).default;

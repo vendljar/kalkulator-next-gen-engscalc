@@ -531,8 +531,8 @@ function pripSpravceNastaveniHtml() {
       <div class="note">Aplikace zatím e-maily neodesílá — volba se uloží a začne platit, až odesílání přibude (roadmapa). Text e-mailu je připravený.</div>
       <div>Zdroj pro frontu oprav: <select id="prip-n-zdroj">${zdroje}</select></div>
       <div>Interval čtení koordinací: <input id="prip-n-interval" size="28" value="${esc(n.intervalKoordinace)}"> <span class="note" style="display:inline">jen informace pro koordinaci</span></div>
-      <div>Limit za den na uživatele: <input id="prip-n-limit" type="number" min="1" max="${PRIPOMINKA_LIMIT_DEN_MAX}" style="width:80px" value="${esc(n.limitDen)}"></div>
-      <div>Uchovávat vyřízené: <input id="prip-n-dni" type="number" min="0" max="3650" style="width:80px" value="${esc(n.uchovatDni)}"> dní <span class="note" style="display:inline">(0 = navždy)</span></div>
+      <div>Limit za den na uživatele: <input id="prip-n-limit" ${CISLO_POLE} style="width:80px" value="${esc(n.limitDen)}"></div>
+      <div>Uchovávat vyřízené: <input id="prip-n-dni" ${CISLO_POLE} style="width:80px" value="${esc(n.uchovatDni)}"> dní <span class="note" style="display:inline">(0 = navždy)</span></div>
       <div class="btns"><button class="primary" onclick="pripSpUlozNastaveni()">Uložit nastavení připomínek</button></div>
       <div class="sec-title">Klíč pro koordinaci</div>
       <div>${k.nastaven ? `Klíč je vydaný ${esc(pripDatum(k.vytvoren))} (${esc(k.kdo)}). Server drží jen jeho otisk — znovu ho ukázat nejde.`
