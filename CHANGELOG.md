@@ -39,6 +39,8 @@ Nad integrací `05a496d` (v22.11.5), sloučeno s integrací `36e2681` (v22.11.7)
   rozšířené `test_pripominky` (jádro 77, server 82), `overit_pripominky` 62, `test_pre_push` 25, nový
   `test_workflow_udaju` 7; sady ukládající bez razítka ho doplňují jako klient (`netlify/pomoc_razitko.mjs`).
   `test_nn_sablony` 34, `test_sablony` +18. Mutace [NN] server 23 + 8, jádro 10 — vše chyceno.
+- **Kolo** (`--bez-mutaci --proti 36e2681`): VŠE ZELENÉ — sady 519/0/6, hodiny 421/0/1, statické 12/12, porovnání
+  sestavení SHODA 367/367; mutace [NN] server 31/31, jádro 10/10.
 ## v22.11.7 — RJ: zapracování rozhodnutí J. V. z 22. 11. 2026, větev claude/rj-rozhodnuti
 
 Nad integrací `05a496d` (v22.11.5), sloučeno s integrací `21eeffa` (v22.11.6). Roadmapa #704, #706, #709, #710 → #714 (dávka), #715 (podpis). Cenu nemění.
