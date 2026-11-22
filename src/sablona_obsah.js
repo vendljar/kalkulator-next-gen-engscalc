@@ -13,8 +13,15 @@
  * CO SE ODMÍTÁ (šablona, ne výsledný dokument — ten z ní jen vzniká):
  *   – vnější vztah (TargetMode jiný než Internal, nebo cíl se schématem
  *     file:, C:, síťovou cestou \\server či //server), kromě hypertextového
- *     odkazu na http:, https: nebo mailto: (odkaz Word sám nestahuje;
- *     mailto: nesou dnešní firemní šablony PROJ — bez něj by neprošly);
+ *     odkazu na absolutní http://, https:// nebo mailto: (odkaz Word sám
+ *     nestahuje; mailto: nesou dnešní firemní šablony PROJ — bez něj by
+ *     neprošly). Vnější odkaz s relativním cílem (..\x.hta) neprojde (B247);
+ *   – vnější hypertextový odkaz, který dokument použije jinak než jako
+ *     odkaz — např. jako odkazovaný obrázek <a:blip r:link> (B248);
+ *   – pole HYPERLINK s jinou adresou než absolutní http(s):// či mailto:
+ *     (\\server, file:, relativní cesta; B247); odkaz na záložku (\l) smí;
+ *   – symbol {{…}} kdekoli v kódu pole (B249): data zakázky by v kódu pole
+ *     uvozovkou ukončila argument a přidala přepínač;
  *   – typy vztahů attachedTemplate, oleObject, package, aFChunk (altChunk),
  *     vbaProject, frame, subDocument, ActiveX a VBA data — bez ohledu na cíl;
  *   – části embeddings/*, vbaProject*, oleObject*, cokoli s „activeX"
@@ -55,7 +62,13 @@ const SABLONA_VZTAHY_ZAKAZANE = ['attachedTemplate', 'oleObject', 'package', 'aF
   'control', 'activeXControlBinary', 'wordVbaData', 'vbaProjectSignature', 'keyMapCustomizations',
   /* B141 (12. 10. 2026): zdroj dat hromadné korespondence */
   'mailMergeSource', 'mailMergeHeaderSource'];
-const SABLONA_ODKAZ_POVOLENY = /^(https?:|mailto:)/i;
+/* B247 (audit 20. 11. 2026): jen ABSOLUTNÍ http(s):// a mailto: — „https:"
+ * bez lomítek ani relativní cesta neprojdou. */
+const SABLONA_ODKAZ_POVOLENY = /^(https?:\/\/|mailto:)/i;
+/* B248: prvky, jejichž atribut smí ukazovat na vztah typu hyperlink (odkaz
+ * v textu, v kresbě). Jinde (a:blip r:link / r:embed, v:imagedata …) by
+ * Word vnější adresu mohl stáhnout jako obsah. */
+const SABLONA_ODKAZ_PRVKY = ['hyperlink', 'hlinkClick', 'hlinkHover', 'hlinkMouseOver'];
 const SABLONA_POLE_ZAKAZANA = ['INCLUDETEXT', 'INCLUDEPICTURE', 'INCLUDE', 'IMPORT', 'LINK', 'DDEAUTO', 'DDE', 'DATABASE', 'RD'];
 /* Cíl vztahu, který Word nebere jako část balíčku: schéma (http:, file:, C:)
  * nebo síťová cesta (\\server, //server). */
@@ -200,7 +213,33 @@ function sablonaPoleVada(kod) {
   if (/^"?\{/.test(t)) return 'pole, jehož typ dodá symbol {{…}}';
   const m = /^"?([A-Za-z]+)/.exec(t);
   const typ = m ? m[1].toUpperCase() : '';
-  return SABLONA_POLE_ZAKAZANA.indexOf(typ) >= 0 ? 'pole ' + typ : '';
+  if (SABLONA_POLE_ZAKAZANA.indexOf(typ) >= 0) return 'pole ' + typ;
+  /* B249 (audit 20. 11. 2026): data zakázky v kódu pole — uvozovka z dat
+   * (Word &quot; v kódu dekóduje) by ukončila argument a přidala přepínač
+   * (HYPERLINK "{{OBJEDNATEL_WEB}}" → … \l "x"). Kód pole je stavba, ne
+   * text — symbol do něj nepatří. */
+  if (/\{\{[A-Za-z0-9_]+\}\}/.test(t)) return 'data zakázky {{…}} uvnitř kódu pole ' + (typ || '?');
+  if (typ === 'HYPERLINK') return sablonaHyperlinkVada(t.replace(/^"?[A-Za-z]+"?/, ''));
+  return '';
+}
+/* POLE HYPERLINK (B247, audit 20. 11. 2026). Výjimka pro odkaz platila jen
+ * u vztahů; pole HYPERLINK "\\\\server\\x" nebo "file:///…" prošlo — Word
+ * po kliknutí otevře síťovou cestu (otisk hesla NTLM) či místní soubor.
+ * Cíl = první argument, který není přepínač ani jeho hodnota (\l záložka,
+ * \o popisek, \t rámec, \* \@ \# formát); smí jen absolutní http(s)://
+ * a mailto:. Bez cíle (jen \l "_Toc1" z obsahu) je pole v pořádku.
+ * V uvozovkách kódu pole je \\ zpětné lomítko a \" uvozovka. */
+function sablonaHyperlinkVada(argumenty) {
+  const re = /"((?:[^"\\]|\\[\s\S])*)"?|([^\s"]+)/g;
+  let m, preskoc = false;
+  while ((m = re.exec(argumenty))) {
+    if (m[2] !== undefined && /^\\[A-Za-z*@#!]$/.test(m[2])) { preskoc = /^\\[lot*@#]$/i.test(m[2]); continue; }
+    if (preskoc) { preskoc = false; continue; }
+    const cil = (m[1] !== undefined ? m[1].replace(/\\([\s\S])/g, '$1') : m[2]).trim();
+    if (cil.indexOf('\u0001') >= 0) return 'pole HYPERLINK s adresou z vnořeného pole';
+    return SABLONA_ODKAZ_POVOLENY.test(cil) ? '' : 'pole HYPERLINK s nepovolenou adresou';
+  }
+  return '';
 }
 /* Složená pole: fldChar begin / separate / end a instrText mezi nimi,
  * v pořadí dokumentu, s vnořováním. instrText mimo pole (bez fldChar) se
@@ -254,6 +293,7 @@ function sablonaPoleVady(xml) {
 function sablonaObsahVadyZipu(polozky) {
   const vady = [];
   const pridej = (t) => { if (vady.indexOf(t) < 0) vady.push(t); };
+  const odkazy = {};   // B248: zdrojová část (malými) → [Id povolených vnějších odkazů]
   (Array.isArray(polozky) ? polozky : []).forEach(p => {
     if (!p || typeof p.nazev !== 'string') return;
     const nazev = p.nazev;
@@ -302,8 +342,17 @@ function sablonaObsahVadyZipu(polozky) {
         pridej('vztah ' + druh + (externi ? ' na vnější adresu' : '') + ' (' + nazev + ')');
       else if (externi) {
         const odkaz = druh.toLowerCase() === 'hyperlink';
-        if (!(odkaz && cile.every(c => !SABLONA_CIL_VNEJSI.test(c) || SABLONA_ODKAZ_POVOLENY.test(c))))
+        /* B247: vnější odkaz s relativním cílem (..\x.hta) dřív prošel —
+         * podmínka pouštěla každý cíl bez schématu. */
+        if (!(odkaz && cile.every(c => SABLONA_ODKAZ_POVOLENY.test(c))))
           pridej('vnější vztah ' + (druh || '?') + (odkaz ? ' s nepovolenou adresou' : '') + ' (' + nazev + ')');
+        else if (jeRels) {
+          /* B248: povolený odkaz si zapamatuje, ať se po průchodu ověří,
+           * že ho zdrojová část nepoužívá jako obrázek nebo obsah. */
+          const z = /^(.*\/)?_rels\/([^/]+)\.rels$/.exec(male);
+          const id = ((presne.Id || [])[0] || '').trim();
+          if (z && id) (odkazy[(z[1] || '') + z[2]] = odkazy[(z[1] || '') + z[2]] || []).push(id);
+        }
       }
     }
     neuzavrene.forEach(v => pridej(v + ' (' + nazev + ')'));
@@ -317,6 +366,47 @@ function sablonaObsahVadyZipu(polozky) {
       pridej('hromadná korespondence s připojením k datům (' + nazev + ')');
     sablonaPoleVady(xml).forEach(v => pridej(v + ' (' + nazev + ')'));
   });
+  /* B248: druhý průchod jen přes části, k nimž patří povolený vnější odkaz. */
+  if (Object.keys(odkazy).length) (Array.isArray(polozky) ? polozky : []).forEach(p => {
+    if (!p || typeof p.nazev !== 'string') return;
+    const ids = odkazy[sablonaMaleJmeno(p.nazev)];
+    if (!ids) return;
+    sablonaOdkazJinakVady(sablonaNormalizuj(sablonaObsahText(p.data)), ids).forEach(v => pridej(v + ' (' + p.nazev + ')'));
+  });
+  return vady;
+}
+function sablonaMaleJmeno(nazev) {
+  let jmeno = nazev;
+  try { jmeno = decodeURIComponent(nazev); } catch (e) { /* nechat jak je */ }
+  return jmeno.toLowerCase().replace(/\\/g, '/');
+}
+/* VNĚJŠÍ ODKAZ POUŽITÝ JAKO OBSAH (B248, audit 20. 11. 2026). Vztah typu
+ * hyperlink na https:// prošel jako „odkaz, který Word sám nestahuje" — jenže
+ * dokument na něj mohl ukázat z <a:blip r:link="rId5"/> (odkazovaný obrázek)
+ * a Word by adresu při otevření možná stáhl (sledovací pixel). Odkaz smí
+ * použít jen prvek odkazu (SABLONA_ODKAZ_PRVKY); jiný prvek, jehož atribut
+ * s prefixem (r:embed, r:link, r:id, o:relid …) nese Id odkazu, je vada.
+ * Značka bez „>" ukončí hledání (jako sablonaZnacky — bez kvadratického času;
+ * vadu neuzavřené značky hlásí první průchod). */
+function sablonaOdkazJinakVady(xml, ids) {
+  const vady = [];
+  const re = /<([^\s<>\/="'!?]+)(?=[\s\/>]|$)/g;
+  const telo = new RegExp(SABLONA_ATRIBUTY + '>', 'y');
+  let m;
+  while ((m = re.exec(xml))) {
+    telo.lastIndex = re.lastIndex;
+    const t = telo.exec(xml);
+    if (!t) break;
+    re.lastIndex = telo.lastIndex;
+    const prvek = m[1].split(':').pop();
+    if (SABLONA_ODKAZ_PRVKY.indexOf(prvek) >= 0) continue;
+    const presne = sablonaAtributyPresne(t[0].slice(0, -1));
+    for (const k of Object.keys(presne)) {
+      if (k.indexOf(':') < 0 || /^xmlns:/i.test(k)) continue;
+      const pouzite = presne[k].map(h => h.trim()).find(h => ids.indexOf(h) >= 0);
+      if (pouzite) { vady.push('vnější odkaz ' + pouzite + ' použitý jako obsah (<' + m[1] + ' ' + k + '>)'); break; }
+    }
+  }
   return vady;
 }
 

@@ -20,6 +20,34 @@
 import { uloziste, vyzadujRoli, json, textovaPoleChyba, hloubkaChyba } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 
+/* KANONICKÝ BASE64 (B250, audit 20. 11. 2026). Node čte base64 benevolentně
+ * — za „=" uprostřed nebo za smetím přestane a zbytek zahodí; atob()
+ * v prohlížeči takový text odmítne. Server by šablonu uložil celou, kontrola
+ * obsahu by viděla jen začátek a prohlížeč by ji pak nenačetl (dokument nejde
+ * vytvořit). Platí jen text, který po dekódování a novém zakódování vyjde
+ * znak po znaku stejně (to dává i sablonaAbNaB64 = btoa v prohlížeči). */
+function b64Kanonicky(s) {
+  return typeof s === 'string' && Buffer.from(s, 'base64').toString('base64') === s;
+}
+/* NÁZEV A POZNÁMKA ŠABLONY (B251, audit 20. 11. 2026). Jdou do rejstříku,
+ * který čte každý přihlášený; dřív bez stropu (prošlo 200 kB + 500 kB) a
+ * s CR/LF a NUL. Název je jméno nahraného souboru (Windows dovolí 255 znaků),
+ * poznámka jednořádkové pole průvodce. Řídicí znaky → 400, nic se tiše
+ * neupravuje (uložený text = co správce poslal). */
+const SABLONA_NAZEV_MAX = 255;
+const SABLONA_POZNAMKA_MAX = 2000;
+const RIDICI_ZNAKY = /[\u0000-\u001F\u007F-\u009F\u2028\u2029]/;
+function popisChyba(t, sNazvem) {
+  const pole = sNazvem ? [['nazev', 'Název souboru', SABLONA_NAZEV_MAX], ['poznamka', 'Poznámka', SABLONA_POZNAMKA_MAX]]
+    : [['poznamka', 'Poznámka', SABLONA_POZNAMKA_MAX]];
+  for (const [k, popis, max] of pole) {
+    const v = t[k] == null ? '' : String(t[k]);
+    if (v.length > max) return json({ ok: false, chyba: popis + ' šablony je delší než ' + max + ' znaků.' }, 400);
+    if (RIDICI_ZNAKY.test(v)) return json({ ok: false, chyba: popis + ' šablony obsahuje řídicí znaky (konec řádku, tabulátor, NUL).' }, 400);
+  }
+  return null;
+}
+
 export default async (req) => {
   try { await jadro(); } catch (e) { return jadroChyba(e); }
   const g = globalThis;
@@ -77,6 +105,9 @@ export default async (req) => {
       return json({ ok: false, chyba: 'Soubor není .docx (Word) — zveřejnit jde jen šablona Wordu.' }, 400);
     if (data.length > g.SABLONA_MAX_B64)
       return json({ ok: false, chyba: 'Šablona je příliš velká (přes ~3,7 MB). Zmenšete v ní fotografie a zkuste to znovu.' }, 413);
+    if (!b64Kanonicky(data))
+      return json({ ok: false, chyba: 'Soubor šablony není platně zakódovaný (base64) — nahrajte ho znovu.' }, 400);
+    { const stop = popisChyba(t, true); if (stop) return stop; }
     /* Obsah šablony (B99, 29. 9. 2026): vnější vztahy, makra, vložené
      * objekty a pole INCLUDE… a DDE — Word by je u zákazníka načítal mimo
      * dokument. Stejná funkce jako průvodce a generátor. */
@@ -131,6 +162,7 @@ export default async (req) => {
   if (t.akce === 'vratit') {
     if (!g.sablonaTypPlatny(t.typ))
       return json({ ok: false, chyba: 'Neznámý typ šablony.' }, 400);
+    { const stop = popisChyba(t, false); if (stop) return stop; }
     const platna = g.sablonaPlatna(rej, t.typ);
     const meta = g.sablonaVerze(rej, t.typ).find(v => v.verze === +t.verze);
     if (!meta) return json({ ok: false, chyba: 'Verze ' + t.verze + ' šablony „' + t.typ + '" neexistuje.' }, 404);

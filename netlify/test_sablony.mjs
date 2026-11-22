@@ -173,5 +173,50 @@ test('po vrácení platí otisk v1 → EN k němu projde', enK3.ok && enK3.verze
   }
 }
 
+/* [NN] B250, B251 (audit 20. 11. 2026): nekanonický base64, název a poznámka
+ * bez stropu a s řídicími znaky. Pojistka: před opravou server všechny
+ * „→ 400" přijal (ok: true, uložil celé), po opravě 400 a rejstřík beze změny. */
+{
+  const zaklad = await docx('nn-b250');
+  const verzePred = async () => ((await rejstrik(cA)).typy.plnaMoc || {}).platna;
+  const pred = await verzePred();
+  const ALF = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  const pad = zaklad.length - zaklad.replace(/=+$/, '').length;
+  const vyplnBity = pad ? zaklad.slice(0, -pad - 1) + ALF[ALF.indexOf(zaklad[zaklad.length - pad - 1]) | 1] + '='.repeat(pad) : zaklad + 'QR==';
+  const spatne = [
+    ['B250: „=" uprostřed a smetí za ním', { nazev: 'a.docx', data: zaklad.replace(/=*$/, '') + '=' + '!!!smeti!!!' }, /base64/],
+    ['B250: konec řádku uvnitř base64', { nazev: 'a.docx', data: zaklad.slice(0, 76) + '\n' + zaklad.slice(76) }, /base64/],
+    ['B250: chybí vycpávka (délka není násobek 4)', { nazev: 'a.docx', data: zaklad.replace(/=+$/, '') + (zaklad.endsWith('=') ? '' : 'QQ') }, /base64/],
+    /* „QR==" Node přečte jako „QQ==" (výplňové bity se zahodí) — stejné
+     * bajty, jiný text; kanonický zápis je jen jeden. */
+    ['B250: nenulové výplňové bity před „="', { nazev: 'a.docx', data: vyplnBity }, /base64/],
+    ['B251: název 256 znaků', { nazev: 'N'.repeat(252) + '.docx', data: zaklad }, /delší než 255/],
+    ['B251: název 200 kB', { nazev: 'N'.repeat(200000) + '.docx', data: zaklad }, /delší než 255/],
+    ['B251: poznámka 2001 znaků', { nazev: 'a.docx', poznamka: 'P'.repeat(2001), data: zaklad }, /delší než 2000/],
+    ['B251: název s CRLF', { nazev: 'a\r\nContent-Type: text/html.docx', data: zaklad }, /řídicí znaky/],
+    ['B251: název s NUL', { nazev: 'a\u0000.docx', data: zaklad }, /řídicí znaky/],
+    ['B251: poznámka s koncem řádku', { nazev: 'a.docx', poznamka: 'řádek\nřádek', data: zaklad }, /řídicí znaky/],
+    ['B251: poznámka s tabulátorem', { nazev: 'a.docx', poznamka: 'a\tb', data: zaklad }, /řídicí znaky/],
+  ];
+  for (const [popis, telo, ocek] of spatne) {
+    const r = await api(Object.assign({ akce: 'zverejnit', typ: 'plnaMoc' }, telo), cA);
+    test('[NN] ' + popis + ' → 400', r.st === 400 && ocek.test(r.chyba || ''), { st: r.st, chyba: String(r.chyba || '').slice(0, 120) });
+  }
+  test('[NN] B250/B251: odmítnuté nic nezapsaly do rejstříku', JSON.stringify(await verzePred()) === JSON.stringify(pred), await verzePred());
+  const hranice = await api({ akce: 'zverejnit', typ: 'plnaMoc', nazev: 'Ž'.repeat(250) + '.docx', poznamka: 'Pozn. – ' + 'p'.repeat(1992), data: zaklad }, cA);
+  test('[NN] B251: název 255 znaků a poznámka 2000 znaků (s diakritikou) projdou', hranice.ok === true, hranice);
+  const ulozeny = JSON.parse(pamet.get('sablony/data/plnaMoc/' + hranice.verze) || '{}');
+  test('[NN] B250: kanonický base64 se uloží beze změny', ulozeny.data === zaklad && ulozeny.nazev === 'Ž'.repeat(250) + '.docx');
+  /* vrácení verze: poznámka má týž strop a čištění */
+  const druha = await api({ akce: 'zverejnit', typ: 'plnaMoc', nazev: 'b.docx', data: await docx('nn-b251') }, cA);
+  test('[NN] příprava — druhá verze zveřejněna', druha.ok === true, druha);
+  const vr1 = await api({ akce: 'vratit', typ: 'plnaMoc', verze: hranice.verze, poznamka: 'x\r\ny' }, cA);
+  test('[NN] B251: vrácení s CRLF v poznámce → 400', vr1.st === 400 && /řídicí znaky/.test(vr1.chyba || ''), vr1);
+  const vr2 = await api({ akce: 'vratit', typ: 'plnaMoc', verze: hranice.verze, poznamka: 'P'.repeat(2001) }, cA);
+  test('[NN] B251: vrácení s poznámkou 2001 znaků → 400', vr2.st === 400 && /delší než 2000/.test(vr2.chyba || ''), vr2);
+  const vr3 = await api({ akce: 'vratit', typ: 'plnaMoc', verze: hranice.verze, poznamka: 'zpět na hranici' }, cA);
+  test('[NN] vrácení s běžnou poznámkou projde', vr3.ok === true, vr3);
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);
