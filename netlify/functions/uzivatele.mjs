@@ -229,6 +229,9 @@ export default async (req) => {
     if (t.akce === 'zaloz' && !emailPlatny(email))
       return json({ ok: false, chyba: 'E-mail nemá platný tvar.' }, 400);
     let ucet = await u.cti(email);
+    /* NN B240: snímek účtu před akcí — zápis na konci přenese jen pole, která
+     * akce změnila, na ČERSTVĚ přečtený účet (viz uctemZapisZmeny). */
+    const ucetPred = ucet ? JSON.parse(JSON.stringify(ucet)) : null;
     /* ZÁSAH DO JINÉHO SPRÁVCE JEN S HESLEM (SEC-I7, rozhodnutí J. V.
      * 26. 10. 2026, #517). Smazání, vypnutí, archivace a snížení role
      * účtu, který je Administrátor, chtějí vlastní heslo přihlášeného
@@ -511,7 +514,22 @@ export default async (req) => {
     } else {
       return json({ ok: false, chyba: 'Neznámá akce.' }, 400);
     }
-    await u.zapis(email, ucet);
+    /* NN B240 (audit 20. 11. 2026): akce správce dřív zapsala CELÝ účet
+     * přečtený před potvrzením hesla — souběžná změna hesla (jiná relace,
+     * reset) se tím vrátila i s `hesloVerze`, takže odhlášená relace zase
+     * platila. Teď se účet přečte znovu těsně před zápisem a přenesou se jen
+     * pole, která akce změnila; ve výhradním úseku nad účtem (v instanci). */
+    ucet = await vyhradne('uzivatele/' + email, async () => {
+      const cerstvy = await u.cti(email);
+      if (!cerstvy || !ucetPred) { await u.zapis(email, ucet); return ucet; }
+      const vysl = Object.assign({}, cerstvy);
+      for (const k of new Set(Object.keys(ucetPred).concat(Object.keys(ucet)))) {
+        if (JSON.stringify(ucetPred[k]) === JSON.stringify(ucet[k])) continue;
+        if (Object.prototype.hasOwnProperty.call(ucet, k)) vysl[k] = ucet[k]; else delete vysl[k];
+      }
+      await u.zapis(email, vysl);
+      return vysl;
+    });
     return json({ ok: true, email: ucet.email, role: ucet.role, aktivni: ucet.aktivni !== false });
   }
 
