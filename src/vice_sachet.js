@@ -73,6 +73,20 @@ function vsNazev(s, i) {
   return t || ('Šachta ' + (i + 1));
 }
 
+/* #648 (K49-I6, dávka DS): výchozí název šachty v jazyce dokumentu. Prázdný
+ * název i uložený výchozí tvar „Šachta N" (tlačítko „+ přidat šachtu" ho
+ * zapisuje do dat) se v EN/DE/FR tiskne jako Shaft N / Schacht N / Gaine N.
+ * Jakýkoli jiný (ručně zadaný) název zůstává beze změny. */
+const VS_NAZEV_VYCHOZI = { cz: 'Šachta', en: 'Shaft', de: 'Schacht', fr: 'Gaine' };
+function vsNazevPreloz(nazev, L) {
+  const t = String(nazev == null ? '' : nazev).trim();
+  const slovo = VS_NAZEV_VYCHOZI[L];
+  if (!slovo || L === 'cz') return t;
+  const m = /^Šachta\s+(\d+)$/.exec(t);
+  return m ? slovo + ' ' + m[1] : t;
+}
+function vsNazevL(s, i, L) { return vsNazevPreloz(vsNazev(s, i), L); }
+
 /* Počty pro štítky (R19): variant šachet a šachet celkem (Σ ks). */
 function vsPocty(ock) {
   const l = sachtyZ(ock);
@@ -327,7 +341,7 @@ function vsNazvySachetText(ock) {
 }
 
 if (typeof module !== 'undefined' && module.exports)
-  module.exports = { VS_VARIANT_MAX, VS_KS_MAX, VS_NAZEV_MAX, vsKs, vsDalsi, rezimViceSachet, vsMaData, sachtyZ, vsNazev, vsPocty,
+  module.exports = { VS_VARIANT_MAX, VS_KS_MAX, VS_NAZEV_MAX, vsKs, vsDalsi, rezimViceSachet, vsMaData, sachtyZ, vsNazev, vsNazevPreloz, vsNazevL, VS_NAZEV_VYCHOZI, vsPocty,
     rozpocetSachet, vsKlicPriplatku, vsKlicRadku, vsSlucRadky, priplatkySloucene, vsSoucetSouhrnu, vsSoucet,
     vypocetZakazkyOck, vypocetOckDat, vsTvarProblemy, vsRozvinZakazku, vsVypnutoHlaska, vsZakazkaMaData, vsNazvySachetText, vsTechspecOk };
 

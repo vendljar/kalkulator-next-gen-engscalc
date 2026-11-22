@@ -827,11 +827,27 @@ function vzProdejZKryciho(v) {
   return true;
 }
 
-/* Krycí list sdílené varianty: upozornění (jen víc zákazníků; jinak ''). */
+/* Krycí list sdílené varianty: upozornění (jen víc zákazníků; jinak '').
+ * #635: u upozornění tlačítko „vlastní varianta" (vzVlastniVarianta — kopie
+ * sdílené varianty pro dalšího zákazníka, týž krok jako v hlavičce). Nabízí
+ * se otevřenému dalšímu zákazníkovi; u otevřeného řídícího každému dalšímu
+ * zákazníkovi, který variantu sdílí (řídící vlastní variantu tudy nedostává
+ * — jeho varianta je řídící). Bez práva zápisu (zámek čtení, náhled) se
+ * tlačítko nekreslí; vzStop hlídá i klik. */
+function vzKlSdilenaTlacitka() {
+  const v = aktivniVarianta(ZAK) || {};
+  const ot = vzOtevrenyId();
+  const sdileji = vzZakaznici(ZAK).filter(z => z.varianta === String(v.id) && !z.ridici);
+  const komu = sdileji.some(z => z.id === ot) ? sdileji.filter(z => z.id === ot) : sdileji;
+  if ((typeof zamekCteniJe === 'function' && zamekCteniJe()) || (typeof nahledAktivni === 'function' && nahledAktivni())) return '';
+  return komu.map(z => ` <button type="button" class="btn sm vz-kl-vlastni" onclick="vzVlastniVarianta('${escJs(z.id)}')"`
+    + ` title="Založí kopii varianty jen pro tohoto zákazníka — pak jde krycí list vyplnit odlišně.">`
+    + `vlastní varianta${komu.length > 1 || z.id !== ot ? ' pro ' + esc(vzNazevZ(z)) : ''}</button>`).join('');
+}
 function vzKlSdilenaPozn() {
   if (!vzRezimUI()) return '';
   const t = vzKlSdilenaText(ZAK, (aktivniVarianta(ZAK) || {}).id);
-  return t ? `<div class="note vz-kl-sdilena" style="margin:4px 0 8px;padding:6px 8px;border:1px solid #e0c46c;background:#fff7d6;border-radius:6px">${esc(t)}</div>` : '';
+  return t ? `<div class="note vz-kl-sdilena" style="margin:4px 0 8px;padding:6px 8px;border:1px solid #e0c46c;background:#fff7d6;border-radius:6px">${esc(t)}${vzKlSdilenaTlacitka()}</div>` : '';
 }
 
 /* Otevření zakázky s daty víc zákazníků (online_ui.js): vypínač se ze

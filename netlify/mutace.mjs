@@ -49,6 +49,8 @@ const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
   : [/* BZ (21. 11. 2026): opravy bezpečnostního auditu B231–B236, B195 (rychlé sady). */
      'test_bz_bezpecnost.mjs', 'test_bz_pipedrive.mjs',
+     /* VZD #665 (21. 11. 2026): snímek „Vypracoval“ v zámku z relace a jeho držení (rychlá sada). */
+     'test_665_vypracoval.mjs',
      /* #ON (19. 11. 2026): čas poslední aktivity — zápis, rozestup, práva, best-effort (rychlá sada). */
      'test_on_aktivita.mjs',
      /* #UE (18. 11. 2026): úprava existujícího účtu správcem — práva, meze, hlavní účet (rychlá sada). */
@@ -297,8 +299,8 @@ const MUTACE = [
     nahrad: "    return '';",
     proc: "zaškrtávátko jen projekce / jen realizace by u odeslané zakázky šlo přepnout a uložení by pak spadlo 403 (B231)", sady: ['test_bz_bezpecnost.mjs'] },
   { nazev: "BZ: server nedrží snímek strany v zámku [BZ]", soubor: "../src/uloziste.js",
-    hledej: "'prijato', 'strana'].forEach(k => {",
-    nahrad: "'prijato'].forEach(k => {",
+    hledej: "'zpracovatel', 'strana'].forEach(k => {",
+    nahrad: "'zpracovatel'].forEach(k => {",
     proc: "klient by snímek strany v zámku podvrhl (B231)", sady: ['test_bz_bezpecnost.mjs'] },
   { nazev: "BZ: server nezapíše snímek strany do nového zámku [BZ]", soubor: "lib/zakazka_kontrola.mjs",
     hledej: "    if (typeof globalThis.zamekStranaSnimek === 'function') v.zamek.strana = globalThis.zamekStranaSnimek(zak);",
@@ -3098,8 +3100,8 @@ const MUTACE = [
 
   /* Nálezy nezávislé revize #401 (12. 10. 2026). */
   { nazev: 'rev #401 N1: razítko slovníku v uloženém zámku přepíše klient', soubor: '../src/uloziste.js',
-    hledej: "    ['kdo', 'popis', 'sablona', 'slovnik', 'hlavicka', 'prijato', 'strana'].forEach(k => {",
-    nahrad: "    ['kdo', 'popis', 'sablona', 'hlavicka', 'prijato', 'strana'].forEach(k => {",
+    hledej: "    ['kdo', 'popis', 'sablona', 'slovnik', 'hlavicka', 'prijato', 'zpracovatel', 'strana'].forEach(k => {",
+    nahrad: "    ['kdo', 'popis', 'sablona', 'hlavicka', 'prijato', 'zpracovatel', 'strana'].forEach(k => {",
     proc: 'kdokoli by v odeslané nabídce podvrhl, kterým slovníkem odešla' },
   { nazev: 'rev #401 N1: zámek nezapíše razítko slovníku', soubor: '../src/zamek.js',
     hledej: "    slovnik: zaznam.slovnik,",
@@ -6197,8 +6199,8 @@ const MUTACE = [
     nahrad: "",
     proc: 'přepnutí řídící na klon by hlavičku uvolnilo dalším uložením (audit K7-S2)' },
   { nazev: '#508 K7-S2: klient stopu sundá', soubor: '../src/uloziste.js',
-    hledej: "    ['kdo', 'popis', 'sablona', 'slovnik', 'hlavicka', 'prijato', 'strana'].forEach(k => {",
-    nahrad: "    ['kdo', 'popis', 'sablona', 'slovnik', 'xhlavicka', 'prijato', 'strana'].forEach(k => {",
+    hledej: "    ['kdo', 'popis', 'sablona', 'slovnik', 'hlavicka', 'prijato', 'zpracovatel', 'strana'].forEach(k => {",
+    nahrad: "    ['kdo', 'popis', 'sablona', 'slovnik', 'xhlavicka', 'prijato', 'zpracovatel', 'strana'].forEach(k => {",
     proc: 'upravený klient by stopu „byla řídící" smazal a hlavičku si uvolnil' },
   { nazev: '#508 K7-S2: server stopu nehlídá', soubor: '../src/zamek.js',
     hledej: "(!!nr && v.id === nr.id) || v.zamek.hlavicka === true),",
@@ -7113,8 +7115,8 @@ const MUTACE = [
     nahrad: "",
     proc: 'mez prodeje by zůstala na hodinách prohlížeče a podvržené razítko by se uložilo', sady: ['test_k40b_prodej_mez.mjs', '../src/test_k40b_zamek_prodej.js'] },
   { nazev: '[K40b] S1: uložené razítko přijetí nedrží', soubor: '../src/uloziste.js',
-    hledej: "    ['kdo', 'popis', 'sablona', 'slovnik', 'hlavicka', 'prijato', 'strana'].forEach(k => {",
-    nahrad: "    ['kdo', 'popis', 'sablona', 'slovnik', 'hlavicka', 'strana'].forEach(k => {",
+    hledej: "    ['kdo', 'popis', 'sablona', 'slovnik', 'hlavicka', 'prijato', 'zpracovatel', 'strana'].forEach(k => {",
+    nahrad: "    ['kdo', 'popis', 'sablona', 'slovnik', 'hlavicka', 'zpracovatel', 'strana'].forEach(k => {",
     proc: 'upravený klient by si razítko přijetí posunul a mez prodeje obešel', sady: ['test_k40b_prodej_mez.mjs', '../src/test_k40b_zamek_prodej.js'] },
   { nazev: '[K40b] S1: odpověď uložení bez razítek přijetí', soubor: 'functions/zakazky.mjs',
     hledej: "    if (v && v.zamek && v.zamek.zamceno && typeof v.zamek.prijato === 'string') zamkyPrijato[v.id] = v.zamek.prijato;",
@@ -7721,8 +7723,8 @@ const MUTACE = [
     nahrad: "    if (false) return { status: 400, chyba: vzIcoDuplicitaText(dupl) };",
     proc: "podvrhem mimo obrazovku by šel týž subjekt do zakázky dvakrát (VZ-N1)", sady: ["test_vz_server.mjs"] },
   { nazev: "VZ-F1: server porovná IČO bez normalizace [VZ F1]", soubor: "../src/vice_zakazniku.js",
-    hledej: "  return vzText(ico).replace(/\\D+/g, '');",
-    nahrad: "  return vzText(ico);",
+    hledej: "  let k = vzText(ico).replace(/\\D+/g, '');",
+    nahrad: "  let k = vzText(ico);",
     proc: "IČO s mezerami by serverovou kontrolu obešlo (VZ-N1)", sady: ["test_vz_server.mjs"] },
   /* VZ-F2: hledaný úsek přepsán (#660). */
   { nazev: "VZ-F1: server hlídá i zákazníky bez IČO [VZ F1]", soubor: "../src/vice_zakazniku.js",
@@ -7777,6 +7779,19 @@ const MUTACE = [
     hledej: "const SABLONA_CESTINA_SMLOUVY = ['sod', 'sodProj', 'plnaMoc'];",
     nahrad: "const SABLONA_CESTINA_SMLOUVY = ['sod'];",
     proc: "SoD projekce a plná moc z češtiny by prošly jen s upozorněním", sady: ["test_sablony.mjs"] },
+  /* VZD (21. 11. 2026): #665 snímek zpracovatele z relace, #674 d řídící s písmenem. [VZD] */
+  { nazev: "VZD #665: server snímek zpracovatele nezapíše [VZD]", soubor: "lib/zakazka_kontrola.mjs",
+    hledej: "      if (zs) v.zamek.zpracovatel = zs; else delete v.zamek.zpracovatel; }", nahrad: "      }",
+    proc: "snímek „Vypracoval“ by šel podvrhnout z prohlížeče", sady: ["test_665_vypracoval.mjs"] },
+  { nazev: "VZD #665: server snímek nedrží [VZD]", soubor: "../src/uloziste.js",
+    hledej: "'hlavicka', 'prijato', 'zpracovatel', 'strana'].forEach", nahrad: "'hlavicka', 'prijato', 'strana'].forEach",
+    proc: "uložený snímek zpracovatele by šel přepsat nebo smazat", sady: ["test_665_vypracoval.mjs"] },
+  { nazev: "VZD #674d: server hlídá B jen v uložení výměny [VZD]", soubor: "../src/vice_zakazniku.js",
+    hledej: "    if (p.ridici && n.ridici && !n.pismeno) continue;", nahrad: "    if (p.ridici && n.ridici) continue;",
+    proc: "po uložení výměny by šel název a IČO B (odešla mu CN) změnit", sady: ["test_vz_server.mjs"] },
+  { nazev: "VZD #674d: server nehlídá nového řídícího [VZD]", soubor: "../src/vice_zakazniku.js",
+    hledej: "    if (p.ridici && n.ridici && !n.pismeno) continue;", nahrad: "    if (n.ridici) continue;",
+    proc: "výměna řídícího a změna názvu B v jednom uložení by prošla", sady: ["test_vz_server.mjs"] },
 ];
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------
  * (nález T5 revize v22.9.9, 22. 9. 2026)

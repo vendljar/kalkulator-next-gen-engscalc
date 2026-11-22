@@ -35,6 +35,9 @@ const SABL_DOKUMENTY = [
   { typ: 'sodProj', nazev: 'Šablona smlouvy o dílo — PROJEKČNÍ PRÁCE', kde: 'Krycí list PROJ', jazyky: true },
   { typ: 'plnaMoc', nazev: 'Šablona plné moci', kde: 'Krycí list OCK · vždy česky', jazyky: false },
 ];
+/* Smlouvy: bez jazykové šablony (nebo s šablonou z velké části česky) se v cizím
+ * jazyce nevytisknou vůbec (sodJazykZabrana, #157 / C7 #615). */
+const SABL_SMLOUVY = ['sod', 'sodProj', 'plnaMoc'];
 const SABL_JAZYKY = [['en', 'Angličtina'], ['de', 'Němčina'], ['fr', 'Francouzština']];
 const SABL_JAZYK_NAZEV = { cz: 'česky', en: 'anglicky', de: 'německy', fr: 'francouzsky' };
 /* Pod tímhle podílem odstavců v cílovém jazyce se soubor za ten jazyk nepovažuje. */
@@ -76,7 +79,9 @@ function sablBunkaCz(rej, typ) {
 function sablBunkaJazyk(rej, typ, lang) {
   const st = sablonaMutaceStav(rej, typ, lang);
   const cz = sablonaPlatna(rej, typ);
-  if (st.stav === 'chybi') return { cls: 'miss', label: 'chybí', sub: 'tiskne se česky', stav: st };
+  /* #650 (K49-I9): smlouva bez jazykové šablony se netiskne česky — sodJazykZabrana
+   * ji v cizím jazyce nevyrobí; česky s upozorněním tiskne jen nabídka. */
+  if (st.stav === 'chybi') return { cls: 'miss', label: 'chybí', sub: SABL_SMLOUVY.includes(typ) ? 'nevytiskne se' : 'tiskne se česky', stav: st };
   if (st.stav === 'bezZdroje') return { cls: 'warn', label: '⚠ bez češtiny', sub: 'česká šablona chybí', stav: st };
   if (st.stav === 'zastarala')
     return { cls: 'warn sablona-zastarala', label: '⚠ ' + (st.zVerze ? 'z v' + st.zVerze : 'zastaralá'),
@@ -330,8 +335,8 @@ function sablPruvodceHtml() {
     k.chyby.forEach(t => radky.push(`<div class="sabl-kontrola"><b class="chyba">✕</b><span>${esc(t)}</span></div>`));
     k.varovani.forEach(t => radky.push(`<div class="sabl-kontrola"><b class="warn">⚠</b><span>${esc(t)}</span></div>`));
     return `<div class="sabl-panel" id="sablPruvodce">${hlavicka}
-      ${k.jinyJazyk ? `<div class="sabl-chyba"><b>Soubor je ${esc(SABL_JAZYK_NAZEV[k.jinyJazyk])}, ne česky.</b> Česká šablona je zdroj,
-        ze kterého se vyrábějí všechny jazyky — kdyby se zveřejnila tahle, české dokumenty by vyšly ${esc(SABL_JAZYK_NAZEV[k.jinyJazyk])}.
+      ${k.jinyJazyk ? `<div class="sabl-chyba"><b>Soubor je ${esc(SABL_JAZYK_NAZEV[k.jinyJazyk])}, ne česky.</b> Česká šablona je základ
+        dokumentu, jazykové verze se k ní nahrávají jako přeložené soubory — kdyby se zveřejnila tahle, české dokumenty by vyšly ${esc(SABL_JAZYK_NAZEV[k.jinyJazyk])}.
         ${jinyLang ? '<div class="btns" style="margin-top:8px"><button class="primary" onclick="sablPruvodceJakoJazyk()">Uložit jako '
           + esc(jinyLang.toUpperCase()) + ' verzi</button></div>' : ''}</div>` : ''}
       <div style="margin-top:8px">${radky.join('')}</div>
