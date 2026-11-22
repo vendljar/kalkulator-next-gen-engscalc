@@ -67,8 +67,8 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
   (3) R2 potvrzeno testem; (4) oprava firmy přes `pd_overeni` (409 neovereno); (6)(7) pravidlo 3 zrušeno, druhá zakázka
   na dealu zapisuje s vlastní vazbou, s vypnutým zápisem poznámka varuje; #665 `podpisOtisk` ve snímku + kopie `podpisy/zamek/<otisk>`, GET `?podpisZamku=`;
   #710-4 koordinace 403 u uzavřené správcem; #706 `nastroje/kontrola_konfliktu.sh` (staticke 11). #709 → vlna F (stav
-  „odlozeno“ schéma nezná). Testy `netlify/test_rj_rozhodnuti.mjs` + přípravky PD (odkaz místo čísla). Kolo VŠE ZELENÉ
-  (512/0/6, hodiny 415/0/1, 11/11, SHODA 367/367), mutace [RJ] server 15/15, jádro 5/5. HOTOVO, k nezávislé revizi.
+  „odlozeno“ schéma nezná). Testy `netlify/test_rj_rozhodnuti.mjs` + přípravky PD (odkaz místo čísla). Kolo proti 21eeffa
+  VŠE ZELENÉ (514/0/6, hodiny 416/0/1, 11/11, SHODA 367/367), mutace [RJ] server 16/16, jádro 5/5. HOTOVO, k revizi.
 - **VZD** (`claude/vzd-drobnosti`, v22.11.1, s integrací 885577e): HOTOVO. Kolo VŠE ZELENÉ (505/0/7, hodiny 410/0/1, 9/9, SHODA 359/359),
   mutace [VZD] jádro 16/16, server 4/4. #674 d a podpis u #665 k potvrzení J. V. Detail v CHANGELOG.
 

@@ -33,9 +33,9 @@ Nad integrací `05a496d` (v22.11.5), sloučeno s integrací `21eeffa` (v22.11.6)
 - **Testy:** nový `netlify/test_rj_rozhodnuti.mjs`; `test_bz_pipedrive`, `test_vsd_pd_poznamka` (10 = dvě poznámky
   s vazbou), `test_vz_poznamka`, `test_vz_vs`, `test_vz_organizace` (přípravky: odkaz na kalkulaci místo čísla
   nabídky), `test_prava` a `test_bz_bezpecnost` (nový zámek s rozporem = 409), `test_pripominky`, `src/test_665_vypracoval.js`.
-  Mutace [RJ]: server 15/15, jádro 5/5 (ekvivalentní mutace přepisu kopie podpisu vyřazena). Kolo `--bez-mutaci --proti
-  origin/claude/integrace-16-10`: VŠE ZELENÉ (sady 512/0/6, hodiny 415/0/1, statické 11/11, porovnání SHODA 367/367);
-  `overit_online.mjs` přizpůsoben (upravený klient B59 = 409 + dialog).
+  Mutace [RJ]: server 16/16, jádro 5/5 (ekvivalentní mutace přepisu kopie podpisu vyřazena), VSD vypínač 1/1. Kolo
+  (sloučeno s integrací 21eeffa) `--bez-mutaci --proti 21eeffa`: VŠE ZELENÉ (sady 514/0/6, hodiny 416/0/1, statické 11/11,
+  porovnání SHODA 367/367); `overit_online.mjs` přizpůsoben (upravený klient B59 = 409 + dialog).
 
 ## v22.11.6 — JT #713 (prac.): jazyk hlavičky specifikace OCK = Jazyk tisku nabídky, větev claude/jt-jazyk-tisku
 
