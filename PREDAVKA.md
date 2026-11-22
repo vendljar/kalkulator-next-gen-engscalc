@@ -1,3 +1,18 @@
+# Předávka — 22. 11. 2026: integrátor nastavil automatizaci, test čeká na J. V., větev `claude/eager-carson-1xznt2` (jen dokumentace)
+
+- Integrátor 20. 11.: webhook při změně „Vygenerovat nabídku“ na Ano, tělo s `dealId`, Basic Auth (jméno
+  `kalkulator`, heslo dodané J. V.); automatizace jen na tuto změnu a jen pro zkušební deal; žádná jiná automatizace
+  nesleduje jiné změny dealu (potvrzení zodpovězeno); pole se po odeslání vrací na „nevyplněno“ (volbu „Ne“
+  nepřidávají — kalkulátoru nevadí); „Číslo nabídky (CN)“ plní jejich automatizace při založení dealu; pole DIČ
+  na organizaci založeno.
+- Ověřeno 22. 11. (jen čtení): DIČ v Pipedrive je (Text); test web v22.11.5, `POST` bez klíče → 401. Zkušební
+  deal má CN prázdné (vznikl před změnou) — webhook vezme číslo z názvu. Deal změněn 21. 11. večer, odkaz v něm
+  není → zeptat se J. V., zda tehdy pole přepínal (pak webhook selhal, důvod v historii automatizace).
+- Souhrn (nahoře): tabulka odpovědi integrátora a postup testu (Ano → odkaz → kalkulace → podruhé → pořád jedna;
+  Obnovit z CRM → DIČ spárované). Další krok: test provede J. V., sezení kontroluje deal jen čtením.
+
+---
+
 # Předávka — 18. 11. 2026 (nové sezení): napojení testovacího webu, větev `claude/eager-carson-1xznt2` (jen dokumentace)
 
 - Nové sezení navázalo na „Pipedrive API integrace“. Ověřeno 18. 11. (jen čtení): `testengscalc` v18.11.5,
