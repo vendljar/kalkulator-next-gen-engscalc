@@ -637,11 +637,44 @@ function zamekStranaSnimek(zak) {
     vyrazena: (typeof zakazkaVyrazenaStrana === 'function' ? zakazkaVyrazenaStrana(zak) : '') || '' };
 }
 
+/* CN #727 bod 5 (J. V. 23. 11. 2026): ČÍSLO PRODANÉ NABÍDKY SE NEMĚNÍ —
+ * ani administrátorovi. U odeslané (zamčené) nabídky dál platí A3 / B56
+ * (číslo opraví jen administrátor, změna jde do protokolu); prodej je ale
+ * doklad pro Pipedrive i smlouvu, takže výjimka správce tu neplatí. Cesta
+ * ven je odemknout prodej (vedoucí nebo administrátor, s důvodem) — pak
+ * platí zase A3 / B56. Klient: zamekZakCestaZmrazena; server:
+ * zamekCisloProdaneZmena (netlify/lib/zakazka_kontrola.mjs → 403). */
+const ZAMEK_CISLO_CESTA = 'ZAK.cislo';
+const ZAMEK_CISLO_PRODANE_HLASKA = 'Zakázka je prodaná — číslo nabídky se už nemění (ani administrátorovi). '
+  + 'Je-li číslo opravdu chybné, nechte vedoucího nebo administrátora nejdřív odemknout prodej.';
+/* Server: změnilo se číslo prodané varianty? Změna čísla mění i jméno
+ * záznamu (uloží se jako NOVÝ soubor, uložená verze pod novým jménem není),
+ * proto se — jako B56 — porovnává hlavně s číslem v zámku ukládané prodané
+ * varianty (číslo z okamžiku odeslání; od #320 celé, starší jen základ).
+ * Existuje-li uložená verze, porovná se navíc celé číslo varianty s ní
+ * (přípona). Varianta, jejíž prodej se v témže uložení odemyká (v ukládané
+ * verzi prodaná není — prodServer to ověří), se nepočítá. Vrací důvod nebo ''. */
+function zamekCisloProdaneZmena(stara, nova) {
+  for (const nv of ((nova && nova.varianty) || [])) {
+    if (!variantaProdana(nv)) continue;
+    const bylo = String((nv.zamek && nv.zamek.cislo) || '');
+    if (bylo && !(nv.zamek.cisloPapir ? bylo === variantaCislo(nova, nv) : zamekCisloZakladSedi(bylo, nova)))
+      return ZAMEK_CISLO_PRODANE_HLASKA;
+    const sv = ((stara && stara.varianty) || []).find(x => x && x.id === nv.id);
+    if (sv && variantaProdana(sv) && String(variantaCislo(stara, sv) || '') !== String(variantaCislo(nova, nv) || ''))
+      return ZAMEK_CISLO_PRODANE_HLASKA;
+  }
+  return '';
+}
+
 /* Důvod, proč se cesta hlavičky nesmí změnit, nebo ''. */
 function zamekZakCestaZmrazena(zak, cesta) {
   /* B231: příznak strany zmrazí kterákoli zamčená varianta. */
   if (ZAMEK_STRANA_CESTY.indexOf(cesta) >= 0)
     return ((zak && zak.varianty) || []).some(v => variantaUzamcena(v)) ? ZAMEK_STRANA_HLASKA : '';
+  /* CN #727: číslo prodané nabídky nemění nikdo (odeslanou řeší A3 v set()). */
+  if (cesta === ZAMEK_CISLO_CESTA)
+    return ((zak && zak.varianty) || []).some(v => variantaProdana(v)) ? ZAMEK_CISLO_PRODANE_HLASKA : '';
   /* RA #724: číslo PROJ zmrazí kterákoli zamčená (odeslaná / prodaná) varianta. */
   if (cesta === ZAMEK_CISLO_PROJ_CESTA)
     return ((zak && zak.varianty) || []).some(v => variantaUzamcena(v)) ? ZAMEK_CISLO_PROJ_HLASKA : '';
@@ -1452,4 +1485,5 @@ if (typeof module !== 'undefined')
                      ZAMEK_KRYCI_PO_CN, zamekKryciPoleStav, zamekKryciPoleZname, zamekSnimekSpocti, zamekSnimek,
                      zamekDphVolna, zamekNabidkaPohled, zamekZakCesty, zamekSodHlavicky, zamekZakStav, zamekZakCestaZmrazena, zamekZakZmeny, zamekZakHlavickaOznac,
                      zamekZakRidici, ZAMEK_KRYCI_PO_SOD_VOLNE, ZAMEK_STRANA_CESTY, zamekStranaZnak, zamekStranaZmena, zamekStranaSnimek,
-                     ZAMEK_CISLO_PROJ_CESTA, ZAMEK_CISLO_PROJ_HLASKA, zamekCisloProjZnak };
+                     ZAMEK_CISLO_PROJ_CESTA, ZAMEK_CISLO_PROJ_HLASKA, zamekCisloProjZnak,
+                     ZAMEK_CISLO_CESTA, ZAMEK_CISLO_PRODANE_HLASKA, zamekCisloProdaneZmena };

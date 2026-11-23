@@ -51,6 +51,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      'test_nn_nizke.mjs', '../src/test_nn_nizke.js',
      /* RJ (22. 11. 2026): rozhodnutí J. V. — zámek „nesouhlasi“ 409, strana, podpis původního zpracovatele (rychlá sada). */
      'test_rj_rozhodnuti.mjs',
+     /* CN (23. 11. 2026): #727 bod 5 — číslo prodané nabídky (rychlá sada). */
+     'test_cn_cislo_nabidky.mjs',
      /* RA (23. 11. 2026): rozhodnutí J. V. — číslo PROJ po zámku / prodeji #724 (rychlá sada). */
      'test_ra_rozhodnuti.mjs', '../src/test_ra_vazba_ui.js', '../src/test_ra_terminy_proj.js',
      /* PR (21. 11. 2026): připomínky z aplikace — API, klíč koordinace, limity (rychlá sada). */
@@ -380,6 +382,23 @@ const MUTACE = [
     hledej: "  const lhChyba = lhutyProjServerDrz(stara, zak, await sProg.cti('firma'));",
     nahrad: "  const lhChyba = ''; await sProg.cti('firma');",
     proc: "klient by do odeslané nabídky zapsal vlastní lhůty a Prodáno je zmrazilo (B238)", sady: ["test_nn_poc.mjs", "test_d8_lhuty.mjs"] },
+  /* CN (23. 11. 2026): #727 bod 5 — číslo prodané nabídky nemění nikdo (src/zamek.js, lib/zakazka_kontrola.mjs). [CN] */
+  { nazev: "CN #727: server pravidlo prodané nevolá [CN]", soubor: "lib/zakazka_kontrola.mjs",
+    hledej: "    if (d) return odmitni(403, veta(d));\n  }\n\n  /* ČÍSLO ODESLANÉ",
+    nahrad: "    if (false) return odmitni(403, veta(d));\n  }\n\n  /* ČÍSLO ODESLANÉ",
+    proc: "administrátor by změnil číslo prodané nabídky (výjimka B56)", sady: ["test_cn_cislo_nabidky.mjs"] },
+  { nazev: "CN #727: číslo ze zámku prodané se nehlídá [CN]", soubor: "../src/zamek.js",
+    hledej: "    if (bylo && !(nv.zamek.cisloPapir ? bylo === variantaCislo(nova, nv) : zamekCisloZakladSedi(bylo, nova)))",
+    nahrad: "    if (false)",
+    proc: "nové číslo = nový záznam bez uložené verze; prodaná nabídka by se uložila pod jiným číslem", sady: ["test_cn_cislo_nabidky.mjs"] },
+  { nazev: "CN #727: přípona prodané varianty se nehlídá [CN]", soubor: "../src/zamek.js",
+    hledej: "    if (sv && variantaProdana(sv) && String(variantaCislo(stara, sv)",
+    nahrad: "    if (false && String(variantaCislo(stara, sv)",
+    proc: "změna přípony prodané varianty by prošla", sady: ["test_cn_cislo_nabidky.mjs"] },
+  { nazev: "CN #727: klient číslo prodané nezmrazí [CN]", soubor: "../src/zamek.js",
+    hledej: "  if (cesta === ZAMEK_CISLO_CESTA)\n",
+    nahrad: "  if (false)\n",
+    proc: "obchodník by číslo prodané nabídky přepsal v prohlížeči a dozvěděl se to až odmítnutím", sady: ["test_cn_cislo_nabidky.mjs"] },
   /* RA (23. 11. 2026): rozhodnutí J. V. — #723 „V pořádku“ jen administrátor, #724 číslo PROJ
    * po zámku / prodeji, #726 upozornění na zastaralé řádky DPZ, log webhooku. Hlídají
    * test_k40c_webhook.mjs, test_ra_rozhodnuti.mjs, src/test_ra_vazba_ui.js, src/test_ra_terminy_proj.js. [RA] */

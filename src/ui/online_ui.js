@@ -4478,6 +4478,21 @@ function renderPrehledHledaniTelo() {
   if (p) p.textContent = radky.length + ' z ' + (ONLINE_STAV.rejstrik || []).length;
 }
 
+/* CN #727 (J. V. 23. 11. 2026): pole „Najít zakázku" do lišty NE — hledání
+ * zůstává v okně Načíst zakázku / Zakázky online a v Přehledu cenových
+ * nabídek, ale musí být VIDĚT, že nehledá jen podle čísla nabídky (obchodník
+ * 21. 11. psal hledaný text do pole Číslo nabídky). Jeden text pro obě místa;
+ * popisek nad polem, nápověda v bublině a příklad. Pole, ve kterých se hledá,
+ * jsou tatáž jako v uloHledej (uloziste.js). */
+const HLEDANI_TITULEK = 'Hledá se v čísle nabídky, názvu akce, adrese stavby, zákazníkovi (i dalších zákaznících zakázky), '
+  + 'datu i jménu obchodníka. Stačí část slova, velikost písmen a diakritika nevadí; víc slov = všechna musí sedět. '
+  + 'Při psaní se nabídka průběžně zužuje.';
+function hledaniNapovedaHtml() {
+  return `<div class="hledani-napoveda" style="margin:0 0 6px;font-size:13px">🔍 <b>Hledejte podle čísla nabídky,
+    názvu akce, adresy stavby, zákazníka nebo obchodníka</b> — stačí část slova, diakritika nevadí.
+    <span class="note">Např. „Vinohradská", „Novák", „0500" nebo „bytový dům Praha".</span></div>`;
+}
+
 function prehledHledaniKarta() {
   /* Ovládání se kreslí VŽDY, i bez přihlášení: jinak by záložka po odhlášení
    * (nebo při běhu ze souboru) začínala prázdnem a vypadala rozbitě.
@@ -4489,10 +4504,10 @@ function prehledHledaniKarta() {
   const p = ONLINE_STAV.prehled;
   const volba = (id, popis) => `<option value="${esc(id)}" ${p.druh === id ? 'selected' : ''}>${esc(popis)}</option>`;
   return card('Vyhledání nabídek',
-    bezDb + `<div class="seznam-ovladani noprint">
+    bezDb + `<div class="noprint">${hledaniNapovedaHtml()}</div><div class="seznam-ovladani noprint">
       <span class="nasept-wrap"><input type="search" class="seznam-hledat"
         placeholder="Hledat číslo, akci, adresu stavby, zákazníka, obchodníka…"
-        title="Hledá se v čísle nabídky, názvu akce, zákazníkovi, datu i jménu obchodníka. Při psaní se nabídka průběžně zužuje."
+        title="${esc(HLEDANI_TITULEK)}"
         value="${esc(p.hledat)}" autocomplete="off"
         oninput="prehledHledatSet(this.value); naseptavacKresli('naseptBoxPrehled', this.value, 'prehled')"
         onfocus="naseptavacKresli('naseptBoxPrehled', this.value, 'prehled')"
@@ -4521,10 +4536,10 @@ function onlinePanelZakazky() {
    * JEN ono (onlineHledatSet) — kdyby se stavěl celý panel, políčko by při
    * každém písmenu přišlo o kurzor a našeptávač by zmizel. Stejný vzor jako
    * seznam variant (seznam_ui.js). */
-  return `<div class="seznam-ovladani">
+  return `${hledaniNapovedaHtml()}<div class="seznam-ovladani">
       <span class="nasept-wrap"><input type="text" class="seznam-hledat" id="onlineZakHledat"
              placeholder="Hledat číslo, akci, adresu stavby, zákazníka, obchodníka…"
-             title="Při psaní se nabídka průběžně zužuje."
+             title="${esc(HLEDANI_TITULEK)}"
              value="${esc(ONLINE_STAV.hledat)}" autocomplete="off"
              oninput="onlineHledatSet(this.value); naseptavacKresli('naseptBoxOnline', this.value, 'online')"
              onfocus="naseptavacKresli('naseptBoxOnline', this.value, 'online')"

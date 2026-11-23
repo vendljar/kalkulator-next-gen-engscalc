@@ -2429,3 +2429,26 @@ Větev `claude/ra-rozhodnuti` nad integrací `133a8f5`. Testy `netlify/test_k40c
   Bez tokenu, klíče webhooku, URL odkazu a obsahu kalkulace (test „v logu není e-mail … URL“).
 - **#726 (VZD-N1) — jen upozornění.** Nastavení → Smlouvy / Šablony → Texty nabídky PROJ (Termíny) a karta Lhůty
   PROJ upozorní, když vlastní český text TERMÍNY nemá řádky `dpz+studie` a `dpz-studie`; data ani tisk se nemění.
+
+## CN — číslo nabídky (#727, J. V. 23. 11. 2026)
+
+Větev `claude/cn-cislo-nabidky` nad integrací `8411eb9`. Testy `netlify/test_cn_cislo_nabidky.mjs`,
+`src/test_cn_cislo_nabidky.js`, mutace [CN]. Číslo B276 je pracovní (přidělí koordinace).
+
+- **B276 — číslo prodané nabídky — OPRAVENO (#727 bod 5; rozhodnutí J. V. 23. 11. 2026, CN-O2).** Číslo **prodané**
+  varianty (celé, i přípona) nezmění nikdo, ani administrátor: server 403 (`zamekCisloProdaneZmena` v `src/zamek.js`, volá
+  `lib/zakazka_kontrola.mjs` před B56), klient cestu `ZAK.cislo` zmrazí (`zamekZakCestaZmrazena`). Nové číslo =
+  nový záznam bez uložené verze, proto se porovnává s číslem v zámku ukládané prodané varianty (jako B56)
+  a s uloženou verzí, existuje-li. Cesta ven = odemknout prodej (vedoucí / administrátor s důvodem), pak platí
+  B56 (číslo odeslané nabídky jen administrátor). *Mez:* obnova ze zálohy se přeskakuje (doklad; hlídá ji B56).
+  *Mez (revize S2, 23. 11. 2026):* pravidlo čte `zamek.cislo` **z těla požadavku** — nové číslo = nový soubor,
+  uloženou verzi server nemá. „Nezmění nikdo“ proto platí pro **uložený** prodaný záznam (ten se nezmění žádnou
+  rolí ani `prepsat: true`). Volání API mimo aplikaci umí poslat stav před prodejem s novým číslem, shodným
+  `zamek.cislo` a `prodano` → vznikne NOVÝ prodaný záznam pod jiným číslem (razítka z relace, autor = volající).
+  Není to eskalace práv — totéž jde legitimně (nová zakázka → odeslat → Prodáno); původní záznam zůstává, stopa =
+  autor a razítka nového záznamu. Kopii stavu PO prodeji dnes zastaví jen snímek lhůt (409, CN-N1) — náhoda, ne
+  pojistka. *Otázka pro J. V. (CN-O3):* tvrdší pojistka — odmítnout nový záznam, jehož zámek nebo deal Pipedrive
+  už nese jiná zakázka — samostatná úloha, neprogramováno.
+- **Dotaz na změnu čísla, nabídka hledání a duplicita (#727 body 1–3) jsou jen v prohlížeči.** Volání API mimo
+  aplikaci číslo neprodané a neodeslané zakázky změní bez dotazu; cizí zakázku pod stejným číslem dál odmítne
+  server (B10, 409 kolize). Stopou je protokol zakázky (B66) a `upravil`.
