@@ -311,3 +311,16 @@ export function pdWebhookOdkaz(soubor, req, env = process.env) {
   zaklad = zaklad.replace(/\/+$/, '');
   return zaklad + '/?zakazka=' + encodeURIComponent(String(soubor));
 }
+
+/* LOG FUNKCE PO ZÁPISU ODKAZU (RA, J. V. 23. 11. 2026): jeden řádek do logu
+ * funkce Netlify — dealId, akce, odkazDoDealu a varování. Dřív se důvod, proč
+ * se odkaz do dealu nezapsal, nedal dohledat (odpověď webhooku čte jen
+ * Pipedrive). Varování jsou naše texty (bez kontaktů a hodnot polí); řídicí
+ * znaky pryč a každé zkrácené na 300 znaků, aby text chyby Pipedrive nemohl
+ * řádek rozbít ani nafouknout. Žádný token, URL odkazu ani obsah kalkulace. */
+export const PD_WEBHOOK_LOG_VAROVANI_MAX = 300;
+export function pdWebhookLogRadek(dealId, akce, odkazDoDealu, varovani) {
+  const cisty = (x, max) => String(x == null ? '' : x).replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, max);
+  return 'pd_webhook: ' + JSON.stringify({ dealId: cisty(dealId, 20), akce: cisty(akce, 40), odkazDoDealu: cisty(odkazDoDealu, 40),
+    varovani: (Array.isArray(varovani) ? varovani : []).slice(0, 20).map((v) => cisty(v, PD_WEBHOOK_LOG_VAROVANI_MAX)) });
+}

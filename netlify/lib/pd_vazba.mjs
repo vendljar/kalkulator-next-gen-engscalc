@@ -88,6 +88,12 @@ export function pdVazbaDokladaZapis(zak, normDeal) {
 /* Kdo smí vazbu zrušit, měnit deal a opravit firmu v Pipedrive: administrátor,
  * nebo autor zakázky — `autor` z ULOŽENÉ verze = e-mail relace. Zakázka
  * založená webhookem (autor pipedrive-webhook) jen administrátor. */
+/* RA #723 (rozhodnutí J. V. 23. 11. 2026): vazbu „ceka“ z webhooku potvrzuje
+ * („V pořádku“) JEN administrátor — ani autor vazby, ani jiný obchodník. */
+export function pdVazbaSmiPotvrdit(relace) {
+  return !!relace && relace.role === 'Administrátor';
+}
+
 export function pdVazbaSmiMenit(ulozena, relace) {
   const r = relace || {};
   if (r.role === 'Administrátor') return true;

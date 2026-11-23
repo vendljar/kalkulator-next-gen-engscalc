@@ -628,12 +628,35 @@ function podminkyEfZmrazene(firma, snimek) {
   return ef;
 }
 
+/* ZASTARALÉ ŘÁDKY TERMÍNU DPZ (RA #726, VZD-N1; J. V. 23. 11. 2026). Vlastní
+ * český text TERMÍNY z doby před D1 (20. 10. 2026) nemá podmíněné řádky
+ * „dpz+studie“ / „dpz-studie“ (hrubopis DPZ se studií / bez studie) — hrubopis
+ * nese starý klíč „dpz“, takže nabídka PROJ bez studie slibuje DPZ „od schválení
+ * studie“. Jen UPOZORNĚNÍ v Nastavení (Texty nabídky PROJ, Lhůty PROJ); data ani
+ * tisk se nemění. Vstup = firemní podmínky (NAST.firma.podminky). '' = v pořádku
+ * (výchozí znění, nebo vlastní text oba řádky má). */
+function podminkyTerminyDpzVarovani(p) {
+  const np = p && typeof p === 'object' && !Array.isArray(p) && podmMa(p, 'nabidkaProj') ? p.nabidkaProj : null;
+  const t = np && typeof np === 'object' && podmMa(np, 'terminy') ? np.terminy : null;
+  const cz = t && typeof t === 'object' && podmMa(t, 'cz') ? t.cz : null;
+  if (!Array.isArray(cz) || !cz.length) return '';
+  const klice = cz.map(r => (Array.isArray(r) ? String(r[2] == null ? '' : r[2]).trim() : ''));
+  const chybi = PODMINKY_PROJ_SEKCE_PODMINENE.filter(k => klice.indexOf(k) < 0);
+  if (!chybi.length) return '';
+  const stary = cz.some((r, i) => klice[i] === 'dpz' && Array.isArray(r) && /hrubopis/i.test(String(r[0] || '')));
+  return 'Vlastní text TERMÍNY nemá ' + (chybi.length > 1 ? 'řádky ' : 'řádek ') + chybi.map(k => '„' + k + '“').join(' a ')
+    + (stary ? ' — hrubopis DPZ má starý řádek „dpz“' : '')
+    + '. Nabídka PROJ pak u DPZ nerozliší nabídku se studií a bez ní (bez studie může slíbit DPZ „od schválení studie“). '
+    + 'Doporučení: vymažte pole TERMÍNY (česky) — platí výchozí znění; nebo doplňte řádky dpz+studie a dpz-studie.';
+}
+
 /* Jeden objekt pro ostatní moduly — v prohlížeči jsou soubory v jednom
  * scope, v Node se načte přes require (vzor firmaPlanModul). */
 const PODMINKY = { PODMINKY_VYCHOZI, PODMINKY_TERMIN_DPZ_BEZ_STUDIE, PODMINKY_TERMIN_DPZ, PODMINKY_TERMIN_STUDIE, PODMINKY_SOUCET_BLOKUJE, PODMINKY_JAZYKY, PODMINKY_TYPY_SMLOUVY, podminkyEf, podminkyUpraveno,
   podminkyVeta, podminkyVetaJenVychoziPreklad, podminkyTextProj, podminkyNastavVetu, podminkyNastavTextProj, podmPoradi,
   podminkyZalohaText, podminkyZalohyVolby, podminkyZalohaVychozi, podminkyFaktura2, podminkyKonecna,
   podminkyLimitVolby, podminkyLimitText, podminkySoucetOck, podminkyVady, podminkyCiste, podminkyNastav,
-  podmProcText, podmCislo, podminkySnimek, podminkyEfZmrazene, podminkyVelikostB, PODMINKY_MAX_B };
+  podmProcText, podmCislo, podminkySnimek, podminkyEfZmrazene, podminkyVelikostB, PODMINKY_MAX_B,
+  podminkyTerminyDpzVarovani };
 
 if (typeof module !== 'undefined') module.exports = Object.assign({ PODMINKY }, PODMINKY);

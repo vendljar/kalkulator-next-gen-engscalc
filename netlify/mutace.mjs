@@ -51,6 +51,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      'test_nn_nizke.mjs', '../src/test_nn_nizke.js',
      /* RJ (22. 11. 2026): rozhodnutí J. V. — zámek „nesouhlasi“ 409, strana, podpis původního zpracovatele (rychlá sada). */
      'test_rj_rozhodnuti.mjs',
+     /* RA (23. 11. 2026): rozhodnutí J. V. — číslo PROJ po zámku / prodeji #724 (rychlá sada). */
+     'test_ra_rozhodnuti.mjs',
      /* PR (21. 11. 2026): připomínky z aplikace — API, klíč koordinace, limity (rychlá sada). */
      'test_pripominky.mjs', '../src/test_pripominky.js',
      /* BZ (21. 11. 2026): opravy bezpečnostního auditu B231–B236, B195 (rychlé sady). */

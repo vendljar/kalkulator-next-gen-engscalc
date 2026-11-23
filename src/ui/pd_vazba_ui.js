@@ -7,7 +7,8 @@
  * nad hlavičkou (i u zamčené, prodané a jen-ke-čtení zakázky):
  *   · kdy a na který deal se kalkulace navázala, co se doplnilo, výsledek ARES
  *     a rozdíly ARES × organizace v Pipedrive,
- *   · „V pořádku“ (každý), „Zrušit vazbu“ (autor zakázky a administrátor),
+ *   · „V pořádku“ (JEN administrátor — RA #723, J. V. 23. 11. 2026; ostatní
+ *     vidí „čeká na potvrzení správcem“), „Zrušit vazbu“ (autor zakázky a administrátor),
  *     ostatní „Vazba je chybná“ — rozhoduje SERVER (functions/pd_vazba.mjs),
  *   · „Opravit firmu v Pipedrive“ (autor a administrátor; jen při shodě IČO
  *     organizace a hlavičky, jinak zhasnuté s důvodem) — dialog „v Pipedrive je
@@ -40,6 +41,11 @@ function pdVazbaSmiMenitUI(zak) {
   if (ja.role === 'Administrátor') return true;
   const autor = String((zak && zak.autor) || '').trim().toLowerCase();
   return !!autor && autor !== PD_VAZBA_WEBHOOK_AUTOR && autor === String(ja.email || '').trim().toLowerCase();
+}
+/* RA #723: „V pořádku“ jen administrátor (server jinak 403 — lib/pd_vazba.mjs pdVazbaSmiPotvrdit). */
+function pdVazbaSmiPotvrditUI() {
+  const ja = pdVazbaJa();
+  return !!ja && ja.role === 'Administrátor';
 }
 const pdVazbaPoleText = (k) => (k || []).map(x => PD_VAZBA_POLE_TEXT[x] || x).join(', ');
 const pdVazbaOrgText = (k) => (k || []).map(x => PD_VAZBA_ORG_TEXT[x] || x).join(', ');
@@ -84,7 +90,9 @@ function pdVazbaUpozorneni(zak) {
     : 'Vazba je nahlášená autorovi zakázky a administrátorovi jako chybná.');
   let tl = '';
   if (ceka) {
-    tl += `<button type="button" class="mini cteni-ok primary" data-pd-vazba="potvrdit" onclick="pdVazbaAkceUI('potvrdit')">V pořádku</button>`;
+    tl += pdVazbaSmiPotvrditUI()
+      ? `<button type="button" class="mini cteni-ok primary" data-pd-vazba="potvrdit" onclick="pdVazbaAkceUI('potvrdit')">V pořádku</button>`
+      : `<span class="pill" data-pd-vazba="ceka-spravce" title="vazbu na deal potvrzuje jen administrátor">čeká na potvrzení správcem</span>`;
     tl += smi
       ? `<button type="button" class="mini cteni-ok" data-pd-vazba="zrusit" onclick="pdVazbaAkceUI('zrusit')"
           title="kalkulace nepatří k tomuto dealu (překlep v čísle nabídky) — deal se odmítne a náš odkaz v něm se smaže">Zrušit vazbu</button>`
@@ -170,4 +178,4 @@ function pdVazbaRejstrikStitek(z) {
   return ' <span class="pill" style="background:#fff0c2;color:#7a5600" title="vazbu na deal z Pipedrive někdo nahlásil jako chybnou — otevřete zakázku a rozhodněte">⚠ vazba nahlášena</span>';
 }
 
-if (typeof module !== 'undefined') module.exports = { pdVazbaZivaUI, pdVazbaSmiMenitUI, pdVazbaUpozorneni, pdVazbaOpravaDuvod, pdVazbaRejstrikStitek };
+if (typeof module !== 'undefined') module.exports = { pdVazbaZivaUI, pdVazbaSmiMenitUI, pdVazbaSmiPotvrditUI, pdVazbaUpozorneni, pdVazbaOpravaDuvod, pdVazbaRejstrikStitek };

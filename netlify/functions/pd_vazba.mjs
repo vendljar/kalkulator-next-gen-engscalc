@@ -3,10 +3,11 @@
  *
  * POST /api/pd/vazba  { soubor, akce: 'potvrdit' | 'zrusit' | 'chybna', razitko? }
  *   → 200 { ok, akce, soubor, razitko, odkazVDealu?: 'smazano' | 'cizi' | 'prazdne' | 'nezjisteno', varovani: [...] }
- *   400 neplatný požadavek, 401 nepřihlášen, 403 cizí původ / „Zrušit vazbu“
- *   bez práva, 404 zakázka neexistuje, 409 vazba už neplatí / razítko nesedí.
+ *   400 neplatný požadavek, 401 nepřihlášen, 403 cizí původ / „V pořádku“ jiný
+ *   než administrátor / „Zrušit vazbu“ bez práva, 404 zakázka neexistuje, 409 vazba už neplatí / razítko nesedí.
  *
- *   potvrdit  každý přihlášený (právo ukládat má každý účet), jen stav „ceka“,
+ *   potvrdit  JEN ADMINISTRÁTOR (RA #723, J. V. 23. 11. 2026; ostatním 403 —
+ *             i autorovi zakázky), jen stav „ceka“,
  *   chybna    každý přihlášený: příznak `nahlaseno = { kdo, kdy }` z relace,
  *             autor a administrátor ho vidí v upozornění a v Přehledu nabídek,
  *   zrusit    jen AUTOR ZAKÁZKY (autor z ULOŽENÉ verze = e-mail relace) nebo
@@ -26,7 +27,7 @@ import { pdHodnota } from '../lib/pd_mapa.mjs';
 import { pdPoleMapa } from './pd_pole.mjs';
 import { pdWebhookOdkaz, pdWebhookHlavicka, PD_WEBHOOK_ULOZISTE } from '../lib/pd_webhook.mjs';
 import {
-  pdVazbaNorm, pdVazbaZiva, pdVazbaSmiMenit, pdOdmitnuteNorm, pdRejstrikZapis, pdProtokol, pdPoleText, PD_ODMITNUTE_MAX,
+  pdVazbaNorm, pdVazbaZiva, pdVazbaSmiMenit, pdVazbaSmiPotvrdit, pdOdmitnuteNorm, pdRejstrikZapis, pdProtokol, pdPoleText, PD_ODMITNUTE_MAX,
 } from '../lib/pd_vazba.mjs';
 
 const SOUBOR_TVAR = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
@@ -58,6 +59,8 @@ export default async (req) => {
   const vazba = pdVazbaZiva(ulozena, norm);
   if (!vazba) return json({ ok: false, chyba: 'Zakázka nemá živou vazbu na deal z webhooku.' }, 409);
   if (akce === 'potvrdit' && vazba.stav !== 'ceka') return json({ ok: false, chyba: 'Vazba už je potvrzená.' }, 409);
+  if (akce === 'potvrdit' && !pdVazbaSmiPotvrdit(relace))
+    return json({ ok: false, chyba: 'Vazbu na deal potvrzuje jen administrátor. Je-li vazba chybná, použijte „Vazba je chybná“.' }, 403);
   if (akce === 'zrusit' && !pdVazbaSmiMenit(ulozena, relace))
     return json({ ok: false, chyba: 'Vazbu na deal smí zrušit jen autor zakázky nebo administrátor. Použijte „Vazba je chybná“.' }, 403);
 

@@ -310,12 +310,17 @@ function nastPodminkyTextyProj(ef) {
           onchange="podmTextProjSet('${escJs(klic)}', '${L}', this.value)"${dis}>${esc(hodnota)}</textarea>
         <span class="note" style="flex:none;width:150px;font-size:11.5px;padding-top:6px">${stitek}</span></div>`;
     }).join('');
+    /* RA #726: vlastní TERMÍNY bez řádků dpz+studie / dpz-studie — jen upozornění. */
+    const dpzVar = klic !== 'terminy' || typeof PODMINKY.podminkyTerminyDpzVarovani !== 'function' ? ''
+      : PODMINKY.podminkyTerminyDpzVarovani((NAST.firma || {}).podminky);
+    const dpzBlok = dpzVar ? `<div class="note" data-terminy-dpz="1" style="color:var(--warn);margin:6px 0">⚠ ${esc(dpzVar)}</div>` : '';
     const tisk = klic !== 'dolozky' ? '' : `<label style="display:flex;gap:8px;align-items:center;margin:6px 0">
       <input type="checkbox" ${ef.nabidkaProj.dolozkyTisk ? 'checked' : ''} onchange="podmTextProjSet('dolozkyTisk', null, this.checked)"${dis}>
       Tisknout doložky v nabídce PROJ <span class="note">(výchozí vypnuto — zapíná J. V.)</span></label>`;
     return `<details style="margin:6px 0;border:1px solid var(--line);border-radius:6px;padding:6px 10px">
-      <summary style="cursor:pointer;font-weight:600">${esc(nadpis)} <code style="font-weight:400">${esc(symbol)}</code></summary>
-      ${tisk}${pole}</details>`;
+      <summary style="cursor:pointer;font-weight:600">${esc(nadpis)} <code style="font-weight:400">${esc(symbol)}</code>${dpzVar
+        ? ' <span class="pill" style="background:#fff0c2;color:#7a5600" title="vlastní text TERMÍNY nemá řádky dpz+studie a dpz-studie">⚠ zastaralé řádky DPZ</span>' : ''}</summary>
+      ${dpzBlok}${tisk}${pole}</details>`;
   };
   return `<div class="sec-title">Texty nabídky PROJ</div>
     <div class="note" style="margin-top:0">Bloky pod cenou v nabídce PROJ. <b>Jeden řádek = jedna odrážka.</b> Termíny se píšou
