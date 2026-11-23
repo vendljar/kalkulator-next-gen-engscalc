@@ -2435,8 +2435,8 @@ Větev `claude/ra-rozhodnuti` nad integrací `133a8f5`. Testy `netlify/test_k40c
 Větev `claude/cn-cislo-nabidky` nad integrací `8411eb9`. Testy `netlify/test_cn_cislo_nabidky.mjs`,
 `src/test_cn_cislo_nabidky.js`, mutace [CN]. Číslo B276 je pracovní (přidělí koordinace).
 
-- **B276 — číslo prodané nabídky — OPRAVENO (#727 bod 5).** Číslo **prodané** varianty (celé, i přípona)
-  nezmění nikdo, ani administrátor: server 403 (`zamekCisloProdaneZmena` v `src/zamek.js`, volá
+- **B276 — číslo prodané nabídky — OPRAVENO (#727 bod 5; rozhodnutí J. V. 23. 11. 2026, CN-O2).** Číslo **prodané**
+  varianty (celé, i přípona) nezmění nikdo, ani administrátor: server 403 (`zamekCisloProdaneZmena` v `src/zamek.js`, volá
   `lib/zakazka_kontrola.mjs` před B56), klient cestu `ZAK.cislo` zmrazí (`zamekZakCestaZmrazena`). Nové číslo =
   nový záznam bez uložené verze, proto se porovnává s číslem v zámku ukládané prodané varianty (jako B56)
   a s uloženou verzí, existuje-li. Cesta ven = odemknout prodej (vedoucí / administrátor s důvodem), pak platí

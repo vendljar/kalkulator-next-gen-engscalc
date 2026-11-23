@@ -20,8 +20,7 @@ VŠE ZELENÉ (527/0/6, hodiny 428/0/1, 12/12), SHODA 367/367.
   podmínek nové odeslané nabídky nesedí“. Předchází CN.
 - CN-O1: změna čísla uložené zakázky dál zakládá NOVÝ záznam (starý zůstane). Text potvrzení to říká; přejmenování
   záznamu (smazat starý) by byla samostatná úloha — rozhodne J. V.
-- CN-O2 (rozhodnutí v dávce, k potvrzení J. V.): u prodané nabídky jsem zrušil výjimku správce (B56) — zadání bod 5
-  „číslo nejde změnit“. Vrácení = smazat větev `ZAMEK_CISLO_CESTA` v `zamekZakCestaZmrazena` a blok CN v `zakazka_kontrola.mjs`.
+- CN-O2: ROZHODNUTO J. V. 23. 11. — číslo prodané nezmění nikdo (ani administrátor), cesta = odemknout prodej; kód beze změny.
 
 **Další krok:** revize poradce (zámky), zkouška na testu (hotovoKdyz #727).
 

@@ -26,7 +26,7 @@ pod novým číslem.
   zakázky) — dřív se zapsalo a uložení až pak hlásilo kolizi.
 - **Protokol (bod 4):** ověřeno, že „Číslo nabídky: X → Y“ se zapíše i při uložení dřív než za 2 s klidu (všechny
   cesty uložení volají `protokolZapisTed` před zápisem) — test, kód beze změny.
-- **Prodaná nabídka (bod 5, B276):** číslo prodané nabídky nezmění nikdo, ani administrátor — klient pole zmrazí,
+- **Prodaná nabídka (bod 5, B276; rozhodnutí J. V. 23. 11. — CN-O2):** číslo prodané nabídky nezmění nikdo, ani administrátor — klient pole zmrazí,
   server odmítne 403; cesta ven je odemknout prodej. Odeslaná (neprodaná) nabídka beze změny: číslo jen
   administrátor (A3 / B56).
 - **Hledání zakázek:** okno Načíst zakázku / Zakázky online a karta Vyhledání nabídek v Přehledu mají nad polem
