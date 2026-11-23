@@ -10,6 +10,7 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
+| 23. 11. 2026 | CN-O2: číslo nabídky PRODANÉ zakázky nezmění nikdo ani administrátor; cesta = odemknout prodej (vedoucí/admin, protokol), změnit s potvrzením, znovu Prodáno. B3: na main s Pipedrive zapnout poznámku šachet hned; „Víc zákazníků“ (poznámka zákazníků + organizace = vítěz) až po plném průchodu A9 na testu. | #727 (dávka CN), #730 |
 | 23. 11. 2026 | Pipedrive (dialog koordinace): autorem kalkulace z webhooku bude vlastník dealu (#734); kód integrace dělají jen dávky přes koordinaci, sezení „Pipedrive API integrace“ řeší jen integrátora a nastavení Pipedrive; zápis prodeje #597 až po sloučení PD (#733); rozsah #597 a DPH podle dřívějších rozhodnutí (23. 10., 2. 11., 16. 11.). | roadmapa #597, #734, #730 |
 | 23. 11. 2026 | Pipedrive: kalkulace založená z Pipedrive se otevře rovnou k úpravám (#728); kontaktní osoba z dealu jen jméno (#729); automatizace do Make vypnuta (J. V.); spouštěcí procedura na main vedená v podklady/PIPEDRIVE_SPUSTENI.md a v kokpitu (#730). | roadmapa #728–#730 |
 | 23. 11. 2026 | Dávka CN (#727) ano: potvrzení změny čísla nabídky, rozpoznání omylu (nabídka hledání), kontrola duplicity, stopa v protokolu, zámek u odeslané/prodané; pole „Najít zakázku“ do lišty NE — jen ve vyhledávání zvýraznit hledání podle akce, adresy, zákazníka, obchodníka. Číslo zakázky změněné omylem 20. 11. vrátil J. V. podle protokolu. | roadmapa #727; e-mail D. Sikory 21. 11. |
