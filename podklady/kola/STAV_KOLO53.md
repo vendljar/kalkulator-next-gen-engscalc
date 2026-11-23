@@ -1,6 +1,6 @@
 # STAV kola 53 — TESTOVÁNÍ 3: Pipedrive deal 432, novinky v22.11.6–v22.11.10, data testu (23. 11. 2026)
 
-Stav: **PROBÍHÁ** — test v23.11.1 (e96e03f) od 13:28 UTC (`/api/zdravi`), `PIPEDRIVE_ZAPIS = ano`. Body 1 a 3 hotové, bod 2 běží.
+Stav: **PROBÍHÁ** — test v23.11.1 (e96e03f) od 13:28 UTC (`/api/zdravi`), `PIPEDRIVE_ZAPIS = ano`. Body 1–3 hotové.
 
 ## Hlavička
 
@@ -69,6 +69,25 @@ jako zkušební; (c) šablony CN v18 a PROJ v9 z main (jen čtení) nahrát a zv
 | 1i | NEOVĚŘENO | varování při vypnutém zápisu nejde bez vypnutí `PIPEDRIVE_ZAPIS` (pokrývá jednotkový test RJ) |
 | 1j | ČEKÁ NA J. V. | druhá automatizace („Deal - generate offer -> send data to Make“): v dealu 432 žádná nová poznámka od Make; historii běhů automatizací API nevidí — ověří J. V. v historii dealu |
 
+### 2 · Novinky v22.11.6–v22.11.10 (Playwright, harness `k53_nov.js` / `k53_nov2.js` / `k53_podpis.js`)
+
+| bod | výsledek | poznámka |
+|---|---|---|
+| JT1 | OK | hlavička specifikace EN → Jazyk tisku EN (a náhled EN) |
+| JT2 | OK | Jazyk tisku nabídky OCK = DE → náhled specifikace DE |
+| JT3 | OK | „dle Nastavení“ nic nepřepíná |
+| JT4 | OK | pod EN náhledem karta „Cenová nabídka (OCK)“ se třemi tlačítky a úvodní fotkou (žlutý blok kontrol jen při upozornění — na zkušební zakázce žádné) |
+| JT5 | OK | „Vytvořit nabídku (Word)“ z EN náhledu → `PRICE-QUOTATION_…-OCK-EN.docx`, anglicky; jazyk pak vrácen na CZ |
+| LAK1–2 | OK | obchodník má u LAKOVÁNÍ „✎ cena z nabídky“; řádek s poznámkou (za šachtu, × ks, vlastní položky). Testovací obchodník má v matici právo `sloupce.naklad`, proto vidí výpočet z ceníku a odchylku (P12 podle matice — správně); jednotka dvakrát = K53-N1 |
+| LAK3–5 | OK | bez zdroje: „chybí zdroj“, Potvrdit zakázané, zábrana tisku; řádek = částka; uložení 200; Word se nevytvoří s hláškou „Ruční cena položky nepotvrzená …“ |
+| LAK6–7 | OK | se zdrojem „nepotvrzeno“ → Potvrdit → „✓ potvrzeno“, tisk volný |
+| LAK8–9 | OK | 2 kusy šachty → řádek lakování 2 × částka; uložení 200 |
+| RJ1–3 | OK | B232: nový zámek s rozporem (zastaralá stránka) → neuloženo, hláška „nesouhlasí … Ctrl+F5“, dialog právě jednou, na serveru nezamčeno |
+| RJ pravidlo 3 | OK | shoda čísla nabídky vazbu nedokládá — viz 1f (druhá zakázka na dealu 432 = „nepatří“) |
+| RJ podpis | NEOVĚŘENO | dotisk 9854 správcem má tytéž obrázky jako originál obchodníka, ale zámek nemá snímek zpracovatele — testovací účet obchodníka nemá jméno ani sken podpisu (profil se neměnil) |
+| RJ PR N5 | NEOVĚŘENO | klíč koordinace v sezení není (pokrývá `test_pripominky`) |
+| NN1 | OK | PR-T1: okno Nastavení po odhlášení prázdné a skryté |
+
 ### 3 · Data testu
 
 | bod | výsledek | poznámka |
@@ -84,8 +103,15 @@ jako zkušební; (c) šablony CN v18 a PROJ v9 z main (jen čtení) nahrát a zv
   Protokol tím zahltí šum; návrh: první doplnění ceníku do webhookové kalkulace zapsat jedním řádkem.
 - **K53-I2** (informace, rozdíl dat test × main, mimo zadání): Firma → texty termínů OCK (`kapTerminy` CZ/EN/DE/FR) — na main
   chybí řádek „5 let záruka na celé dílo.“ (a překlady), na testu je. Nesynchronizováno (text nabídky = J. V.).
+- **K53-N1** (vada, nízká, dopad na cenu: ne, jen obrazovka): rozbalený řádek „Cena z nabídky lakovny“ ukazuje
+  „Výpočet z ceníku: <částka> Kč Kč“ (`rcRadekPod`: `fmt()` jednotku už nese a `jed` = Kč). Uživatel s právem na náklady.
+
+V roadmapě: #727 (K53-N1), #728 (K53-I1), #729 (K53-I2) — čísla předběžná, přečísluje koordinace. #726 bod (1) (data DPZ testu) splněn bodem 3a.
 
 ## Úklid
 
 - CN-432: šachta 1 = 2 ks, další zákazník „TEST K53 Zákazník B s.r.o.“ (CN-432-B); v dealu 432 poznámky id 1110 (šachty) a 1111 (zákazníci).
 - `TEST - 2026 - OPR - CN - 9853` (druhá zakázka s `pdDealId` 432) zůstává.
+- Zakázky bodu 2: `… 9854` (JT, obchodník, CN EN vytištěna → zamčená), `… 9855` (LAK, potvrzená částka, 2 ks), `… 9856` (RJ B232, nezamčená).
+- Firma testu: termíny PROJ = výchozí (13:36:42 UTC); šablony CN v18 / PROJ v9 platné; připomínky P-0001–P-0006 zamítnuté.
+- Harnessy kola (Playwright) v kontejneru sezení (`scratchpad/h/k53*.js`), do repa se nedávají.
