@@ -8,9 +8,9 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v23.11.3 — PD: kalkulace z Pipedrive jako Nová zakázka (#733, #732), odkaz z dealu k úpravám (#728), kontakt jen jméno (#729), větev claude/pd-webhook-uprava
+## v23.11.5 — PD: kalkulace z Pipedrive jako Nová zakázka (#733, #732), odkaz z dealu k úpravám (#728), kontakt jen jméno (#729), větev claude/pd-webhook-uprava
 
-Nad integrací `173ab6a` (v23.11.2). Pracovní verze v23.11.3 — číslo přidělí koordinace. **Mění cenu kalkulací
+Nad integrací `173ab6a` (v23.11.2). Verze v23.11.5 (koordinace; integrace je v23.11.4). **Mění cenu kalkulací
 založených webhookem Pipedrive** (oprava vady K53-N2); ostatních kalkulací ani pevné sady se netýká (porovnání
 sestavení: viz zpráva koordinaci).
 
@@ -34,9 +34,13 @@ sestavení: viz zpráva koordinaci).
 - **Revize Fable (N1, N3, N4):** kalkulace z dealu, která se nepřipravila (platný ceník se nenačetl), zůstane jen ke
   čtení s vysvětlením a připraví se, jakmile se ceník nasadí (jen bez neuložené práce); ceník nasazený při otevření
   se v `onlineTik` nenasazuje podruhé; v náhledu role / účtu se z odkazu neodemyká.
+- **Dorevize Fable (N1–N5):** nepřipravenou kalkulaci z Pipedrive (příznak v těle) server neuloží (409) a ručně ji
+  odemknout nejde („Odemknout“ ani dialog při zápisu); dopříprava po pozdním načtení ceníku rozhoduje zámkem čtení
+  (dřív ji v prohlížeči blokovalo srovnání s otiskem) a jen nad nasazenou platnou verzí; lišta radí obnovit stránku
+  (F5). `overit_pd_cerstva.mjs` má scénář „ceník dorazí později“ (v kole i CI globem `overit_*.mjs`).
 - **Testy:** `netlify/test_pd_cerstva.mjs` (server, jádro, #729), `src/test_pd_cerstva_ui.js` (otevření, zámek čtení,
   dopříprava), `overit_pd_cerstva.mjs` (prohlížeč, vynucený závod s nasazením ceníku), doplněné `test_pd_prevod.mjs`
-  (bod 4) a `test_zamek_prepnuti.js` (výjimka #728 ze zámku čtení); každý s pojistkou (viz commit). Mutace [PD] 20.
+  (bod 4) a `test_zamek_prepnuti.js` (výjimka #728 ze zámku čtení); každý s pojistkou (viz commit). Mutace [PD] 24.
 
 ## v23.11.2 — RA: rozhodnutí J. V. 23. 11. (#723, #724, #726, log webhooku), větev claude/ra-rozhodnuti
 

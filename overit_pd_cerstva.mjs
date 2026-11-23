@@ -54,6 +54,7 @@ let cookieJar = '';
 await page.route('**/api/**', async route => {
   const r = route.request(); const url = new URL(r.url()); const fn = F[url.pathname];
   if (url.pathname === '/api/ja' && globalThis.__brana) await globalThis.__brana;
+  if (url.pathname === '/api/program' && r.method() === 'GET' && globalThis.__programVypadek) return route.fulfill({ status: 503, body: '{"ok":false,"chyba":"výpadek (zkouška)"}' });
   if (!fn) return route.fulfill({ status: 404, body: '{"ok":false}' });
   const init = { method: r.method(), headers: { cookie: cookieJar } };
   if (r.method() === 'POST') init.body = r.postData() || '';
@@ -85,9 +86,9 @@ const d = SIM.pdSimStav().data.dealy.find((x) => x.status === 'open' && x.org_id
 const rw = await webhook(new Request('https://t/api/pd/webhook', { method: 'POST', headers: { 'content-type': 'application/json', 'x-kalkulator-klic': KLIC }, body: JSON.stringify({ dealId: d.id }) }));
 const j = await rw.json();
 test('webhook založí kalkulaci', rw.status === 200 && j.akce === 'zalozeno', [rw.status, j.akce]);
-const otevriOdkazem = async () => {
+const otevriOdkazem = async (soubor = j.soubor) => {
   let pust; globalThis.__brana = new Promise(r => { pust = r; });
-  await page.goto(ADRESA + '/?zakazka=' + encodeURIComponent(j.soubor)); await page.waitForFunction(() => typeof window.render === 'function'); await stub();
+  await page.goto(ADRESA + '/?zakazka=' + encodeURIComponent(soubor)); await page.waitForFunction(() => typeof window.render === 'function'); await stub();
   /* ZÁVOD: nasazení platného ceníku v onlineTik se zadrží, dokud se zakázka neotevře. */
   await page.evaluate(() => { window.__povol = false; const puv = window.onlineTik; window.onlineTik = () => { if (window.__povol) return puv(); const db = ONLINE_STAV.db; ONLINE_STAV.db = null; try { puv(); } finally { ONLINE_STAV.db = db; } }; });
   pust(); globalThis.__brana = null;
@@ -113,6 +114,34 @@ const ulozena = JSON.parse(pamet.get('zakazky/z/' + j.soubor));
 test('#733 po uložení server příznak zahodil, uložená marže = zveřejněná', ulozena.pdCerstva === undefined && ulozena.varianty[0].data.cenik.marze === 0.3);
 await otevriOdkazem();
 test('#728 uloženou kalkulaci otevře odkaz zase jen ke čtení', (await snimek()).cteni === true);
+
+/* ---------- DOREVIZE N1/N2: CENÍK SE PŘI OTEVŘENÍ NENAČETL, DORAZÍ POZDĚJI ---------- */
+const d2 = SIM.pdSimStav().data.dealy.find((x) => x.status === 'open' && x.org_id && x.person_id && /^CN-\d+ /.test(x.title) && x.id !== d.id);
+const rw2 = await webhook(new Request('https://t/api/pd/webhook', { method: 'POST', headers: { 'content-type': 'application/json', 'x-kalkulator-klic': KLIC }, body: JSON.stringify({ dealId: d2.id }) }));
+const j2 = await rw2.json();
+test('druhý deal: kalkulace založena', rw2.status === 200 && j2.akce === 'zalozeno', [rw2.status, j2.akce]);
+globalThis.__programVypadek = true;
+await otevriOdkazem(j2.soubor);
+const bez = await page.evaluate(() => ({ marze: aktivniVarianta(ZAK).data.cenik.marze, cerstva: ZAK.pdCerstva === true, cteni: zamekCteniJe(), soubor: ONLINE_STAV.soubor }));
+test('výpadek ceníku: kalkulace otevřena nepřipravená a JEN KE ČTENÍ (i z odkazu)', bez.soubor === j2.soubor && bez.cerstva && bez.cteni === true, bez);
+const odemceni = await page.evaluate(() => { zamekCteniOdemkniUI(); return zamekCteniJe(); });
+test('dorevize N1: ruční „Odemknout“ nepřipravenou kalkulaci neodemkne', odemceni === true);
+const ulozeni2 = await page.evaluate(async () => { try { await onlineApi('/api/zakazky', { zakazka: ZAK, ocekavaneRazitko: ONLINE_STAV.razitko }); return 'ulozeno'; }
+  catch (e) { return String(e && e.message || e); } });
+test('dorevize N1: server nepřipravenou kalkulaci neuloží (409)', /není připravená/.test(ulozeni2), ulozeni2);
+const ulozena2 = JSON.parse(pamet.get('zakazky/z/' + j2.soubor));
+test('… na serveru zůstala čerstvá (příznak), bez ceníku s marží 0', ulozena2.pdCerstva === true && !ulozena2.varianty[0].data.cenik);
+/* Ceník dorazí později (nové načtení programu, onlineTik ho nasadí). Otisk
+ * pro autosave se tu schválně nesrovnává — v prohlížeči se po překreslení liší. */
+globalThis.__programVypadek = false;
+await page.evaluate(async () => { await onlineNactiProgram(); render(); });
+await page.waitForFunction(() => aktivniVarianta(ZAK).data.cenik.marze > 0, null, { timeout: 5000 }).catch(() => {});
+const po = await page.evaluate(() => ({ marze: aktivniVarianta(ZAK).data.cenik.marze, pmarze: aktivniVarianta(ZAK).data.proj.cenik.marze,
+  zabrany: aktivniVarianta(ZAK).data.cenik.priplatky.zabranyPadKc, cerstva: ZAK.pdCerstva === true, cteni: zamekCteniJe(),
+  zad: JSON.stringify(aktivniVarianta(ZAK).data.ock.zadani) }));
+test('dorevize N2: po načtení ceníku se kalkulace dopřipraví (marže OCK i PROJ, dle nabídky)', po.marze === 0.3 && po.pmarze === 0.35 && po.zabrany === 777 && !po.cerstva, po);
+test('dorevize N2: … zadání s výchozím zaškrtnutím = Nová zakázka', po.zad === JSON.stringify(novaZad.ock.zadani));
+test('dorevize N2: … a zůstane jen ke čtení (odemyká člověk)', po.cteni === true);
 test('bez chyb na stránce', chyby.length === 0, chyby);
 await b.close(); server.close();
 console.log(`\n${ok} prošlo, ${fail} selhalo`);

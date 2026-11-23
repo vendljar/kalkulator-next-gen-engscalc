@@ -48,8 +48,9 @@ function pripravit(volby) {
     pdCerstvaPriprav: (z, o) => { log.push('priprav'); o.vychozi('OCK', 'PROJ'); delete z.pdCerstva; return 1; },
     zobrazeniVychoziAplikuj: (m, a, b) => log.push('vychozi:' + m.mat + ':' + a + ':' + b),
     zamekCteniSmiOdemknout: (z, ja) => !!ja && (ja.role === 'Administrátor' || ja.email === z.autor),
-    zamekCteniZapni: () => log.push('zamek:zapni'),
-    zamekCteniVypni: () => log.push('zamek:vypni'),
+    zamekCteniZapni: () => { ctx.__zamceno = true; log.push('zamek:zapni'); },
+    zamekCteniVypni: () => { ctx.__zamceno = false; log.push('zamek:vypni'); },
+    zamekCteniJe: () => !!ctx.__zamceno,
     syncVarianta: () => {}, onlinePoslednizapamatuj: () => {}, onlinePodpisZamkuPriprav: () => {},
     onlineZprava: (t) => log.push('zprava:' + t), renderOnlinePanel: () => {}, zavriOnline: () => {}, render: () => {},
     onlinePosledniZapamatovana: () => '', onlineOdkazZakazka: () => (volby.odkaz ? 'CN-1.json' : ''),
@@ -91,18 +92,26 @@ const zamek = (log) => log.filter(x => x.startsWith('zamek:')).join();
     && c.ZAK.pdCerstva === true, c.log);
   test('revize N1: nepřipravená čerstvá kalkulace zůstane jen ke čtení (i z odkazu)', zamek(c.log) === 'zamek:zapni', c.log);
   test('revize N1: … a lišta řekne proč', c.log.some(x => /čeká na platný ceník/.test(x)), c.log);
-  /* Dopříprava po odloženém nasazení ceníku (onlineTik → onlineCerstvaDopriprav). */
-  c.ONLINE_STAV.posledni = JSON.stringify(c.ZAK);
+  /* Dopříprava po odloženém nasazení ceníku (onlineTik → onlineCerstvaDopriprav).
+   * Dorevize N2: rozhoduje zámek čtení, ne srovnání s otiskem (to po překreslení
+   * nikdy neplatí) — otisk se tu schválně NEsrovnává. N3: jen nad nasazenou verzí. */
+  c.ONLINE_STAV.posledni = '{"po prekresleni":"jine"}';
   c.log.length = 0;
-  test('revize N1: po nasazení ceníku se nezměněná čerstvá kalkulace dopřipraví', vm.runInContext('onlineCerstvaDopriprav()', c) === 1
-    && c.log.includes('priprav') && c.log.includes('srovnej') && c.ONLINE_STAV.posledni === JSON.stringify(c.ZAK) && c.log.includes('oznacUlozeno'), c.log);
-  test('revize N1: dopříprava kalkulaci neodemkne', !c.log.some(x => x.startsWith('zamek:')), c.log);
+  c.ONLINE_STAV.db = { platny: { verze: 9 } };   // ceník dorazil, onlineTik ho ještě nenasadil
+  test('dorevize N3: bez nasazené platné verze (ceník ze sestavení) se nedopřipravuje', vm.runInContext('onlineCerstvaDopriprav()', c) === 0
+    && !c.log.includes('priprav'), c.log);
+  c.PROG_STAV.pouzita = { verze: 9 };   // progPouzij(platny) v onlineTik
+  test('dorevize N2: po nasazení ceníku se zamčená čerstvá kalkulace dopřipraví (i když se okno od otisku liší)',
+    vm.runInContext('onlineCerstvaDopriprav()', c) === 1 && c.log.includes('priprav') && c.log.includes('srovnej')
+    && c.ONLINE_STAV.posledni === JSON.stringify(c.ZAK) && c.log.includes('oznacUlozeno'), c.log);
+  test('revize N1: dopříprava kalkulaci neodemkne', !c.log.some(x => x.startsWith('zamek:')) && c.__zamceno === true, c.log);
   c.log.length = 0;
   test('revize N1: podruhé (příznak pryč) už nic', vm.runInContext('onlineCerstvaDopriprav()', c) === 0 && !c.log.includes('priprav'));
   c = pripravit({ ja: ADMIN, zakazka: CERSTVA, odkaz: true, platny: false });
   await vm.runInContext('onlineObnovPosledni()', c);
-  c.ONLINE_STAV.posledni = '{"jina":1}'; c.log.length = 0;
-  test('revize N1: změněnou kalkulaci (neuložená práce) dopříprava nepřepíše', vm.runInContext('onlineCerstvaDopriprav()', c) === 0 && !c.log.includes('priprav'), c.log);
+  c.ONLINE_STAV.db = { platny: { verze: 9 } }; c.PROG_STAV.pouzita = { verze: 9 };
+  c.__zamceno = false; c.log.length = 0;
+  test('dorevize N2: odemčené okno (práce uživatele) dopříprava nepřepíše', vm.runInContext('onlineCerstvaDopriprav()', c) === 0 && !c.log.includes('priprav'), c.log);
   test('revize N1: onlineTik volá dopřípravu hned po nasazení ceníku',
     /progPouzij\(ONLINE_STAV\.db\.platny\);\s*onlineCerstvaDopriprav\(\);/.test(zdroj));
 
@@ -123,6 +132,29 @@ const zamek = (log) => log.filter(x => x.startsWith('zamek:')).join();
   c = pripravit({ ja: CIZI, zakazka: CERSTVA, odkaz: true });
   await vm.runInContext('onlineObnovPosledni()', c);
   test('#728 kdo odemknout nesmí, dostane i čerstvou kalkulaci jen ke čtení', zamek(c.log) === 'zamek:zapni', c.log);
+
+  /* Dorevize N1: ruční odemčení nepřipravené kalkulace (src/ui/common.js). */
+  const common = fs.readFileSync(__dirname + '/ui/common.js', 'utf8');
+  const vyjmiZ = (z, jmeno) => { const m = new RegExp('^function ' + jmeno + '\\(', 'm').exec(z); return m ? z.slice(m.index, z.indexOf('\n}\n', m.index) + 2) : ''; };
+  const KODC = ['zamekCteniJe', 'zamekCteniCerstvaDuvod', 'zamekCteniStop', 'zamekCteniOdemkniUI'].map(f => vyjmiZ(common, f));
+  test('dorevize N1: funkce zámku čtení jsou v common.js', KODC.every(Boolean), KODC.map(x => x.length));
+  const cc = { ZAMEK_CTENI: { zamceno: true }, ZAK: { pdCerstva: true, autor: 'pipedrive-webhook' }, ONLINE_STAV: { ja: ADMIN }, hlasky: [], dotazy: [],
+    hlaska: (t) => { cc.hlasky.push(t); return Promise.resolve(); }, potvrd: (t) => { cc.dotazy.push(t); return Promise.resolve(true); },
+    zamekCteniSmiOdemknout: () => true, zamekCteniVypni: () => { cc.ZAMEK_CTENI.zamceno = false; }, nahledStop: () => false,
+    onlineZprava: () => {}, render: () => {}, listaPokracujUI: () => { cc.ZAMEK_CTENI.zamceno = false; }, Promise };
+  vm.createContext(cc);
+  vm.runInContext(KODC.join('\n'), cc, { filename: 'common.js (výňatek)' });
+  vm.runInContext('zamekCteniOdemkniUI()', cc);
+  test('dorevize N1: „Odemknout“ nepřipravenou kalkulaci z Pipedrive neodemkne a řekne proč',
+    cc.ZAMEK_CTENI.zamceno === true && cc.hlasky.some(t => /není připravená/.test(t)), cc.hlasky);
+  cc.hlasky.length = 0;
+  const stop = vm.runInContext('zamekCteniStop()', cc);
+  await new Promise(r => setTimeout(r, 0));
+  test('dorevize N1: zápis do zamčené nepřipravené kalkulace nenabídne „Pokračovat“ (odemčení)',
+    stop === true && cc.dotazy.length === 0 && cc.hlasky.some(t => /není připravená/.test(t)) && cc.ZAMEK_CTENI.zamceno === true, [cc.dotazy, cc.hlasky]);
+  delete cc.ZAK.pdCerstva; cc.hlasky.length = 0;
+  vm.runInContext('zamekCteniOdemkniUI()', cc);
+  test('dorevize N1: připravenou (bez příznaku) odemknout jde jako dřív', cc.ZAMEK_CTENI.zamceno === false && !cc.hlasky.length, cc.hlasky);
 
   console.log(`\n${ok} prošlo, ${fail} selhalo`);
   process.exit(fail ? 1 : 0);

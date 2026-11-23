@@ -119,18 +119,28 @@ test('nová kalkulace z webhooku nese pdCerstva = true', z1 && z1.pdCerstva === 
 test('… a dál je „bez ceníku“ (P12 — server ceník nevolí)', z1 && z1.cenikyVynechany === true && !z1.varianty[0].data.cenik);
 r = await volej(D1.id);
 test('opakované doručení příznak nechá', r.status === 200 && zakazka(S1).pdCerstva === true, [r.status, r.akce]);
-/* Uložení z prohlížeče (jako po otevření a úpravě) — příznak zmizí. */
-nasadPlatny();
+/* Dorevize N1: nepřipravená kalkulace (příznak v těle) se neuloží — 409. */
+nasadBuild();
 let v = otevri(zakazka(S1));
 v.adresa = 'Ručně upravená adresa 1, Vzorov';
+const razPred = G.uloRazitko(zakazka(S1));
+r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: v, ocekavaneRazitko: razPred }, cA);
+test('dorevize N1: uložení NEpřipravené kalkulace z Pipedrive odmítnuto 409 (marže 0 by zůstala natrvalo)',
+  r.status === 409 && /není připravená/.test(r.chyba || '') && G.uloRazitko(zakazka(S1)) === razPred && zakazka(S1).pdCerstva === true, [r.status, r.chyba]);
+/* Připravená (jako po otevření nad platným ceníkem) se uloží a příznak na serveru není. */
+nasadPlatny();
+v = otevri(zakazka(S1));
+G.pdCerstvaPriprav(v, { vychozi });
+v.adresa = 'Ručně upravená adresa 1, Vzorov';
 r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: v, ocekavaneRazitko: G.uloRazitko(zakazka(S1)) }, cA);
-test('uložení z prohlížeče příznak zahodí (už to není čerstvá kalkulace)', r.status === 200 && zakazka(S1).pdCerstva === undefined, [r.status, r.chyba, zakazka(S1).pdCerstva]);
+test('připravená kalkulace se uloží, příznak na serveru není a marže = platný ceník', r.status === 200 && zakazka(S1).pdCerstva === undefined
+  && zakazka(S1).varianty[0].data.cenik.marze === PLATNY.cenik.marze, [r.status, r.chyba, zakazka(S1).pdCerstva]);
 v = otevri(zakazka(S1)); v.pdCerstva = true;
 r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: v, ocekavaneRazitko: G.uloRazitko(zakazka(S1)) }, cA);
-test('podvržený příznak od klienta se nepřijme', r.status === 200 && zakazka(S1).pdCerstva === undefined, [r.status, r.chyba]);
+test('podvržený příznak od klienta se nepřijme (409, uložená verze bez příznaku)', r.status === 409 && zakazka(S1).pdCerstva === undefined, [r.status, r.chyba]);
 const vlastni = G.novaZakazka(); vlastni.cislo = '2026 - OPR - CN - 7331'; vlastni.pdCerstva = true;
 r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: otevri(vlastni) }, cA);
-test('… ani na nové zakázce založené v prohlížeči', r.status === 200 && zakazka(r.soubor) && zakazka(r.soubor).pdCerstva === undefined, [r.status, r.chyba]);
+test('… ani na nové zakázce založené v prohlížeči (409, nic se nezaloží)', r.status === 409 && !r.soubor, [r.status, r.chyba]);
 {
   const st = { pdCerstva: true }, zz = { pdCerstva: true };
   V.pdVazbaDrz(null, zz, { obnova: true });

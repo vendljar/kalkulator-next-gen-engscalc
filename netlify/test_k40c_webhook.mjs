@@ -195,7 +195,9 @@ async function zalozRucne(cislo, uprav, cookie = cAutor) {
 }
 async function ulozJako(soubor, zmena, cookie) {
   const z = zakazka(soubor);
-  const v = G.importZakazka(kopie(z)); zmena(v);
+  const v = G.importZakazka(kopie(z));
+  delete v.pdCerstva;   // PD #733: prohlížeč čerstvou kalkulaci z webhooku při otevření připraví a příznak zahodí
+  zmena(v);
   return postJ(zakazky, 'http://x/api/zakazky', { zakazka: v, ocekavaneRazitko: G.uloRazitko(z) }, cookie);
 }
 

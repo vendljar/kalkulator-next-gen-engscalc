@@ -1,7 +1,7 @@
 # Předávka dávky PD — kalkulace z Pipedrive (#733, #732, #728, #729)
 
-Větev `claude/pd-webhook-uprava` nad integrací `173ab6a` (v23.11.2), pracovní verze v23.11.3.
-Zadání: koordinace 23. 11. 2026 (J. V. po zkoušce dealu TEST na testu v23.11.1, nález K53-N2).
+Větev `claude/pd-webhook-uprava` nad integrací `173ab6a` (v23.11.2), verze v23.11.5 (koordinace).
+Zadání: koordinace 23. 11. 2026 (nález K53-N2).
 
 ## Příčina K53-N2 (ověřeno v prohlížeči)
 
@@ -30,6 +30,9 @@ N1 nepřipravená čerstvá kalkulace se neodemyká, dopříprava `onlineCerstva
 v `onlineTik` (jen beze změn); N3 `cenikPouzit` po nasazení hned; N4 ne v náhledu; N5 test celých dat.
 N2 = otázka níže. Bod 4 koordinace: `uzivatel()` v `pd_prevod.mjs` podle e-mailu v textu, jinak jménem.
 Bod 5 (příplatky > 255) beze změny (rozhodnuto dřív).
+Dorevize (claude/revize-pd-733, dfed775): N1 server 409 pro tělo s `pdCerstva` + klient neodemkne
+(`zamekCteniCerstvaDuvod` v common.js); N2 dopříprava podle zámku čtení; N3 jen nad nasazenou
+verzí; N4 harness už v kole (glob); N5 text „obnovte stránku (F5)“.
 
 ## Otázka pro J. V. (#728)
 
@@ -39,5 +42,4 @@ kalkulátoru), samostatný úkol.
 
 ## Testy
 
-`netlify/test_pd_cerstva.mjs` 29, `src/test_pd_cerstva_ui.js` 21, `test_pd_prevod` +5, `overit_pd_cerstva.mjs` 16 (vynucený
-závod s nasazením ceníku). Pojistka: na 173ab6a všechny tři padají. Mutace [PD] 20. Kolo 52ec1ab: S3 SHODA 367/367 proti c8d3d9d, statické 12/12.
+`netlify/test_pd_cerstva.mjs` 30, `src/test_pd_cerstva_ui.js` 26, `test_pd_prevod` +5, `overit_pd_cerstva.mjs` 24. Pojistka: na 173ab6a všechny tři padají. Mutace [PD] 24. Kolo 52ec1ab: S3 SHODA 367/367 proti c8d3d9d, statické 12/12.
