@@ -8,6 +8,22 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v23.11.3 — MT: 4 nechycené mutace z celého kola Actions 45162888071 (#734), větev claude/mt-mutace-2311
+
+Nad integrací `c8d3d9d`. Pracovní verze v23.11.3 — číslo přidělí koordinace. Mění se jen testy;
+aplikace, cena ani text dokumentů beze změny (porovnání sestavení SHODA).
+
+- **[K40a] D7 (OCK i PROJ):** VZ-F1 přejmenoval cestu pole krycího listu na lokální `b`; hlídač atributů
+  on* v `src/test_escape.js` hlásil jen jména z RIZIKO, holé `${b}` v onchange neviděl. Pro `kryci_ui.js`
+  a `kryci_proj_ui.js` teď hlásí každou neprokázanou hodnotu.
+- **B119 součet příplatků v přísném jádře:** od B232 přísné porovnání hlásí číslo chybějící na jedné straně
+  samo; jádro přísného porovnání navíc chytá jen součet chybějící v obou výsledcích. Nový test v
+  `netlify/test_bz_bezpecnost.mjs` (cesty natvrdo, ne ze seznamu).
+- **VZ E5b časový limit volání:** od NN B246 má `pdZavolej` výchozí limit 8 s, takže visící Pipedrive
+  skončil chybou i bez meze 2,5 s a test (rezerva 11 s) to nerozlišil. Nový test v
+  `netlify/test_vz_organizace.mjs`: chyba nese mez 2,5 s a přijde do 5 s.
+- Definice mutací v `netlify/mutace.mjs` beze změny — všechny čtyři míří na aktuální text kódu.
+
 ## v23.11.2 — RA: rozhodnutí J. V. 23. 11. (#723, #724, #726, log webhooku), větev claude/ra-rozhodnuti
 
 Nad integrací `133a8f5` (v23.11.1). Pracovní verze v23.11.2 — číslo a čísla roadmapy přidělí koordinace.
