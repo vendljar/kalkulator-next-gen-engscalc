@@ -42,4 +42,4 @@ kalkulátoru), samostatný úkol.
 
 ## Testy
 
-`netlify/test_pd_cerstva.mjs` 30, `src/test_pd_cerstva_ui.js` 26, `test_pd_prevod` +5, `overit_pd_cerstva.mjs` 24. Pojistka: na 173ab6a všechny tři padají. Mutace [PD] 24. Kolo 52ec1ab: S3 SHODA 367/367 proti c8d3d9d, statické 12/12.
+`netlify/test_pd_cerstva.mjs` 30, `src/test_pd_cerstva_ui.js` 26, `test_pd_prevod` +5, `overit_pd_cerstva.mjs` 24. Pojistka: na 173ab6a všechny tři padají. Mutace [PD] 24. Kolo 31b8083 --bez-mutaci proti d655295: VŠE ZELENÉ (528/0/6, hodiny 428/0/1, statické 12/12, S3 SHODA 367/367).
