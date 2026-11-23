@@ -46,6 +46,7 @@ const { default: uzivatele } = await import('./functions/uzivatele.mjs');
 const { ADMIN_EMAIL } = await import('./lib/sdilene.mjs');
 const SIM = await import('./lib/pipedrive_simulator.mjs');
 const W = await import('./lib/pd_webhook.mjs');
+const WF = await import('./functions/pd_webhook.mjs');
 const VZ = await import('./lib/pd_vazba.mjs');
 const { pdDealPatriZakazce } = await import('./lib/pd_overeni.mjs');
 const { jadro } = await import('./lib/jadro.mjs');
@@ -174,6 +175,16 @@ await technicky('dva uživatelé Pipedrive s týmž e-mailem', (d) => { d.owner_
   U.push({ id: 77, name: 'Duplicita', email: U[1].email.toUpperCase(), active_flag: true }); return () => { U.pop(); }; }, 'nejednoznacny');
 await technicky('deal bez vlastníka', (d) => { delete d.owner_id; delete d.user_id; }, 'bez-vlastnika');
 await technicky('vlastník mezi uživateli Pipedrive není', (d) => { d.owner_id = 999; }, 'nenalezen');
+/* Revize PV S3: visící dotaz na uživatele Pipedrive → technický autor do limitu, webhook nespadne. */
+{
+  const t0 = Date.now();
+  await technicky('visící seznam uživatelů Pipedrive', (d) => { d.owner_id = U[1].id;
+    SIM.pdSimNastav({ poPozadavku: (x) => SIM.pdSimNastav({ scenar: x.startsWith('GET /api/v1/users') ? 'visi' : '' }) });
+    return () => SIM.pdSimNastav({ scenar: '', poPozadavku: null }); }, 'chyba');
+  const trvalo = Date.now() - t0;
+  test('S3: dotaz na uživatele má vlastní limit (' + WF.PD_WEBHOOK_UZIVATELE_MS + ' ms), bez opakování', trvalo < 2500 + 1500, trvalo);
+  SIM.pdSimNastav({ scenar: '', poPozadavku: null });
+}
 
 /* ---------- 5. ČISTÁ FUNKCE ---------- */
 puvodniLog('\n===== 5. pdWebhookAutor =====\n');

@@ -355,26 +355,112 @@ puvodniLog('\n===== 7. HODNOTA DEALU A PŘEVODY =====\n');
 
   const stubG = { prodStav: () => ({ v: { id: 'v1' } }), ctrlCenaDilaSod: () => null,
     pdnPodklad: () => ({ ok: true, strany: { ock: { cena: 100.004, atyp: false, rucne: {} }, proj: { cena: 50, kalendar: 'K', rucne: {} } } }) };
-  const ps = PP.pdProdejStrany({ varianty: [] }, { ock: { hodnoty: { a: '1' }, cena: 1 }, proj: { hodnoty: {}, cena: 2, kalendar: 'podvrh' } }, stubG);
+  stubG.pdnPodklad = () => ({ ok: true, strany: { ock: { cena: 100.004, atyp: false, rucne: {}, hodnoty: { a: '1' } }, proj: { cena: 50, kalendar: 'K', rucne: {} } } });
+  const ps = PP.pdProdejStrany({ varianty: [] }, stubG);
   const hz = pdZapisDealu(POLE_DEALU, ps.strany, { mapa: {}, popisy: {} }, {});
   test('kombinovaná OCK + PROJ: hodnota dealu = součet cen ze serveru (podvrh klienta ignorován)', hz.deal.value === 150
     && ps.strany.proj.kalendar === 'K' && ps.strany.ock.hodnoty.a === '1', [hz.deal, ps.strany]);
-  test('pdProdejStrany bez prodeje → chyba', !!PP.pdProdejStrany({}, {}, { prodStav: () => null }).chyba);
+  test('pdProdejStrany bez prodeje → chyba', !!PP.pdProdejStrany({}, { prodStav: () => null }).chyba);
   test('pdProdejZmeny: status se neposílá nikdy, nezměněné vynechá', (() => {
     const z = PP.pdProdejZmeny({ status: 'won', custom_fields: { a: 1, b: [2, 1] }, value: 5, currency: 'CZK', stage_id: 26 },
       { custom_fields: { a: '1', b: [1, 2] }, value: 5, currency: 'CZK', stage_id: 26 });
     return z.patch === null && !z.hodnota && !z.faze; })());
 
-  const dlouhy = kopie(podB);
-  dlouhy.strany.ock.hodnoty.priplatkyNabidka = 'x'.repeat(300);
-  n = await prodej({ soubor: B.soubor, akce: 'nahled', ...dlouhy }, cP);
+  /* Revize PV V1: texty jdou z ULOŽENÉ zakázky — ruční přepisy krycího listu se nastaví v uložené variantě. */
+  const zk7 = zakazka(B.soubor);
+  const v7 = OBJ.prodStav(zk7).v;
+  v7.data.kryci = v7.data.kryci || { hodnoty: {} }; v7.data.kryci.hodnoty = v7.data.kryci.hodnoty || {};
+  v7.data.kryci.hodnoty.priplatkyNabidka = 'x'.repeat(300);
+  v7.data.kryci.hodnoty.sodDphRezim = 'přenesená daňová povinnost (tuzemsko)';
+  zapisZakazku(B.soubor, zk7);
+  n = await prodej({ soubor: B.soubor, akce: 'nahled', ...podB }, cP);
   const rp = radek(n, 'priplatkyNabidka');
   test('text nad 255 znaků (Příplatky v nabídce): nezkracuje se a nepošle, důvod', rp.stav === 'nelze' && /255/.test(rp.duvod) && rp.posle === false, rp);
-  const dph = kopie(podB);
-  dph.strany.ock.hodnoty.sodDphRezim = 'přenesená daňová povinnost';
-  dph.strany.ock.hodnoty.sazbaDph = '21 %';
-  n = await prodej({ soubor: B.soubor, akce: 'nahled', ...dph }, cP);
   test('Sazba DPH: přenesená → „0 % – přenesená daňová povinnost“', /^0 %/.test(radek(n, 'sazbaDph').hodnotaText || ''), radek(n, 'sazbaDph'));
+}
+
+/* ---------- 8. REVIZE PV: V1, S1, S2, S4 ---------- */
+puvodniLog('\n===== 8. REVIZE PV (V1 podvržené texty, S1 převzetí bez odpovědi, S2 souběh, S4 text chyby) =====\n');
+{
+  /* V1: podvržené texty krycího listu (CN, splatnost, záruka, pokuty, příplatky) se ignorují. */
+  const V = await prodanaZakazka();
+  const podV = podklad(V.soubor);
+  const nase = zakazka(V.soubor).cislo;
+  const pv = kopie(podV);
+  Object.assign(pv.strany.ock.hodnoty, { cisloCN: 'CN-PODVRH-1', splatnostDni: '99', zarukaMesicu: '1', pokutaSplatnost: '9 % / den',
+    pokutaLimit: 'NEUPLATNĚN limit 10 %', priplatkyNabidka: 'podvrh' });
+  n = await prodej({ soubor: V.soubor, akce: 'nahled', ...pv }, cP);
+  test('V1: náhled s podvrženými texty → CN a splatnost z uložené zakázky', n.status === 200
+    && radek(n, 'cisloNabidky').hodnotaText !== 'CN-PODVRH-1' && String(radek(n, 'cisloNabidky').hodnotaText).startsWith(nase.split(' ')[0])
+    && radek(n, 'splatnostDni').hodnotaText !== '99', [radek(n, 'cisloNabidky'), radek(n, 'splatnostDni')]);
+  const n0 = await prodej({ soubor: V.soubor, akce: 'nahled', ...podV }, cP);
+  test('V1: náhled s podvrhem = náhled poctivý (týž otisk)', n.otisk === n0.otisk, [n.otisk, n0.otisk]);
+  r = await prodej({ soubor: V.soubor, akce: 'zapis', ...pv, otisk: n.otisk }, cP);
+  const t = JSON.parse(tela()[tela().length - 1].telo);
+  test('V1: zápis s podvrženým tělem → do dealu serverové hodnoty (CN naše, žádný podvrh)', r.status === 200
+    && String(t.custom_fields[HASH_CN] || '').startsWith(nase.split(' ')[0]) && !JSON.stringify(t).includes('PODVRH') && !JSON.stringify(t).includes('podvrh')
+    && !Object.values(t.custom_fields || {}).includes(99), t);
+  n = await prodej({ soubor: V.soubor, akce: 'nahled' }, cP);
+  test('V1: náhled bez těla stran funguje (strany se z požadavku nečtou)', n.status === 200 && n.cizi === null && n.nicKZapisu === true, [n.status, n.cizi, n.nicKZapisu]);
+
+  /* S1: převzetí — PATCH v Pipedrive proběhne, odpověď nedorazí. */
+  const P = await prodanaZakazka();
+  const podP = podklad(P.soubor);
+  P.deal.custom_fields[HASH_CN] = 'CN-88888';
+  n = await prodej({ soubor: P.soubor, akce: 'nahled', ...podP }, cP);
+  test('(S1 příprava: cizí CN)', n.cizi && n.cizi.cislo === 'CN-88888', n.cizi);
+  const pozn0 = (D().poznamky || []).length;
+  SIM.pdSimNastav({ scenar: 'zapisVisi' });
+  r = await prodej({ soubor: P.soubor, akce: 'zapis', ...podP, otisk: n.otisk, prevzit: true }, cP);
+  SIM.pdSimNastav({ scenar: '' });
+  test('S1: PATCH proveden bez odpovědi → 504, v dealu už naše CN, poznámka zatím žádná', r.status === 504
+    && String(P.deal.custom_fields[HASH_CN]).startsWith(zakazka(P.soubor).cislo.split(' ')[0]) && (D().poznamky || []).length === pozn0, [r.status, P.deal.custom_fields[HASH_CN]]);
+  test('S1: úmysl převzetí je v protokolu a v záznamu prodeje ještě PŘED PATCH', (zakazka(P.soubor).protokol || []).some((x) => /Převzetí dealu \d+ od nabídky CN-88888 — zahájeno/.test(x.co))
+    && pdStav(P.soubor).prevzeti && pdStav(P.soubor).prevzeti.od === 'CN-88888' && pdStav(P.soubor).stav === 'chyba', pdStav(P.soubor));
+  {
+    const g = zakazka(P.soubor);
+    const a = zk.importZakazka(kopie(g));
+    const u = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: a, ocekavaneRazitko: g.uloRazitko }, cP)).json();
+    test('S1: zahájené převzetí přežije uložení z prohlížeče (prodOciste)', u.ok && pdStav(P.soubor).prevzeti && pdStav(P.soubor).prevzeti.od === 'CN-88888', [u.chyba, pdStav(P.soubor)]);
+  }
+  n = await prodej({ soubor: P.soubor, akce: 'nahled', ...podP }, cP);
+  test('S1: opakovaný náhled — deal už nese naše CN (cizi prázdné)', n.status === 200 && n.cizi === null, n.cizi);
+  r = await prodej({ soubor: P.soubor, akce: 'zapis', ...podP, otisk: n.otisk }, cP);
+  const pozn = (D().poznamky || []).slice(pozn0);
+  test('S1: opakování dopíše poznámku k dealu a „PŘEVZAT od nabídky CN-88888“, záznam bez převzetí', r.status === 200 && r.prevzato === true
+    && pozn.length === 1 && /dříve CN-88888/.test(pozn[0].content)
+    && (zakazka(P.soubor).protokol || []).some((x) => /PŘEVZAT od nabídky CN-88888 \(dokončeno po nepotvrzeném pokusu\)/.test(x.co))
+    && pdStav(P.soubor).stav === 'zapsano' && !pdStav(P.soubor).prevzeti, [r, pozn.length, pdStav(P.soubor)]);
+  r = await prodej({ soubor: P.soubor, akce: 'zapis', ...podP, otisk: (await prodej({ soubor: P.soubor, akce: 'nahled' }, cP)).otisk }, cP);
+  test('S1: další zápis už poznámku nepřidá', r.status === 200 && (D().poznamky || []).length === pozn0 + 1);
+
+  /* S2: dva souběžné zápisy s převzetím. */
+  const S = await prodanaZakazka();
+  const podS = podklad(S.soubor);
+  S.deal.custom_fields[HASH_CN] = 'CN-77777';
+  n = await prodej({ soubor: S.soubor, akce: 'nahled', ...podS }, cP);
+  const p0 = patche().length, q0 = (D().poznamky || []).length;
+  const [r1, r2] = await Promise.all([
+    prodej({ soubor: S.soubor, akce: 'zapis', otisk: n.otisk, prevzit: true }, cP),
+    prodej({ soubor: S.soubor, akce: 'zapis', otisk: n.otisk, prevzit: true }, cP)]);
+  test('S2: souběžné zápisy → jeden 200, druhý 409 „zmeneno“; jeden PATCH, jedna poznámka', [r1.status, r2.status].sort().join() === '200,409'
+    && [r1, r2].some((x) => x.kod === 'zmeneno') && patche().length === p0 + 1 && (D().poznamky || []).length === q0 + 1,
+    [r1.status, r2.status, patche().length - p0, (D().poznamky || []).length - q0]);
+  test('S2: v protokolu jedno „PŘEVZAT od nabídky CN-77777“', (zakazka(S.soubor).protokol || []).filter((x) => /PŘEVZAT od nabídky CN-77777/.test(x.co)).length === 1);
+
+  /* S4: text chyby Pipedrive (opakuje hodnotu) do záznamu prodeje a protokolu nejde. */
+  const E = await prodanaZakazka();
+  n = await prodej({ soubor: E.soubor, akce: 'nahled' }, cP);
+  SIM.pdSimNastav({ scenar: 'odmitnuti' });
+  r = await prodej({ soubor: E.soubor, akce: 'zapis', otisk: n.otisk }, cP);
+  SIM.pdSimNastav({ scenar: '' });
+  const ze = zakazka(E.soubor);
+  test('S4: odmítnutý PATCH (400) → pevná věta v záznamu i protokolu, bez textu Pipedrive', r.status === 502 && pdStav(E.soubor).stav === 'chyba'
+    && pdStav(E.soubor).duvod === PP.pdProdejChybaVeta({ stav: 400 }) && !JSON.stringify(ze).includes('odmitnuty@'), [r, pdStav(E.soubor)]);
+  test('S4: surový text Pipedrive jen v odpovědi (podrobnost) tomu, kdo zapisoval', /odmitnuty@/.test(r.podrobnost || '') && !/odmitnuty@/.test(r.chyba), r);
+  test('S4: pdProdejChybaVeta — pevné věty podle stavu', /neplatná hodnota/.test(PP.pdProdejChybaVeta({ stav: 422 }))
+    && /neodpověděl včas/.test(PP.pdProdejChybaVeta({ stav: 504 })) && /neodpovídá/.test(PP.pdProdejChybaVeta({ stav: 500 }))
+    && PP.pdProdejChybaVeta({ stav: 418, message: 'x@y.cz' }) === 'Zápis do Pipedrive se nepovedl.');
 }
 
 test('do sítě za celý běh nic', venku.length === 0, venku);

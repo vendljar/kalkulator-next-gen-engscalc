@@ -43,7 +43,7 @@ import { pdPoleMapa } from './pd_pole.mjs';
 import { pdNanecistoStrana } from './pd_nanecisto.mjs';
 import {
   pdProdejStrany, pdProdejZmeny, pdProdejCnSedi, pdProdejOtisk, pdProdejOznacRadky, pdProdejStavZaznam, pdProdejPrevzetiText,
-  PD_PRODEJ_STROP, PD_PRODEJ_VOLANI_MS, PD_PRODEJ_CELKEM_MS,
+  pdProdejPrevzetiCeka, pdProdejChybaVeta, PD_PRODEJ_STROP, PD_PRODEJ_VOLANI_MS, PD_PRODEJ_CELKEM_MS,
 } from '../lib/pd_prodej.mjs';
 
 const SOUBOR_TVAR = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
@@ -102,8 +102,8 @@ export default async (req) => {
   if (akce === 'zapis' && !OTISK_TVAR.test(otiskKlienta))
     return json({ ok: false, chyba: 'Chybí potvrzení náhledu — nejdřív zobrazte, co se zapíše.' }, 400);
   const prevzit = telo.prevzit === true;
-  const klientStrany = {};
-  for (const k of ['ock', 'proj']) { const s = pdNanecistoStrana(telo.strany && telo.strany[k]); if (s) klientStrany[k] = s; }
+  /* Revize PV V1: texty krycího listu (`strany`) se z požadavku NEČTOU — skládá
+   * je server z uložené zakázky; z těla jen popisky zdroje pro tabulku. */
   const zdroje = {};
   for (const k of ['ock', 'proj']) zdroje[k] = (pdNanecistoStrana({ hodnoty: telo.zdroje && telo.zdroje[k] }) || {}).hodnoty || {};
 
@@ -111,6 +111,16 @@ export default async (req) => {
   try { ({ ULO, JEKLY } = await jadro()); await jadroPd(); } catch (e) { PD_JADRO = null; return jadroChyba(e); }
   const G = globalThis;
   const s = await uloziste('zakazky');
+  const prvni = await s.cti('z/' + soubor);
+  if (!prvni || typeof prvni !== 'object') return json({ ok: false, chyba: 'Zakázka nenalezena.' }, 404);
+  const dealPredem = G.ctrlPdDealIdNorm(prvni.pdDealId) || '';
+  /* Revize PV S2: zápis do téhož dealu jeden po druhém (v instanci funkce) —
+   * druhý souběžný požadavek přečte deal znovu, uvidí nový update_time → 409. */
+  if (akce === 'zapis' && dealPredem) return vyhradne('pd_prodej/deal:' + dealPredem, () => zpracuj(req, relace, s, soubor, akce, otiskKlienta, prevzit, zdroje, ULO, JEKLY, G, telo));
+  return zpracuj(req, relace, s, soubor, akce, otiskKlienta, prevzit, zdroje, ULO, JEKLY, G, telo);
+};
+
+async function zpracuj(req, relace, s, soubor, akce, otiskKlienta, prevzit, zdroje, ULO, JEKLY, G, telo) {
   const ulozena = await s.cti('z/' + soubor);
   if (!ulozena || typeof ulozena !== 'object') return json({ ok: false, chyba: 'Zakázka nenalezena.' }, 404);
   const prod = G.prodStav(ulozena);
@@ -123,13 +133,14 @@ export default async (req) => {
   const kdo = String(relace.jmeno || relace.email || '');
   const variantaId = prod.v.id;
 
-  /* Výsledek pokusu o zápis do záznamu prodeje a protokolu (jen akce „zapis“). */
-  const zaznamenej = async (stav, duvod, veta) => {
+  /* Výsledek pokusu o zápis do záznamu prodeje a protokolu (jen akce „zapis“).
+   * Zahájené převzetí (S1) se drží, dokud zápis neskončí „zapsano“. */
+  const zaznamenej = async (stav, duvod, veta, prevzetiNove = null) => {
     const v = await vyhradne('zakazky/z/' + soubor, async () => {
       const zak = await s.cti('z/' + soubor);
       const p = zak ? G.prodStav(zak) : null;
       if (!p || p.v.id !== variantaId) return {};   // prodej mezitím odemčen — nic se nepřipisuje
-      p.v.prodano.pipedrive = pdProdejStavZaznam(stav, duvod);
+      p.v.prodano.pipedrive = pdProdejStavZaznam(stav, duvod, undefined, prevzetiNove || pdProdejPrevzetiCeka(p.v.prodano));
       pdProtokol(zak, kdo, veta);
       const razitko = ULO.uloRazitkoNove();
       zak.uloRazitko = razitko;
@@ -139,10 +150,13 @@ export default async (req) => {
     if (v.zak) await pdRejstrikZapis(s, ULO, vyhradne, v.zak, soubor, v.razitko, String(relace.email || ''));
     return v.razitko || '';
   };
-  const selhani = async (status, text, extra = {}) => {
+  /* `text` = vlastní pevná věta (do záznamu a protokolu); `podrobnost` = surový
+   * text chyby Pipedrive jen do odpovědi (revize PV S4). */
+  const selhani = async (status, text, extra = {}, podrobnost = '') => {
     const razitko = await zaznamenej('chyba', text, 'Zápis prodeje do dealu ' + deal + ' se nepovedl: ' + text);
-    return json({ ok: false, stav: 'chyba', chyba: text, razitko, ...extra }, status);
+    return json({ ok: false, stav: 'chyba', chyba: text, ...(podrobnost && podrobnost !== text ? { podrobnost } : {}), razitko, ...extra }, status);
   };
+  const selhaniPd = (status, e) => selhani(status, pdProdejChybaVeta(e), {}, e && e.message);
 
   const strop = akce === 'zapis'
     ? await pdStropCerstvych('deal:' + deal, 'prodej-zapis', PD_PRODEJ_STROP)
@@ -170,11 +184,11 @@ export default async (req) => {
     const f = await zavolej('/api/v2/stages', { dotaz: { limit: 500 } });
     fazeSeznam = Array.isArray(f) ? f.map((x) => ({ id: x.id, name: x.name, pipeline_id: x.pipeline_id })) : [];
   } catch (e) {
-    if (e instanceof PdChyba) return akce === 'zapis' ? selhani(e.stav === 404 ? 404 : 502, e.message) : chybaPd(e);
+    if (e instanceof PdChyba) return akce === 'zapis' ? selhaniPd(e.stav === 404 ? 404 : 502, e) : chybaPd(e);
     throw e;
   }
 
-  const podklad = pdProdejStrany(ulozena, klientStrany, G, JEKLY);
+  const podklad = pdProdejStrany(ulozena, G, JEKLY);
   if (podklad.chyba) return json({ ok: false, chyba: podklad.chyba }, 409);
   const v = pdZamyslenyZapis(POLE_DEALU, podklad.strany, pole, { uzivatele, mena: 'CZK', deal: dealData },
     { faze: 'prodano', fazeSeznam, fazeKonfigurace: pdFazeKonfigurace() }, zdroje);
@@ -203,28 +217,35 @@ export default async (req) => {
   if (cizi && !prevzit)
     return json({ ok: false, kod: 'ciziCislo', cislo: cizi, chyba: 'Deal patří nabídce ' + cizi + ' (Číslo nabídky v dealu) — nic se nezapsalo. '
       + 'Převzít deal pro tuto nabídku jde jen vědomým tlačítkem „Převzít deal“.' }, 409);
+  /* PŘEVZETÍ (revize PV S1): úmysl do protokolu a záznamu prodeje PŘED PATCH.
+   * Proběhne-li PATCH v Pipedrive, ale odpověď nedorazí, další pokus už cizí CN
+   * neuvidí — poznámku k dealu a větu „PŘEVZAT“ pak dopíše podle záznamu. */
+  const ceka = pdProdejPrevzetiCeka(prod.prodano);
+  const prevzetiOd = cizi || (ceka ? ceka.od : '');
+  if (cizi) await zaznamenej('chyba', 'Převzetí dealu zahájeno — výsledek zápisu zatím nepotvrzen.',
+    'Převzetí dealu ' + deal + ' od nabídky ' + cizi + ' — zahájeno (zápis prodeje)', { od: cizi, kdy: new Date().toISOString() });
   try {
     if (zmeny.patch) await zavolej('/api/v2/deals/' + Number(deal), { metoda: 'PATCH', telo: zmeny.patch });
   } catch (e) {
-    if (e instanceof PdChyba) return selhani(e.stav === 504 ? 504 : 502, e.message);
+    if (e instanceof PdChyba) return selhaniPd(e.stav === 504 ? 504 : 502, e);
     throw e;
   }
   try { await (await uloziste(PD_CACHE_ULOZISTE)).smaz('deal:' + deal); } catch (e) { /* cache detailu jen zestárne */ }
   const ted = new Date().toISOString();
-  if (cizi) {
+  if (prevzetiOd) {
     /* Převzetí (#115 bod 4): poznámka k dealu — kdo, kdy, z jaké zakázky. Chyba poznámky zápis nevrací. */
     try {
       await zavolej('/api/v1/notes', { metoda: 'POST', telo: { deal_id: Number(deal),
-        content: pdPoznamkaObsah(pdProdejPrevzetiText(cisloZak, cizi, relace.jmeno || '', ted)) } });
+        content: pdPoznamkaObsah(pdProdejPrevzetiText(cisloZak, prevzetiOd, relace.jmeno || '', ted)) } });
     } catch (e) {
-      varovani.push('Poznámka o převzetí se k dealu nezapsala: ' + ((e instanceof PdChyba) ? e.message : 'chyba spojení') + ' Zápis prodeje proběhl.');
+      varovani.push('Poznámka o převzetí se k dealu nezapsala (' + pdProdejChybaVeta(e) + ') Zápis prodeje proběhl.');
     }
   }
   const veta = 'Zápis prodeje do dealu ' + deal + ' (varianta ' + String((typeof G.variantaCislo === 'function' ? G.variantaCislo(ulozena, prod.v) : variantaId) || '')
     + '): ' + (zapsanoNazvy.length ? 'zapsáno — ' + zapsanoNazvy.join(', ') : 'deal už měl všechny hodnoty, nic se neměnilo')
-    + (cizi ? '; deal PŘEVZAT od nabídky ' + cizi : '');
+    + (prevzetiOd ? '; deal PŘEVZAT od nabídky ' + prevzetiOd + (cizi ? '' : ' (dokončeno po nepotvrzeném pokusu)') : '');
   const razitko = await zaznamenej('zapsano', '', veta);
-  return json({ ok: true, stav: 'zapsano', zapsano: zapsanoNazvy, prevzato: !!cizi, razitko, varovani });
-};
+  return json({ ok: true, stav: 'zapsano', zapsano: zapsanoNazvy, prevzato: !!prevzetiOd, razitko, varovani });
+}
 
 export const config = { path: '/api/pd/prodej' };

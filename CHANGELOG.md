@@ -31,8 +31,12 @@ na deal TEST udělá testovací sezení po nasazení.
   kalkulátoru se stejným e-mailem jako uživatel Pipedrive) — z odkazu v dealu si ji otevře k úpravám sám (#728).
   Když vlastníka nejde jednoznačně spárovat (bez účtu, vypnutý účet, bez e-mailu, duplicitní e-mail, výpadek),
   zůstane technický účet jako dosud a důvod jde do logu webhooku. Opakované doručení autora nemění.
-- Testy: `netlify/test_pv_597_zapis.mjs` 57/0, `netlify/test_pv_734_autor.mjs` 51/0, `overit_pv_prodej.mjs` 19/0,
-  mutace serveru [PV] 18; `test_prava` (nová funkce), `test_k40c_webhook` a `overit_controlling` upravené texty.
+- **Opravy po revizi Fable:** údaje krycího listu do dealu skládá server z uložené zakázky (prohlížeč je podvrhnout
+  nemůže, ani Číslo nabídky); převzetí dealu se do protokolu zapíše už před zápisem a poznámka k dealu se doplní i po
+  nepotvrzeném pokusu; dva souběžné zápisy do jednoho dealu jdou za sebou; dotaz webhooku na uživatele Pipedrive má
+  vlastní časový limit (výpadek = technický autor); do zakázky a protokolu jdou jen naše věty, ne text chyby Pipedrive.
+- Testy: `netlify/test_pv_597_zapis.mjs` 73/0, `netlify/test_pv_734_autor.mjs` 56/0, `overit_pv_prodej.mjs` 19/0,
+  mutace serveru [PV] 25; `test_prava` (nová funkce), `test_k40c_webhook` a `overit_controlling` upravené texty.
 
 ---
 

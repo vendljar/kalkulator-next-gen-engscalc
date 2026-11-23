@@ -56,8 +56,12 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 - Testy: test_pv_597_zapis 57/0, test_pv_734_autor 51/0, overit_pv_prodej 19/0, mutace [PV] 18/18 chycených,
   kolo `--bez-mutaci --proti origin/claude/integrace-16-10` VŠE ZELENÉ (534/0, hodiny 433/0, S3 SHODA 367/367); sloučeno s 9f2445a.
 - Do živého Pipedrive nic. Po nasazení do testu: testovací sezení zkušební zápis na deal TEST (PIPEDRIVE_SPUSTENI A6b, A9).
-- K revizi Fable: texty krycího listu do dealu z prohlížeče (cena/kalendář/strany ze serveru); vlastník-autor má práva
-  autora (zrušit vazbu, opravit firmu, změnit deal); okno mezi GET a PATCH (Pipedrive nemá podmíněný zápis).
+- Revize Fable (`podklady/revize/REVIZE_PV.md`): V1 (texty krycího listu ze serveru), S1 (převzetí: úmysl před PATCH,
+  poznámka při opakování), S2 (výhradní úsek na deal), S3 (limit `/users` ve webhooku), S4 (pevné věty chyb) opraveny;
+  mez okna GET–PATCH = B277. Otázky pro J. V.: O1 práva vlastníka-autora, O2 právo pro zápis prodeje (kód podle doporučení).
+- Návrhy do roadmapy (revize N1–N6): N1 vypnutý uživatel PD (`active_flag`) jako autor; N2 `pdPoleMapa` v časovém rozpočtu
+  zápisu; N3 deal se čte dvakrát (vrátit ho z `pdDealPatriZakazce`); N4 neúspěch kvůli vypnutému zápisu / vazbě nemá psát
+  zakázku ani přepsat „zapsano“; N5 řádek logu `pd_prodej` bez osobních údajů; N6 komentář `icoShoda` v `pd_vazba.mjs:53`.
 
 ## Čeká na J. V.
 

@@ -596,6 +596,10 @@ function prodOciste(p) {
   /* PV #597: důvod neúspěšného zápisu (text serveru, bez řídicích znaků, se stropem). */
   if (pd.stav === 'chyba' && typeof p.pipedrive.duvod === 'string' && p.pipedrive.duvod)
     pd.duvod = p.pipedrive.duvod.replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, PROD_PD_DUVOD_MAX);
+  /* Revize PV S1: zahájené, nepotvrzené převzetí dealu { od, kdy } (píše jen server). */
+  const pv = p.pipedrive && p.pipedrive.prevzeti;
+  if (pd.stav !== 'zapsano' && pv && typeof pv === 'object' && typeof pv.od === 'string' && pv.od)
+    pd.prevzeti = { od: pv.od.replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, 120), kdy: t(pv.kdy) };
   const o = { datum: p.datum, kdo: t(p.kdo), kdy: t(p.kdy), pipedrive: pd };
   /* VZ-E4 (#603, doplněk 2): komu se prodalo (id zákazníka) — bez něj by se
    * po obnově z otisku prodej přepojil na řídícího (E5b pojistka P1). */

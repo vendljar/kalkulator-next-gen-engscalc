@@ -283,8 +283,30 @@ function strankuj(seznam, dotaz) {
 
 const kopie = (x) => JSON.parse(JSON.stringify(x));
 
-/* Náhrada `fetch` pro pdZavolej. Vrací Promise<Response>. */
+/* Náhrada `fetch` pro pdZavolej. Vrací Promise<Response>.
+ * Scénář `zapisVisi` (revize PV S1): zápis (ne GET) se PROVEDE, ale odpověď
+ * nedorazí nikdy — jen zrušení požadavku ho ukončí (Pipedrive zapsal, my nevíme).
+ * Scénář `odmitnuti` (revize PV S4): zápis odmítne 400 s textem, který opakuje
+ * hodnotu (smyšlený e-mail) — do záznamu prodeje se nesmí dostat. */
 export async function pdSimFetch(url, init = {}) {
+  const s = stav();
+  const sc0 = aktualniScenar(s);
+  const zapis = String(init.method || 'GET').toUpperCase() !== 'GET';
+  if (zapis && sc0 === 'odmitnuti') {
+    s.pozadavky.push(String(init.method).toUpperCase() + ' ' + new URL(String(url)).pathname);
+    return chyba(400, 'Invalid value for field: uzivatel.odmitnuty@priklad.cz');
+  }
+  if (zapis && sc0 === 'zapisVisi') {
+    const puv = s.scenar;
+    s.scenar = '';
+    try { await pdSimFetchVnitrni(url, init); } finally { s.scenar = puv; }
+    return new Promise((_, ne) => {
+      if (init.signal) init.signal.addEventListener('abort', () => ne(new Error('aborted')), { once: true });
+    });
+  }
+  return pdSimFetchVnitrni(url, init);
+}
+async function pdSimFetchVnitrni(url, init = {}) {
   const s = stav();
   const u = new URL(String(url));
   const metoda = String(init.method || 'GET').toUpperCase();

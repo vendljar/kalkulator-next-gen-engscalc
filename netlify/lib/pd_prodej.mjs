@@ -25,15 +25,16 @@ export const PD_PRODEJ_VOLANI_MS = 2500;
 export const PD_PRODEJ_CELKEM_MS = 8000;
 export const PD_PRODEJ_DUVOD_MAX = 300;
 
-/* Podklad zápisu ze ZÁKAZNÍKOVY uložené zakázky. Prodaná varianta je řídící
+/* Podklad zápisu z ULOŽENÉ zakázky — celý ze serveru (revize PV V1, 23. 11.
+ * 2026: texty krycího listu z prohlížeče, včetně Čísla nabídky = značky
+ * vlastníka dealu #115 B, šly podvrhnout). Prodaná varianta je řídící
  * (PR #563); kopie s ní jako řídící a otevřenou jde do pdnPodklad (týž kód
- * jako náhled v prohlížeči). Z prohlížeče se berou JEN texty krycího listu
- * (`hodnoty` — co obchodník vidí a potvrzuje; pole s `jenRucne` řídí ruční
- * přepisy z ULOŽENÉ varianty). Cena, ATYP, kalendář PROJ a měna jsou ze
- * serveru; strany (OCK / PROJ / obě) určuje uložená zakázka, ne klient.
+ * jako náhled v prohlížeči — serverové hodnoty se s prohlížečem shodují,
+ * ověřeno revizí ve 43/43 polích). Krycí list je po Prodáno zmrazený, do CRM
+ * jdou jeho uložené hodnoty. Z požadavku se nebere nic kromě popisků zdroje.
  * Vrací { strany, varianta, zdrojCeny: { ock?: 'sod' | 'nabidka', proj?: 'nabidka' } }
  * nebo { chyba }. */
-export function pdProdejStrany(zak, klientStrany, G = globalThis, jekly = null) {
+export function pdProdejStrany(zak, G = globalThis, jekly = null) {
   const p = typeof G.prodStav === 'function' ? G.prodStav(zak) : null;
   if (!p || !p.v) return { chyba: 'Zakázka není prodaná — zápis prodeje do Pipedrive jde až po stisku Prodáno.' };
   if (typeof G.pdnPodklad !== 'function') return { chyba: 'Serverová část pro zápis do Pipedrive se nenačetla.' };
@@ -42,13 +43,11 @@ export function pdProdejStrany(zak, klientStrany, G = globalThis, jekly = null) 
   kopie.aktivni = p.v.id;
   const pod = G.pdnPodklad(kopie, jekly, { faze: 'prodano' });
   if (!pod || !pod.ok) return { chyba: (pod && pod.chyba) || 'Podklad zápisu nejde složit.' };
-  const k = (klientStrany && typeof klientStrany === 'object') ? klientStrany : {};
   const strany = {}, zdrojCeny = {};
   for (const strana of ['ock', 'proj']) {
     const sv = pod.strany && pod.strany[strana];
     if (!sv) continue;
-    const kl = k[strana] && typeof k[strana] === 'object' ? k[strana] : null;
-    const s = { hodnoty: (kl && kl.hodnoty) || {}, rucne: sv.rucne || {}, mena: 'CZK' };
+    const s = { hodnoty: sv.hodnoty || {}, rucne: sv.rucne || {}, mena: 'CZK' };
     if (strana === 'ock') s.atyp = sv.atyp === true;
     if (strana === 'proj' && typeof sv.kalendar === 'string') s.kalendar = sv.kalendar;
     let cena = typeof sv.cena === 'number' && isFinite(sv.cena) ? sv.cena : null;
@@ -143,11 +142,38 @@ export function pdProdejOznacRadky(radky, mapa, zmeny) {
   });
 }
 
-/* Stav zápisu do záznamu prodeje (v.prodano.pipedrive). */
-export function pdProdejStavZaznam(stav, duvod, kdy = new Date().toISOString()) {
+/* Stav zápisu do záznamu prodeje (v.prodano.pipedrive). `prevzeti` = zahájené
+ * převzetí dealu { od: cizí CN, kdy } (revize PV S1) — zapisuje se PŘED PATCH
+ * a drží se, dokud zápis neskončí „zapsano“ (pak se doplní poznámka k dealu). */
+export function pdProdejStavZaznam(stav, duvod, kdy = new Date().toISOString(), prevzeti = null) {
   const o = { stav, kdy };
   if (stav === 'chyba') o.duvod = String(duvod || 'zápis se nepovedl').replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, PD_PRODEJ_DUVOD_MAX);
+  if (prevzeti && stav !== 'zapsano') o.prevzeti = { od: String(prevzeti.od || '').replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, 120),
+    kdy: String(prevzeti.kdy || kdy).slice(0, 40) };
   return o;
+}
+
+/* Zahájené a nedokončené převzetí z uloženého záznamu prodeje, nebo null. */
+export function pdProdejPrevzetiCeka(prodano) {
+  const p = prodano && prodano.pipedrive && prodano.pipedrive.prevzeti;
+  return p && typeof p === 'object' && typeof p.od === 'string' && p.od ? { od: p.od, kdy: String(p.kdy || '') } : null;
+}
+
+/* Do záznamu prodeje a protokolu jdou jen VLASTNÍ pevné věty (revize PV S4):
+ * text chyby z Pipedrive může opakovat odeslanou hodnotu (jméno, e-mail
+ * uživatelského pole). Surový text jde nejvýš v odpovědi tomu, kdo zapisoval. */
+export function pdProdejChybaVeta(e) {
+  const st = e && Number(e.stav);
+  if (st === 400 || st === 422) return 'Pipedrive zápis odmítl (neplatná hodnota pole).';
+  if (st === 401) return 'Pipedrive odmítl přístupový token.';
+  if (st === 402) return 'Účet Pipedrive není aktivní.';
+  if (st === 403) return 'Pipedrive přístup odmítl (archivovaný deal?).';
+  if (st === 404) return 'Pipedrive deal zakázky nezná (smazaný?).';
+  if (st === 429) return 'Pipedrive dočasně omezil počet požadavků — zkuste to za chvíli.';
+  if (st === 504) return 'Pipedrive neodpověděl včas — zápis se nemusel dokončit; zkuste zápis znovu, náhled ukáže stav dealu.';
+  if (st === 503) return 'Zápis do Pipedrive je vypnutý nebo nenastavený.';
+  if (st >= 500) return 'Pipedrive momentálně neodpovídá — zkuste to za chvíli.';
+  return 'Zápis do Pipedrive se nepovedl.';
 }
 
 /* Text poznámky k dealu při převzetí (#115 bod 4): kdo, kdy, z jaké zakázky —

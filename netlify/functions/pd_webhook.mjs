@@ -59,6 +59,8 @@ import {
 /* Mapa polí bez „Odkazu na kalkulaci“ se obnoví nejvýš jednou za 15 min
  * (pole mohl integrátor právě založit; obnova stojí 20 tokenů). */
 const MAPA_OBNOVA_MS = 15 * 60 * 1000;
+/* #734 / revize PV S3: časový limit dotazu na uživatele Pipedrive (autor kalkulace). */
+export const PD_WEBHOOK_UZIVATELE_MS = 2500;
 
 async function bezpecne(cesta) {
   try { return await pdZavolej(cesta); } catch (e) { return null; }
@@ -238,7 +240,9 @@ async function zpracuj(req, dealId, ULO, G) {
   let autorVysledek = null;
   if (!stara) {
     autorVysledek = await pdWebhookAutor(deal, {
-      nactiUzivatele: () => pdZavolej('/api/v1/users'),
+      /* Revize PV S3: pomocný dotaz s vlastním limitem a bez opakování — výpadek
+       * = technický autor, webhook kvůli němu nesmí spadnout. */
+      nactiUzivatele: () => pdZavolej('/api/v1/users', { casLimitMs: PD_WEBHOOK_UZIVATELE_MS, pokusu: 1 }),
       ucet: async (email) => (await uloziste('uzivatele')).cti(email),
     });
     if (autorVysledek.stav !== 'vlastnik')

@@ -84,9 +84,10 @@ const nah = await stranka.evaluate(() => ({
   hlavicka: [...document.querySelectorAll('#prodPdTabulka thead th')].map(th => th.textContent.trim()),
   xss: window.__xss || 0,
 }));
-zkus('dotaz: /api/pd/prodej, akce náhled, soubor zakázky, strany z krycího listu', nah.dotaz && nah.dotaz.cesta === '/api/pd/prodej'
-  && nah.dotaz.telo.akce === 'nahled' && nah.dotaz.telo.soubor === '2026-OPR-CN-0133.json' && !!nah.dotaz.telo.strany.ock
-  && nah.dotaz.telo.strany.ock.hodnoty.cisloCN !== undefined, JSON.stringify(nah.dotaz && nah.dotaz.telo).slice(0, 200));
+/* Revize PV V1: texty krycího listu skládá server — prohlížeč posílá jen popisky zdroje. */
+zkus('dotaz: /api/pd/prodej, akce náhled, soubor zakázky, jen popisky zdroje (bez stran)', nah.dotaz && nah.dotaz.cesta === '/api/pd/prodej'
+  && nah.dotaz.telo.akce === 'nahled' && nah.dotaz.telo.soubor === '2026-OPR-CN-0133.json' && nah.dotaz.telo.strany === undefined
+  && !!nah.dotaz.telo.zdroje && !!nah.dotaz.telo.zdroje.ock, JSON.stringify(nah.dotaz && nah.dotaz.telo).slice(0, 200));
 zkus('tabulka: Pole / Dnes v Pipedrive / Nová hodnota', JSON.stringify(nah.hlavicka.slice(0, 3)) === JSON.stringify(['Pole v Pipedrive', 'Dnes v Pipedrive', 'Nová hodnota']), nah.hlavicka);
 zkus('řádky bez prázdných, příznak „zapíše se“ jen u měněných', JSON.stringify(nah.radky) === JSON.stringify([['hodnotaDealu', '1'], ['fazeDealu', '1'], ['splatnostDni', '0'], ['priplatkyNabidka', '0']]), JSON.stringify(nah.radky));
 h = await karta();

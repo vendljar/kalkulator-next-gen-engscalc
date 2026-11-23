@@ -390,7 +390,8 @@ function prodPdUiNahled() {
   if (PROD_PD.nacita || !p || !prodPdUiMuze()) return Promise.resolve(false);
   const pod = prodUiPodklad(p.v);
   if (!pod.ok) { PROD_PD.chyba = pod.chyba; render(); return Promise.resolve(false); }
-  const telo = { soubor: ONLINE_STAV.soubor, akce: 'nahled', strany: pod.strany, zdroje: pod.zdroje };
+  /* Revize PV V1: texty krycího listu skládá server z uložené zakázky — posílají se jen popisky zdroje. */
+  const telo = { soubor: ONLINE_STAV.soubor, akce: 'nahled', zdroje: pod.zdroje };
   PROD_PD.nacita = true; PROD_PD.chyba = ''; render();
   return onlineApi('/api/pd/prodej', telo)
     .then(d => { PROD_PD.data = d; PROD_PD.zak = ZAK; PROD_PD.varianta = p.v.id; PROD_PD.telo = telo; return true; })
