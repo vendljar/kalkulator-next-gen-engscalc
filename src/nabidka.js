@@ -171,6 +171,17 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
     dphKcNum = Math.ceil(cenaBezDphNum * Cv.dph);
     cenaSDphNum = cenaBezDphNum + dphKcNum;
   }
+  /* RUČNÍ POLOŽKY KALKULACE (dávka RP, J. V. 23. 11. 2026). Jedna šachta:
+   * řádky specifikace a rozpis ceny (šachta / můstky / ruční položky — součet
+   * = cena před slevou v měně dokumentu). Víc šachet: řádky u své šachty
+   * (nabidkaVsData), cenový blok po šachtách beze změny. Bez ruční položky
+   * `rozpisRucni` = null a všechny symboly ceny jsou jako dosud. */
+  const RP = (typeof rucniPolozkyVysledku === 'function')
+    ? { rucniPolozkyVysledku, rpRozpisCeny, rpRadkyWord, rpRadekTs, RP_SEKCE_SACHTY } : require('./rucni_polozky.js');
+  const viceSachetRp = !!(r && Array.isArray(r.sachty) && r.sachty.length);
+  const rucniPol = viceSachetRp ? [] : RP.rucniPolozkyVysledku(r, Zv);
+  const rozpisRucni = (cn && !viceSachetRp)
+    ? RP.rpRozpisCeny(rucniPol, cenaPredSlevou, mustkySk ? cenaMustkyNum : 0, mena.eur ? mena.na : null, L, P) : null;
 
   /* SYMBOLY TECHNICKÉ ČÁSTI, KTERÉ POPISUJÍ ŠACHTU (VS-E4 #570): sekce
    * ZÁKLADNÍ PARAMETRY … MŮSTKY + sokl v doplňkových konstrukcích. Jedna
@@ -305,13 +316,13 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
     CENA_BEZ_DPH: kc(cenaBezDphNum),
     /* #560: šachta bez můstků a můstky (obojí před slevou); bez skladebného
      * modelu prázdné — řádky ze šablony v16 zmizí, v15 se neklonují. */
-    CENA_SACHTA_BEZ_DPH: mustkySk ? kc(cenaPredSlevou - cenaMustkyNum) : '',
-    CENA_MUSTKY_BEZ_DPH: mustkySk ? kc(cenaMustkyNum) : '',
+    CENA_SACHTA_BEZ_DPH: rozpisRucni ? kc(rozpisRucni.sachta) : (mustkySk ? kc(cenaPredSlevou - cenaMustkyNum) : ''),
+    CENA_MUSTKY_BEZ_DPH: mustkySk ? kc(rozpisRucni ? rozpisRucni.mustky : cenaMustkyNum) : '',
     /* Šablona v16: koncová cena bez DPH v řádku „VÝTAHOVÁ ŠACHTA" (bez můstků,
      * jako dosud), nebo v řádku „CENA CELKEM" (s můstky). Druhý je prázdný
      * a zmizí (docxgen DOCX_CENA_CASTI). */
-    CENA_BEZ_DPH_SACHTA: mustkySk ? '' : kc(cenaBezDphNum),
-    CENA_BEZ_DPH_CELKEM: mustkySk ? kc(cenaBezDphNum) : '',
+    CENA_BEZ_DPH_SACHTA: (mustkySk || rozpisRucni) ? '' : kc(cenaBezDphNum),
+    CENA_BEZ_DPH_CELKEM: (mustkySk || rozpisRucni) ? kc(cenaBezDphNum) : '',
     DPH_SAZBA: String(Math.round(Cv.dph * 100)),
     /* Nulová sazba má vlastní jméno (22. 9. 2026 večer). Od té doby, co
      * zahraniční řada ceníku přepíná DPH na 0 %, by tu podmínka `<= 0.15`
@@ -370,7 +381,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
    * nese šachty (obal vypocetZakazkyOck: Model 2 a víc šachet nebo ks > 1);
    * jedna šachta nedostane ani jeden nový symbol (zlatá sada VS-E0 — symboly
    * přebírá i smlouva o dílo). */
-  const vs = nabidkaVsData(d, r, sablona, { P, kc, cenaPredSlevou, cenaBezDphNum, tsSymbolySachty, L });
+  const vs = nabidkaVsData(d, r, sablona, { P, kc, cenaPredSlevou, cenaBezDphNum, tsSymbolySachty, L, RP });
   if (vs.sachty) Object.assign(placeholders, vs.placeholders);
 
   if (typeof zpracovatelPlaceholders === 'function')
@@ -576,15 +587,29 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
     .filter(e => e && (String(e.label || '').trim() || String(e.hodnota || '').trim()))
     .map(e => Object.assign({ nazev: P(String(e.label || '')), hodnota: P(String(e.hodnota || '')) }, jeNeni(e) ? { neni: true } : {}));
   const tsExtraDalsi = tsExtra.filter(e => !e.neni);
+  /* RP: jedna šachta = všechny ruční řádky globálně; víc šachet = jen
+   * společná sekce (PROJEKČNÍ…) s názvem šachty, ostatní nese smyčka šachet
+   * (`vs.word.polozky[i].__radkyNavic`, docxSmyckaSachet). Texty už v jazyce
+   * dokumentu (rpRadekTs). */
+  const rucniTsRadky = !vs.sachty ? rucniPol.map(p => RP.rpRadekTs(p, L, P))
+    : [].concat(...vs.sachty.map(sa => (sa.rucni || []).filter(p => RP.RP_SEKCE_SACHTY.indexOf(p.sekceTs) < 0)
+      .map(p => { const t = RP.rpRadekTs(p, L, P); return Object.assign(t, { nazev: t.nazev + ' (' + sa.nazev + ')' }); })));
   const tsRadkyNavic = [
     { symbol: 'TS_NENI_LESENI_VNITRNI', kotva: 'TS_NENI_LESENI', pred: true,
       nazev: P('LEŠENÍ VNITŘNÍ PRO STAVBU OCK'), hodnota: placeholders.TS_NENI_LESENI_VNITRNI },
     ...tsExtra.filter(e => e.neni).map(e => ({ kotva: 'TS_NENI_PRISTUP', vzdy: true, nazev: e.nazev, hodnota: e.hodnota })),
     ...(tsExtraDalsi.length ? [{ kotva: 'TS_NENI_PRISTUP', pruh: true, nazev: P('DALŠÍ UJEDNÁNÍ') }] : []),
     ...tsExtraDalsi.map(e => ({ kotva: 'TS_NENI_PRISTUP', vzdy: true, nazev: e.nazev, hodnota: e.hodnota })),
+    /* RP: ruční položky do sekcí specifikace (před klony můstků — sekce
+     * MŮSTKY ze šablony v15 se klonuje za tutéž kotvu) a do cenového bloku */
+    ...RP.rpRadkyWord(rucniTsRadky, sablona && sablona.symboly),
     ...nabidkaMustkyKlon(placeholders, P, sablona),
+    ...nabidkaRucniCenaKlon(placeholders, P, rozpisRucni, kc),
   ];
   return { placeholders, priplatky: priplatkyList, jazyk: L, platbyOck, tsRadkyNavic, tsExtra, mena,
+           /* RP: ruční položky pro online náhled (jen když nějaké jsou) */
+           ...((rucniTsRadky.length || rozpisRucni) ? { rucni: { tsRadky: rucniTsRadky,
+             ceny: rozpisRucni ? rozpisRucni.radky.map(x => ({ nazev: x.nazev, cena: kc(x.cena) })) : [] } } : {}),
            /* VS-E4: šachty pro náhled a pro smyčku Wordu v17 — JEN u víc šachet
             * (výsledek jedné šachty beze změny; smlouva o dílo ho přebírá celý).
             * Bez `sachtyWord` bere docxgen jednu šachtu. */
@@ -648,7 +673,11 @@ function nabidkaVsData(d, r, sablona, o) {
       SACHTA_CENA_BEZ_DPH: o.kc(ceny[i]),
       SACHTA_TS_NAZEV: P('VARIANTA ŠACHTY') + ': ' + nazev + (ks > 1 ? ' – ' + ks + ' ' + P('ks') : ''),
     }, tsI);
-    return { id: s.id, nazev, nazevTisk, ks, mustky, cena: ph.SACHTA_CENA_BEZ_DPH, ph };
+    /* RP: ruční položky šachty — sekce šachty u své šachty (Word: klon řádku
+     * kotvy uvnitř smyčky, docxSmyckaSachet `__radkyNavic`; náhled: `rucniTs`). */
+    const rucni = o.RP ? o.RP.rucniPolozkyVysledku(ri, Zi) : [];
+    const rucniTs = rucni.filter(p => o.RP.RP_SEKCE_SACHTY.indexOf(p.sekceTs) >= 0).map(p => o.RP.rpRadekTs(p, o.L, P));
+    return { id: s.id, nazev, nazevTisk, ks, mustky, cena: ph.SACHTA_CENA_BEZ_DPH, ph, rucni, rucniTs };
   });
   const celkemPopis = P('šachet celkem') + ': ' + celkem + ' ' + P('ks');
   return {
@@ -656,7 +685,9 @@ function nabidkaVsData(d, r, sablona, o) {
     placeholders: { CENA_SACHTA_BEZ_DPH: '', CENA_MUSTKY_BEZ_DPH: '', CENA_BEZ_DPH_SACHTA: '',
       CENA_BEZ_DPH_CELKEM: o.kc(o.cenaBezDphNum), POCET_VARIANT: String(sachty.length), POCET_SACHET_CELKEM: String(celkem),
       SACHTY_CELKEM_POPIS: celkemPopis },
-    word: { polozky: sachty.map(s => s.ph), spolecne: { SACHTY_CELKEM_POPIS: celkemPopis } },
+    word: { polozky: sachty.map(s => (s.rucniTs.length
+      ? Object.assign({}, s.ph, { __radkyNavic: o.RP.rpRadkyWord(s.rucniTs, sablona && sablona.symboly) }) : s.ph)),
+      spolecne: { SACHTY_CELKEM_POPIS: celkemPopis } },
   };
 }
 
@@ -687,6 +718,29 @@ function nabidkaMustkyKlon(ph, P, sablona) {
       nazev: P('MŮSTKY MEZI BUDOVOU A OCK'), hodnota: ph.CENA_MUSTKY_BEZ_DPH },
     { kotva: 'CENA_BEZ_DPH', symbol: 'CENA_MUSTKY_BEZ_DPH', prejmenuj: true, nazev: P('CENA CELKEM') },
   ];
+}
+
+/* RUČNÍ POLOŽKY V CENOVÉM BLOKU WORDU (dávka RP, J. V. 23. 11. 2026, bod 4).
+ * `rozpis` = rpRozpisCeny (null = beze změny). Šablona v16+ ({{CENA_MUSTKY_
+ * BEZ_DPH}}): řádek za položku se naklonuje z řádku můstků (formát „položka
+ * před slevou"; řádek můstků bez můstků pak sám zmizí) a řádek CENA CELKEM
+ * dostane jen popisek „CENA CELKEM" (podtitul „výtahová šachta a můstky…"
+ * by s ruční položkou nebyl pravda). Šablona v15 a starší (bez
+ * {{CENA_SACHTA_BEZ_DPH}}): jako můstky v nabidkaMustkyKlon — řádky
+ * z {{CENA_BEZ_DPH}} před „Cena před slevou", řádek ceny „CENA CELKEM";
+ * řádek VÝTAHOVÁ ŠACHTA přidá klon můstků, bez můstků ho přidá tahle funkce.
+ * `symbol` = šablona symbol má → klon nevznikne (právě jedna větev platí). */
+function nabidkaRucniCenaKlon(ph, P, rozpis, kc) {
+  if (!rozpis || !rozpis.radky.length) return [];
+  const v16 = rozpis.radky.map(x => ({ kotva: 'CENA_MUSTKY_BEZ_DPH', nazev: x.nazev, hodnota: kc(x.cena) }));
+  const stara = [
+    ...(ph.CENA_MUSTKY_BEZ_DPH ? [] : [{ kotva: 'CENA_BEZ_DPH', symbol: 'CENA_SACHTA_BEZ_DPH', predSymbolem: 'CENA_PRED_SLEVOU', pred: true,
+      nazev: P('VÝTAHOVÁ ŠACHTA').toLocaleUpperCase(), hodnota: ph.CENA_SACHTA_BEZ_DPH }]),
+    ...rozpis.radky.map(x => ({ kotva: 'CENA_BEZ_DPH', symbol: 'CENA_SACHTA_BEZ_DPH', predSymbolem: 'CENA_PRED_SLEVOU', pred: true,
+      nazev: x.nazev, hodnota: kc(x.cena) })),
+    { kotva: 'CENA_BEZ_DPH', symbol: 'CENA_SACHTA_BEZ_DPH', prejmenuj: true, nazev: P('CENA CELKEM') },
+  ];
+  return [...v16, { kotva: 'CENA_BEZ_DPH_CELKEM', prejmenuj: true, nazev: P('CENA CELKEM') }, ...stara];
 }
 
 /* Struktura náhledu podkladů – stejné sekce jako v technické specifikaci/nabídce.
@@ -757,9 +811,20 @@ function usazeniBocniSloucene(ph, P) {
  * vlastní řádky specifikace, už přeložené; tvoří sekci DALŠÍ UJEDNÁNÍ. */
 /* `sachty` (nepovinné, VS-E4 #570) = data.sachty z nabidkaData — u víc šachet
  * technická část po šachtách a tabulka šachet v obchodní části. */
-function nabidkaNahledSekce(ph, lang, platby, extra, sachty) {
+/* `rucni` (nepovinné, dávka RP) = data.rucni z nabidkaData — ruční položky:
+ * `tsRadky` (jedna šachta všechny, víc šachet jen společné sekce) a `ceny`
+ * (rozpis ceny). U víc šachet nese řádky sekcí šachty `sachty[i].rucniTs`.
+ * Texty už v jazyce dokumentu → { hotovo }. */
+function nabidkaNahledSekce(ph, lang, platby, extra, sachty, rucni) {
   const L = lang || 'cz';
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
+  const rucniTs = (rucni && Array.isArray(rucni.tsRadky)) ? rucni.tsRadky : [];
+  const rucniCeny = (rucni && Array.isArray(rucni.ceny)) ? rucni.ceny : [];
+  /* doplní ruční řádky do sekce `nazev` (česky) */
+  const sRucnimi = (sekce, radkyTs) => {
+    const a = (radkyTs || []).filter(t => t.sekceTs === sekce.sekce).map(t => [{ hotovo: t.nazev }, t.hodnota]);
+    return a.length ? Object.assign({}, sekce, { radky: sekce.radky.concat(a) }) : sekce;
+  };
   /* Sekce technické části, které popisují šachtu (VS-E4: u víc šachet za
    * každou šachtu s jejími symboly, nadpis sekce s názvem šachty). */
   const sachtaSekce = (ph) => [
@@ -813,8 +878,8 @@ function nabidkaNahledSekce(ph, lang, platby, extra, sachty) {
       ['ZÁBRADLÍ', ph.TS_MUSTKY_ZABRADLI], ['KOTVENÍ MŮSTKŮ', ph.TS_MUSTKY_KOTVENI],
       ...(ph.TS_MUSTKY_SLOUPY ? [['SLOUPY NAVÍC', ph.TS_MUSTKY_SLOUPY]] : [])] }] : []),
   ];
-  const sachtySekce = !(Array.isArray(sachty) && sachty.length) ? sachtaSekce(ph)
-    : [].concat(...sachty.map(sa => sachtaSekce(Object.assign({}, ph, sa.ph)).map(sk => ({
+  const sachtySekce = !(Array.isArray(sachty) && sachty.length) ? sachtaSekce(ph).map(sk => sRucnimi(sk, rucniTs))
+    : [].concat(...sachty.map(sa => sachtaSekce(Object.assign({}, ph, sa.ph)).map(sk => sRucnimi(sk, sa.rucniTs)).map(sk => ({
       sekce: { hotovo: P(sk.sekce) + ' – ' + sa.nazev + (sa.ks > 1 ? ' (' + sa.ks + ' ' + P('ks') + ')' : '') }, radky: sk.radky }))));
   const sekce = [
     { sekce: 'HLAVIČKA NABÍDKY', radky: [
@@ -824,9 +889,9 @@ function nabidkaNahledSekce(ph, lang, platby, extra, sachty) {
     { sekce: 'STAVEBNÍ A PŘÍPRAVNÉ PRÁCE', radky: [
       ['LEŠENÍ – UVNITŘ ŠACHTY', ph.TS_LESENI_UVNITR], ['LEŠENÍ – VNĚ ŠACHTY', ph.TS_LESENI_VNE],
       ['ZÁBRANY DO DVEŘNÍCH VSTUPŮ', ph.TS_ZABRANY_VSTUPY]] },
-    { sekce: 'PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE', radky: [
+    sRucnimi({ sekce: 'PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE', radky: [
       ['ZAMĚŘENÍ PROSTORŮ 3D SKENEREM', ph.TS_SKEN3D], ['VÝSTUP ZE ZAMĚŘENÍ PRO OBJEDNATELE', ph.TS_VYSTUP_ZAMERENI],
-      ['ZPRACOVÁNÍ DÍLENSKÉ DOKUMENTACE', ph.TS_DILENSKA_DOK], ['OVĚŘOVACÍ STATICKÝ VÝPOČET KONSTRUKCE', ph.TS_STATIKA]] },
+      ['ZPRACOVÁNÍ DÍLENSKÉ DOKUMENTACE', ph.TS_DILENSKA_DOK], ['OVĚŘOVACÍ STATICKÝ VÝPOČET KONSTRUKCE', ph.TS_STATIKA]] }, rucniTs),
     { sekce: 'SOUČÁSTÍ DODÁVKY NENÍ', radky: [
       ['OSVĚTLENÍ NÁSTUPIŠŤ', ph.TS_NENI_OSVETLENI], ['NUCENÉ VĚTRÁNÍ ŠACHTY VENTILÁTOREM', ph.TS_NENI_VENTILATOR],
       /* Řádek zmizí, když je vnější lešení v základní ceně (P8/7) — dodávku
@@ -854,9 +919,11 @@ function nabidkaNahledSekce(ph, lang, platby, extra, sachty) {
         ...(ph.SLEVA_KC ? [[{ hotovo: P('Sleva') + ' ' + ph.SLEVA_PROC + ' %' }, '− ' + ph.SLEVA_KC]] : []),
         [{ hotovo: P('Cena celkem (bez DPH)') + ' – ' + ph.SACHTY_CELKEM_POPIS }, ph.CENA_BEZ_DPH]]
       /* #560: s můstky šachta a můstky zvlášť (před slevou), sleva a součet. */
-      : ph.CENA_MUSTKY_BEZ_DPH ? [
+      : (ph.CENA_MUSTKY_BEZ_DPH || rucniCeny.length) ? [
         ['Výtahová šachta (bez DPH)', ph.CENA_SACHTA_BEZ_DPH],
-        ['Můstky mezi budovou a OCK (bez DPH)', ph.CENA_MUSTKY_BEZ_DPH],
+        ...(ph.CENA_MUSTKY_BEZ_DPH ? [['Můstky mezi budovou a OCK (bez DPH)', ph.CENA_MUSTKY_BEZ_DPH]] : []),
+        /* RP: ruční položky (před slevou), název už v jazyce dokumentu */
+        ...rucniCeny.map(x => [{ hotovo: x.nazev + ' (' + P('bez DPH') + ')' }, x.cena]),
         ...(ph.SLEVA_KC ? [[{ hotovo: P('Sleva') + ' ' + ph.SLEVA_PROC + ' %' }, '− ' + ph.SLEVA_KC]] : []),
         ['Cena celkem (bez DPH)', ph.CENA_BEZ_DPH]]
         : [['Výtahová šachta (bez DPH)', ph.CENA_BEZ_DPH]]),

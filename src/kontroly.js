@@ -886,6 +886,36 @@ const KONTROLY = [
     },
   },
   {
+    /* RUČNÍ POLOŽKA V CIZOJAZYČNÉ NABÍDCE (dávka RP, J. V. 23. 11. 2026, bod 6).
+     * Ruční položka kalkulace OCK se od dávky RP tiskne do technické
+     * specifikace a cenového bloku. Název a dodatkový text píše obchodník
+     * česky; jazykovou variantu EN/DE/FR může doplnit u položky (pole
+     * `jazyky`, vzor #379). Chybí-li a slovník text nezná, nabídka ponese
+     * českou větu — kontrola na to upozorní (jen varuje, tisk nezastaví).
+     * Rozhoduje totéž, co tiskne nabidkaData (rucniPolozkyVysledku nad
+     * výsledkem; víc šachet po šachtách). */
+    kod: 'rucniPolozkaCesky', kde: 'Nabídka', nazev: 'Ruční položka zůstane v cizojazyčné nabídce česky',
+    zjisti(ctx) {
+      const jaz = String(ctx.jazyk || 'cz').toLowerCase();
+      if (ctx.jenProj || jaz === 'cz' || typeof trStav !== 'function') return null;
+      const r = ctx.vysledek;
+      if (!r) return null;
+      const RPk = (typeof rucniPolozkyVysledku === 'function') ? { rucniPolozkyVysledku, rpCeskeVCiziNabidce }
+        : require('./rucni_polozky.js');
+      let pol = [];
+      if (Array.isArray(r.sachty) && r.sachty.length && ctx.ock && typeof sachtyZ === 'function') {
+        const zad = sachtyZ(ctx.ock);
+        r.sachty.forEach((s, i) => { pol = pol.concat(RPk.rucniPolozkyVysledku(s.vysl || r, (zad[i] || {}).zadani || ctx.zadani)); });
+      } else pol = RPk.rucniPolozkyVysledku(r, ctx.zadani);
+      const cesky = RPk.rpCeskeVCiziNabidce(pol, jaz, trStav);
+      if (!cesky.length) return null;
+      return { text: 'Nabídka v jazyce ' + jaz.toUpperCase() + ' ponese česky '
+        + (cesky.length === 1 ? 'ruční položku ' : 'ruční položky ') + kontrolyVyctem(cesky.map(n => '„' + n + '"'))
+        + ': chybí překlad ' + jaz.toUpperCase() + ' názvu nebo dodatkového textu. Doplňte ho v Kalkulaci OCK '
+        + 'u položky (odkaz „překlad EN/DE/FR" pod položkou), nebo text napište do jazyka nabídky.' };
+    },
+  },
+  {
     /* TERMÍN DODÁNÍ U ATYP (#330, nález TD1, 24. 9. 2026). Nabídka od teď
      * nese termín ze zakázky jako první odrážku kapitoly V.; zbytek
      * kapitoly je text z Firmy. Když v tom textu zůstala standardní lhůta

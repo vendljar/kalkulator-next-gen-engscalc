@@ -139,6 +139,12 @@ const KRYCI_SEKCE = [
     /* KL-2: jen část OCK po slevě. Projekce má vlastní krycí list PROJ. */
     { id: 'hodnotaBezDph', label: 'Hodnota zakázky bez DPH', verze: ['bo', 'techdata'], prefill: c => c.hodnota, src: 'z nabídky OCK (po slevě)' },
     { id: 'priplatkyNabidka', label: 'Příplatky v nabídce', verze: ['bo', 'techdata'], prefill: c => c.priplatky, src: 'z nabídky' },
+    /* RUČNÍ POLOŽKY V CENĚ (dávka RP, J. V. 23. 11. 2026, bod 5): počet –
+     * název, množství jednotka, cena s marží (sekce kalkulace). `jenKdyz`:
+     * řádek jen u zakázky, která ruční položku má — krycí listy ostatních
+     * zakázek zůstávají beze změny. */
+    { id: 'rucniPolozky', label: 'Ruční položky v ceně', verze: ['bo', 'techdata'], prefill: c => c.rucniText,
+      jenKdyz: c => !!(c && c.rucniText), mimoPipedrive: true, src: 'z kalkulace OCK' },
     /* #447 C6 (21. 10. 2026): příplatky, které zákazník z odeslané nabídky
      * objednal (zaškrtávají se u Smlouvy o dílo níž, src/objednane.js). */
     /* `nezmrazovat` (K31-N1, #447 C6, 22. 10. 2026): objednané příplatky se
@@ -579,7 +585,7 @@ function kryciCtx(zak, varianta, jekly) {
   const d = (varianta && varianta.data) || {};
   const Zv = (d.ock && d.ock.zadani) || {};
   const Cv = d.cenik || {};
-  let priplatky = '—', ockKc = null, projKc = null, rOck = null, vs = null;
+  let priplatky = '—', rucniText = '', ockKc = null, projKc = null, rOck = null, vs = null;
   const projSekce = {};
   try {
     /* Odeslaná nabídka vydá svůj otisk (A1). Vyřazená strana (P6, zámek
@@ -595,6 +601,21 @@ function kryciCtx(zak, varianta, jekly) {
     const vynech = Zv.priplatkyVynechat || [];
     const zahrn = (rOck.priplatky || []).filter(pp => !vynech.includes(pp.key));
     priplatky = zahrn.length ? (zahrn.length + ' – ' + zahrn.map(pp => pp.nazev).join(', ')) : 'bez příplatků';
+    try {   // RP: chyba ručních položek nesmí shodit zbytek krycího listu
+      /* RP: ruční položky z výsledku (u odeslané nabídky ze zámku); víc šachet
+       * po šachtách s názvem šachty v závorce u sekce */
+      const RPk = (typeof rucniPolozkyVysledku === 'function') ? { rucniPolozkyVysledku, rpKryciText } : require('./rucni_polozky.js');
+      if (Array.isArray(rOck.sachty) && rOck.sachty.length) {
+        const zad = (typeof sachtyZ === 'function') ? sachtyZ(d.ock) : [];
+        const vsN = (typeof vsNazev === 'function') ? vsNazev : ((z, i) => 'Šachta ' + (i + 1));
+        const vse = [].concat(...rOck.sachty.map((s, i) => RPk.rucniPolozkyVysledku(s.vysl || rOck, (zad[i] || {}).zadani || Zv)
+          .map(p => Object.assign({}, p, { sekceKalk: p.sekceKalk + ', ' + vsN(zad[i] || {}, i) }))));
+        rucniText = vse.length ? RPk.rpKryciText(vse, kryciKc) : '';
+      } else {
+        const a = RPk.rucniPolozkyVysledku(rOck, Zv);
+        rucniText = a.length ? RPk.rpKryciText(a, kryciKc) : '';
+      }
+    } catch (e) { rucniText = ''; }
     /* VS-E5 (#595): víc šachet — výběr do nabídky je po šachtách (R13),
      * u příplatku se vypíše, kterých šachet se týká. */
     vs = (typeof vsVystup === 'function') ? vsVystup(rOck) : null;
@@ -625,7 +646,7 @@ function kryciCtx(zak, varianta, jekly) {
     zak, varianta, ext: Zv.typSachty === 'exteriérová', dph: Math.round((Cv.dph || 0) * 100),
     /* ATYP z otevřené varianty — termín dodání se podle něj prodlužuje. */
     atyp: vs ? vsAtyp(d.ock) : !!Zv.atyp,   // VS-E5: atypická je zakázka, je-li atypická kterákoli šachta
-    hodnota, priplatky, firma, typProduktu,
+    hodnota, priplatky, rucniText, firma, typProduktu,
     /* VS-E5 (#595, R9): rozpis šachet z výsledku (u odeslané nabídky ze
      * zámku) — null u jedné šachty. */
     vs,
@@ -877,7 +898,7 @@ function kryciData(zak, varianta, jekly, verze) {
   const c = kryciCtx(zak, varianta, jekly);
   const kl = varianta.data.kryci || { hodnoty: {} };
   const sekce = KRYCI_SEKCE.map(s => {
-    const radky = s.pole.filter(p => p.verze.includes(verze)).map(p => [p.label, kryciHodnota(p, kl, c)]);
+    const radky = s.pole.filter(p => p.verze.includes(verze) && (!p.jenKdyz || p.jenKdyz(c))).map(p => [p.label, kryciHodnota(p, kl, c)]);
     return radky.length ? { sekce: s.sekce, radky } : null;
   }).filter(Boolean);
   const sachty = kryciSachtySekce(c);    // VS-E5: za Základními údaji, jen víc šachet

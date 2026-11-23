@@ -23,6 +23,7 @@ const ZAMEK_CHRANENE = [
   // Kalkulace OCK – množství, ceny, vlastní položky, příplatky, pořadí
   'mnozstviSet', 'nazevSet', 'nazevReset', 'cenaSet',
   'vlastniAdd', 'vlastniDel', 'vlastniSet', 'vlastniDoCeniku',
+  'rpJazykSet',   // RP: překlad ruční položky (EN/DE/FR) do zadání
   /* `volitelneVychoziSet` tu stála do 20. 8. 2026. Zanikla: sloupec Výchozí
    * už nezapisuje do zadání zakázky, ale do matice zobrazení (nastavení
    * aplikace pro nové zakázky) — a nastavení aplikace zámek varianty

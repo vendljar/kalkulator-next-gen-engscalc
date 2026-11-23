@@ -261,6 +261,16 @@
   .vol-name { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
   .vol-name > input[type=checkbox] { margin:0; flex:0 0 auto; }
   .vol-name > .vol-spacer { flex:0 0 auto; width:16px; }
+  /* RP: řádek pod ruční položkou (jednotka, dodatkový text, překlad) */
+  tr.rp-pod td { padding:2px 8px 6px 24px; border-top:0; background:transparent; }
+  .rp-pod-in { display:flex; flex-wrap:wrap; align-items:center; gap:6px 14px; font-size:12px; }
+  .rp-pod-in label { display:flex; align-items:center; gap:6px; }
+  .rp-pod-in .rp-dodatek { flex:1 1 320px; }
+  .rp-pod-in .rp-dodatek-in, .rp-jazyk input { flex:1; min-width:180px; text-align:left; }
+  .rp-pod-in select.rp-jednotka { width:auto; min-width:64px; }
+  .rp-jazyky { display:flex; flex-direction:column; gap:4px; margin-top:6px; }
+  .rp-jazyk { display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-size:12px; }
+  .rp-jazyk input { flex:1 1 200px; min-width:140px; }
   .vol-name input.nazev-ed { flex:1 1 180px; min-width:0; width:auto; }
   /* titulek nad cenovou kalkulací (název akce) */
   .kalk-title { font-size:15px; font-weight:700; color:var(--ink); margin:0 0 10px; }
