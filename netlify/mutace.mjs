@@ -119,6 +119,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      'test_553_webhook.mjs',
      /* PD #733/#728/#729 (23. 11. 2026): kalkulace z webhooku jako Nová zakázka, odkaz z dealu odemčený, kontakt jen jméno. */
      'test_pd_cerstva.mjs', '../src/test_pd_cerstva_ui.js',
+     /* PV #734 / #597 (23. 11. 2026): autor = vlastník dealu, zápis prodeje do dealu (simulátor, rychlé sady). */
+     'test_pv_734_autor.mjs', 'test_pv_597_zapis.mjs',
      /* #542 O-SECM (1. 11. 2026): nálezy security testu SEC-M M2–M9 — rychlá sada (< 1 s). */
      'test_secm.mjs',
      /* #557 SEC-M16 (3. 11. 2026): úvodní fotka jen jako datový obrázek — rychlé sady. */
