@@ -3,7 +3,7 @@
 Datum: 23. 11. 2026. Rozsah: `git diff 9f2445a..52347f5` (větev `claude/pv-pipedrive`, v23.11.7).
 Revizor: poradce (jen čtení kódu a běh testů proti simulátoru; do Pipedrive ani na weby nic).
 
-## Verdikt: SLOUČIT PO OPRAVÁCH
+## Verdikt: SLOUČIT PO OPRAVÁCH (po opravách 54efeef: SLOUČIT — viz konec dokumentu)
 
 Před sloučením do integrace opravit **V1** (vysoká) a **S1** (střední). S2–S4 doporučuji opravit v téže
 dávce (jsou malé), N1–N6 mohou jít do roadmapy. Otázky O1–O2 patří J. V. (bezpečnostní meze).
@@ -160,3 +160,24 @@ koordinaci, prosím o doplnění.
   Stačí, nebo zavést samostatné právo pro zápis? Doporučení: **zatím stačí** (k tomu musí být
   autor / kdo prodal / vedoucí / administrátor); popisek práva v Nastavení upravit, aby říkal
   i „zápis prodeje“.
+
+## Ověření oprav (23. 11. 2026) — `git diff 52347f5..54efeef`
+
+### Verdikt po opravách: SLOUČIT
+
+Spuštěno nad `54efeef`: `test_pv_597_zapis` 73/0, `test_pv_734_autor` 56/0, `test_prava` 1050/0,
+`test_k40c_webhook` 118/0. Mutace a celé kolo jsem nepouštěl.
+
+| nález | stav | jak ověřeno |
+|---|---|---|
+| V1 | **zavřeno** | `pdProdejStrany(zak, G, jekly)` už klientské strany nepřijímá, `hodnoty: sv.hodnoty` (`lib/pd_prodej.mjs:50`); funkce `telo.strany` nečte vůbec. Z těla jde do zpracování jen `soubor`, `akce`, `otisk`, `prevzit` a `zdroje` — `zdroje` končí jen v popiskách řádků tabulky (`pdNanecisto`), do těla PATCH (`pdZapisDealu`) nevstupují. UI `strany` neposílá. Test: náhled s podvrhem má týž otisk jako poctivý, zápis nese serverové CN; mutace „texty z těla požadavku“. |
+| S1 | **zavřeno** | Úmysl převzetí se zapíše do protokolu a do `v.prodano.pipedrive.prevzeti` před PATCH; neúspěch ho drží, další úspěšný zápis dopíše poznámku k dealu i větu „PŘEVZAT … (dokončeno po nepotvrzeném pokusu)“ a záznam smaže. Simulátor má scénář `zapisVisi` (PATCH proveden, odpověď nedorazí). Záznam `prevzeti` klient nepodvrhne — uložený prodej bere `prodServer` z uložené verze. Dvě mutace + mutace `prodOciste`. |
+| S2 | **zavřeno s mezí** | Zápis běží ve `vyhradne('pd_prodej/deal:…')`, zakázka i deal se čtou uvnitř; test: jeden 200, druhý 409 „zmeneno“, jeden PATCH, jedna poznámka. Výhradní úsek platí jen v jedné instanci funkce (stejná mez jako B158) — zapsáno v `BEZPECNOST_MEZE.md` (B277), přijatelné. |
+| S3 | **zavřeno** | `/api/v1/users` s `casLimitMs 2500, pokusu 1` (`functions/pd_webhook.mjs:245`); test s visícím dotazem, mutace. |
+| S4 | **zavřeno** | Do záznamu prodeje a protokolu jde jen `pdProdejChybaVeta` (pevné věty podle stavu); surový text Pipedrive jen v odpovědi (`podrobnost`). Test se scénářem `odmitnuti` (400 s e-mailem v textu), mutace. |
+
+Zbytkové poznámky (nebrání sloučení):
+
+- Zahájené převzetí, u kterého PATCH opravdu neproběhl a CN v dealu později někdo srovná ručně
+  v Pipedrive, dopíše při dalším zápisu poznámku „převzat od …“ — věcně odpovídá, jen bez tlačítka.
+- N1–N6 z první revize zůstávají otevřené (roadmapa). O1 a O2 čekají na J. V.; kód je podle doporučení.
