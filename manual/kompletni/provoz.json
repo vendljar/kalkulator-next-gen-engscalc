@@ -1670,7 +1670,7 @@
        "/api/pd/vazba",
        "POST",
        "přihlášený; „Zrušit vazbu“ jen autor zakázky a administrátor",
-       "vazba kalkulace na deal z webhooku: V pořádku (jen administrátor, RA #723), Vazba je chybná, Zrušit vazbu (deal odmítnut, náš odkaz v dealu smazán, doplněné údaje zůstanou)"
+       "vazba kalkulace na deal z webhooku: V pořádku (jen administrátor), Vazba je chybná, Zrušit vazbu (deal odmítnut, náš odkaz v dealu smazán, doplněné údaje zůstanou)"
       ],
       [
        "/api/pd/organizace",
