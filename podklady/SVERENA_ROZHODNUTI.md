@@ -9,6 +9,7 @@ Nová položka se připisuje nahoru.
 
 | datum | ID | co | proč | jak vrátit |
 |---|---|---|---|---|
+| 23. 11. 2026 | CI-24 | `.github/workflows/testy.yml`: mutace serveru v matrixu **24 částí** místo 16 (limit 100 min beze změny); CLAUDE.md upraveno. | Testy 45138469931 nad integrací 408987d: 1812 mutací, část 1/16 trvala 98,5 min, 15 částí zrušil limit 100 min (vše do té doby chycené). | vrátit matrix na 16 částí (jeden commit) |
 | 22. 11. 2026 | NN-T1 | Sady ukládající zakázku opakovaně bez razítka (`test_561_rucni_cena`, `test_667_statika_opl`, `test_k50n1_statika_zahr`, `test_obnova`, `test_prava`, po sloučení LAK i `test_666_lakovani`) doplňují razítko z úložiště v paměti jako skutečný klient (`netlify/pomoc_razitko.mjs`); dvě fixtury v `test_prava` (B56, #320) dostaly `uloRazitko`. | B237: razítko je povinné, klient ho posílá vždy; sady spoléhaly na zrušenou výjimku „starší klient bez pole“. Testy kolizí si razítko volí samy. | vrátit commit 972d2a7 (část testů) |
 | 22. 11. 2026 | NN-T2 | Nové sady NN v `netlify/mutace.mjs` SADY: `test_nn_nizke.mjs` a `../src/test_nn_nizke.js` na začátku, `test_nn_pipedrive.mjs` (~8 s) a `test_nn_poc.mjs` (~3 s, PoC auditu jako sada) na konci. | Pomalé sady na konci běží jen u mutací, které nic dřív nechytí; mutace NN je pouštějí první (`sady`). | vrátit řádky SADY |
 | 22. 11. 2026 | NN-T3 | `overit_online.mjs`, kontrola „UE: tabulka účtů ukazuje nové jméno“ čeká až 5 s na překreslení okna. | V kole 1× FAIL pod zátěží, samostatně 3× 281/0 — test četl tabulku před překreslením. | vrátit řádek waitForFunction |

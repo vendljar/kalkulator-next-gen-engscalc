@@ -22,7 +22,7 @@
 #                          smoke + VŠECHNY overit_*.mjs globem, statické
 #                          kontroly: verze = den commitu, CRLF, osobní údaje
 #                          a tajemství)
-#   job „mutace-server"  = testovaci_kolo.sh --jen mutace-server, matrix 16 částí
+#   job „mutace-server"  = testovaci_kolo.sh --jen mutace-server, matrix 24 částí
 #   job „mutace-jadro"   = testovaci_kolo.sh --jen mutace-jadro, matrix 3 části
 # Mutace běží v samostatných jobech, aby jely souběžně. OD 23. 10. 2026 (P2,
 # podklady/PROMPT_mutacni_beh_23_10.md) PO ČÁSTECH: celý běh se do jednoho
@@ -108,14 +108,18 @@ jobs:
   # 55 až 90+ min (části 1, 2 a 5 zrušil limit 90 min) → až ~0,85 min na
   # mutaci (sady mezitím zpomalily). 16 částí ≈ 71 mutací ≈ 35–60 min na část,
   # limit 100 min = rezerva i na pomalý stroj. Při ~1450 mutacích přidat části.
+  # CI-24 (23. 11. 2026, Testy 45138469931): 1812 mutací / 16 ≈ 113 na část,
+  # část 1 trvala 98,5 min, ostatních 15 zrušil limit 100 min (vše do té doby
+  # chycené). 24 částí ≈ 76 mutací ≈ 65–75 min na část. Při ~2200 mutacích
+  # přidat části.
   mutace-server:
     runs-on: ubuntu-24.04  # pevně: ubuntu-latest = 26.04 od 19. 10. 2026, Playwright tam Chromium neinstaluje
     timeout-minutes: 100
     strategy:
       fail-fast: false   # jedna červená část nesmí zrušit ostatní — chceme vidět všechny nechycené
       matrix:
-        cast: ['1/16', '2/16', '3/16', '4/16', '5/16', '6/16', '7/16', '8/16',
-               '9/16', '10/16', '11/16', '12/16', '13/16', '14/16', '15/16', '16/16']
+        cast: ['1/24', '2/24', '3/24', '4/24', '5/24', '6/24', '7/24', '8/24', '9/24', '10/24', '11/24', '12/24',
+               '13/24', '14/24', '15/24', '16/24', '17/24', '18/24', '19/24', '20/24', '21/24', '22/24', '23/24', '24/24']
     name: mutace-server (část ${{ matrix.cast }})
     env:
       ADMIN_EMAIL: spravce@priklad.cz

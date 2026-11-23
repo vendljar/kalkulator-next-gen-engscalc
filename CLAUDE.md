@@ -157,7 +157,7 @@ Cloudové sezení může spadnout a s ním zmizí vše, co není na GitHubu. Pro
   přímo `node netlify/mutace.mjs --cast K/N`; přerušený běh naváže
   `--od <číslo>` podle posledního řádku `[pořadí/celkem]` v logu. Kolo
   s částí hlásí „ZELENÁ ČÁST", nikdy „VŠE ZELENÉ". Actions běží v matrixu
-  (server 16 částí s limitem 100 min, jádro 3). Neznámá volba (i `--help`)
+  (server 24 částí s limitem 100 min, jádro 3). Neznámá volba (i `--help`)
   a prázdný výběr skončí chybou s kódem 2; `--od` navazuje jen na pracovní
   kopii bez zbytku mutace. `KNG_MUTACE_OD` patří k jednomu kroku kola
   (číslování jádra a serveru se liší).
