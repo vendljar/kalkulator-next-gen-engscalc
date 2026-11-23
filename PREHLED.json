@@ -548,14 +548,20 @@
    "typ": "ukol",
    "nazev": "Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6)",
    "cekaNa": "nahrát upravený skill (mimo repo)"
+  },
+  {
+   "id": "730",
+   "typ": "davka",
+   "nazev": "Spuštění propojení s Pipedrive na main — procedura (podklady/PIPEDRIVE_SPUSTENI.md)",
+   "cekaNa": "seznam polí pro #597 a uživatel tokenu (B1, B2)"
   }
  ],
  "ceka_na_jv_odlozene": 14,
  "nehotove_podle_kdo": {
-  "J. V.": 38,
+  "J. V.": 39,
   "kolega": 4,
-  "koordinace": 7,
+  "koordinace": 9,
   "integrátor": 2
  },
- "nehotovych": 51
+ "nehotovych": 54
 }

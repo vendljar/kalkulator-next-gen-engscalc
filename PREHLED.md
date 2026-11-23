@@ -88,9 +88,10 @@ Test je proti main napřed o 141 commitů.
 | #639 | otázka | Ruční cena: příloha PDF nabídky dodavatele a ruční cena v ceníku PROJ | rozhodnout, zda je potřeba |
 | #640 (dřív B221) | otázka | Role jen ke čtení: „kdo smí ukládat“ je dnes každý přihlášený | zavést roli jen ke čtení? (doporučeno až s kolegou s rolí administrátora) |
 | #643 | úkol | Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6) | nahrát upravený skill (mimo repo) |
+| #730 | dávka | Spuštění propojení s Pipedrive na main — procedura (podklady/PIPEDRIVE_SPUSTENI.md) | seznam polí pro #597 a uživatel tokenu (B1, B2) |
 
 K tomu 14 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
 
 ## Nehotové položky evidence
 
-Celkem 51: J. V. 38, kolega 4, koordinace 7, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 54: J. V. 39, kolega 4, koordinace 9, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
