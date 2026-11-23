@@ -33,7 +33,7 @@
 # server v 6 částech po ~150 mutacích — 5 z 6 zrušil limit 75 min (nejrychlejší
 # část 63 min); od 24. 10. (#514) 10 částí po ~92 mutacích, limit 90 min; od 2. 11.
 # (T2 #543, Testy 41391649224: ~113 mutací na část, části 1, 2 a 5 přes 90 min)
-# 16 částí po ~71 mutacích, limit 100 min. Přeskočené sady vypíše souhrn skriptu; přeskočená kontrola,
+# 16 částí po ~71 mutacích, limit 100 min; od 23. 11. (CI-24, 1812 mutací) 24 částí. Přeskočené sady vypíše souhrn skriptu; přeskočená kontrola,
 # o které se mlčí, je totéž co kontrola, která neexistuje.
 name: Testy
 

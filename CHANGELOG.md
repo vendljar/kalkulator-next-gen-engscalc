@@ -8,6 +8,18 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v23.11.1 — CI-24: mutace serveru v Actions ve 24 částech; rozhodnutí J. V. 23. 11. do roadmapy
+
+Nad integrací `408987d` (v22.11.10). Verze v23.11.1 (koordinace). Aplikace beze změny — kód je stejný jako v22.11.10;
+mění se jen nástroje kola, dokumentace a evidence. Cenu ani text dokumentů nemění.
+
+- **Testy v Actions:** mutace serveru (1812 mutací) v matrixu 24 částí místo 16 — 15 částí po 16 nestihlo limit
+  100 min (Testy 45138469931; do zrušení vše chycené). Svěřené CI-24; `test_dokumentace_kompletni` a příručka
+  provozu hlídají 24 částí.
+- **Roadmapa a rozhodnutí J. V. 23. 11.:** uzavřeny #716 (LAK body 1–4, L3 ponechat), #718 („V pořádku“ jen
+  administrátor), #722 (mez); nové #723–#726 (potvrzení vazby jen administrátor, zákaz doplnění PROJ k odeslané
+  OCK, síla hesla odložena, řádky DPZ ve Firmě).
+
 ## v22.11.10 — NN: nízké nálezy auditu 20. 11. 2026 (#702), revize BZ a PR, větev claude/nn-nizke-nalezy
 
 Nad integrací `05a496d` (v22.11.5), sloučeno s integrací `ae0b542` (v22.11.9). Verze v22.11.10 (koordinace). Cenu ani text dokumentů nemění
