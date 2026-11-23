@@ -1677,6 +1677,12 @@
        "POST",
        "autor zakázky a administrátor s právem čtení z Pipedrive",
        "Opravit firmu v Pipedrive podle ARES: náhled a zápis jen potvrzených lišících se polí (název, adresa, DIČ), jen při shodě IČO organizace a hlavičky; u zakázky s víc zákazníky (zkušební funkce) akce `vitez` po prodeji přepojí organizaci dealu na vítězného zákazníka (hledání podle IČO s ověřením kandidáta, jinak založení z ARES) — prodávající, autor nebo administrátor"
+      ],
+      [
+       "/api/pd/prodej",
+       "POST",
+       "autor zakázky, kdo prodal, vedoucí a administrátor s právem čtení z Pipedrive",
+       "zápis prodeje do dealu po Prodáno: náhled „pole / dnes v Pipedrive / nová hodnota“ a zápis po potvrzení (otisk náhledu) — údaje krycího listu, hodnota dealu ze serveru, fáze Vyhrané k podpisu SoD, stav dealu nikdy; jen se zapnutým zápisem do Pipedrive (proměnná PIPEDRIVE_ZAPIS) a platnou vazbou deal ↔ zakázka; cizí číslo nabídky v dealu jen s převzetím (poznámka k dealu)"
       ]
      ]
     },

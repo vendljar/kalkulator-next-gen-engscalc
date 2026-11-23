@@ -355,8 +355,12 @@ function objKontrola(stara, zak, relace, ctx) {
  * jen se záznamem objednaných platí jako prodej dál.
  * ============================================================ */
 const PROD_ROLE_ODEMKNOUT = ['Vedoucí', 'Administrátor'];
-const PROD_PD_STAVY = ['ceka', 'odeslano', 'chyba'];
-const PROD_PD_STAV_TEXT = { ceka: 'čeká na odeslání', odeslano: 'odesláno', chyba: 'odeslání selhalo' };
+/* PV #597: stav zápisu prodeje do dealu píše JEN server (functions/pd_prodej.mjs):
+ * { stav: 'zapsano', kdy } po zápisu, { stav: 'chyba', kdy, duvod } po neúspěchu
+ * (prodej platí dál, zápis jde zopakovat). 'odeslano' = starší tvar. */
+const PROD_PD_STAVY = ['ceka', 'odeslano', 'zapsano', 'chyba'];
+const PROD_PD_STAV_TEXT = { ceka: 'čeká na zápis', odeslano: 'odesláno', zapsano: 'zapsáno', chyba: 'zápis selhal' };
+const PROD_PD_DUVOD_MAX = 300;
 const PROD_DUVOD_MIN = 3, PROD_DUVOD_MAX = 500, PROD_HISTORIE_MAX = 50;
 const prodProdana = (v) => (typeof variantaProdana === 'function') ? variantaProdana(v)
   : !!(v && v.prodano && typeof v.prodano === 'object' && !Array.isArray(v.prodano) && v.zamek && v.zamek.zamceno);
@@ -589,6 +593,13 @@ function prodOciste(p) {
   if (!p || typeof p !== 'object' || Array.isArray(p) || !objDatumPlatne(p.datum)) return null;
   const pd = p.pipedrive && typeof p.pipedrive === 'object' && PROD_PD_STAVY.includes(p.pipedrive.stav)
     ? { stav: p.pipedrive.stav, kdy: t(p.pipedrive.kdy) } : { stav: 'ceka', kdy: t(p.kdy) };
+  /* PV #597: důvod neúspěšného zápisu (text serveru, bez řídicích znaků, se stropem). */
+  if (pd.stav === 'chyba' && typeof p.pipedrive.duvod === 'string' && p.pipedrive.duvod)
+    pd.duvod = p.pipedrive.duvod.replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, PROD_PD_DUVOD_MAX);
+  /* Revize PV S1: zahájené, nepotvrzené převzetí dealu { od, kdy } (píše jen server). */
+  const pv = p.pipedrive && p.pipedrive.prevzeti;
+  if (pd.stav !== 'zapsano' && pv && typeof pv === 'object' && typeof pv.od === 'string' && pv.od)
+    pd.prevzeti = { od: pv.od.replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, 120), kdy: t(pv.kdy) };
   const o = { datum: p.datum, kdo: t(p.kdo), kdy: t(p.kdy), pipedrive: pd };
   /* VZ-E4 (#603, doplněk 2): komu se prodalo (id zákazníka) — bez něj by se
    * po obnově z otisku prodej přepojil na řídícího (E5b pojistka P1). */

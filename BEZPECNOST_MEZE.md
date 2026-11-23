@@ -2486,3 +2486,23 @@ Větev `claude/cn-cislo-nabidky` nad integrací `8411eb9`. Testy `netlify/test_c
 - **Dotaz na změnu čísla, nabídka hledání a duplicita (#727 body 1–3) jsou jen v prohlížeči.** Volání API mimo
   aplikaci číslo neprodané a neodeslané zakázky změní bez dotazu; cizí zakázku pod stejným číslem dál odmítne
   server (B10, 409 kolize). Stopou je protokol zakázky (B66) a `upravil`.
+
+## PV — zápis prodeje do dealu (#597) a autor = vlastník dealu (#734) (dávka PV, 23. 11. 2026, v23.11.7)
+
+Větev `claude/pv-pipedrive`, revize Fable `podklady/revize/REVIZE_PV.md` (SLOUČIT PO OPRAVÁCH; V1, S1–S4 opraveny).
+Testy `netlify/test_pv_597_zapis.mjs`, `netlify/test_pv_734_autor.mjs`, `overit_pv_prodej.mjs`, mutace [PV].
+Číslo B277 je pracovní (přidělí koordinace).
+
+- **B277 — okno mezi čtením dealu a zápisem — PŘIJATO (revize PV, mez 3).** `POST /api/pd/prodej` přečte deal
+  (`update_time` jde do otisku potvrzeného náhledu) a pak pošle PATCH. Pipedrive podmíněný zápis nemá, takže úprava
+  dealu v Pipedrive během té chvíle (pod 3 s) se přepíše posílanými poli. Zúžení: posílají se jen pole, která se
+  proti dealu mění; náhled ukazuje „dnes v Pipedrive“; souběh dvou zápisů z aplikace řadí výhradní úsek na deal
+  (revize S2 — druhý vidí nový `update_time` → 409). Platí jen v instanci funkce; dvě instance Netlify se nevidí.
+- **Texty krycího listu do dealu skládá server (revize V1 — OPRAVENO).** Z požadavku se `strany` nečtou; hodnoty jdou
+  z uložené (po Prodáno zmrazené) zakázky, včetně Čísla nabídky = značky vlastníka dealu (#115 B).
+- **Chyby Pipedrive do zakázky jen pevnou větou (revize S4 — OPRAVENO).** `v.prodano.pipedrive.duvod` a protokol nesou
+  vlastní větu podle stavu (`pdProdejChybaVeta`); surový text Pipedrive jen v odpovědi (`podrobnost`) tomu, kdo zapisoval.
+- *Otázky pro J. V.:* O1 — vlastník dealu jako autor kalkulace z webhooku má práva autora (zrušit vazbu, změnit deal,
+  opravit firmu; dřív u webhookové kalkulace jen administrátor); O2 — zápis prodeje hlídá právo `crm.pipedrive`
+  („Čtení obchodních případů z Pipedrive“) + autor / kdo prodal / vedoucí / administrátor. Kód je zatím podle
+  doporučení revize (O1 ano, O2 zatím stačí).

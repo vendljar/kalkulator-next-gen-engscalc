@@ -76,6 +76,7 @@ import pdNanecistoFn from './functions/pd_nanecisto.mjs';
 import pdWebhookFn from './functions/pd_webhook.mjs';
 import pdVazbaFn from './functions/pd_vazba.mjs';
 import pdOrganizaceFn from './functions/pd_organizace.mjs';
+import pdProdejFn from './functions/pd_prodej.mjs';
 import zalohaDiskFn from './functions/zaloha_disk.mjs';
 import pdStavFn from './functions/pd_stav.mjs';
 import pripominkyFn from './functions/pripominky.mjs';
@@ -602,6 +603,14 @@ const MATICE = [
     metoda: 'POST', url: 'http://x/api/pd/organizace', telo: () => ({ soubor: ulozena.soubor, akce: 'nahled' }),
     proc: 'zápis názvu, adresy a DIČ organizace dealu po potvrzení — autor zakázky a administrátor s právem Pipedrive',
     prava: { 'nepřihlášený': 401, 'Obchodník': 403, 'Vedoucí': 403, 'Administrátor': 409 } },
+  /* Zápis prodeje do dealu (PV #597): právo Pipedrive z matice (B80) a k tomu
+   * prodaná zakázka (kdo prodal, autor, vedoucí, administrátor). Tady zakázka
+   * prodaná není → 409 všem přihlášeným s právem.
+   * Podrobnosti netlify/test_pv_597_zapis.mjs. */
+  { fn: pdProdejFn, soubor: 'pd_prodej.mjs', nazev: 'Pipedrive — zápis prodeje do dealu (POST /api/pd/prodej)',
+    metoda: 'POST', url: 'http://x/api/pd/prodej', telo: () => ({ soubor: ulozena.soubor, akce: 'nahled' }),
+    proc: 'po Prodáno a potvrzení obchodníkem zapíše krycí list, hodnotu a fázi dealu — s právem Pipedrive',
+    prava: { 'nepřihlášený': 401, 'Obchodník': 409, 'Vedoucí': 409, 'Administrátor': 409 } },
 
   /* Noční kopie na Disk skriptem Apps Script (#577 AS, 10. 11. 2026): volá ji
    * skript v Google účtu správce s tokenem KNG_DISK_TOKEN v hlavičce

@@ -38,6 +38,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/mt-mutace-2311` | (tato dávka) | v23.11.3 | MT #735: 4 nechycené mutace kola 45162888071 — jen testy, nad c8d3d9d |
 | `claude/sa-sablony` | (tato dávka) | v23.11.6 | SA #719–#721 kontrola šablon nad 133a8f5; verzi přečísluje koordinace |
 | `claude/lak-lakovani` | (tato dávka) | v22.11.8 | LAK #666 lakování z nabídky lakovny nad 05a496d, s integrací 36e2681 |
+| `claude/pv-pipedrive` | (tato dávka) | v23.11.7 | PV #597 zápis prodeje do dealu + #734 autor = vlastník dealu nad 1280831; revize Fable; verzi přidělí koordinace |
 
 Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontrola: `python3 nastroje/release_odkaz.py --chybejici`
 (22. 11.: žádná — main v19.11.11, tag vydán).
@@ -45,6 +46,22 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 ## Běžící dávky
 
 - Sloučené dávky (SA, PD, CN, RA, LAK, JT, NN, PR, BZ, HN, RJ, VZD, MT) — oddíly přesunuty do `podklady/predavky/2026-11.md` (23. 11. 2026). Běží: PV (#734 + #597), RP (prototyp ručních položek, čeká na J. V.).
+
+## Dávka PV (`claude/pv-pipedrive`, 23. 11. 2026)
+
+- Nad integrací 1280831 (v23.11.5), v23.11.7. **#734:** webhook při založení dohledá vlastníka dealu
+  (owner_id → GET /api/v1/users → e-mail → aktivní účet) = autor; jinak technický účet + varování a `autor` v logu.
+  Vazba nese `zalozil` (pdVazbaDokladaZapis). **#597:** POST `/api/pd/prodej` náhled/zápis (functions/pd_prodej.mjs,
+  lib/pd_prodej.mjs, lib/jadro_pd.cjs), karta Prodej v `src/ui/sod_ui.js`; stav `v.prodano.pipedrive` zapsano/chyba.
+- Testy: test_pv_597_zapis 57/0, test_pv_734_autor 51/0, overit_pv_prodej 19/0, mutace [PV] 18/18 chycených,
+  kolo `--bez-mutaci --proti origin/claude/integrace-16-10` VŠE ZELENÉ (534/0, hodiny 433/0, S3 SHODA 367/367); sloučeno s 9f2445a.
+- Do živého Pipedrive nic. Po nasazení do testu: testovací sezení zkušební zápis na deal TEST (PIPEDRIVE_SPUSTENI A6b, A9).
+- Revize Fable (`podklady/revize/REVIZE_PV.md`): V1 (texty krycího listu ze serveru), S1 (převzetí: úmysl před PATCH,
+  poznámka při opakování), S2 (výhradní úsek na deal), S3 (limit `/users` ve webhooku), S4 (pevné věty chyb) opraveny;
+  mez okna GET–PATCH = B277. Otázky pro J. V.: O1 práva vlastníka-autora, O2 právo pro zápis prodeje (kód podle doporučení).
+- Návrhy do roadmapy (revize N1–N6): N1 vypnutý uživatel PD (`active_flag`) jako autor; N2 `pdPoleMapa` v časovém rozpočtu
+  zápisu; N3 deal se čte dvakrát (vrátit ho z `pdDealPatriZakazce`); N4 neúspěch kvůli vypnutému zápisu / vazbě nemá psát
+  zakázku ani přepsat „zapsano“; N5 řádek logu `pd_prodej` bez osobních údajů; N6 komentář `icoShoda` v `pd_vazba.mjs:53`.
 
 ## Čeká na J. V.
 
