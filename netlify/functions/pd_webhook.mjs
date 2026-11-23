@@ -241,6 +241,12 @@ async function zpracuj(req, dealId, ULO, G) {
     if (!stara) {
       zak = G.novaZakazka();
       pdWebhookHlavicka(zak, zadani.strana).cislo = zadani.cislo;
+      /* #733 (K53-N2, J. V. 23. 11. 2026): čerstvá kalkulace z dealu, dosud
+       * neotevřená člověkem. Server ceník nevolí (P12) a výchozí zaškrtnutí
+       * z matice zobrazení nezná — prohlížeč ji při otevření připraví jako
+       * „Novou zakázku“ (pdCerstvaPriprav v src/zakazka.js) a příznak zahodí.
+       * Píše ho jen server: od klienta se nebere nikdy (pdVazbaDrz). */
+      zak.pdCerstva = true;
       akce = 'zalozeno';
     } else {
       zak = JSON.parse(JSON.stringify(stara));

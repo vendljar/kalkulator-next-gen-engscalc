@@ -2025,6 +2025,15 @@ function zamekCteniZapni() { ZAMEK_CTENI.zamceno = true; }
 function zamekCteniVypni() { ZAMEK_CTENI.zamceno = false; }
 
 /* Vrací true, když je zápis kvůli zámku čtení zakázaný (a řekne to). */
+/* #733 (dorevize PD N1): kalkulace z Pipedrive, která se ještě nepřipravila
+ * nad platným ceníkem (příznak pdCerstva), se neodemyká — uložila by se
+ * s marží 0 natrvalo. Vrací větu proč, nebo ''. */
+function zamekCteniCerstvaDuvod() {
+  return (typeof ZAK !== 'undefined' && ZAK && ZAK.pdCerstva === true)
+    ? 'Kalkulace z Pipedrive ještě není připravená nad platným ceníkem (ceník se nenačetl). '
+      + 'Obnovte stránku (F5) — po načtení ceníku se připraví sama.' : '';
+}
+
 function zamekCteniStop() {
   if (!zamekCteniJe()) return false;
   /* Jeden dialog najednou: psaní do pole volá set() při každé změně a bez
@@ -2033,6 +2042,11 @@ function zamekCteniStop() {
   ZAMEK_CTENI.dialog = true;
   const hotovo = () => { ZAMEK_CTENI.dialog = false; };
   const ja = (typeof ONLINE_STAV !== 'undefined') ? ONLINE_STAV.ja : null;
+  const cerstva = zamekCteniCerstvaDuvod();
+  if (cerstva) {
+    if (typeof hlaska === 'function') Promise.resolve(hlaska(cerstva)).then(hotovo, hotovo); else hotovo();
+    return true;
+  }
   const smi = (typeof zamekCteniSmiOdemknout !== 'function') || zamekCteniSmiOdemknout(ZAK, ja);
   /* ODESLANÁ NABÍDKA SE NEODEMYKÁ, POKRAČUJE SE KLONEM (#404, J. V. 13. 10.
    * 2026). Obchodník u odeslané nabídky lištu „jen ke čtení" s Odemknout
@@ -2099,6 +2113,8 @@ function zamekCteniNasad(strana) {
 
 function zamekCteniOdemkniUI() {
   const ja = (typeof ONLINE_STAV !== 'undefined') ? ONLINE_STAV.ja : null;
+  const cerstva = zamekCteniCerstvaDuvod();
+  if (cerstva) { hlaska(cerstva); return; }
   if (typeof zamekCteniSmiOdemknout === 'function' && !zamekCteniSmiOdemknout(ZAK, ja)) {
     hlaska(zamekCteniDuvod(ZAK, ja));
     return;

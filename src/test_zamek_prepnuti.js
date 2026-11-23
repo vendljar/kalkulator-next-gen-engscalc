@@ -31,7 +31,7 @@ const test = (n, cond, info) => {
 
 const online = fs.readFileSync(__dirname + '/ui/online_ui.js', 'utf8');
 const dialog = fs.readFileSync(__dirname + '/ui/dialog.js', 'utf8');
-const otevri = (online.match(/async function onlineOtevri\(soubor\)[\s\S]*?\n\}/) || [''])[0];
+const otevri = (online.match(/async function onlineOtevri\(soubor(, volby)?\)[\s\S]*?\n\}/) || [''])[0];
 test('funkce onlineOtevri se našla', otevri.length > 200, otevri.length);
 
 /* ---------- 1) zámek je vlastnost konkrétní otevřené zakázky ---------- */
@@ -40,8 +40,13 @@ test('každá otevřená zakázka se zamkne jen ke čtení', /zamekCteniZapni\(\
 test('zámek se zapíná PŘED přepočtem i renderem',
   otevri.indexOf('zamekCteniZapni()') < otevri.indexOf('uloSrovnejSPlatnymCenikem'),
   [otevri.indexOf('zamekCteniZapni()'), otevri.indexOf('uloSrovnejSPlatnymCenikem')]);
-test('odemčení nikde v onlineOtevri není — odemyká jen člověk tlačítkem',
-  !/zamekCteniVypni/.test(otevri));
+/* Jediná výjimka (#728, J. V. 23. 11. 2026): čerstvá kalkulace z webhooku
+ * Pipedrive otevřená odkazem z dealu — jen připravená, jen kdo smí odemknout
+ * (podrobně src/test_pd_cerstva_ui.js). Jinde se v onlineOtevri neodemyká. */
+test('odemčení v onlineOtevri jen výjimkou #728 (odkaz z dealu, čerstvá a připravená kalkulace)',
+  (otevri.match(/zamekCteniVypni/g) || []).length === 2
+  && /const odemknout = volby\.zOdkazu === true && cerstva && pripraveno > 0/.test(otevri)
+  && /if \(odemknout && typeof zamekCteniVypni === 'function'\) zamekCteniVypni\(\);/.test(otevri));
 
 const common = fs.readFileSync(__dirname + '/ui/common.js', 'utf8');
 test('stav zámku žije jen v paměti, po obnovení stránky se nepřenáší',
@@ -60,7 +65,7 @@ test('a totéž hlídá i ruční uložení',
 /* Návrat na poslední zakázku po obnovení stránky jde touž cestou, takže se
  * zamkne taky — kdyby si otevíral zakázku po svém, zámek by obešel. */
 const obnov = (online.match(/function onlineObnovPosledni\(\)[\s\S]*?\n\}/) || [''])[0];
-test('návrat po obnovení stránky otevírá přes onlineOtevri', /onlineOtevri\(soubor\)/.test(obnov));
+test('návrat po obnovení stránky otevírá přes onlineOtevri', /onlineOtevri\(soubor[,)]/.test(obnov));
 
 /* ---------- 2) přepnutí s neuloženými změnami nabídne tři cesty ---------- */
 

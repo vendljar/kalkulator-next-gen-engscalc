@@ -427,6 +427,11 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   /* Vazba z webhooku a odmítnuté dealy (K40c #581): pole psaná JEN serverem —
    * z uložené verze (obnova ze souboru je nepřebírá, z otisku ano), mění je
    * jen výslovná akce (functions/pd_vazba.mjs, pd_organizace.mjs, webhook). */
+  /* #733 (dorevize PD N1): příznak „čerstvá z webhooku“ v těle = kalkulace
+   * z Pipedrive, kterou prohlížeč ještě nepřipravil nad platným ceníkem
+   * (připravená ho nenese). Uložit ji by znamenalo marži 0 natrvalo — odmítnout. */
+  if (!obnova && zak.pdCerstva === true)
+    return odmitni(409, 'Kalkulace z Pipedrive ještě není připravená nad platným ceníkem — obnovte stránku (F5) a otevřete ji znovu.');
   pdVazbaDrz(stara, zak, { obnova, zeSouboru });
   /* Organizace dealu = vítěz (VZ-E5b #605): `pdOrgVitez` píše jen akce
    * POST /api/pd/organizace { akce: 'vitez' } — při uložení z uložené verze. */

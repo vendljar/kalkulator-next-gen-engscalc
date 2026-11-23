@@ -117,7 +117,9 @@ export function pdWebhookZadani(nase, cnDealu) {
   const n = nase || {};
   const txt = (x) => String(x == null ? '' : x).replace(/\s+/g, ' ').trim().slice(0, 500);
   const strana = /^\s*projekce/i.test(String(n.typZakazky || '')) ? 'proj' : 'ock';
-  const kontakt = [txt(n.kontakt), txt(n.kontaktObjednatel)].filter(Boolean).join(', ');
+  /* #729 (J. V. 23. 11. 2026): kontaktní osoba jen JMÉNO osoby dealu — e-mail
+   * a telefon zůstávají v Pipedrive (n.kontaktObjednatel se do hlavičky nebere). */
+  const kontakt = txt(n.kontakt);
   const datum = /^\d{4}-\d{2}-\d{2}$/.test(String(n.terminPlneni || '').slice(0, 10)) ? String(n.terminPlneni).slice(0, 10) : '';
   return {
     strana,

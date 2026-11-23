@@ -230,6 +230,19 @@ test('Nabídku vypracoval a Odpovědná osoba zůstávají Uživatel',
   DEF.nabidkuVypracoval.druh === 'uzivatel' && DEF.odpovednaOsoba.druh === 'uzivatel');
 test('uživatel: neznámé jméno = důvod, ne nejbližší shoda',
   !!P('nabidkuVypracoval', 'ock', { dodZpracoval: 'Jan Vzor' }, {}, { uzivatele: LIDE }).duvod);
+/* PD bod 4 (J. V. 23. 11. 2026, náhled CN-432): předvyplněný krycí list nese
+ * „jméno[, telefon], e-mail“ — dřív „nelze převést“. Pojistka: na 173ab6a
+ * první tři kontroly selžou. */
+test('uživatel: „Jméno, e-mail“ z krycího listu → podle e-mailu',
+  P('nabidkuVypracoval', 'ock', { dodZpracoval: 'Jan Vzorový, jan.vzorovy@priklad.cz' }, {}, { uzivatele: LIDE }).hodnota === 7);
+test('uživatel: „Jméno, telefon, e-mail“ → podle e-mailu (i velká písmena)',
+  P('nabidkuVypracoval', 'ock', { dodZpracoval: 'Ing. Eva Zkušební, +420 000 000 111, EVA@priklad.cz' }, {}, { uzivatele: LIDE }).hodnota === 8);
+test('uživatel: e-mail nesedí → jméno před čárkou (bez titulů)',
+  P('odpovednaOsoba', 'proj', { odpovednyEmail: 'Ing. Jan Vzorový, jiny@priklad.cz' }, {}, { uzivatele: LIDE }).hodnota === 7);
+test('uživatel: e-mail jednoho, jméno druhého → rozhodne e-mail',
+  P('nabidkuVypracoval', 'ock', { dodZpracoval: 'Jan Vzorový, eva@priklad.cz' }, {}, { uzivatele: LIDE }).hodnota === 8);
+test('uživatel: neznámý samotný e-mail = důvod (žádná shoda jménem)',
+  !!P('nabidkuVypracoval', 'ock', { dodZpracoval: 'nikdo@priklad.cz' }, {}, { uzivatele: LIDE }).duvod);
 test('uživatel: bez seznamu uživatelů = důvod', !!P('nabidkuVypracoval', 'ock', { dodZpracoval: 'Jan Vzorový' }).duvod);
 
 test('pole v CRM chybí = důvod (jen když je co poslat)',

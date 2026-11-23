@@ -374,6 +374,18 @@
    "kolo": "50",
    "stav": "opraveno v testu (v22.11.3), v main ne",
    "cekaNa": "—"
+  },
+  {
+   "id": "733",
+   "typ": "nalez",
+   "nazev": "Kalkulace založená webhookem Pipedrive má marži 0 % a ceny dle nabídky 0",
+   "alias": [
+    "K53-N2"
+   ],
+   "verze": "v23.11.5",
+   "kolo": "53",
+   "stav": "oprava ve verzi v23.11.5, v testu ještě ne",
+   "cekaNa": "—"
   }
  ],
  "ceka_na_jv": [
@@ -560,8 +572,8 @@
  "nehotove_podle_kdo": {
   "J. V.": 38,
   "kolega": 4,
-  "koordinace": 10,
+  "koordinace": 8,
   "integrátor": 2
  },
- "nehotovych": 54
+ "nehotovych": 52
 }

@@ -329,6 +329,11 @@ delete G.cenikDnesniProVariantu;
 test('prohlížeč doplní ceník z platného (cena nevzniká na serveru)', !!vOkne.varianty[0].data.cenik
   && vOkne.varianty[0].data.cenik.zkusebni === ZC.zkusebniCenik().zkusebni && vOkne.varianty[0].data.cenik.montazHodKc === ZC.zkusebniCenik().montazHodKc
   && !vOkne.varianty[0].data.cenikVynechan, vOkne.varianty[0].data.cenik && vOkne.varianty[0].data.cenik.montazHodKc);
+/* PD #733: prohlížeč čerstvou kalkulaci z webhooku při otevření připraví
+ * (onlineOtevri → pdCerstvaPriprav) a příznak pdCerstva zahodí; s příznakem
+ * by ji server odmítl (409, dorevize PD N1 — hlídá test_pd_cerstva.mjs). */
+test('PD #733: kalkulace z webhooku přichází s příznakem pdCerstva', ulozena.pdCerstva === true);
+delete vOkne.pdCerstva;
 vOkne.varianty[0].data.ock.zadani.zdvih = 12;
 const ul = await post(zakazky, 'http://x/api/zakazky', { zakazka: vOkne, ocekavaneRazitko: G.uloRazitko(ulozena) }, cO);
 const ulj = await ul.json();

@@ -34,6 +34,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/bz-bezpecnost` | (tato dávka) | v22.11.3 | BZ audit B231–B236, B195 nad cda289e; revize Fable |
 | `claude/cn-cislo-nabidky` | (tato dávka) | v23.11.3 | CN #727 číslo nabídky nad 8411eb9 |
 | `claude/ra-rozhodnuti` | (tato dávka) | v23.11.2 | RA #723 #724 #726 + log webhooku nad integrací 133a8f5; verzi přečísluje koordinace |
+| `claude/pd-webhook-uprava` | (tato dávka) | v23.11.5 | PD #733 #732 #728 #729 nad 173ab6a; verzi přidělí koordinace |
 | `claude/mt-mutace-2311` | (tato dávka) | v23.11.3 | MT #735: 4 nechycené mutace kola 45162888071 — jen testy, nad c8d3d9d |
 | `claude/lak-lakovani` | (tato dávka) | v22.11.8 | LAK #666 lakování z nabídky lakovny nad 05a496d, s integrací 36e2681 |
 
@@ -42,6 +43,7 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 
 ## Běžící dávky
 
+- **PD** (`claude/pd-webhook-uprava`, prac.): kalkulace z webhooku = Nová zakázka (#733/#732), odkaz z dealu k úpravám (#728), kontakt jen jméno (#729). Detail `podklady/predavky/PD_webhook.md`. **Před sloučením revize Fable (cena).**
 - **CN #727** (`claude/cn-cislo-nabidky`, v23.11.3 prac.): HOTOVO, k revizi; detail `podklady/predavky/CN_cislo_nabidky.md`.
 - **RA** (`claude/ra-rozhodnuti`, v23.11.2 prac., nad 133a8f5): rozhodnutí J. V. 23. 11. — #723 „V pořádku“ jen
   administrátor (server 403, klient štítek „čeká na potvrzení správcem“), #724 číslo PROJ po zámku / prodeji
