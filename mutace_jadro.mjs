@@ -312,6 +312,19 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* RA (23. 11. 2026): #726 upozornění na zastaralé řádky termínu DPZ (podminky.js). [RA] */
+  { nazev: "RA #726: chybějící „dpz-studie“ se nehlásí [RA]", soubor: "podminky.js",
+    hledej: "  const chybi = PODMINKY_PROJ_SEKCE_PODMINENE.filter(k => klice.indexOf(k) < 0);",
+    nahrad: "  const chybi = ['dpz+studie'].filter(k => klice.indexOf(k) < 0);",
+    proc: "vlastní TERMÍNY bez řádku DPZ bez studie by prošly bez upozornění", sady: ["test_ra_terminy_proj.js"] },
+  { nazev: "RA #726: výchozí znění hlásí upozornění [RA]", soubor: "podminky.js",
+    hledej: "  if (!chybi.length) return '';\n  const stary",
+    nahrad: "  const stary",
+    proc: "správce by viděl falešné upozornění i u správného textu", sady: ["test_ra_terminy_proj.js"] },
+  { nazev: "RA #726: upozornění bez doporučení [RA]", soubor: "podminky.js",
+    hledej: "    + 'Doporučení: vymažte pole TERMÍNY (česky) — platí výchozí znění; nebo doplňte řádky dpz+studie a dpz-studie.';",
+    nahrad: "    + '';",
+    proc: "správce by nevěděl, že stačí pole vymazat (výchozí znění)", sady: ["test_ra_terminy_proj.js"] },
   /* RJ (22. 11. 2026): #665 sken podpisu původního zpracovatele v dotisku (zpracovatel.js). [RJ] */
   { nazev: "RJ #665: zmrazený sken nemá přednost [RJ]", soubor: "zpracovatel.js",
     hledej: "  if (s && s.podpisOtisk && ZPRAC_PODPISY_ZAMKU.has(s.podpisOtisk)) return { ZPRAC_PODPIS: ZPRAC_PODPISY_ZAMKU.get(s.podpisOtisk) };\n",

@@ -1390,7 +1390,7 @@ pole, nebo pole s hodnotou naposledy zapsanou webhookem (otisk). Navázání
 EXISTUJÍCÍ kalkulace (podle čísla nabídky) se zapíše do protokolu zakázky
 (`kdo: pipedrive-webhook`, jen názvy polí) a do `zak.pdVazbaWebhook`
 (`stav: 'ceka'`); při otevření zakázky svítí upozornění (i u zamčené, prodané
-a jen-ke-čtení) s tlačítky **V pořádku** (kdokoli), **Zrušit vazbu** (jen autor
+a jen-ke-čtení) s tlačítky **V pořádku** (kdokoli; od RA #723 23. 11. 2026 jen administrátor — viz oddíl RA), **Zrušit vazbu** (jen autor
 zakázky — `autor` z uložené verze = e-mail relace — a administrátor, ověřuje
 server) a **Vazba je chybná** (ostatní; příznak vidí autor a administrátor
 v upozornění a v Přehledu nabídek). **Zrušení je jen pojistka proti cizímu
@@ -2238,7 +2238,7 @@ Rozhodnutí v `podklady/ROZHODNUTI_LOG.md`, roadmapa #704, #710, #714, #715. Tes
   zadaným dealem = „ceka“). **Revize RJ R2:** deal odmítnutý u zakázky (`pdDealyOdmitnute`) nebo s vazbou
   „zruseno“ odkaz v dealu nedoloží (`PD_DEAL_ZRUSENO`) — mazání odkazu při zrušení vazby může selhat (chyba,
   časová mez 2,5 s, strop 20/h; zrušení se přesto dokončí) a odkaz od webhooku by po novém připojení dealu
-  pustil zápis. *Mez R1 (k rozhodnutí J. V. před zapnutím zápisu):* „V pořádku“ smí stisknout kdokoli
+  pustil zápis. *Mez R1 — VYŘEŠENO v RA #723 (J. V. 23. 11. 2026: potvrzuje jen administrátor):* „V pořádku“ smí stisknout kdokoli
   s přístupem k zakázce, i její autor (i cizí obchodník) — potvrzení vazby obchodníkem, který deal připojil
   sám, zápis pustí. **Návrh revize:** u kalkulace existující před webhookem (vazba „ceka“) nesmí potvrdit její
   autor — jen administrátor nebo jiný uživatel; případně potvrzení dokládat z CRM (např. pole v dealu).
@@ -2405,3 +2405,27 @@ Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md` (tabulka �
   smiOdesilat}`; při vypnuté funkci klient nic nenačítá a tlačítko do stránky nevkládá.
 - **Zbytek N1 (PR) — OPRAVENO.** Viz B257 (jen štítek pole, strukturální selektor).
 - **#703 — B233 zbytek — PŘIJATO JAKO MEZ** (J. V. 22. 11. 2026). Viz B233.
+
+## RA — rozhodnutí J. V. 23. 11. 2026 (#723, #724, #726, log webhooku)
+
+Větev `claude/ra-rozhodnuti` nad integrací `133a8f5`. Testy `netlify/test_k40c_webhook.mjs`,
+`netlify/test_ra_rozhodnuti.mjs`, `src/test_ra_vazba_ui.js`, `src/test_ra_terminy_proj.js`, mutace [RA].
+
+- **B258 — potvrzení vazby dealu z webhooku („V pořádku“) — OPRAVENO (#723).** Vazbu ve stavu „ceka“
+  potvrzuje jen **administrátor** (`pdVazbaSmiPotvrdit` v `lib/pd_vazba.mjs`, role z relace); autor zakázky,
+  cizí obchodník i vedoucí dostanou 403 a vazba zůstane „ceka“ (zápis do dealu dál neověřený, RJ N1).
+  Klient tlačítko kreslí jen administrátorovi, ostatní vidí „čeká na potvrzení správcem“; „Vazba je chybná“
+  a „Zrušit vazbu“ beze změny. Pořadí kontrol: neplatná akce 400 → bez živé vazby / už potvrzená 409 → role 403
+  (bez vazby se role nezjišťuje — stejně jako u „Zrušit vazbu“). Uzavírá mez R1 (revize RJ).
+- **B259 — číslo PROJ po zámku a Prodáno — OPRAVENO (#724, BZ-I1).** K odeslané nebo prodané nabídce
+  (kterákoli zamčená varianta) server odmítne doplnění, změnu i smazání `projHlavicka.cislo` (403, každá role
+  — jako B231 příznaky strany; cesta ven = odemčení správcem nebo nová zakázka řady OVP). Porovnává se text bez
+  okrajových mezer, nedopsaná předloha čísla = prázdno, cizí typ (číslo, objekt) jako JSON. Varianta odemčená
+  v témže uložení se nepočítá. Klient cestu `ZAK.projHlavicka.cislo` zmrazí (`zamekZakCestaZmrazena`).
+  *Mez:* obnova ze zálohy číslo bere jako doklad (jako B231).
+- **Log webhooku Pipedrive (RA).** Po kroku 7 jeden řádek `pd_webhook: {dealId, akce, odkazDoDealu,
+  varovani}` do logu funkce Netlify. Varování jsou naše texty (bez kontaktů a hodnot polí); text chyby
+  Pipedrive (`popisStavu`, pole `error`) se do varování dostat může — zkrácen na 300 znaků, bez řídicích znaků.
+  Bez tokenu, klíče webhooku, URL odkazu a obsahu kalkulace (test „v logu není e-mail … URL“).
+- **#726 (VZD-N1) — jen upozornění.** Nastavení → Smlouvy / Šablony → Texty nabídky PROJ (Termíny) a karta Lhůty
+  PROJ upozorní, když vlastní český text TERMÍNY nemá řádky `dpz+studie` a `dpz-studie`; data ani tisk se nemění.

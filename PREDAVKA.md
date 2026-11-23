@@ -32,6 +32,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/ds-sablony` | (tato dávka) | v21.11.3 | DS #648–#650 nad cda289e; verzi přečísluje koordinace |
 | `claude/op1-drobnosti` | (tato dávka) | v21.11.2 | OP1: PG-N1, #682, D3-N1, D3-N2 nad cda289e; kolo --bez-mutaci VŠE ZELENÉ, S3 SHODA 359/359, mutace [OP1] 9/9, [D3] 18/18, [NP] 16/16, [PG] 16/16; #692–#694 a verzi přečísluje koordinace |
 | `claude/bz-bezpecnost` | (tato dávka) | v22.11.3 | BZ audit B231–B236, B195 nad cda289e; revize Fable |
+| `claude/ra-rozhodnuti` | (tato dávka) | v23.11.2 | RA #723 #724 #726 + log webhooku nad integrací 133a8f5; verzi přečísluje koordinace |
 | `claude/lak-lakovani` | (tato dávka) | v22.11.8 | LAK #666 lakování z nabídky lakovny nad 05a496d, s integrací 36e2681 |
 
 Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontrola: `python3 nastroje/release_odkaz.py --chybejici`
@@ -39,6 +40,13 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 
 ## Běžící dávky
 
+- **RA** (`claude/ra-rozhodnuti`, v23.11.2 prac., nad 133a8f5): rozhodnutí J. V. 23. 11. — #723 „V pořádku“ jen
+  administrátor (server 403, klient štítek „čeká na potvrzení správcem“), #724 číslo PROJ po zámku / prodeji
+  (`zamekStranaZmena` 403 každé roli, klient `zamekZakCestaZmrazena`), #726 upozornění na zastaralé řádky DPZ
+  (Texty nabídky PROJ + Lhůty PROJ, jen varování), log `pd_webhook:` po kroku 7. Testy test_ra_rozhodnuti (21),
+  test_ra_vazba_ui (6), test_ra_terminy_proj (13), test_k40c_webhook (118), overit_xss; mutace [RA] 12 + 3.
+  Meze B258/B259 (pracovní). **Před sloučením revize Fable** (práva a zámky). #726 body 1 a 3 (data testu,
+  main) mimo dávku.
 - **LAK #666** (`claude/lak-lakovani`, v22.11.8, nad 05a496d + 36e2681): cena z nabídky lakovny jako částka řádku
   `C.lak.nabidkaKc` (mimo ceník/Nastavení, `RC_CASTKY_RADKU` v `rucni_ceny.js`), ruční cena #561 se zdrojem a potvrzením;
   bez zdroje = nepotvrzená (zábrana, 403). Svěřené LAK-1/LAK-2, otázky #716. Testy `test_666_lakovani` (53 + 31), revize Fable L1/L2 opraveny,
