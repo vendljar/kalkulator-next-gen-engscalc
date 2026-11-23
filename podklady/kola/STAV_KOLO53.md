@@ -1,6 +1,6 @@
 # STAV kola 53 — TESTOVÁNÍ 3: Pipedrive deal 432, novinky v22.11.6–v22.11.10, data testu (23. 11. 2026)
 
-Stav: **PROBÍHÁ** — test v23.11.1 (e96e03f) od 13:28 UTC (`/api/zdravi`), `PIPEDRIVE_ZAPIS = ano`. Body 1–3 hotové.
+Stav: **UKONČENO** (13:48 UTC; K53-N2 = #733 → dávka PD) — test v23.11.1 (e96e03f) od 13:28 UTC (`/api/zdravi`), `PIPEDRIVE_ZAPIS = ano`. Body 1–3 hotové.
 
 ## Hlavička
 
@@ -117,7 +117,7 @@ V roadmapě: #731 (K53-N1), #732 (K53-I1), #733 (K53-N2); K53-I2 = #652 (bez č�
 
 ## Úklid
 
-- CN-432: zkušební data VRÁCENA 13:45 UTC (zákazník „TEST K53 Zákazník B s.r.o.“ odebrán, šachta 1 = 1 ks — ks vrátil už J. V. 13:43). Poznámky v dealu 432 se samy aktualizovaly: id 1110 „Šachty v nabídce: 1 šachta — nabídka CN-432“, id 1111 „Další zákazníci na zakázce: žádní — nabídka CN-432“ (ověřeno v Pipedrive; aktualizace poznámek tím ověřena také). Poznámky v dealu zůstávají — smazat jen na pokyn J. V.
+- CN-432: zkušební data VRÁCENA 13:45 UTC (zákazník „TEST K53 Zákazník B s.r.o.“ odebrán, šachta 1 = 1 ks — ks vrátil už J. V. 13:43). Poznámky v dealu 432 se samy aktualizovaly: id 1110 „Šachty v nabídce: 1 šachta — nabídka CN-432“, id 1111 „Další zákazníci na zakázce: žádní — nabídka CN-432“ (ověřeno v Pipedrive; aktualizace poznámek tím ověřena také). Poznámky v dealu zůstávají — smazat jen na pokyn J. V. Moje uložení CN-432 13:45 UTC způsobilo J. V. kolizi při tisku; od 13:47 do CN-432 jen čtení (CN-432 dál jen J. V.). Poučení: zkušební data do zakázek J. V. jen na vlastní TEST zakázce a vrátit hned po zkoušce.
 - `TEST - 2026 - OPR - CN - 9853` (druhá zakázka s `pdDealId` 432) zůstává.
 - Zakázky bodu 2: `… 9854` (JT, obchodník, CN EN vytištěna → zamčená), `… 9855` (LAK, potvrzená částka, 2 ks), `… 9856` (RJ B232, nezamčená).
 - Firma testu: termíny PROJ = výchozí (13:36:42 UTC); šablony CN v18 / PROJ v9 platné; připomínky P-0001–P-0006 zamítnuté.
