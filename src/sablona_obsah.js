@@ -69,7 +69,31 @@ const SABLONA_ODKAZ_POVOLENY = /^(https?:\/\/|mailto:)/i;
  * v textu, v kresbě). Jinde (a:blip r:link / r:embed, v:imagedata …) by
  * Word vnější adresu mohl stáhnout jako obsah. */
 const SABLONA_ODKAZ_PRVKY = ['hyperlink', 'hlinkClick', 'hlinkHover', 'hlinkMouseOver'];
-const SABLONA_POLE_ZAKAZANA = ['INCLUDETEXT', 'INCLUDEPICTURE', 'INCLUDE', 'IMPORT', 'LINK', 'DDEAUTO', 'DDE', 'DATABASE', 'RD'];
+const SABLONA_POLE_ZAKAZANA = ['INCLUDETEXT', 'INCLUDEPICTURE', 'INCLUDE', 'IMPORT', 'LINK', 'DDEAUTO', 'DDE', 'DATABASE', 'RD',
+  /* B271 (audit 20. 11. 2026): při aktualizaci polí (F9, tisk) vloží Word
+   * cestu k souboru (FILENAME \p) a jméno uživatele počítače (USERNAME,
+   * AUTHOR) do dokumentu, který jde zákazníkovi. */
+  'FILENAME', 'USERNAME', 'AUTHOR'];
+/* B272 (audit 20. 11. 2026): strop jedné XML části šablony. Strop rozbalení
+ * celé šablony je 64 MB (ZIP_ROZBALENO_MAX); jedna XML část těsně pod ním
+ * zaměstnala server rozborem asi 1,9 s. Firemní šablony mají zabalené
+ * nejvýš ~1,4 MB i s obrázky a XML části v jednotkách stovek kB až jednotkách
+ * MB; 8 MB je s rezervou nad nimi a rozbor takové části trvá desítky ms. */
+const SABLONA_XML_CAST_MAX = 8 * 1024 * 1024;
+/* B270 (audit 20. 11. 2026): název položky ZIPu, který po rozbalení míří
+ * mimo složku (../), je absolutní (/x, C:x), má zpětné lomítko (některé
+ * programy ho berou za oddělovač) nebo řídicí znak. */
+function sablonaNazevVada(nazev) {
+  const tvary = [nazev];
+  try { const d = decodeURIComponent(nazev); if (d !== nazev) tvary.push(d); } catch (e) { /* nechat jak je */ }
+  for (const t of tvary) {
+    if (/[\u0000-\u001f\u007f]/.test(t)) return 'řídicí znak v názvu položky';
+    if (t.indexOf('\\') >= 0) return 'zpětné lomítko v názvu položky';
+    if (/^\//.test(t) || /^[a-z]:/i.test(t)) return 'absolutní cesta položky';
+    if (t.split('/').some(s => s === '..' || s === '.')) return 'cesta položky mimo balíček (../)';
+  }
+  return '';
+}
 /* Cíl vztahu, který Word nebere jako část balíčku: schéma (http:, file:, C:)
  * nebo síťová cesta (\\server, //server). */
 const SABLONA_CIL_VNEJSI = /^([a-z][a-z0-9+.-]*:|[\\/]{2})/i;
@@ -294,12 +318,26 @@ function sablonaObsahVadyZipu(polozky) {
   const vady = [];
   const pridej = (t) => { if (vady.indexOf(t) < 0) vady.push(t); };
   const odkazy = {};   // B248: zdrojová část (malými) → [Id povolených vnějších odkazů]
+  const jmena = {};    // B270: název (malými, dekódovaný) → už byl
   (Array.isArray(polozky) ? polozky : []).forEach(p => {
     if (!p || typeof p.nazev !== 'string') return;
     const nazev = p.nazev;
     let jmeno = nazev;
     try { jmeno = decodeURIComponent(nazev); } catch (e) { /* nechat jak je */ }
     const male = jmeno.toLowerCase().replace(/\\/g, '/');
+    /* B270: název mimo balíček a dvě položky téhož jména (OPC nerozlišuje
+     * velikost písmen ani %xx) — kontrola by četla jednu, Word jinou. */
+    const vadaNazvu = sablonaNazevVada(nazev);
+    if (vadaNazvu) pridej(vadaNazvu + ' (' + nazev + ')');
+    if (jmena[male]) pridej('dvě položky téhož jména (' + nazev + ')');
+    jmena[male] = true;
+    /* B272: XML část nad strop se nerozebírá (rozbor by zaměstnal server). */
+    const delka = p.data && typeof p.data.length === 'number' ? p.data.length : 0;
+    if (delka > SABLONA_XML_CAST_MAX && (/\.(xml|rels)$/.test(male)
+        || sablonaJeXml(sablonaObsahText(typeof p.data === 'string' ? p.data.slice(0, 64) : p.data.subarray(0, 64))))) {
+      pridej('XML část větší než ' + Math.round(SABLONA_XML_CAST_MAX / 1024 / 1024) + ' MB (' + nazev + ')');
+      return;
+    }
     if (/(^|\/)embeddings\//.test(male) || /(^|\/)oleobject[^/]*$/.test(male)) pridej('vložený objekt (' + nazev + ')');
     if (/(^|\/)vbaproject/.test(male) || /(^|\/)vbadata/.test(male)) pridej('makra VBA (' + nazev + ')');
     if (male.indexOf('activex') >= 0) pridej('prvek ActiveX (' + nazev + ')');
@@ -435,7 +473,7 @@ async function sablonaObsahVady(vstup) {
   else if (vstup && typeof vstup.byteLength === 'number') u8 = new Uint8Array(vstup);
   else return ['šablona je prázdná'];
   let polozky;
-  try { polozky = await cti(u8); } catch (e) { return ['soubor nejde rozbalit jako .docx (' + e.message + ')']; }
+  try { polozky = await cti(u8, { xmlCastMax: SABLONA_XML_CAST_MAX }); } /* B272 */ catch (e) { return ['soubor nejde rozbalit jako .docx (' + e.message + ')']; }
   return sablonaObsahVadyZipu(polozky);
 }
 /* Odstavce textu šablony (base64 / ArrayBuffer / Uint8Array) pro kontrolu
@@ -459,4 +497,4 @@ function sablonaObsahVadyText(vady) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { SABLONA_VZTAHY_ZAKAZANE, sablonaObsahVadyZipu, sablonaObsahVady, sablonaObsahVadyText, sablonaOdstavce, sablonaB64NaBajty, sablonaXmlUnesc };
+  module.exports = { SABLONA_VZTAHY_ZAKAZANE, sablonaObsahVadyZipu, sablonaObsahVady, sablonaObsahVadyText, sablonaOdstavce, sablonaB64NaBajty, sablonaXmlUnesc, sablonaNazevVada, SABLONA_POLE_ZAKAZANA, SABLONA_XML_CAST_MAX };
