@@ -453,7 +453,7 @@ function hodnotaBezpecnaJs(v) {
   return false;
 }
 const UDALOST = /\bon[a-z]+="([^"]*)"/g;
-/* MT #734 (23. 11. 2026): v těchto souborech se v on*="…" hlásí KAŽDÁ
+/* MT #735 (23. 11. 2026): v těchto souborech se v on*="…" hlásí KAŽDÁ
  * neprokázaná hodnota, nejen jméno z RIZIKO. VZ-F1 (19. 11.) přejmenoval
  * cestu pole krycího listu z `p.bind` na lokální `b` (vzKlCesta) a hlídač,
  * který se řídí jménem, holé `${b}` v onchange přestal vidět (mutace K40a D7

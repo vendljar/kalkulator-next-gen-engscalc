@@ -314,7 +314,7 @@ let S1, D1, ORG1;
   SIM.pdSimNastav({ scenar: '' });
   test('10 visící Pipedrive → chyba do 9 s (+rezerva), stav uložen', r.stav === 'chyba' && Date.now() - t0 < 11000 && zakazka(s).pdOrgVitez.stav === 'chyba'
     && /neodpověděl/.test(r.duvod), { r, ms: Date.now() - t0 });
-  /* MT #734 (23. 11. 2026): od NN B246 má pdZavolej výchozí limit 8 s, takže
+  /* MT #735 (23. 11. 2026): od NN B246 má pdZavolej výchozí limit 8 s, takže
    * visící Pipedrive skončí chybou i bez meze akce — rezerva 11 s výš to
    * nerozliší. Mez jednoho volání je PD_VITEZ_VOLANI_MS (2,5 s): chyba musí
    * nést právě ji a přijít dřív, než by vypršel výchozí limit 8 s. */

@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v23.11.3 — MT: 4 nechycené mutace z celého kola Actions 45162888071 (#734), větev claude/mt-mutace-2311
+## v23.11.3 — MT: 4 nechycené mutace z celého kola Actions 45162888071 (#735), větev claude/mt-mutace-2311
 
 Nad integrací `c8d3d9d`. Pracovní verze v23.11.3 — číslo přidělí koordinace. Mění se jen testy;
 aplikace, cena ani text dokumentů beze změny (porovnání sestavení SHODA).

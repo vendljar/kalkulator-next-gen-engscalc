@@ -244,7 +244,7 @@ console.log('\n===== B232: PŘÍSNÉ OVĚŘENÍ VYŽADUJE VŠECHNA ČÍSLA =====
   test('B232: přísné porovnání objekt s čísly proti null počítá', zam.zamekVysledekRozdily(a2, c, 5, { prisne: true }).pocet > zaklad2
     && zam.zamekVysledekRozdily(c, a2, 5, { prisne: true }).pocet > zaklad2, zaklad2);
   test('B232: volné porovnání objekt proti null dál přeskočí', zam.zamekVysledekRozdily(a2, c).pocet === 0);
-  /* MT #734 (23. 11. 2026): B232 hlásí číslo, které chybí na JEDNÉ straně,
+  /* MT #735 (23. 11. 2026): B232 hlásí číslo, které chybí na JEDNÉ straně,
    * samo — jádro přísného porovnání (B119) tak navíc chytá jen součet, který
    * chybí v OBOU výsledcích (výsledek serveru jiného tvaru). Cesty jsou tu
    * napsané natvrdo, ne z ZAMEK_OVERENI_JADRO_PRISNE, aby prázdný seznam
