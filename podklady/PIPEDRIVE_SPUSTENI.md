@@ -21,7 +21,7 @@ Stav: ☐ čeká · ◐ rozpracováno · ☑ hotovo. Roadmapa #730 (zastřešuje
 
 | # | rozhodnutí | stav |
 |---|---|---|
-| B1 | Zápis prodeje do dealu (#597): která pole (hodnota, fáze, vítězná varianta, …) se při „Prodáno“ zapíší | ☐ seznam polí od J. V. → dávka |
+| B1 | Zápis prodeje do dealu (#597) — **rozhodnuto dříve**: údaje krycího listu podle mapy polí (23. 10., zasláno integrátorovi), fáze „Vyhrané k podpisu SoD“ bez změny stavu (#545, 2. 11.), hodnota dealu = cena řídící (vítězné) varianty bez DPH, kombinovaná = součet, po SoD cena díla (23. 10., SEC-I17 26. 10., 16. 11.); jen po potvrzení „stará → nová“ (#115); DPH přenesená → „0 % – přenesená daňová povinnost“, u kombinované rozhoduje OCK; text nad 255 znaků se nepošle s důvodem | ☑ ověřeno 23. 11. → dávka #597 |
 | B2 | Token pro ostrý provoz: pod kterým uživatelem Pipedrive aplikace zapisuje (autor změn v historii dealů); práva upravovat dealy ostatních | ☐ |
 | B3 | Které zkušební funkce s Pipedrive na main zapnout (poznámky šachet/zákazníků, vítěz) | ☐ |
 
