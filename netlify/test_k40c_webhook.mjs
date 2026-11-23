@@ -546,8 +546,12 @@ console.log('\n===== 9. LOG WEBHOOKU =====\n');
   const radky = logyWebhooku.map((l) => { try { return JSON.parse(l.slice('pd_webhook: '.length)); } catch (e) { return null; } });
   test('RA: každé úspěšné doručení webhooku zapíše do logu právě jeden řádek', radky.length === webhook200.length && radky.length > 0,
     [radky.length, webhook200.length]);
-  test('RA: řádek nese dealId, akci, odkazDoDealu a varování (a nic dalšího)', radky.every((x) => x
-    && JSON.stringify(Object.keys(x)) === JSON.stringify(['dealId', 'akce', 'odkazDoDealu', 'varovani']) && Array.isArray(x.varovani)), radky[0]);
+  /* #734 (PV): řádek založení nese navíc `autor` = stav dohledání vlastníka dealu (nikdy e-mail). */
+  test('RA: řádek nese dealId, akci, odkazDoDealu, (u založení autor) a varování (a nic dalšího)', radky.every((x) => x
+    && (JSON.stringify(Object.keys(x)) === JSON.stringify(['dealId', 'akce', 'odkazDoDealu', 'varovani'])
+      || (x.akce === 'zalozeno' && JSON.stringify(Object.keys(x)) === JSON.stringify(['dealId', 'akce', 'odkazDoDealu', 'autor', 'varovani'])
+        && W.PD_WEBHOOK_AUTOR_STAVY.includes(x.autor)))
+    && Array.isArray(x.varovani)), radky[0]);
   const shoda = webhook200.every((t, i) => { const o = JSON.parse(t); const x = radky[i] || {};
     return x.dealId === String(o.dealId) && x.akce === o.akce && x.odkazDoDealu === o.odkazDoDealu
       && JSON.stringify(x.varovani) === JSON.stringify(o.varovani); });

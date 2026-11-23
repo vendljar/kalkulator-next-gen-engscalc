@@ -49,7 +49,8 @@ export function pdVazbaNorm(x) {
     icoOtisk: /^[0-9a-f]{16}$/.test(String(x.icoOtisk || '')) ? x.icoOtisk : '',
     aresRozdily: seznam(x.aresRozdily, PD_ORG_POLE), doplneno: seznam(x.doplneno, PD_VAZBA_POLE) };
   if (x.zanikla === true) v.zanikla = true;
-  if (x.icoShoda === true) v.icoShoda = true;   // IČO organizace dealu = IČO hlavičky (zhasíná tlačítko opravy; rozhoduje server)
+  if (x.icoShoda === true) v.icoShoda = true;
+  if (x.zalozil === true) v.zalozil = true;   // #734: kalkulaci založil webhook (autor může být vlastník dealu); píše jen server   // IČO organizace dealu = IČO hlavičky (zhasíná tlačítko opravy; rozhoduje server)
   const n = x.nahlaseno;
   if (n && typeof n === 'object' && !Array.isArray(n) && typeof n.kdo === 'string' && KDY.test(String(n.kdy || '')))
     v.nahlaseno = { kdo: txt(n.kdo, 200), kdy: n.kdy };
@@ -82,7 +83,10 @@ export function pdVazbaDokladaZapis(zak, normDeal) {
   const v = pdVazbaZiva(zak, normDeal);
   if (!v) return null;
   if (v.stav === 'potvrzeno') return v;
-  return v.stav === 'webhook' && zak && zak.autor === PD_WEBHOOK_AUTOR ? v : null;
+  /* #734: autorem kalkulace založené webhookem je vlastník dealu — založení
+   * dokládá příznak `zalozil` (píše jen webhook při založení, pdVazbaDrz ho
+   * od klienta nebere); starší kalkulace ho nemají, u nich platí technický autor. */
+  return v.stav === 'webhook' && zak && (zak.autor === PD_WEBHOOK_AUTOR || v.zalozil === true) ? v : null;
 }
 
 /* Kdo smí vazbu zrušit, měnit deal a opravit firmu v Pipedrive: administrátor,

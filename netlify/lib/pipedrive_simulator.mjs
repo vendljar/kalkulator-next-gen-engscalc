@@ -210,6 +210,8 @@ export function pdSimVychoziData() {
       id, title: (cislo ? cislo + ' ' : 'Poptávka ') + akce, status,
       value: 50000 + (i % 40) * 25000, currency: 'CZK',
       ...(i % 10 === 9 ? { stage_id: 31 + (i % 2), pipeline_id: 2 } : { stage_id: 22 + (i % 5), pipeline_id: 1 }), user_id: uzivatele[i % uzivatele.length].id,
+      /* Vlastník dealu (API v2 `owner_id`, #734 — autor kalkulace z webhooku). */
+      owner_id: uzivatele[i % uzivatele.length].id,
       org_id: org, person_id: osoba,
       add_time: datum(i) + 'T08:00:00Z', update_time: datum(60 + (i * 7) % 240) + 'T10:' + String(i % 60).padStart(2, '0') + ':00Z',
       custom_fields: cf,
