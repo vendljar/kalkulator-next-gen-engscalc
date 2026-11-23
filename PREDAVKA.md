@@ -1,3 +1,22 @@
+# Předávka — 23. 11. 2026: webhook na testu funguje, dělba práce s koordinací, větev `claude/eager-carson-1xznt2` (jen dokumentace)
+
+- **Webhook na testu funguje:** odkaz se do zkušebního dealu zapsal 23. 11. 13:31 UTC (ověřeno čtením dealu,
+  pole „Odkaz na kalkulaci“ = adresa testovacího webu s kalkulací CN-…). Příčina ranního neúspěchu: na
+  `testengscalc` chyběla proměnná `PIPEDRIVE_ZAPIS` (zjistila koordinace), ne nastavení u integrátora. Paralelní
+  sezení pro čtení historie automatizace už není potřeba.
+- **Rozhodnutí J. V. 23. 11. (zpráva koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx):** kód integrace Pipedrive
+  (webhook, zápis, mapa) dělají jen dávky přes koordinaci (revize, kolo, test). Toto sezení řeší jen komunikaci
+  s integrátorem a nastavení Pipedrive / Netlify s J. V.; **kód ani větve s kódem nezakládá**, potřebu změny
+  pošle koordinaci (send_message).
+- Běží v koordinaci: dávka PD (#733 marže 0 % u kalkulace z webhooku, #728 odemčení, #729 kontakt jen jméno),
+  pak #734 (autor = vlastník dealu) a #597 (zápis prodeje). Spouštěcí procedura pro ostrý web:
+  `podklady/PIPEDRIVE_SPUSTENI.md` v integraci.
+- Zbývá s J. V.: kontrola kalkulace z odkazu; druhé spuštění (pořád jedna kalkulace, stejný odkaz); automatické
+  CN na novém dealu; pak ostrý web podle spouštěcí procedury (adresa ostré verze integrátorovi, automatizace pro
+  všechny dealy).
+
+---
+
 # Předávka — 22. 11. 2026: integrátor nastavil automatizaci, test čeká na J. V., větev `claude/eager-carson-1xznt2` (jen dokumentace)
 
 - Integrátor 20. 11.: webhook při změně „Vygenerovat nabídku“ na Ano, tělo s `dealId`, Basic Auth (jméno
