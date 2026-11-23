@@ -71,7 +71,7 @@ export function pdProdejSmi(zak, prodano, relace) {
 
 /* Časový rozpočet celého požadavku: každé volání nejvýš PD_PRODEJ_VOLANI_MS
  * a dohromady PD_PRODEJ_CELKEM_MS (pod limitem funkce Netlify 10 s). */
-function rozpocet() {
+function volani() {
   const konec = Date.now() + PD_PRODEJ_CELKEM_MS;
   return (cesta, volby = {}) => {
     const zbyva = konec - Date.now();
@@ -152,7 +152,7 @@ export default async (req) => {
   /* B235/B236: bez PIPEDRIVE_ZAPIS = ano se do skutečného Pipedrive nic nezapíše (náhled jen čte). */
   if (akce === 'zapis' && !pdZapisPovolen()) return selhani(503, PD_ZAPIS_VYPNUTY);
 
-  const zavolej = rozpocet();
+  const zavolej = volani();
   const varovani = [];
   if (pdRezim() === 'simulator') varovani.push('Odpovídá SIMULÁTOR Pipedrive se smyšlenými daty — nic z toho není skutečné CRM.');
   let pole, dealData, uzivatele, fazeSeznam;

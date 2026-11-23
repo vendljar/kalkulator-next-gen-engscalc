@@ -277,6 +277,13 @@ const podB = podklad(B.soubor);
   test('výpadek Pipedrive při PATCH → 502, stav chyba s důvodem, protokol', r.status === 502 && r.stav === 'chyba'
     && pdStav(B.soubor).stav === 'chyba' && /neodpovídá/.test(pdStav(B.soubor).duvod)
     && (zakazka(B.soubor).protokol || []).some((p) => /Zápis prodeje do dealu \d+ se nepovedl/.test(p.co)), [r, pdStav(B.soubor)]);
+  {
+    const g = zakazka(B.soubor);
+    const a = zk.importZakazka(kopie(g));
+    const u = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: a, ocekavaneRazitko: g.uloRazitko }, cP)).json();
+    test('…uložení z prohlížeče stav „chyba“ i s důvodem zachová (prodOciste)', u.ok && pdStav(B.soubor).stav === 'chyba'
+      && /neodpovídá/.test(pdStav(B.soubor).duvod || ''), [u.chyba, pdStav(B.soubor)]);
+  }
   n = await prodej({ soubor: B.soubor, akce: 'nahled', ...podB }, cP);
   SIM.pdSimNastav({ poPozadavku: (x) => { if (x.startsWith('PATCH ')) SIM.pdSimNastav({ scenar: 'visi' }); } });
   const t0 = Date.now();

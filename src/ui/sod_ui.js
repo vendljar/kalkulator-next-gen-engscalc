@@ -430,10 +430,10 @@ function prodPdUiTabulka(d) {
   const radky = (d.radky || []).filter(r => r.stav !== 'prazdne');
   const tr = radky.map(r => {
     const nova = r.stav === 'zapise' ? `<b>${esc(r.hodnotaText)}</b>` : '<span class="note">—</span>';
-    const pozn = r.posle ? '<span class="pill">zapíše se</span>' : r.bezeZmeny ? '<span class="pill mut">beze změny</span>'
+    const stitekHtml = r.posle ? '<span class="pill">zapíše se</span>' : r.bezeZmeny ? '<span class="pill mut">beze změny</span>'
       : `<span class="pill bad">nezapíše se</span>${r.duvod ? `<div class="note">${esc(r.duvod)}</div>` : ''}`;
     return `<tr data-prodpd-pole="${esc(r.klic)}" data-prodpd-posle="${r.posle ? 1 : 0}"><td>${esc(r.nazev)}</td>
-      <td class="note">${esc(r.vCrm || '')}</td><td>${nova}</td><td>${pozn}</td></tr>`;
+      <td class="note">${esc(r.vCrm || '')}</td><td>${nova}</td><td>${stitekHtml}</td></tr>`;
   }).join('');
   return `<div style="overflow-x:auto"><table id="prodPdTabulka" class="ceniktbl" style="font-size:11px"><thead><tr><th>Pole v Pipedrive</th>
     <th>Dnes v Pipedrive</th><th>Nová hodnota</th><th></th></tr></thead><tbody>${tr}</tbody></table></div>`;

@@ -8,6 +8,32 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v23.11.6 — PV: zápis prodeje do dealu v Pipedrive (#597), autor kalkulace z webhooku = vlastník dealu (#734), větev claude/pv-pipedrive
+
+Nad integrací `1280831` (v23.11.5). Pracovní verze v23.11.6 (číslo přidělí koordinace). **Cenu kalkulací nemění**
+(porovnání sestavení proti integraci: SHODA). Do živého Pipedrive nic — testy jen proti simulátoru; zkušební zápis
+na deal TEST udělá testovací sezení po nasazení.
+
+- **Zápis prodeje do dealu (#597, rozsah J. V. — PIPEDRIVE_SPUSTENI B1):** po stisku Prodáno ukáže karta Prodej
+  tabulku „pole / dnes v Pipedrive / nová hodnota“ a do dealu zapíše teprve po potvrzení obchodníkem: pole
+  krycího listu podle mapy (prázdné se neposílá, nepřevoditelné a text nad 255 znaků se nepošle s důvodem,
+  přenesená DPH → „0 % – přenesená daňová povinnost“, u kombinované rozhoduje OCK), hodnotu dealu (cena prodané
+  varianty bez DPH, kombinovaná = součet, po tisku SoD cena díla s objednanými příplatky — počítá ji server
+  z uložené zakázky) a fázi „Vyhrané k podpisu SoD“; stav dealu nikdy. Jen změněná pole jedním zápisem.
+- **Pojistky zápisu:** jen se zapnutým zápisem (`PIPEDRIVE_ZAPIS = ano`), jen s platnou vazbou deal ↔ zakázka
+  (vazba z webhooku nebo odkaz na kalkulaci v dealu), jen s právem Pipedrive (autor, kdo prodal, vedoucí,
+  administrátor). Deal mezitím změněný v Pipedrive (nebo jiný podklad) = nic se nezapíše a ukáže se nový náhled.
+  Jiné „Číslo nabídky (CN)“ v dealu zápis zastaví — převzít deal jde jen tlačítkem „Převzít deal a zapsat“
+  s potvrzením; k dealu se zapíše poznámka a do protokolu převzetí. Časový limit volání a strop pokusů na deal.
+- **Selhání zápisu prodej nezastaví:** karta ukáže „zápis selhal“ s důvodem a tlačítko „Zkusit zápis znovu“;
+  úspěch „zapsáno“ s datem. Výsledek píše jen server do záznamu prodeje a do protokolu zakázky.
+- **Autor kalkulace z Pipedrive (#734):** kalkulaci založenou webhookem dostane za autora vlastník dealu (účet
+  kalkulátoru se stejným e-mailem jako uživatel Pipedrive) — z odkazu v dealu si ji otevře k úpravám sám (#728).
+  Když vlastníka nejde jednoznačně spárovat (bez účtu, vypnutý účet, bez e-mailu, duplicitní e-mail, výpadek),
+  zůstane technický účet jako dosud a důvod jde do logu webhooku. Opakované doručení autora nemění.
+- Testy: `netlify/test_pv_597_zapis.mjs` 57/0, `netlify/test_pv_734_autor.mjs` 51/0, `overit_pv_prodej.mjs` 19/0,
+  mutace serveru [PV] 18; `test_prava` (nová funkce), `test_k40c_webhook` a `overit_controlling` upravené texty.
+
 ## v23.11.5 — PD: kalkulace z Pipedrive jako Nová zakázka (#733, #732), odkaz z dealu k úpravám (#728), kontakt jen jméno (#729), větev claude/pd-webhook-uprava
 
 Nad integrací `173ab6a` (v23.11.2). Verze v23.11.5 (koordinace; integrace je v23.11.4). **Mění cenu kalkulací

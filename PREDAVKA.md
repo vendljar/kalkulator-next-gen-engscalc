@@ -37,6 +37,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/pd-webhook-uprava` | (tato dávka) | v23.11.5 | PD #733 #732 #728 #729 nad 173ab6a; verzi přidělí koordinace |
 | `claude/mt-mutace-2311` | (tato dávka) | v23.11.3 | MT #735: 4 nechycené mutace kola 45162888071 — jen testy, nad c8d3d9d |
 | `claude/lak-lakovani` | (tato dávka) | v22.11.8 | LAK #666 lakování z nabídky lakovny nad 05a496d, s integrací 36e2681 |
+| `claude/pv-pipedrive` | (tato dávka) | v23.11.6 | PV #597 zápis prodeje do dealu + #734 autor = vlastník dealu nad 1280831; revize Fable; verzi přidělí koordinace |
 
 Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontrola: `python3 nastroje/release_odkaz.py --chybejici`
 (22. 11.: žádná — main v19.11.11, tag vydán).
@@ -44,6 +45,18 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 ## Běžící dávky
 
 - Sloučené dávky (PD, CN, RA, LAK, JT, NN, PR, BZ, HN, RJ, VZD, MT) — oddíly přesunuty do `podklady/predavky/2026-11.md` (23. 11. 2026). Běží: SA (opravy po revizi), RP (prototyp ručních položek, čeká na J. V.).
+
+## Dávka PV (`claude/pv-pipedrive`, 23. 11. 2026)
+
+- Nad integrací 1280831 (v23.11.5), pracovní v23.11.6. **#734:** webhook při založení dohledá vlastníka dealu
+  (owner_id → GET /api/v1/users → e-mail → aktivní účet) = autor; jinak technický účet + varování a `autor` v logu.
+  Vazba nese `zalozil` (pdVazbaDokladaZapis). **#597:** POST `/api/pd/prodej` náhled/zápis (functions/pd_prodej.mjs,
+  lib/pd_prodej.mjs, lib/jadro_pd.cjs), karta Prodej v `src/ui/sod_ui.js`; stav `v.prodano.pipedrive` zapsano/chyba.
+- Testy: test_pv_597_zapis 57/0, test_pv_734_autor 51/0, overit_pv_prodej 19/0, mutace [PV] 18 (výsledek ve zprávě
+  koordinaci), kolo `--bez-mutaci --proti origin/claude/integrace-16-10`.
+- Do živého Pipedrive nic. Po nasazení do testu: testovací sezení zkušební zápis na deal TEST (PIPEDRIVE_SPUSTENI A6b, A9).
+- K revizi Fable: texty krycího listu do dealu z prohlížeče (cena/kalendář/strany ze serveru); vlastník-autor má práva
+  autora (zrušit vazbu, opravit firmu, změnit deal); okno mezi GET a PATCH (Pipedrive nemá podmíněný zápis).
 
 ## Čeká na J. V.
 
