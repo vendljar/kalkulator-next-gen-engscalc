@@ -150,8 +150,8 @@ Celé kolo a mutace jsem znovu nepouštěl (předávka dávky hlásí VŠE ZELEN
 - **N3 opraveno.** Dopříprava jen nad nasazenou platnou verzí (`PROG_STAV.pouzita.verze ===
   db.platny.verze`) nebo pod složkou.
 - **N5 opraveno** (věta lišty: obnovit stránku F5).
-- **N4 zůstává** (nízká, nebrání sloučení): `overit_pd_cerstva.mjs` pořád není v
-  `testovaci_kolo.sh` ani v CI; pouští se ručně.
+- **N4 beru zpět — nález byl můj omyl.** `testovaci_kolo.sh` pouští všechny `overit_*.mjs`
+  globem (řádek 22), takže `overit_pd_cerstva.mjs` v kole je; hledal jsem jen jméno souboru.
 
 Nová díra v ceně: nenašel jsem. Dvě drobnosti bez vlivu na cenu (server je zastaví):
 
