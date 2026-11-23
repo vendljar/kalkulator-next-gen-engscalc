@@ -16,7 +16,9 @@ Nad integrací `133a8f5` (v23.11.1). Verze pracovní (číslo přidělí koordin
 - **Šablony Word:** kontrola odmítne položku ZIPu s `../`, absolutní cestou, zpětným lomítkem nebo řídicím znakem
   a dvě položky téhož jména (B270, #719); pole `FILENAME` (i `\p`), `USERNAME` a `AUTHOR` (B271, #720); XML část
   nad 8 MB — rozbalení se zastaví hned (B272, #721; PoC C12 ~0,1 s místo ~1 s).
-- **Testy:** `src/test_sa_sablony.js` (41; před opravou 29 FAIL), mutace [SA] 10/10.
+- **Testy:** `src/test_sa_sablony.js` (41; před opravou 29 FAIL), mutace [SA] 10/10; zadání mutací B141/B142 podle
+  upraveného kódu. Kolo `--bez-mutaci` proti 133a8f5: sady 523/0/6, hodiny 424/0/1, statické 12/12, SHODA 367/367;
+  mutace jádra 1308/1308 (4 části); mutace serveru jen cíleně „sablon“ 31/31 — celý server v Actions.
 
 ## v23.11.1 — CI-24: mutace serveru v Actions ve 24 částech; rozhodnutí J. V. 23. 11. do roadmapy
 
