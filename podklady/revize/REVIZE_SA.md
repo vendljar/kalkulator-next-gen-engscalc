@@ -120,3 +120,56 @@ nepravděpodobný.
    kapacity ve stejné dávce.
 2. J. V.: rozhodnout R3 (doporučení: přidat všech šest polí po ověření nad firemními šablonami).
 3. Roadmapa: R6 (vrstva ZIP) a metadata autora v `docProps/core.xml` jako nové položky.
+
+---
+
+## Dodatek — ověření oprav `b3d710a..5b4efc8` (23. 11. 2026)
+
+### Verdikt: SLOUČIT
+
+R1, R2, R4, R5, R7 a R8 jsou zavřené, novou cestu obejití stropu jsem nenašel. Zbývají dvě nízké poznámky (R9, R10),
+které sloučení nebrání a mohou jít do další dávky. R3 dál čeká na J. V.; R6 a metadata `docProps/core.xml` zůstávají
+jako návrh do roadmapy.
+
+### Co jsem ověřil
+
+- `test_sa_sablony` 67 / 0, `test_sablona_obsah` 102 / 0 (firemní šablony přeskočeny), `test_nn_sablony` 34 / 0.
+- Pojistka nových testů: test z `5b4efc8` nad kódem `b3d710a` → 40 OK, **27 FAIL**.
+- Mutace `[SA]` v samostatné pracovní kopii: **23 / 23 chycených** (výchozí stav 313 sad zelených). Celý běh mutací
+  ani kolo jsem nepouštěl.
+- Všechny pokusy z první revize znovu nad novým kódem:
+  - R1: `.bin` s 65 mezerami před `<` a 60 MB XML → odmítnuto (47 ms), generátor odmítne také.
+  - R2: 60 MB `.bin` `A\0A\0…` → 346 ms místo 3 257 ms (část se nedekóduje).
+  - R4: `word/%2e%2e/x%ZZ.xml`, `word/%2e%2e/100%.xml` → odmítnuto; navíc `%2e%2e%2f`, `%5c`, `a%00`, `x%3Aads`,
+    prodloužené kódování `%C0%AE` → odmítnuto.
+  - R5: `.. `, `..%20`, `x.xml:ads`, `word//x.xml` → odmítnuto; duplicita přes `//`, koncovou tečku, zpětné lomítko,
+    `%2e` a NFC/NFD → nalezena. Složka `word/media/` a `word/média/obr.png` projdou.
+  - R7: `constructor`, `__proto__`, `toString` jednotlivě projdou, dvakrát `__proto__` se hlásí.
+- Rozhodnutí „je XML“ (`sablonaJeXmlBajty`) je jedno pro strop i rozbor; kontroly názvu (vložené objekty, VBA,
+  ActiveX) běží před ním pro každou položku. XML v `.bin` v UTF-8 (i s BOM a mezerami), UTF-16 LE/BE s BOM i bez,
+  UTF-32 LE a UTF-32 BE bez BOM → rozebráno nebo odmítnuto.
+
+### Nové poznámky
+
+**R9 — NÍZKÁ — UTF-32 BE s BOM v části bez přípony `.xml` projde nerozebrané · `src/sablona_obsah.js` `sablonaJeXmlBajty`**
+
+Část `word/h.bin` začínající `00 00 FE FF` (BOM UTF-32 BE) se zakázaným polem: nuly se přeskočí, další bajt je `FE`,
+část se bere jako ne-XML a nečte se. Kód před opravou ji odmítal („XML v kódování UTF-32“), protože kontrola
+kódování běžela pro každou část. S příponou `.xml` se odmítá dál. Dopad malý (Word UTF-32 nejspíš nečte, ve Wordu
+neověřeno), ale je to krok zpět. Stejně teď projdou nerozebrané části `.bin` se dvěma BOM, znakem posunu stránky
+(0x0C) nebo pevnou mezerou před `<`; dřív se rozebíraly. Podle pravidel XML takový soubor platný není, takže to
+za vadu nepočítám. Návrh: ve smyčce přeskakovat i sekvence BOM (`EF BB BF`, `FF FE`, `FE FF`) kdekoli v úvodu —
+pokryje UTF-32 s BOM i dvojí BOM. Test: `.bin` UTF-32 BE s BOM → odmítnuto.
+
+**R10 — NÍZKÁ — selhání `TextDecoder('utf-16be')` kontrolu tiše vypne · `src/sablona_obsah.js` `sablonaObsahText`**
+
+Když dekodér vyhodí výjimku (prostředí bez podpory UTF-16 BE), vrátí se prázdný text a část projde bez vady —
+ověřeno nasimulovanou výjimkou. Node 22 s plným ICU (tady 78.3) i prohlížeče dekodér mají, takže dnes se to
+neprojeví; původní smyčka ale selhat nemohla. Návrh: při výjimce nahlásit vadu („část nejde přečíst“) nebo spadnout
+zpět na smyčku — kontrola má při chybě odmítat, ne pouštět.
+
+### Před `test` / `main` (beze změny)
+
+- Celé mutace serveru v Actions.
+- `KNG_PODKLADY=… node src/test_sablona_obsah.js` nad firemními šablonami: strop 8 MB a nově i zákaz dvojtečky,
+  U+FFFD a prázdného úseku v názvech (šablona přebalená jiným programem s ne-ASCII názvy by neprošla).
