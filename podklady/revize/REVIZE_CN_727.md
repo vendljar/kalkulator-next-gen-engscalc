@@ -73,8 +73,8 @@ skutečného chování (uložení s mezerou na konci → 403) nebo test smazat.
 
 ### N2 — nízká — výjimka `!obnova` bez testu a mutace
 `netlify/lib/zakazka_kontrola.mjs:643`. Obnova se přeskakuje záměrně (mez je popsaná), ale žádný test ani
-mutace nehlídá, že běžné uložení s jiným `rezim` pravidlem projde. Návrh: mutace „`!obnova &&` → `false &&`“
-je už pokrytá; doplnit jen test, že obnova z otisku prodané zakázky projde (pojistka proti zpřísnění omylem).
+mutace nehlídá, že obnova z otisku prodané zakázky pravidlem projde. Návrh: doplnit takový test (pojistka proti
+zpřísnění omylem). Nezkoušel jsem, čteno z kódu.
 
 ### N3 — nízká — „Vyhledat zakázku“ mimo online kanál
 `src/ui/cislo_nabidky_ui.js:28–35` + `src/ui/zakulozeni_ui.js:291–297`. Hledaný text se píše jen do
