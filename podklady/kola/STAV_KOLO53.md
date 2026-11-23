@@ -98,6 +98,13 @@ jako zkušební; (c) šablony CN v18 a PROJ v9 z main (jen čtení) nahrát a zv
 
 ## Nálezy
 
+- **K53-N2** (vada, **VYSOKÁ, dopad na cenu: ANO**) — kalkulace založená webhookem Pipedrive má marži 0 % a nulové příplatky
+  „dle nabídky“, cena = náklad (CN-432, nahlásil J. V.). Jen čtením porovnáno s čerstvou Novou zakázkou: ceník varianty
+  `marze` OCK i PROJ 0 (nová 0,3), 8 příplatků dle nabídky 0; výchozí zaškrtnutí neaplikováno (přechodové plechy, lešení
+  vnější, sokl, vynechané příplatky, sekce PROJ). Příčina: webhook zakládá `G.novaZakazka()` na serveru s `DEFAULT_CENIK`
+  z kódu (v repu vynulovaný); první otevření bere zakázku s číslem a názvem akce jako rozdělanou a marži a ceny dle nabídky
+  chrání (`cenikPrepoctiRozpracovane`). CN-432 neopravována.
+
 - **K53-I1** (informace, nízká, dopad na cenu: ne): první uložení kalkulace založené webhookem zapíše do protokolu
   „a dalších 106 změn“ (montazZakladHod, sazby, doprava, kurz, fixy… — doplnění ceníku do kalkulace bez ceníku).
   Protokol tím zahltí šum; návrh: první doplnění ceníku do webhookové kalkulace zapsat jedním řádkem.
@@ -106,7 +113,7 @@ jako zkušební; (c) šablony CN v18 a PROJ v9 z main (jen čtení) nahrát a zv
 - **K53-N1** (vada, nízká, dopad na cenu: ne, jen obrazovka): rozbalený řádek „Cena z nabídky lakovny“ ukazuje
   „Výpočet z ceníku: <částka> Kč Kč“ (`rcRadekPod`: `fmt()` jednotku už nese a `jed` = Kč). Uživatel s právem na náklady.
 
-V roadmapě: #727 (K53-N1), #728 (K53-I1); K53-I2 = #652 — čísla předběžná, přečísluje koordinace. #726 bod (1) (data DPZ testu) splněn bodem 3a.
+V roadmapě: #731 (K53-N1), #732 (K53-I1), #733 (K53-N2); K53-I2 = #652 (bez čísla, známé) — čísla předběžná, přečísluje koordinace. #726 bod (1) (data DPZ testu) splněn bodem 3a.
 
 ## Úklid
 
