@@ -16,6 +16,8 @@
   odpovědi). Podezření: integrátor posílá „parametr dealId“ možná jako formulář/query, ne JSON → 400; nebo heslo
   nesedí → 401. Čeká se na kód z historie automatizace; podle něj buď oprava u integrátora, nebo paralelní větev
   nad `test` (přijímat i formulář / query `dealId`).
+- 23. 11.: J. V. Obnovit z CRM → **72 ze 72 polí spárováno** (DIČ hotovo). Historii automatizace čte paralelní
+  sezení v prohlížeči J. V. (prompt jen pro čtení, bez hesla); výsledek J. V. vloží sem.
 
 ---
 
