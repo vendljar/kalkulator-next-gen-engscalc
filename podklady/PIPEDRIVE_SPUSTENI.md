@@ -13,6 +13,7 @@ Stav: ☐ čeká · ◐ rozpracováno · ☑ hotovo. Roadmapa #730 (zastřešuje
 | A4 | Druhá automatizace „Deal - generate offer -> send data to Make“ vypnuta (reagovala na stejné pole) | J. V. | ☑ 23. 11. |
 | A5 | RA na testu: „V pořádku“ jen administrátor (#723), log výsledku webhooku | koordinace → test | ☐ |
 | A6 | Kalkulace z Pipedrive se otevře rovnou k úpravám (#728) | dávka → test | ☐ |
+| A6b | Autor kalkulace z webhooku = vlastník dealu (#734) | dávka → test | ☐ |
 | A7 | Kontaktní osoba z dealu jen jméno, bez e-mailu a telefonu (#729) | dávka → test | ☐ |
 | A8 | Vazba „čeká / V pořádku“ a vypnutý zápis (dosud neověřeno bez zásahu do nastavení) | testovací sezení | ☐ |
 | A9 | Plný průchod: deal → kalkulace → tisk nabídky → Prodáno → (zápis prodeje podle #597) | J. V. + testovací sezení | ☐ |
@@ -22,7 +23,7 @@ Stav: ☐ čeká · ◐ rozpracováno · ☑ hotovo. Roadmapa #730 (zastřešuje
 | # | rozhodnutí | stav |
 |---|---|---|
 | B1 | Zápis prodeje do dealu (#597) — **rozhodnuto dříve**: údaje krycího listu podle mapy polí (23. 10., zasláno integrátorovi), fáze „Vyhrané k podpisu SoD“ bez změny stavu (#545, 2. 11.), hodnota dealu = cena řídící (vítězné) varianty bez DPH, kombinovaná = součet, po SoD cena díla (23. 10., SEC-I17 26. 10., 16. 11.); jen po potvrzení „stará → nová“ (#115); DPH přenesená → „0 % – přenesená daňová povinnost“, u kombinované rozhoduje OCK; text nad 255 znaků se nepošle s důvodem | ☑ ověřeno 23. 11. → dávka #597 |
-| B2 | Token pro ostrý provoz: pod kterým uživatelem Pipedrive aplikace zapisuje (autor změn v historii dealů); práva upravovat dealy ostatních | ☐ |
+| B2 | Token pro ostrý provoz — **rozhodnuto 23. 10.**: token z účtu J. V., který vidí všechny dealy (mapa polí pro integrátora, otázka 17); zápisy v historii dealů ponesou jeho jméno | ☑ |
 | B3 | Které zkušební funkce s Pipedrive na main zapnout (poznámky šachet/zákazníků, vítěz) | ☐ |
 
 ## C. Den spuštění na main (v tomto pořadí)
