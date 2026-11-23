@@ -122,6 +122,11 @@ export function pdVazbaDrz(stara, zak, volby = {}) {
     if (novy && novy !== n(stara.pdDealId) && o.includes(novy)) o.splice(o.indexOf(novy), 1);
   }
   if (o.length) zak.pdDealyOdmitnute = o; else delete zak.pdDealyOdmitnute;
+  /* #733: příznak „čerstvá z webhooku“ (pdCerstva) píše jen webhook při
+   * založení. Uložení z prohlížeče ho vždy zahodí — co člověk uložil, už
+   * čerstvé není a další otevření nesmí jeho práci přepsat výchozími
+   * hodnotami. Obnova z otisku serveru ho bere ze zálohy (jen true). */
+  if (zOtisku && zak.pdCerstva === true) zak.pdCerstva = true; else delete zak.pdCerstva;
 }
 
 /* Zápis rejstříku zakázek jedním záznamem (vzor functions/zakazky.mjs, K7-S1). */

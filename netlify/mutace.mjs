@@ -115,6 +115,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      '../src/test_svetliky_stavba.js', 'test_560_svetliky_stavba.mjs',
      /* #553 PW (3. 11. 2026): webhook „Vygenerovat nabídku" z Pipedrive — rychlá sada (< 1 s). */
      'test_553_webhook.mjs',
+     /* PD #733/#728/#729 (23. 11. 2026): kalkulace z webhooku jako Nová zakázka, odkaz z dealu odemčený, kontakt jen jméno. */
+     'test_pd_cerstva.mjs', '../src/test_pd_cerstva_ui.js',
      /* #542 O-SECM (1. 11. 2026): nálezy security testu SEC-M M2–M9 — rychlá sada (< 1 s). */
      'test_secm.mjs',
      /* #557 SEC-M16 (3. 11. 2026): úvodní fotka jen jako datový obrázek — rychlé sady. */
@@ -380,6 +382,58 @@ const MUTACE = [
     hledej: "  const lhChyba = lhutyProjServerDrz(stara, zak, await sProg.cti('firma'));",
     nahrad: "  const lhChyba = ''; await sProg.cti('firma');",
     proc: "klient by do odeslané nabídky zapsal vlastní lhůty a Prodáno je zmrazilo (B238)", sady: ["test_nn_poc.mjs", "test_d8_lhuty.mjs"] },
+  /* PD (23. 11. 2026): #733 kalkulace z webhooku Pipedrive se při prvním otevření připraví jako
+   * Nová zakázka (příznak pdCerstva, platný ceník nasazený před importem), #728 odkaz z dealu
+   * ji otevře odemčenou, #729 kontakt jen jméno. Hlídají test_pd_cerstva.mjs
+   * a src/test_pd_cerstva_ui.js (celou cestu overit_pd_cerstva.mjs). [PD] */
+  { nazev: "PD #733: webhook příznak čerstvé kalkulace nezapíše [PD]", soubor: "functions/pd_webhook.mjs",
+    hledej: "      zak.pdCerstva = true;\n",
+    nahrad: "",
+    proc: "kalkulace z webhooku by se otevřela s marží 0 a bez výchozího zaškrtnutí (K53-N2)", sady: ["test_pd_cerstva.mjs"] },
+  { nazev: "PD #733: příznak čerstvé kalkulace od klienta projde [PD]", soubor: "lib/pd_vazba.mjs",
+    hledej: "  if (zOtisku && zak.pdCerstva === true) zak.pdCerstva = true; else delete zak.pdCerstva;",
+    nahrad: "  if (zak.pdCerstva !== true) delete zak.pdCerstva;",
+    proc: "uložená práce obchodníka by se při dalším otevření přepsala výchozími hodnotami", sady: ["test_pd_cerstva.mjs"] },
+  { nazev: "PD #729: kontakt z dealu s e-mailem a telefonem [PD]", soubor: "lib/pd_webhook.mjs",
+    hledej: "  const kontakt = txt(n.kontakt);",
+    nahrad: "  const kontakt = [txt(n.kontakt), txt(n.kontaktObjednatel)].filter(Boolean).join(', ');",
+    proc: "do kontaktní osoby by se zase psal e-mail a telefon (J. V. chce jen jméno)", sady: ["test_pd_cerstva.mjs"] },
+  { nazev: "PD #733: příprava nechá ceník ze sestavení [PD]", soubor: "../src/zakazka.js",
+    hledej: "    d.cenik = nova.cenik;\n",
+    nahrad: "",
+    proc: "marže a ceny dle nabídky by zůstaly 0 (K53-N2)", sady: ["test_pd_cerstva.mjs"] },
+  { nazev: "PD #733: příprava bez výchozího zaškrtnutí [PD]", soubor: "../src/zakazka.js",
+    hledej: "    if (typeof opts.vychozi === 'function') opts.vychozi(d.ock.zadani, d.proj.zadani);\n",
+    nahrad: "",
+    proc: "kalkulace z webhooku by neměla výchozí zaškrtnutí z matice zobrazení", sady: ["test_pd_cerstva.mjs"] },
+  { nazev: "PD #733: příprava přepíše zamčenou variantu [PD]", soubor: "../src/zakazka.js",
+    hledej: "    if (odeslana) return;\n",
+    nahrad: "",
+    proc: "odeslaná nabídka by dostala nový ceník", sady: ["test_pd_cerstva.mjs"] },
+  { nazev: "PD #733: příprava i bez příznaku [PD]", soubor: "../src/zakazka.js",
+    hledej: "  if (!zak || zak.pdCerstva !== true || !Array.isArray(zak.varianty)",
+    nahrad: "  if (!zak || !Array.isArray(zak.varianty)",
+    proc: "rozdělané zakázce obchodníka by otevření přepsalo přirážku a zaškrtnutí", sady: ["test_pd_cerstva.mjs"] },
+  { nazev: "PD #733: ceník se před importem nenasadí [PD]", soubor: "../src/ui/online_ui.js",
+    hledej: "    const cenikNasazen = cerstva && onlineCenikNasadHned();",
+    nahrad: "    const cenikNasazen = cerstva;",
+    proc: "kalkulace z odkazu by se doplnila z ceníku ze sestavení (závod s onlineTik, K53-N2)", sady: ["../src/test_pd_cerstva_ui.js"] },
+  { nazev: "PD #733: příprava se při otevření nevolá [PD]", soubor: "../src/ui/online_ui.js",
+    hledej: "    const pripraveno = cenikNasazen && typeof pdCerstvaPriprav === 'function'",
+    nahrad: "    const pripraveno = false && typeof pdCerstvaPriprav === 'function'",
+    proc: "kalkulace z webhooku by se otevřela jako rozdělaná, ne jako Nová zakázka", sady: ["../src/test_pd_cerstva_ui.js"] },
+  { nazev: "PD #728: odemčeno i mimo odkaz z dealu [PD]", soubor: "../src/ui/online_ui.js",
+    hledej: "    const odemknout = volby.zOdkazu === true && cerstva",
+    nahrad: "    const odemknout = cerstva",
+    proc: "otevření z Přehledu by obešlo zámek čtení (zadání 4. 9.)", sady: ["../src/test_pd_cerstva_ui.js"] },
+  { nazev: "PD #728: odemčeno i tomu, kdo odemknout nesmí [PD]", soubor: "../src/ui/online_ui.js",
+    hledej: "      && (typeof zamekCteniSmiOdemknout !== 'function' || zamekCteniSmiOdemknout(ZAK, ONLINE_STAV.ja));",
+    nahrad: ";",
+    proc: "cizí obchodník by dostal kalkulaci z dealu k úpravám", sady: ["../src/test_pd_cerstva_ui.js"] },
+  { nazev: "PD #728: odkaz z dealu neřekne, že je z odkazu [PD]", soubor: "../src/ui/online_ui.js",
+    hledej: "  return onlineOtevri(soubor, { zOdkazu: !!zOdkazu }).then(v => {",
+    nahrad: "  return onlineOtevri(soubor).then(v => {",
+    proc: "kalkulace z dealu by se dál otevírala jen ke čtení", sady: ["../src/test_pd_cerstva_ui.js"] },
   /* RA (23. 11. 2026): rozhodnutí J. V. — #723 „V pořádku“ jen administrátor, #724 číslo PROJ
    * po zámku / prodeji, #726 upozornění na zastaralé řádky DPZ, log webhooku. Hlídají
    * test_k40c_webhook.mjs, test_ra_rozhodnuti.mjs, src/test_ra_vazba_ui.js, src/test_ra_terminy_proj.js. [RA] */

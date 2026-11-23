@@ -1740,6 +1740,20 @@ function onlineOdkazZakazka() {
   } catch (e) { return ''; }
 }
 
+/* #733: platný online ceník nasadit HNED (ne až odloženě v onlineTik), aby
+ * se kalkulace z webhooku doplnila a připravila nad ním. Vládne-li složka, je
+ * její ceník nasazený už od načtení. Vrací true, když platný ceník platí. */
+function onlineCenikNasadHned() {
+  const p = ONLINE_STAV.ja && ONLINE_STAV.db && ONLINE_STAV.db.platny;
+  if (!p) return false;
+  if (typeof progJede === 'function' && progJede()) return true;
+  const pouzita = (typeof PROG_STAV !== 'undefined' && PROG_STAV) ? PROG_STAV.pouzita : null;
+  if (pouzita && pouzita.verze === p.verze) return true;
+  if (typeof progPouzij !== 'function') return false;
+  progPouzij(p);
+  return true;
+}
+
 function onlineObnovPosledni() {
   const zOdkazu = onlineOdkazZakazka();
   const soubor = zOdkazu || onlinePosledniZapamatovana();
@@ -1777,14 +1791,15 @@ function onlineObnovPosledni() {
    * obnovil zálohu z prohlížeče, má příznak nastavený a jeho práci nic
    * nepřepíše. */
   if (ONLINE_STAV.zmenaUzivatele) return Promise.resolve(false);
-  return onlineOtevri(soubor).then(v => {
+  return onlineOtevri(soubor, { zOdkazu: !!zOdkazu }).then(v => {
     if (v) onlineZprava(zOdkazu ? 'Otevřena kalkulace z odkazu Pipedrive: ' + soubor + '.'
       : 'Otevřena zakázka, na které jste naposledy pracoval: ' + soubor + '.');
     return v;
   }).catch(() => false);
 }
 
-async function onlineOtevri(soubor) {
+async function onlineOtevri(soubor, volby) {
+  volby = volby || {};
   if (!ONLINE_STAV.ja) return Promise.resolve(false);
   /* PŘEPNUTÍ NA JINOU ZAKÁZKU SE PTÁ NA TŘI CESTY (nález V35, 14. 9. 2026).
    *
@@ -1843,7 +1858,16 @@ async function onlineOtevri(soubor) {
   ONLINE_STAV.zmenaUzivatele = false;
   ONLINE_STAV.pracuje = true; renderOnlinePanel();
   return onlineApi('/api/zakazky?soubor=' + encodeURIComponent(soubor)).then(o => {
+    /* #733: kalkulace čerstvě založená webhookem Pipedrive se připraví jako
+     * Nová zakázka — nad PLATNÝM ceníkem, proto se nasadí dřív než import
+     * (onlineTik ho nasazuje odloženě a jinak by se doplnil ceník ze sestavení). */
+    const cerstva = !!(o && o.zakazka && o.zakazka.pdCerstva === true);
+    const cenikNasazen = cerstva && onlineCenikNasadHned();
     ZAK = importZakazka(o.zakazka);
+    const pripraveno = cenikNasazen && typeof pdCerstvaPriprav === 'function'
+      ? pdCerstvaPriprav(ZAK, { vychozi: (ock, proj) => {
+        if (typeof zobrazeniVychoziAplikuj === 'function' && typeof NAST !== 'undefined') zobrazeniVychoziAplikuj(NAST.zobrazeni, ock, proj);
+      } }) : 0;
     syncVarianta();
     ONLINE_STAV.soubor = soubor;
     ONLINE_STAV.kolize = null;
@@ -1854,7 +1878,13 @@ async function onlineOtevri(soubor) {
     onlinePodpisZamkuPriprav();   // #665 (RJ): sken podpisu původního zpracovatele odeslaných nabídek
     /* Otevřená zakázka je JEN KE ČTENÍ, dokud ji uživatel vědomě neodemkne
      * (zadání J. V. 4. 9. 2026). Zapíná se PŘED přepočtem i renderem. */
-    if (typeof zamekCteniZapni === 'function') zamekCteniZapni();
+    /* #728 (J. V. 23. 11. 2026): kalkulace z dealu, kterou webhook založil
+     * a nikdo ji ještě neuložil, se z odkazu v dealu otevře rovnou k úpravám
+     * — jen když ji uživatel smí odemknout (zamekCteniSmiOdemknout). */
+    const odemknout = volby.zOdkazu === true && cerstva
+      && (typeof zamekCteniSmiOdemknout !== 'function' || zamekCteniSmiOdemknout(ZAK, ONLINE_STAV.ja));
+    if (odemknout && typeof zamekCteniVypni === 'function') zamekCteniVypni();
+    else if (typeof zamekCteniZapni === 'function') zamekCteniZapni();
     if (typeof seznamReset === 'function') seznamReset();
     /* Otevřít se musí nad ceníkem, který právě platí – rozpracované varianty
      * se srovnají, uzamčené se nedotknou (stejné pravidlo jako u složky). */
@@ -1873,6 +1903,7 @@ async function onlineOtevri(soubor) {
     if (typeof standardAtypUklid === 'function') standardAtypUklid();
     ONLINE_STAV.posledni = JSON.stringify(ZAK);
     onlineZprava('Otevřeno online: ' + soubor + '.'
+      + (pripraveno ? ' Kalkulace z Pipedrive připravena jako nová zakázka (platný ceník a výchozí zaškrtnutí).' : '')
       + (prep && (prep.prepocteno || prep.svetlikyStavba || prep.svetlikyMaterialBez) && typeof uloPrepocetVeta === 'function' ? ' ' + uloPrepocetVeta(prep) : ''));
     /* VS #570 (R21): zakázka s víc šachtami a vypnutá funkce — lišta; vypínač
      * se ze serveru čte jen u takové zakázky. */

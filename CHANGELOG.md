@@ -8,6 +8,29 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v23.11.3 — PD: kalkulace z Pipedrive jako Nová zakázka (#733, #732), odkaz z dealu k úpravám (#728), kontakt jen jméno (#729), větev claude/pd-webhook-uprava
+
+Nad integrací `173ab6a` (v23.11.2). Pracovní verze v23.11.3 — číslo přidělí koordinace. **Mění cenu kalkulací
+založených webhookem Pipedrive** (oprava vady K53-N2); ostatních kalkulací ani pevné sady se netýká (porovnání
+sestavení: viz zpráva koordinaci).
+
+- **Kalkulace z dealu má marži a ceny z platného ceníku (#733, nález K53-N2):** webhook zakládá kalkulaci na serveru
+  bez ceníku a výchozího zaškrtnutí; prohlížeč ji při otevření odkazem doplnil z ceníku ze sestavení (platný ceník
+  se nasazoval až odloženě) a přepočet „rozdělané“ zakázky pak marži, sazbu DPH a ceny „dle nabídky“ nechal na 0.
+  Nově webhook kalkulaci označí jako čerstvou (`pdCerstva`, píše jen server, uložení z prohlížeče ho vždy zahodí)
+  a prohlížeč ji při prvním otevření nad platným ceníkem připraví přesně jako „Novou zakázku“ (ceník OCK i PROJ,
+  zadání, výchozí zaškrtnutí z matice zobrazení); hlavička a datum z dealu zůstanou. Rozdělané zakázky obchodníků
+  chráněné dál stejně.
+- **Protokol při prvním uložení (#732):** po přípravě přepočet nemění žádnou cenu — první uložení zapíše jen
+  skutečnou změnu, ne desítky řádků ceníku.
+- **Odkaz z dealu otevře kalkulaci k úpravám (#728):** čerstvou kalkulaci z webhooku (dosud neuloženou člověkem)
+  otevře odkaz `?zakazka=` z dealu odemčenou — jen tomu, kdo ji smí odemknout (autor, vedoucí, administrátor).
+  Ostatní otevírání i zámky odeslaných a prodaných variant beze změny.
+- **Kontaktní osoba z dealu jen jméno (#729):** webhook zapíše do Kontaktní osoby jen jméno osoby dealu, bez e-mailu
+  a telefonu. Odeslané (zmrazené) kalkulace beze změny.
+- **Testy:** `netlify/test_pd_cerstva.mjs` (server, jádro, #729), `src/test_pd_cerstva_ui.js` (otevření, zámek čtení),
+  `overit_pd_cerstva.mjs` (prohlížeč, vynucený závod s nasazením ceníku); každý s pojistkou (viz commit). Mutace [PD] 12.
+
 ## v23.11.2 — RA: rozhodnutí J. V. 23. 11. (#723, #724, #726, log webhooku), větev claude/ra-rozhodnuti
 
 Nad integrací `133a8f5` (v23.11.1). Pracovní verze v23.11.2 — číslo a čísla roadmapy přidělí koordinace.
