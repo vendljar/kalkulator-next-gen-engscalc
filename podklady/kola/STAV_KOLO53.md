@@ -101,16 +101,16 @@ jako zkušební; (c) šablony CN v18 a PROJ v9 z main (jen čtení) nahrát a zv
 - **K53-I1** (informace, nízká, dopad na cenu: ne): první uložení kalkulace založené webhookem zapíše do protokolu
   „a dalších 106 změn“ (montazZakladHod, sazby, doprava, kurz, fixy… — doplnění ceníku do kalkulace bez ceníku).
   Protokol tím zahltí šum; návrh: první doplnění ceníku do webhookové kalkulace zapsat jedním řádkem.
-- **K53-I2** (informace, rozdíl dat test × main, mimo zadání): Firma → texty termínů OCK (`kapTerminy` CZ/EN/DE/FR) — na main
+- **K53-I2** (ZNÁMÉ, BEZ AKCE — roadmapa #652, J. V. 19. 11.: 6. řádek termínů se netiskne, záruka jde z krycího listu): Firma → texty termínů OCK (`kapTerminy` CZ/EN/DE/FR) — na main
   chybí řádek „5 let záruka na celé dílo.“ (a překlady), na testu je. Nesynchronizováno (text nabídky = J. V.).
 - **K53-N1** (vada, nízká, dopad na cenu: ne, jen obrazovka): rozbalený řádek „Cena z nabídky lakovny“ ukazuje
   „Výpočet z ceníku: <částka> Kč Kč“ (`rcRadekPod`: `fmt()` jednotku už nese a `jed` = Kč). Uživatel s právem na náklady.
 
-V roadmapě: #727 (K53-N1), #728 (K53-I1), #729 (K53-I2) — čísla předběžná, přečísluje koordinace. #726 bod (1) (data DPZ testu) splněn bodem 3a.
+V roadmapě: #727 (K53-N1), #728 (K53-I1); K53-I2 = #652 — čísla předběžná, přečísluje koordinace. #726 bod (1) (data DPZ testu) splněn bodem 3a.
 
 ## Úklid
 
-- CN-432: šachta 1 = 2 ks, další zákazník „TEST K53 Zákazník B s.r.o.“ (CN-432-B); v dealu 432 poznámky id 1110 (šachty) a 1111 (zákazníci).
+- CN-432: zkušební data VRÁCENA 13:45 UTC (zákazník „TEST K53 Zákazník B s.r.o.“ odebrán, šachta 1 = 1 ks — ks vrátil už J. V. 13:43). Poznámky v dealu 432 se samy aktualizovaly: id 1110 „Šachty v nabídce: 1 šachta — nabídka CN-432“, id 1111 „Další zákazníci na zakázce: žádní — nabídka CN-432“ (ověřeno v Pipedrive; aktualizace poznámek tím ověřena také). Poznámky v dealu zůstávají — smazat jen na pokyn J. V.
 - `TEST - 2026 - OPR - CN - 9853` (druhá zakázka s `pdDealId` 432) zůstává.
 - Zakázky bodu 2: `… 9854` (JT, obchodník, CN EN vytištěna → zamčená), `… 9855` (LAK, potvrzená částka, 2 ks), `… 9856` (RJ B232, nezamčená).
 - Firma testu: termíny PROJ = výchozí (13:36:42 UTC); šablony CN v18 / PROJ v9 platné; připomínky P-0001–P-0006 zamítnuté.
