@@ -390,32 +390,14 @@
    "typ": "ukol",
    "nazev": "Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6)",
    "cekaNa": "nahrát upravený skill (mimo repo)"
-  },
-  {
-   "id": "716",
-   "typ": "otazka",
-   "nazev": "LAK: otázky pro J. V. k ceně lakování z nabídky lakovny (#666)",
-   "alias": [
-    "LAK-Q"
-   ],
-   "cekaNa": "rozhodnout 4 doporučené varianty (zvolené v dávce LAK)"
-  },
-  {
-   "id": "718",
-   "typ": "otazka",
-   "nazev": "RJ-R1: kdo smí potvrdit vazbu dealu z webhooku („V pořádku“) před zapnutím PIPEDRIVE_ZAPIS",
-   "alias": [
-    "RJ-R1"
-   ],
-   "cekaNa": "rozhodnout před zapnutím PIPEDRIVE_ZAPIS (dop. autor nepotvrzuje, jen administrátor)"
   }
  ],
- "ceka_na_jv_odlozene": 13,
+ "ceka_na_jv_odlozene": 14,
  "nehotove_podle_kdo": {
-  "J. V.": 39,
+  "J. V.": 38,
   "kolega": 4,
-  "koordinace": 6,
+  "koordinace": 8,
   "integrátor": 2
  },
- "nehotovych": 51
+ "nehotovych": 52
 }

@@ -2330,7 +2330,7 @@ Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md` (tabulka �
   (dřív výjimka „starší klient bez pole“). *Mez:* `prepsat: true` (vědomé přepsání po dotazu) zůstává —
   práva nerozšiřuje: zakázku smí uložit každý, kdo ji smí načíst, s razítkem načtené verze. *Revize Fable R5:*
   B237 je tím opravený jen částečně — tělo s `prepsat: true` dál přepíše cizí rozpracovanou zakázku bez
-  kolize 409 (zůstává stopa `upravil`); zda vědomé přepsání omezit na autora a správce, rozhodne J. V.
+  kolize 409 (zůstává stopa `upravil`); J. V. 23. 11. 2026: vědomé riziko, ponechat (autor ani správce se neomezují).
 - **B238 — snímek lhůt PROJ — OPRAVENO.** Snímek `data.kryciProj.lhutyProj` píše server
   (`lhutyProjServerDrz`): neprodaná varianta ho nenese (klientský se zahodí), varianta prodávaná tímto
   uložením dostane platnou tabulku Firmy ze serveru, prodaná dřív — změnu odmítne zámek. *Mez:* obnova ze
@@ -2343,10 +2343,10 @@ Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md` (tabulka �
   obnově přeskočí s důvodem (dnešní zakázky stropů zdaleka nedosahují).
 - **B240 — akce správce nad starým účtem — OPRAVENO.** Viz oprava popisu B156. *Mez:* mezi instancemi
   funkce jen druhé čtení (B158).
-- **B241 — hádání hesla z více adres, síla hesla — MEZ (rozhodnutí J. V. otevřené).** Počítadlo e-mailu
+- **B241 — hádání hesla z více adres, síla hesla — MEZ (J. V. 23. 11. 2026: odloženo, #725).** Počítadlo e-mailu
   správné heslo nikdy neblokuje (jinak by útočník zamkl kohokoli); strop je jen na adresu (IPv6 po /64)
-  a brzda. Útočník s mnoha adresami tak hádá bez stropu; síla hesla = jen délka 8. Zda zavést strop
-  na účet (s rizikem zamčení oběti), složitost hesla nebo druhý faktor, rozhodne J. V.
+  a brzda. Útočník s mnoha adresami tak hádá bez stropu; síla hesla = jen délka 8. J. V. 23. 11. 2026: zatím
+  nechat; úkol do budoucna #725 (síla hesla, případně druhý faktor pro administrátora).
 - **B242 — adresa klienta mimo Netlify — MEZ.** Bez `x-nf-client-connection-ip` se bere první položka
   `X-Forwarded-For`, bez obou se limit adresy nevede. Na Netlify hlavičku nastavuje platforma a klient ji
   nepodvrhne; dopad jen při nasazení mimo Netlify (`server/` je nenasazovaná kostra, B262).
@@ -2399,7 +2399,7 @@ Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md` (tabulka �
   a prodaná varianta pak termíny počítá z aktuální tabulky Firmy (stav před D8). Odmítnout to nejde:
   skutečný klient snímek v cestě „Prodáno po neuloženém tisku klonu“ neposílá (`overit_klon_tisk` #555)
   a server ho doplnit nemůže — rozbil by snímek zámku spočítaný klientem. Podvržený (nesedící) snímek
-  u nového zámku se odmítne 409. Úplná oprava = klient pošle snímek vždy (#722).
+  u nového zámku se odmítne 409. Úplná oprava = klient pošle snímek vždy (#722); J. V. 23. 11. 2026: neřešit, mez.
 - **#711 — počítadla klíče koordinace — OPRAVENO.** Viz B257.
 - **#712 — připomínky při VYP — OPRAVENO.** Přihlášení a `/api/ja` nesou `pripominky {zapnuto,
   smiOdesilat}`; při vypnuté funkci klient nic nenačítá a tlačítko do stránky nevkládá.

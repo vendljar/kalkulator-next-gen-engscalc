@@ -72,11 +72,9 @@ Test je proti main napřed o 73 commitů.
 | #639 | otázka | Ruční cena: příloha PDF nabídky dodavatele a ruční cena v ceníku PROJ | rozhodnout, zda je potřeba |
 | #640 (dřív B221) | otázka | Role jen ke čtení: „kdo smí ukládat“ je dnes každý přihlášený | zavést roli jen ke čtení? (doporučeno až s kolegou s rolí administrátora) |
 | #643 | úkol | Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6) | nahrát upravený skill (mimo repo) |
-| #716 (dřív LAK-Q) | otázka | LAK: otázky pro J. V. k ceně lakování z nabídky lakovny (#666) | rozhodnout 4 doporučené varianty (zvolené v dávce LAK) |
-| #718 (dřív RJ-R1) | otázka | RJ-R1: kdo smí potvrdit vazbu dealu z webhooku („V pořádku“) před zapnutím PIPEDRIVE_ZAPIS | rozhodnout před zapnutím PIPEDRIVE_ZAPIS (dop. autor nepotvrzuje, jen administrátor) |
 
-K tomu 13 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
+K tomu 14 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
 
 ## Nehotové položky evidence
 
-Celkem 51: J. V. 39, kolega 4, koordinace 6, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 52: J. V. 38, kolega 4, koordinace 8, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
