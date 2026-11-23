@@ -22,7 +22,8 @@ Nad integrací `133a8f5` (v23.11.1). Verze pracovní (číslo přidělí koordin
   z teček a mezer (`.. `, `..%20`), prázdný úsek `//`, dvojtečku kdekoli a U+FFFD, duplicity po sloučení lomítek
   a ořezu koncových teček; R7 `Set` / `Object.create(null)`. R3 (další pole) čeká na J. V.
 - **Testy:** `src/test_sa_sablony.js` 67 (pojistka: nad 133a8f5 54 FAIL, nad b3d710a před revizí 17 FAIL; první
-  verze 41 testů měla 30 FAIL, ne 29), mutace [SA] 23/23; zadání mutací B141/B142 podle
+  verze 41 testů měla 30 FAIL, ne 29), mutace [SA] 23/23; kolo po revizi `--bez-mutaci` proti 133a8f5 VŠE ZELENÉ
+  (523/0/6, hodiny 424/0/1, 12/12, SHODA 367/367); zadání mutací B141/B142 podle
   upraveného kódu. Kolo `--bez-mutaci` proti 133a8f5: sady 523/0/6, hodiny 424/0/1, statické 12/12, SHODA 367/367;
   mutace jádra 1308/1308 (4 části); mutace serveru jen cíleně „sablon“ 31/31 — celý server v Actions.
 
