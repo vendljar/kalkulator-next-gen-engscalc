@@ -453,6 +453,12 @@ function hodnotaBezpecnaJs(v) {
   return false;
 }
 const UDALOST = /\bon[a-z]+="([^"]*)"/g;
+/* MT #735 (23. 11. 2026): v těchto souborech se v on*="…" hlásí KAŽDÁ
+ * neprokázaná hodnota, nejen jméno z RIZIKO. VZ-F1 (19. 11.) přejmenoval
+ * cestu pole krycího listu z `p.bind` na lokální `b` (vzKlCesta) a hlídač,
+ * který se řídí jménem, holé `${b}` v onchange přestal vidět (mutace K40a D7
+ * prošla). Oba soubory jsou dnes v on* atributech čisté bez výjimek. */
+const PRISNE_ON = new Set(['kryci_ui.js', 'kryci_proj_ui.js']);
 const vJs = [];
 const uiDir = __dirname + '/ui';
 for (const f of fs.readdirSync(uiDir).sort()) {
@@ -467,7 +473,7 @@ for (const f of fs.readdirSync(uiDir).sort()) {
         if (hodnotaBezpecnaJs(v)) continue;
         /* Hlásí se hodnoty, které vypadají na data (RIZIKO), a KAŽDÉ esc() —
          * to je v onclick vždycky chyba, ať se hodnota jmenuje jakkoli. */
-        if (!RIZIKO.test(v) && !/\besc\(/.test(v)) continue;
+        if (!PRISNE_ON.has(f) && !RIZIKO.test(v) && !/\besc\(/.test(v)) continue;
         vJs.push(f + ':' + (i + 1) + '  ${' + v.replace(/\s+/g, ' ').trim() + '}');
       }
     }

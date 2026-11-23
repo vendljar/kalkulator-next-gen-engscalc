@@ -310,9 +310,16 @@ let S1, D1, ORG1;
   SIM.pdSimNastav({ scenar: 'visi' });
   const t0 = Date.now();
   const r = await Promise.race([vitez(s, cAutor), new Promise(res => setTimeout(() => res({ stav: 'VISI' }), 15000))]);
+  const ms10 = Date.now() - t0;
   SIM.pdSimNastav({ scenar: '' });
   test('10 visící Pipedrive → chyba do 9 s (+rezerva), stav uložen', r.stav === 'chyba' && Date.now() - t0 < 11000 && zakazka(s).pdOrgVitez.stav === 'chyba'
     && /neodpověděl/.test(r.duvod), { r, ms: Date.now() - t0 });
+  /* MT #735 (23. 11. 2026): od NN B246 má pdZavolej výchozí limit 8 s, takže
+   * visící Pipedrive skončí chybou i bez meze akce — rezerva 11 s výš to
+   * nerozliší. Mez jednoho volání je PD_VITEZ_VOLANI_MS (2,5 s): chyba musí
+   * nést právě ji a přijít dřív, než by vypršel výchozí limit 8 s. */
+  test('10 visící Pipedrive: jedno volání drží mez 2,5 s (ne výchozí 8 s)', /do 2,5 s/.test(r.duvod || '') && ms10 < 5000,
+    { duvod: r.duvod, ms: ms10 });
   test('10 meze: volání 2,5 s, celá akce 9 s, strop 10 / deal, 20 / uživatel', OV.PD_VITEZ_VOLANI_MS === 2500 && OV.PD_VITEZ_CELKEM_MS === 9000
     && OV.PD_VITEZ_STROP_DEAL === 10 && OV.PD_VITEZ_STROP_UZIVATEL === 20);
   let posledni;
