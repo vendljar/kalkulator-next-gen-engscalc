@@ -90,8 +90,8 @@ Test je proti main napřed o 141 commitů.
 | #643 | úkol | Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6) | nahrát upravený skill (mimo repo) |
 | #730 | dávka | Spuštění propojení s Pipedrive na main — procedura (podklady/PIPEDRIVE_SPUSTENI.md) | seznam polí pro #597 a uživatel tokenu (B1, B2) |
 
-K tomu 14 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
+K tomu 13 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
 
 ## Nehotové položky evidence
 
-Celkem 54: J. V. 39, kolega 4, koordinace 9, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 54: J. V. 38, kolega 4, koordinace 10, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.

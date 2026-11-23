@@ -556,11 +556,11 @@
    "cekaNa": "seznam polí pro #597 a uživatel tokenu (B1, B2)"
   }
  ],
- "ceka_na_jv_odlozene": 14,
+ "ceka_na_jv_odlozene": 13,
  "nehotove_podle_kdo": {
-  "J. V.": 39,
+  "J. V.": 38,
   "kolega": 4,
-  "koordinace": 9,
+  "koordinace": 10,
   "integrátor": 2
  },
  "nehotovych": 54
