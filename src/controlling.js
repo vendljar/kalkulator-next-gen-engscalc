@@ -1430,7 +1430,7 @@ if (typeof module !== 'undefined' && module.exports)
     ctrlVychozi, ctrlZakazniciText, ctrlKliceCeniku, ctrlPlatne, ctrlKlicRadku, ctrlSkupinaKlice, ctrlRozvrhOck, ctrlRozvrhProj,
     ctrlKapitoly, ctrlNezarazene, ctrlKliceKatalogu, ctrlBajty, ctrlDataKontrola, ctrlBezeZmeny,
     ctrlDbNovaVerze, ctrlDbOciste,
-    ctrlOdchylky, CTRL_PSEUDO_POPIS, ctrlPopisKlice, ctrlKatalogNazvy, CTRL_EXPORT_VERZE, CTRL_EXPORT_ZMENA, ctrlExportVarianty, ctrlProdej, ctrlPodilyNa100,
+    ctrlOdchylky, CTRL_PSEUDO_POPIS, ctrlPopisKlice, ctrlKatalogNazvy, CTRL_EXPORT_VERZE, CTRL_EXPORT_ZMENA, ctrlExportVarianty, ctrlProdej, ctrlCenaDilaSod, ctrlPodilyNa100,
     CTRL_RADKY_HLAVICKA, CTRL_LIST_PRIPLATKY, ctrlExportListy, ctrlCsvBunka, ctrlExportCsv, ctrlVZakladuText, ctrlHromadnyVarianta,
     CTRL_PD_ID_MAX, ctrlPdDealIdNorm, ctrlPdDealKontrola, ctrlPdDealSmiMenit,
     PD_STAVY, PD_STAV_TEXT, pdStavNorm, pdStavKontrola, pdStavZDealu, pdStavText, pdStavNactenoText,
