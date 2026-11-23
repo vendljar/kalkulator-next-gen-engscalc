@@ -11,9 +11,13 @@
 - Běží v koordinaci: dávka PD (#733 marže 0 % u kalkulace z webhooku, #728 odemčení, #729 kontakt jen jméno),
   pak #734 (autor = vlastník dealu) a #597 (zápis prodeje). Spouštěcí procedura pro ostrý web:
   `podklady/PIPEDRIVE_SPUSTENI.md` v integraci.
-- Zbývá s J. V.: kontrola kalkulace z odkazu; druhé spuštění (pořád jedna kalkulace, stejný odkaz); automatické
-  CN na novém dealu; pak ostrý web podle spouštěcí procedury (adresa ostré verze integrátorovi, automatizace pro
-  všechny dealy).
+- Kontrolní seznam v souhrnu převzat z procedury koordinace `podklady/PIPEDRIVE_SPUSTENI.md`
+  (`claude/integrace-16-10`, 23. 11.): A1–A4 hotovo (PIPEDRIVE_ZAPIS, webhook zapisuje odkaz, poznámky
+  a ochrany, druhá automatizace na stejné pole vypnuta J. V.); A5–A9 čekají (A6/A7 rozpracované ve větvi
+  `claude/pd-webhook-uprava`, #733/#732/#728/#729); B1–B3 rozhodnuto; C1–C9 den spuštění na main čeká.
+  Navíc naše T1 (druhé spuštění na dealu ze zkoušky) a T2 (automatické CN na novém dealu) — čekají na J. V.
+- Pro integrátora při spuštění jen: adresa webhooku na engscalc, nové heslo zvlášť, zrušit omezení na zkušební
+  deal (C4/C5, pokud to neudělá J. V. sám).
 
 ---
 
