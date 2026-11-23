@@ -2405,3 +2405,23 @@ Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md` (tabulka �
   smiOdesilat}`; při vypnuté funkci klient nic nenačítá a tlačítko do stránky nevkládá.
 - **Zbytek N1 (PR) — OPRAVENO.** Viz B257 (jen štítek pole, strukturální selektor).
 - **#703 — B233 zbytek — PŘIJATO JAKO MEZ** (J. V. 22. 11. 2026). Viz B233.
+
+## SA — kontrola šablon Word B270–B272 (dávka SA, 23. 11. 2026)
+
+Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md`, PoC `podklady/audit_2026-11-20/poc_DO_sablona_server.mjs`
+(C5–C7, C12 → ODOLNÉ), roadmapa #719–#721. Test `src/test_sa_sablony.js`, mutace [SA] 10. Jen administrátor (zveřejnění šablony).
+
+- **B270 — názvy položek ZIPu — OPRAVENO.** Kontrola obsahu šablony (`sablonaNazevVada`, prohlížeč, generátor i server)
+  odmítne položku s `..` / `.` v cestě, absolutní cestou (`/x`, `C:x`), zpětným lomítkem nebo řídicím znakem — i zakódovanou
+  (`%2e%2e`) — a dvě položky téhož jména (bez ohledu na velikost písmen a `%xx`; dvojí `word/document.xml`). *Mez:* prázdný
+  segment (`word//x.xml`) projde — Word i zip ho berou jako běžný název uvnitř balíčku.
+- **B271 — pole s údaji počítače — OPRAVENO.** `FILENAME` (i `\p`), `USERNAME` a `AUTHOR` jsou mezi zakázanými poli
+  (`SABLONA_POLE_ZAKAZANA`). *Mez:* příbuzná pole `USERINITIALS`, `USERADDRESS`, `LASTSAVEDBY` a vlastnosti dokumentu
+  (`DOCPROPERTY`, `INFO`) dál projdou — k rozhodnutí J. V., zda je přidat.
+- **B272 — strop jedné XML části — OPRAVENO.** `SABLONA_XML_CAST_MAX` = 8 MB: `zipPrecti(u8, { xmlCastMax })` zastaví
+  rozbalení položky `.xml` / `.rels` nad strop hned (PoC C12: 60 MB část ~0,1 s místo ~1 s na serveru) a kontrola nad
+  rozbalenými položkami odmítne i XML obsah nad strop bez přípony (generátor v prohlížeči). Firemní šablony mají zabalené
+  ~1,4 MB i s obrázky; XML části v nich jsou v řádu stovek kB. *Mez:* strop neověřen na firemních šablonách
+  (`KNG_PODKLADY` v sezení nebyl) — šablonu nad stropem server i generátor odmítnou (bezpečný směr); ověřit
+  `src/test_sablona_obsah.js` s `KNG_PODKLADY` před nasazením. Kvadratické výrazy uvnitř 8 MB dál viz SEC-M17;
+  ceníky v Excelu a obrázky strop části nemají (celkový strop rozbalení 64 MB beze změny).

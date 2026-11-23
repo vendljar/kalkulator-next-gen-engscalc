@@ -8,6 +8,16 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v23.11.2 — SA: kontrola šablon Word B270–B272 (#719–#721), větev claude/sa-sablony
+
+Nad integrací `133a8f5` (v23.11.1). Verze pracovní (číslo přidělí koordinace). Cenu ani text dokumentů nemění. Jen administrátor
+(zveřejnění šablony). Meze v `BEZPECNOST_MEZE.md`, oddíl SA.
+
+- **Šablony Word:** kontrola odmítne položku ZIPu s `../`, absolutní cestou, zpětným lomítkem nebo řídicím znakem
+  a dvě položky téhož jména (B270, #719); pole `FILENAME` (i `\p`), `USERNAME` a `AUTHOR` (B271, #720); XML část
+  nad 8 MB — rozbalení se zastaví hned (B272, #721; PoC C12 ~0,1 s místo ~1 s).
+- **Testy:** `src/test_sa_sablony.js` (41; před opravou 29 FAIL), mutace [SA] 10/10.
+
 ## v23.11.1 — CI-24: mutace serveru v Actions ve 24 částech; rozhodnutí J. V. 23. 11. do roadmapy
 
 Nad integrací `408987d` (v22.11.10). Verze v23.11.1 (koordinace). Aplikace beze změny — kód je stejný jako v22.11.10;
