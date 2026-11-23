@@ -10,6 +10,12 @@
   není → zeptat se J. V., zda tehdy pole přepínal (pak webhook selhal, důvod v historii automatizace).
 - Souhrn (nahoře): tabulka odpovědi integrátora a postup testu (Ano → odkaz → kalkulace → podruhé → pořád jedna;
   Obnovit z CRM → DIČ spárované). Další krok: test provede J. V., sezení kontroluje deal jen čtením.
+- **23. 11. první test neúspěšný:** J. V. přepnul pole na Ano, automatizace pole vyprázdnila, ale „Odkaz na
+  kalkulaci“ zůstal prázdný (ověřeno čtením dealu, update_time 23. 11. 8:56 UTC). Kalkulátor neúspěšná volání
+  nikde neloguje (pdProtokol jen při úspěchu) → důvod je v historii běhu automatizace v Pipedrive (kód + text
+  odpovědi). Podezření: integrátor posílá „parametr dealId“ možná jako formulář/query, ne JSON → 400; nebo heslo
+  nesedí → 401. Čeká se na kód z historie automatizace; podle něj buď oprava u integrátora, nebo paralelní větev
+  nad `test` (přijímat i formulář / query `dealId`).
 
 ---
 
