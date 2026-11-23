@@ -115,6 +115,19 @@ jako zkušební; (c) šablony CN v18 a PROJ v9 z main (jen čtení) nahrát a zv
 
 V roadmapě: #731 (K53-N1), #732 (K53-I1), #733 (K53-N2); K53-I2 = #652 (bez čísla, známé) — čísla předběžná, přečísluje koordinace. #726 bod (1) (data DPZ testu) splněn bodem 3a.
 
+### Doplněk 13:52 — náhled „Co by se zapsalo do Pipedrive“ CN-432 (jen čtení, zápis zakázky v harnessu zablokován)
+
+Souhrn 35 řádků: zapíše 24, prázdné 9, nelze 2, kolize 1.
+
+- **K53-N3** (vada, střední, dopad na cenu: ne; čeká na číslo od koordinace): „Nabídku vypracoval“ (user) = nelze převést,
+  „… mezi uživateli Pipedrive není“, ačkoli uživatel existuje. `pd_prevod.mjs` `uzivatel()`: text s „@“ se porovná CELÝ
+  s e-mailem; výchozí hodnota KL je „jméno[, telefon], e-mail“ → nikdy nesedí a jméno se nezkusí. Návrh: e-mail vytáhnout
+  z textu, pak jméno před čárkou; test s pojistkou.
+- **K53-I3** (informace, nízká): „Příplatky v nabídce“ (varchar) 520 znaků > 255 = nelze. Teď důsledek #733 (18 příplatků
+  bez výchozího vynechání), ale i mez mapy — reálná nabídka s víc příplatky se nezapíše vůbec. Návrh: pole jako Velký text
+  (typ `text`) nebo zkrácený výčet do 255 znaků — rozhodne J. V. / integrátor.
+- Kolize „Hodnota dealu“: v TEST dealu zástupná hodnota → přepsání; stav dat, hlášení správně. Hodnota z kalkulace je kvůli #733 bez marže.
+
 ## Úklid
 
 - CN-432: zkušební data VRÁCENA 13:45 UTC (zákazník „TEST K53 Zákazník B s.r.o.“ odebrán, šachta 1 = 1 ks — ks vrátil už J. V. 13:43). Poznámky v dealu 432 se samy aktualizovaly: id 1110 „Šachty v nabídce: 1 šachta — nabídka CN-432“, id 1111 „Další zákazníci na zakázce: žádní — nabídka CN-432“ (ověřeno v Pipedrive; aktualizace poznámek tím ověřena také). Poznámky v dealu zůstávají — smazat jen na pokyn J. V. Moje uložení CN-432 13:45 UTC způsobilo J. V. kolizi při tisku; od 13:47 do CN-432 jen čtení (CN-432 dál jen J. V.). Poučení: zkušební data do zakázek J. V. jen na vlastní TEST zakázce a vrátit hned po zkoušce.
