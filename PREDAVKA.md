@@ -40,10 +40,11 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 
 ## Běžící dávky
 
-- **SA** (`claude/sa-sablony`, v23.11.2 prac., nad 133a8f5): #719–#721 B270–B272 kontrola šablon (názvy položek ZIPu,
-  FILENAME/USERNAME/AUTHOR, strop XML části 8 MB). Test `test_sa_sablony` 41 (pojistka 29 FAIL), mutace [SA] 10/10,
-  PoC C5–C7, C12 ODOLNÉ. Meze oddíl SA (strop neověřen s KNG_PODKLADY). Kolo --bez-mutaci proti 133a8f5 zelené (523/0/6, hodiny 424/0/1,
-  12/12, SHODA 367/367); mutace jádra 4 části 1308/1308; server jen cíleně „sablon“ 31/31 (celý server ~73 s/mutaci → Actions). **Před sloučením revize Fable.**
+- **SA** (`claude/sa-sablony`, v23.11.2 prac., nad 133a8f5): #719–#721 B270–B272 kontrola šablon + opravy revize Fable
+  R1, R2, R4, R5, R7, R8 (`podklady/revize/REVIZE_SA.md` ve větvi `claude/revize-sa`). Test `test_sa_sablony` 67 (pojistka
+  54/17 FAIL), mutace [SA] 23/23. R3 (pole INFO, DOCPROPERTY, TEMPLATE …) čeká na J. V. + ověření s KNG_PODKLADY.
+  Návrhy do roadmapy: R6 (ZIP: počet položek v koncovém záznamu, jméno lokální hlavičky), metadata autora v
+  `docProps/core.xml`. Celé mutace serveru → Actions.
 - **LAK #666** (`claude/lak-lakovani`, v22.11.8, nad 05a496d + 36e2681): cena z nabídky lakovny jako částka řádku
   `C.lak.nabidkaKc` (mimo ceník/Nastavení, `RC_CASTKY_RADKU` v `rucni_ceny.js`), ruční cena #561 se zdrojem a potvrzením;
   bez zdroje = nepotvrzená (zábrana, 403). Svěřené LAK-1/LAK-2, otázky #716. Testy `test_666_lakovani` (53 + 31), revize Fable L1/L2 opraveny,

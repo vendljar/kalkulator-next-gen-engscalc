@@ -16,7 +16,13 @@ Nad integrací `133a8f5` (v23.11.1). Verze pracovní (číslo přidělí koordin
 - **Šablony Word:** kontrola odmítne položku ZIPu s `../`, absolutní cestou, zpětným lomítkem nebo řídicím znakem
   a dvě položky téhož jména (B270, #719); pole `FILENAME` (i `\p`), `USERNAME` a `AUTHOR` (B271, #720); XML část
   nad 8 MB — rozbalení se zastaví hned (B272, #721; PoC C12 ~0,1 s místo ~1 s).
-- **Testy:** `src/test_sa_sablony.js` (41; před opravou 29 FAIL), mutace [SA] 10/10; zadání mutací B141/B142 podle
+- **Revize Fable (SLOUČIT PO OPRAVÁCH):** R1 strop B272 rozhoduje „je XML" z bajtů pro strop i rozbor (dřív 64 B
+  vs. celý text — 65 mezer před „<" v `.bin` strop obešlo), ne-XML části se nedekódují; R2 UTF-16 přes TextDecoder
+  (60 MB „A\0" dřív ~3,3 s); R4 dekódování `%xx` po bězích (neplatné `%` už nevypne kontrolu); R5 odmítne segment
+  z teček a mezer (`.. `, `..%20`), prázdný úsek `//`, dvojtečku kdekoli a U+FFFD, duplicity po sloučení lomítek
+  a ořezu koncových teček; R7 `Set` / `Object.create(null)`. R3 (další pole) čeká na J. V.
+- **Testy:** `src/test_sa_sablony.js` 67 (pojistka: nad 133a8f5 54 FAIL, nad b3d710a před revizí 17 FAIL; první
+  verze 41 testů měla 30 FAIL, ne 29), mutace [SA] 23/23; zadání mutací B141/B142 podle
   upraveného kódu. Kolo `--bez-mutaci` proti 133a8f5: sady 523/0/6, hodiny 424/0/1, statické 12/12, SHODA 367/367;
   mutace jádra 1308/1308 (4 části); mutace serveru jen cíleně „sablon“ 31/31 — celý server v Actions.
 

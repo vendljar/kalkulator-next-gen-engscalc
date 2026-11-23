@@ -2414,14 +2414,28 @@ Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md`, PoC `podkl
 - **B270 — názvy položek ZIPu — OPRAVENO.** Kontrola obsahu šablony (`sablonaNazevVada`, prohlížeč, generátor i server)
   odmítne položku s `..` / `.` v cestě, absolutní cestou (`/x`, `C:x`), zpětným lomítkem nebo řídicím znakem — i zakódovanou
   (`%2e%2e`) — a dvě položky téhož jména (bez ohledu na velikost písmen a `%xx`; dvojí `word/document.xml`). *Mez:* prázdný
-  segment (`word//x.xml`) projde — Word i zip ho berou jako běžný název uvnitř balíčku.
+  segment (`word//x.xml`) projde — Word i zip ho berou jako běžný název uvnitř balíčku. *Revize SA R4/R5/R7 (opraveno):*
+  `%xx` se dekóduje po bězích (neplatné `%` nevypne kontrolu), odmítne se segment jen z teček a mezer (`.. `,
+  `..%20`), prázdný úsek `//` (kromě koncového lomítka složky), dvojtečka kdekoli a U+FFFD; duplicita se porovnává
+  po sloučení lomítek, ořezu koncových teček a mezer a NFC. *Mez (revize R6, vrstva ZIP):* `zipPrecti` čte tolik
+  položek, kolik říká počet v koncovém záznamu, a jméno v lokální hlavičce neporovnává — položku skrytou menším
+  počtem kontrola nevidí; generátor ZIP zapisuje znovu z toho, co kontrola viděla (zákazník ji nedostane), týká se
+  jen surové šablony v úložišti. Návrh do roadmapy.
 - **B271 — pole s údaji počítače — OPRAVENO.** `FILENAME` (i `\p`), `USERNAME` a `AUTHOR` jsou mezi zakázanými poli
   (`SABLONA_POLE_ZAKAZANA`). *Mez:* příbuzná pole `USERINITIALS`, `USERADDRESS`, `LASTSAVEDBY` a vlastnosti dokumentu
-  (`DOCPROPERTY`, `INFO`) dál projdou — k rozhodnutí J. V., zda je přidat.
+  (`DOCPROPERTY`, `INFO`) dál projdou — k rozhodnutí J. V., zda je přidat. Revize SA R3: `INFO FileName \p`,
+  `INFO Author`, `DOCPROPERTY Author|LastSavedBy` a `TEMPLATE \p` vrátí totéž co zakázaná pole — doporučení přidat
+  všech šest (`USERINITIALS`, `USERADDRESS`, `LASTSAVEDBY`, `TEMPLATE`, `INFO`, `DOCPROPERTY`) po ověření nad
+  firemními šablonami (`KNG_PODKLADY`). Jméno autora nese i `docProps/core.xml` (`dc:creator`, `cp:lastModifiedBy`)
+  a generátor ho kopíruje do každé nabídky — návrh do roadmapy.
 - **B272 — strop jedné XML části — OPRAVENO.** `SABLONA_XML_CAST_MAX` = 8 MB: `zipPrecti(u8, { xmlCastMax })` zastaví
   rozbalení položky `.xml` / `.rels` nad strop hned (PoC C12: 60 MB část ~0,1 s místo ~1 s na serveru) a kontrola nad
   rozbalenými položkami odmítne i XML obsah nad strop bez přípony (generátor v prohlížeči). Firemní šablony mají zabalené
   ~1,4 MB i s obrázky; XML části v nich jsou v řádu stovek kB. *Mez:* strop neověřen na firemních šablonách
   (`KNG_PODKLADY` v sezení nebyl) — šablonu nad stropem server i generátor odmítnou (bezpečný směr); ověřit
   `src/test_sablona_obsah.js` s `KNG_PODKLADY` před nasazením. Kvadratické výrazy uvnitř 8 MB dál viz SEC-M17;
-  ceníky v Excelu a obrázky strop části nemají (celkový strop rozbalení 64 MB beze změny).
+  ceníky v Excelu a obrázky strop části nemají (celkový strop rozbalení 64 MB beze změny). *Revize SA R1/R2
+  (opraveno):* „je XML" se rozhoduje jednou z bajtů (přípona `.xml`/`.rels`, nebo první bajt `<` po BOM, bílých
+  znacích a nulách) pro strop i rozbor; ne-XML část se nedekóduje vůbec, UTF-16 čte TextDecoder. XML obsah v části
+  bez přípony `.xml` se rozbalí až do celkového stropu 64 MB a odmítne se po rozbalení (strop při rozbalení jen
+  podle přípony). Legitimně narazí jen SVG obrázek nad 8 MB.
