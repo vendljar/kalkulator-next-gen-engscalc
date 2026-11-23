@@ -8,6 +8,36 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v23.11.3 — CN: číslo nabídky — potvrzení změny, rozpoznání hledání, duplicita, prodaná nabídka (#727), větev claude/cn-cislo-nabidky
+
+Nad integrací `8411eb9` (v23.11.2). Pracovní verze v23.11.3 — číslo verze a meze přidělí koordinace.
+Cenu ani text dokumentů nemění (porovnání sestavení SHODA, viz zpráva koordinaci). Mez B276 (pracovní).
+Důvod: obchodník 21. 11. 2026 vepsal hledaný text do pole Číslo nabídky otevřené kalkulace a zakázka se uložila
+pod novým číslem.
+
+- **Potvrzení změny čísla (#727 bod 1):** u uložené zakázky (online i ve složce) se změna čísla nabídky provede až
+  po „Opravdu chcete změnit číslo nabídky z X na Y?“ **ANO / NE** (výchozí NE; NE vrátí původní). Platí pro
+  všechna místa s polem čísla (hlavička OCK i PROJ, technická specifikace, krycí listy). Nová a duplikovaná
+  zakázka se neptá. Text upozorní, že se zakázka uloží jako nový záznam a původní zůstane v seznamu.
+- **Hledání místo čísla (bod 2):** text bez tvaru čísla nabídky (číslice a žádné slovo ze 4+ písmen) → „Chtěli
+  jste zakázku vyhledat?“ s volbami *Vyhledat zakázku* (otevře Načíst zakázku s textem v hledání), *Je to číslo
+  nabídky* a *Zrušit*.
+- **Duplicita (bod 3):** číslo, které už má jiná zakázka v rejstříku, se do hlavičky nezapíše (hláška se jménem
+  zakázky) — dřív se zapsalo a uložení až pak hlásilo kolizi.
+- **Protokol (bod 4):** ověřeno, že „Číslo nabídky: X → Y“ se zapíše i při uložení dřív než za 2 s klidu (všechny
+  cesty uložení volají `protokolZapisTed` před zápisem) — test, kód beze změny.
+- **Prodaná nabídka (bod 5, B276):** číslo prodané nabídky nezmění nikdo, ani administrátor — klient pole zmrazí,
+  server odmítne 403; cesta ven je odemknout prodej. Odeslaná (neprodaná) nabídka beze změny: číslo jen
+  administrátor (A3 / B56).
+- **Hledání zakázek:** okno Načíst zakázku / Zakázky online a karta Vyhledání nabídek v Přehledu mají nad polem
+  popisek „Hledejte podle čísla nabídky, názvu akce, adresy stavby, zákazníka nebo obchodníka“ s příkladem
+  a úplnou nápovědu v bublině. Pole „Najít zakázku“ do lišty se nepřidává (J. V. 23. 11.).
+- **Příručka obchodníka:** odstavec o čísle nabídky a hledání (kapitola ukládání).
+- **Testy:** `src/test_cn_cislo_nabidky.js` (52), `netlify/test_cn_cislo_nabidky.mjs` (23), s pojistkou (viz
+  commit). Mutace [CN]: jádro 8, server 4.
+- **Nález CN-N1 (mimo rozsah):** změna čísla odeslané varianty, která už nese snímek lhůt z prodeje (i po odemčení
+  prodeje), končí 409 „snímek podmínek nové odeslané nabídky nesedí“ — nové číslo = nový záznam bez uložené verze.
+
 ## v23.11.2 — RA: rozhodnutí J. V. 23. 11. (#723, #724, #726, log webhooku), větev claude/ra-rozhodnuti
 
 Nad integrací `133a8f5` (v23.11.1). Pracovní verze v23.11.2 — číslo a čísla roadmapy přidělí koordinace.

@@ -208,7 +208,10 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
    * jen objednávky (D3-N2). Hlídá src/test_objednavka_proj.js. */
   'ui/objednavka_proj_ui.js',
   /* [DOS] DO-N1 #680: oddíl návrhů mimo číselník (test_do_n1_navrhy.js) */
-  'ui/cenik_ui.js'];
+  'ui/cenik_ui.js',
+  /* [CN] #727: změna čísla nabídky v hlavičce — posouzení a dialogy
+   * (test_cn_cislo_nabidky.js). */
+  'cislo_nabidky.js', 'ui/cislo_nabidky_ui.js'];
 /* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
  * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
  * nastroje/mutace_cast.mjs). */
@@ -312,6 +315,39 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* CN (23. 11. 2026): #727 číslo nabídky — potvrzení, hledání, duplicita, protokol, nápověda hledání. [CN] */
+  { nazev: "CN #727: každý text má tvar čísla [CN]", soubor: "cislo_nabidky.js",
+    hledej: "  return !/\\p{L}{4,}/u.test(t);",
+    nahrad: "  return true;",
+    proc: "hledaný text by se bez otázky zapsal jako číslo nabídky (incident 21. 11.)", sady: ["test_cn_cislo_nabidky.js"] },
+  { nazev: "CN #727: duplicita z rejstříku projde [CN]", soubor: "cislo_nabidky.js",
+    hledej: "  if (poVypl && c.dupSoubor) return",
+    nahrad: "  if (false) return",
+    proc: "číslo cizí zakázky by se zapsalo a uložení by skončilo kolizí", sady: ["test_cn_cislo_nabidky.js"] },
+  { nazev: "CN #727: uložená zakázka se neptá [CN]", soubor: "cislo_nabidky.js",
+    hledej: "  if (c.ulozena && _cnVyplneno(pred)) return",
+    nahrad: "  if (false) return",
+    proc: "číslo uložené zakázky by se změnilo bez potvrzení ANO / NE", sady: ["test_cn_cislo_nabidky.js"] },
+  { nazev: "CN #727: NE číslo stejně změní [CN]", soubor: "ui/cislo_nabidky_ui.js",
+    hledej: ".then(ok => { if (ok) proved(); else render(); });",
+    nahrad: ".then(ok => { proved(); });",
+    proc: "odpověď NE by nevrátila původní číslo", sady: ["test_cn_cislo_nabidky.js"] },
+  { nazev: "CN #727: hledání bez textu [CN]", soubor: "ui/cislo_nabidky_ui.js",
+    hledej: "  if (typeof ONLINE_STAV !== 'undefined') ONLINE_STAV.hledat = String(text || '').trim();\n",
+    nahrad: "",
+    proc: "Načíst zakázku by se otevřelo bez hledaného textu", sady: ["test_cn_cislo_nabidky.js"] },
+  { nazev: "CN #727: set() se na číslo neptá [CN]", soubor: "ui/common.js",
+    hledej: "  if (path === 'ZAK.cislo' && typeof cnZmenaUI === 'function' && cnZmenaUI(v)) return;\n",
+    nahrad: "",
+    proc: "změna čísla v hlavičce by prošla bez dotazu", sady: ["test_cn_cislo_nabidky.js"] },
+  { nazev: "CN #727: nápověda hledání chybí [CN]", soubor: "ui/online_ui.js",
+    hledej: "  return `${hledaniNapovedaHtml()}<div class=\"seznam-ovladani\">",
+    nahrad: "  return `<div class=\"seznam-ovladani\">",
+    proc: "v okně Načíst zakázku by nebylo vidět, že jde hledat i podle akce, adresy, zákazníka, obchodníka", sady: ["test_cn_cislo_nabidky.js"] },
+  { nazev: "CN #727: rychlé uložení bez protokolu [CN]", soubor: "ui/online_ui.js",
+    hledej: "  // k okamžiku uložení (stejně jako ukládání do složky).\n  if (typeof protokolZapisTed === 'function') protokolZapisTed();",
+    nahrad: "  // k okamžiku uložení (stejně jako ukládání do složky).",
+    proc: "uložení do 2 s po změně čísla by protokol „Číslo nabídky: X → Y“ nezapsalo", sady: ["test_cn_cislo_nabidky.js"] },
   /* RA (23. 11. 2026): #726 upozornění na zastaralé řádky termínu DPZ (podminky.js). [RA] */
   { nazev: "RA #726: chybějící „dpz-studie“ se nehlásí [RA]", soubor: "podminky.js",
     hledej: "  const chybi = PODMINKY_PROJ_SEKCE_PODMINENE.filter(k => klice.indexOf(k) < 0);",

@@ -799,6 +799,9 @@ function set(path, v) {
     render();
     return;
   }
+  /* CN #727: změna čísla nabídky — potvrzení u uložené zakázky, nabídka
+   * hledání u textu bez tvaru čísla, duplicita z rejstříku (cislo_nabidky_ui.js). */
+  if (path === 'ZAK.cislo' && typeof cnZmenaUI === 'function' && cnZmenaUI(v)) return;
   if (path === 'ZAK.cislo' && typeof zakazkaMaOdeslanou === 'function' && zakazkaMaOdeslanou(ZAK)) {
     if (typeof jeAdmin !== 'function' || !jeAdmin()) {
       if (typeof progZprava === 'function')

@@ -25,12 +25,12 @@ import datetime, os, pathlib, re, shutil, subprocess, sys
 
 root = pathlib.Path(__file__).parent
 CORE = ['build_info.js', 'nazvy_souboru.js',
-        'preklad.js', 'format.js', 'engine.js', 'vice_sachet.js', 'engine_proj.js', 'techspec.js', 'zakazka.js', 'uloziste.js', 'retence_zaloh.js', 'zamek.js', 'vice_zakazniku.js', 'vz_poznamka.js', 'seznam.js', 'archiv.js',
+        'preklad.js', 'format.js', 'engine.js', 'vice_sachet.js', 'engine_proj.js', 'techspec.js', 'zakazka.js', 'uloziste.js', 'retence_zaloh.js', 'zamek.js', 'cislo_nabidky.js', 'vice_zakazniku.js', 'vz_poznamka.js', 'seznam.js', 'archiv.js',
         'docxgen.js', 'xlsx.js',
         'dokumenty.js', 'sleva.js', 'schvalovani.js', 'zaokrouhleni.js', 'marze.js', 'kontroly.js', 'ares.js', 'poznamky.js', 'protokol.js', 'firma.js', 'zpracovatel.js', 'lhuty_proj.js', 'podminky.js', 'plan_plateb.js', 'nabidka.js', 'nahled_word.js', 'nabidka_proj.js', 'sod.js', 'kryci.js', 'kryci_proj.js', 'objednavka_proj.js',
         'cenik.js', 'cenik_stari.js', 'cenik_rady.js', 'vyjimky.js', 'rucni_ceny.js', 'katalog.js', 'prepisy.js', 'slovnik.js',
         'konfigurace.js', 'sablony_online.js', 'sablona_obsah.js', 'analytika.js', 'nastaveni_db.js', 'program.js', 'ukazkove.js', 'prava.js', 'zobrazeni.js', 'zakaznici.js', 'pripominky.js', 'controlling.js', 'pd_nanecisto.js', 'objednane.js', 'standard_ock.js', 'testdata.js']
-UI = ['ui/cislo_pole.js', 'ui/common.js', 'ui/dialog.js', 'ui/zakulozeni_ui.js', 'ui/kalk_ock.js', 'ui/vice_sachet_ui.js', 'ui/vice_zakazniku_ui.js', 'ui/detail_ui.js', 'ui/techspec_ui.js', 'ui/specdata_ui.js',
+UI = ['ui/cislo_pole.js', 'ui/common.js', 'ui/dialog.js', 'ui/zakulozeni_ui.js', 'ui/cislo_nabidky_ui.js', 'ui/kalk_ock.js', 'ui/vice_sachet_ui.js', 'ui/vice_zakazniku_ui.js', 'ui/detail_ui.js', 'ui/techspec_ui.js', 'ui/specdata_ui.js',
       'ui/kryci_ui.js', 'ui/kryci_proj_ui.js', 'ui/plan_plateb_ui.js', 'ui/kalk_proj.js', 'ui/detail_proj_ui.js', 'ui/nabidka_proj_ui.js', 'ui/sod_ui.js', 'ui/objednavka_proj_ui.js',
       'ui/cenik_stari_ui.js', 'ui/cenik_ui.js',
       'ui/zaokrouhleni_ui.js', 'ui/marze_ui.js', 'ui/zakazka_ui.js', 'ui/nahled_word_ui.js', 'ui/schvalovani_ui.js', 'ui/ares_ui.js', 'ui/pd_vazba_ui.js', 'ui/zamek_ui.js', 'ui/build_info_ui.js', 'ui/ukazkove_ui.js', 'ui/vz_tisk_ui.js', 'ui/kontroly_ui.js', 'ui/poznamky_ui.js', 'ui/protokol_ui.js', 'ui/seznam_ui.js', 'ui/zakaznici_ui.js', 'ui/program_ui.js', 'ui/nastaveni_db_ui.js', 'ui/uloziste_ui.js', 'ui/online_ui.js', 'ui/analytika_ui.js', 'ui/sablony_sprava_ui.js', 'ui/podminky_ui.js', 'ui/lhuty_proj_ui.js', 'ui/controlling_ui.js', 'ui/pd_mapa_ui.js', 'ui/pd_nanecisto_ui.js', 'ui/pripominky_ui.js', 'ui/nastaveni_ui.js', 'ui/historie.js']

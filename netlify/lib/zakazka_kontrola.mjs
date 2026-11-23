@@ -637,6 +637,14 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
    * z otisku záznamy přebírá; ze souboru se počítají znovu (B98). */
   if (globalThis.objSodZaznamyServer && (!obnova || zeSouboru)) globalThis.objSodZaznamyServer(stara, zak, JEKLY);
 
+  /* ČÍSLO PRODANÉ NABÍDKY NEMĚNÍ NIKDO (CN #727 bod 5, J. V. 23. 11. 2026):
+   * ani administrátor — cesta ven je odemknout prodej. Obnova nese prodej
+   * i číslo ze zálohy (doklad) a hlídá ji B56 níž, proto se přeskakuje. */
+  if (!obnova && typeof globalThis.zamekCisloProdaneZmena === 'function') {
+    const d = globalThis.zamekCisloProdaneZmena(staraPorovnani, zak);
+    if (d) return odmitni(403, veta(d));
+  }
+
   /* ČÍSLO ODESLANÉ NABÍDKY MĚNÍ JEN ADMINISTRÁTOR (B56): zámek nese číslo
    * z okamžiku odeslání. Zámek od #320 se hlídá celý (cisloPapir), starší
    * jen v základu čísla. Administrátorovi uložení razítko srovná; obnova
