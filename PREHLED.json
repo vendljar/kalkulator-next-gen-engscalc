@@ -7,12 +7,99 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "05a496d0",
-  "verze": "v22.11.5",
-  "datum": "22. 11. 2026"
+  "sha": "e96e03f4",
+  "verze": "v23.11.1",
+  "datum": "23. 11. 2026"
  },
- "test_navic_commitu": 73,
+ "test_navic_commitu": 141,
  "v_testu_ne_v_main": [
+  {
+   "id": "722",
+   "typ": "nalez",
+   "nazev": "B238 doplněk: klient posílá snímek lhůt PROJ vždy (i při Prodáno po neuloženém tisku klonu)",
+   "alias": [
+    "NN-R2"
+   ],
+   "verze": "v22.11.10"
+  },
+  {
+   "id": "718",
+   "typ": "otazka",
+   "nazev": "RJ-R1: kdo smí potvrdit vazbu dealu z webhooku („V pořádku“) před zapnutím PIPEDRIVE_ZAPIS",
+   "alias": [
+    "RJ-R1"
+   ],
+   "verze": "v22.11.10"
+  },
+  {
+   "id": "716",
+   "typ": "otazka",
+   "nazev": "LAK: otázky pro J. V. k ceně lakování z nabídky lakovny (#666)",
+   "alias": [
+    "LAK-Q"
+   ],
+   "verze": "v22.11.10"
+  },
+  {
+   "id": "715",
+   "typ": "ukol",
+   "nazev": "Dotisk odeslané nabídky kolegou: sken podpisu PŮVODNÍHO zpracovatele ze snímku zámku (doplněk #665)",
+   "verze": "v22.11.7"
+  },
+  {
+   "id": "714",
+   "typ": "davka",
+   "nazev": "RJ: zapracování rozhodnutí J. V. z 22. 11. 2026 (#704, #706, #709, #710, #665 podpis)",
+   "alias": [
+    "RJ"
+   ],
+   "verze": "v22.11.7"
+  },
+  {
+   "id": "713",
+   "typ": "ukol",
+   "nazev": "Jazyk hlavičky specifikace OCK = Jazyk tisku nabídky; tisk nabídky rovnou z EN/DE/FR náhledu",
+   "alias": [
+    "JT"
+   ],
+   "verze": "v22.11.6"
+  },
+  {
+   "id": "712",
+   "typ": "nalez",
+   "nazev": "PR-I1: při vypnutých připomínkách jde po přihlášení 1–2 požadavky a #prip-fab je v DOM",
+   "alias": [
+    "PR-I1"
+   ],
+   "verze": "v22.11.10"
+  },
+  {
+   "id": "711",
+   "typ": "nalez",
+   "nazev": "PR-N4: počítadla klíče koordinace bez úklidu, záznam vydání klíče vytlačitelný",
+   "alias": [
+    "PR-N4"
+   ],
+   "verze": "v22.11.10"
+  },
+  {
+   "id": "710",
+   "typ": "otazka",
+   "nazev": "PR-Q: připomínky v záloze a v kopii na Disk, uchovávání",
+   "alias": [
+    "PR-Q"
+   ],
+   "verze": "v22.11.7"
+  },
+  {
+   "id": "708",
+   "typ": "nalez",
+   "nazev": "PR-N1: bublina „Opláštit i prohlubeň“ v Kalkulaci OCK je useknutá (rovná uvozovka uvnitř title)",
+   "alias": [
+    "PR-N1"
+   ],
+   "verze": "v22.11.10"
+  },
   {
    "id": "707",
    "typ": "ukol",
@@ -21,6 +108,71 @@
     "PR"
    ],
    "verze": "v22.11.5"
+  },
+  {
+   "id": "706",
+   "typ": "ukol",
+   "nazev": "Statická kontrola kola: značky konfliktu v souborech repozitáře (git grep)",
+   "alias": [
+    "BZ-Z3"
+   ],
+   "verze": "v22.11.7"
+  },
+  {
+   "id": "705",
+   "typ": "nalez",
+   "nazev": "Revize BZ, nízké: dvojče karty zákazníka pod jiným klíčem; souběh návrhů/historie a pole zalozen v historii",
+   "alias": [
+    "BZ-R6",
+    "BZ-R7"
+   ],
+   "verze": "v22.11.10"
+  },
+  {
+   "id": "704",
+   "typ": "otazka",
+   "nazev": "BZ: otevřené otázky pro J. V. po dávce BZ",
+   "alias": [
+    "BZ-Q"
+   ],
+   "verze": "v22.11.7"
+  },
+  {
+   "id": "703",
+   "typ": "nalez",
+   "nazev": "B233 zbytek: počítadla pokusů mezi instancemi — přijato jako mez (J. V. 22. 11. 2026)",
+   "alias": [
+    "B233-zbytek"
+   ],
+   "verze": "v22.11.10"
+  },
+  {
+   "id": "702",
+   "typ": "nalez",
+   "nazev": "Nízké nálezy auditu 20. 11. 2026 (B237–B256) — opraveno nebo zapsáno jako mez (dávka NN)",
+   "alias": [
+    "B237",
+    "B238",
+    "B239",
+    "B240",
+    "B241",
+    "B242",
+    "B243",
+    "B244",
+    "B245",
+    "B246",
+    "B247",
+    "B248",
+    "B249",
+    "B250",
+    "B251",
+    "B252",
+    "B253",
+    "B254",
+    "B255",
+    "B256"
+   ],
+   "verze": "v22.11.10"
   },
   {
    "id": "701",
@@ -147,6 +299,12 @@
     "VZ-F2-R1"
    ],
    "verze": "v22.11.1"
+  },
+  {
+   "id": "666",
+   "typ": "ukol",
+   "nazev": "Lakování (souhrn skupiny): cena z nabídky lakovny jako částka řádku",
+   "verze": "v22.11.6"
   },
   {
    "id": "665",

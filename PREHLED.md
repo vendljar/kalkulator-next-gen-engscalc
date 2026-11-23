@@ -8,15 +8,30 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | prostředí | verze |
 |---|---|
 | ostrý web (`main`) | **v19.11.11** (`cda289e2`, 19. 11. 2026) |
-| testovací web (`test`) | **v22.11.5** (`05a496d0`, 22. 11. 2026) |
+| testovací web (`test`) | **v23.11.1** (`e96e03f4`, 23. 11. 2026) |
 
-Test je proti main napřed o 73 commitů.
+Test je proti main napřed o 141 commitů.
 
 ## V testu, ještě ne v main
 
 | # | typ | co | verze |
 |---|---|---|---|
+| #722 (dřív NN-R2) | nález | B238 doplněk: klient posílá snímek lhůt PROJ vždy (i při Prodáno po neuloženém tisku klonu) | v22.11.10 |
+| #718 (dřív RJ-R1) | otázka | RJ-R1: kdo smí potvrdit vazbu dealu z webhooku („V pořádku“) před zapnutím PIPEDRIVE_ZAPIS | v22.11.10 |
+| #716 (dřív LAK-Q) | otázka | LAK: otázky pro J. V. k ceně lakování z nabídky lakovny (#666) | v22.11.10 |
+| #715 | úkol | Dotisk odeslané nabídky kolegou: sken podpisu PŮVODNÍHO zpracovatele ze snímku zámku (doplněk #665) | v22.11.7 |
+| #714 (dřív RJ) | dávka | RJ: zapracování rozhodnutí J. V. z 22. 11. 2026 (#704, #706, #709, #710, #665 podpis) | v22.11.7 |
+| #713 (dřív JT) | úkol | Jazyk hlavičky specifikace OCK = Jazyk tisku nabídky; tisk nabídky rovnou z EN/DE/FR náhledu | v22.11.6 |
+| #712 (dřív PR-I1) | nález | PR-I1: při vypnutých připomínkách jde po přihlášení 1–2 požadavky a #prip-fab je v DOM | v22.11.10 |
+| #711 (dřív PR-N4) | nález | PR-N4: počítadla klíče koordinace bez úklidu, záznam vydání klíče vytlačitelný | v22.11.10 |
+| #710 (dřív PR-Q) | otázka | PR-Q: připomínky v záloze a v kopii na Disk, uchovávání | v22.11.7 |
+| #708 (dřív PR-N1) | nález | PR-N1: bublina „Opláštit i prohlubeň“ v Kalkulaci OCK je useknutá (rovná uvozovka uvnitř title) | v22.11.10 |
 | #707 (dřív PR) | úkol | Připomínky z aplikace: tlačítko Připomínka (obchodník), Nastavení → Připomínky (správce), klíč pro koordinaci | v22.11.5 |
+| #706 (dřív BZ-Z3) | úkol | Statická kontrola kola: značky konfliktu v souborech repozitáře (git grep) | v22.11.7 |
+| #705 (dřív BZ-R6, BZ-R7) | nález | Revize BZ, nízké: dvojče karty zákazníka pod jiným klíčem; souběh návrhů/historie a pole zalozen v historii | v22.11.10 |
+| #704 (dřív BZ-Q) | otázka | BZ: otevřené otázky pro J. V. po dávce BZ | v22.11.7 |
+| #703 (dřív B233-zbytek) | nález | B233 zbytek: počítadla pokusů mezi instancemi — přijato jako mez (J. V. 22. 11. 2026) | v22.11.10 |
+| #702 (dřív B237, B238, B239, B240, B241, B242, B243, B244, B245, B246, B247, B248, B249, B250, B251, B252, B253, B254, B255, B256) | nález | Nízké nálezy auditu 20. 11. 2026 (B237–B256) — opraveno nebo zapsáno jako mez (dávka NN) | v22.11.10 |
 | #701 (dřív B195) | nález | B195: nulová ruční cena jen se zdrojem — ověřeno, text meze opraven | v22.11.3 |
 | #700 (dřív B235, B236, IN-1, IN-2) | nález | B235/B236: vypínač zápisu do Pipedrive (výchozí vypnuto), deal musí patřit zakázce | v22.11.3 |
 | #699 (dřív B234, AD-1) | nález | B234: kartu zákazníka mění jen autor a správce, návrhy změn, historie verzí | v22.11.3 |
@@ -30,6 +45,7 @@ Test je proti main napřed o 73 commitů.
 | #680 (dřív DO-N1) | nález | DO-N1: návrh obchodníka do číselníku u příplatku přechodových plechů (MATERIÁL) správce v Ceník → číselník nevidí | v21.11.4 |
 | #674 (dřív VZ-F2-R2) | úkol | Víc zákazníků drobnosti po VZ-F2: pojistka v plnaMocData, IČO s úvodními nulami, dvojité „Neuloženo:“ | v22.11.1 |
 | #673 (dřív VZ-F2-R1) | úkol | Suchý běh Pipedrive ukazuje ruční pole KL dalšího zákazníka jako údaje řídící varianty | v22.11.1 |
+| #666 | úkol | Lakování (souhrn skupiny): cena z nabídky lakovny jako částka řádku | v22.11.6 |
 | #665 | úkol | Dotisk odeslané nabídky bere blok „Vypracoval“ z dnešního přihlášeného účtu, ne z doby odeslání | v22.11.1 |
 | #647 (dřív K49-I4) | úkol | Pevná sada porovnání sestavení: přidat případ přepnutí typu šachty a zasklení (K40-N1) | v22.11.2 |
 | #646 (dřív K49-I2) | úkol | Harness overit_sod.mjs: aktualizovat očekávání na šablony v4–v6 a tečky místo symbolů | v22.11.2 |
