@@ -33,9 +33,13 @@ pod novým číslem.
   popisek „Hledejte podle čísla nabídky, názvu akce, adresy stavby, zákazníka nebo obchodníka“ s příkladem
   a úplnou nápovědu v bublině. Pole „Najít zakázku“ do lišty se nepřidává (J. V. 23. 11.).
 - **Příručka obchodníka:** odstavec o čísle nabídky a hledání (kapitola ukládání).
-- **Testy:** `src/test_cn_cislo_nabidky.js` (52), `netlify/test_cn_cislo_nabidky.mjs` (23), s pojistkou (viz
-  commit). Mutace [CN]: jádro 8/8, server 4/4. Kolo `--bez-mutaci --proti origin/claude/integrace-16-10` VŠE ZELENÉ
+- **Testy:** `src/test_cn_cislo_nabidky.js` (58), `netlify/test_cn_cislo_nabidky.mjs` (24), s pojistkou (viz
+  commit). Mutace [CN]: jádro 9/9, server 4/4. Kolo `--bez-mutaci --proti origin/claude/integrace-16-10` VŠE ZELENÉ
   (sady 527/0/6, hodiny 428/0/1, statické 12/12), porovnání sestavení SHODA 367/367.
+- **Revize Fable (SLOUČIT PO OPRAVÁCH):** S1 — číslo začínající tvarem řady (rok - zkratka - zkratka - číslice) se bere
+  jako číslo i se slovem za ním (`… - 7270 - TEST`, `2026-PROJ-CN-0012`, `… - NANECISTO`), dřív falešný dotaz na
+  hledání; S2 — mez B276 doplněna (pravidlo čte `zamek.cislo` z těla; API umí založit NOVÝ prodaný záznam pod jiným
+  číslem, bez eskalace práv; otázka CN-O3); N1 — test mezery na konci čísla prodané nabídky (403).
 - **Nález CN-N1 (mimo rozsah):** změna čísla odeslané varianty, která už nese snímek lhůt z prodeje (i po odemčení
   prodeje), končí 409 „snímek podmínek nové odeslané nabídky nesedí“ — nové číslo = nový záznam bez uložené verze.
 

@@ -128,9 +128,11 @@ console.log('\n===== CN #727 bod 5: ČÍSLO ODESLANÉ A PRODANÉ NABÍDKY =====\
   x = await uloz(a, cO, g.uloRazitko);
   test('prodaná: běžné uložení beze změny čísla projde (200)', x.status === 200, x.status + ' ' + (x.chyba || ''));
   g = await nacti(soubor, cO);
-  a = kopie(g); a.cislo = '  ' + g.cislo + '  ';
-  test('model: mezery navíc kolem čísla nejsou změna čísla varianty',
-    G.zamekCisloProdaneZmena(g, a) === '' || G.variantaCislo(g, g.varianty[0]) !== G.variantaCislo(a, a.varianty[0]));
+  /* Revize N1: mezera na konci čísla prodané nabídky JE změna (číslo na papíře se liší) — model i server ji odmítnou. */
+  a = kopie(g); a.cislo = g.cislo + ' ';
+  test('model: mezera na konci čísla prodané nabídky = změna (hláška o prodané)', /prodaná/.test(G.zamekCisloProdaneZmena(g, a)));
+  x = await uloz(a, cO, g.uloRazitko);
+  test('prodaná: uložení s mezerou na konci čísla → 403 „prodaná“', x.status === 403 && /prodaná/.test(x.chyba || ''), x.status + ' ' + (x.chyba || ''));
 
   /* Odemčení prodeje (vedoucí s důvodem) v témže uložení: pak platí B56 → vedoucí 403, administrátor 200. */
   a = kopie(g); delete a.varianty[0].prodano; a.prodejOdemknout = { varianta: a.varianty[0].id, duvod: 'oprava čísla nabídky CN' };

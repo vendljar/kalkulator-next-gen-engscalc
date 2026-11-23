@@ -37,6 +37,9 @@ const CN = require('./cislo_nabidky.js');
 /* ---- 1) model ---- */
 [['2026 - OPR - CN - 555', true], ['2026 - OVP - CN - 404', true], ['2026 - OPR - CN - 0500.2', true],
  ['2026 - OPR - CN - 9940-B', true], ['555', true], ['2026-OPR-CN-9001', true], ['  2026 - OPR - CN - 7 ', true],
+ /* Revize S1: tvar řady na začátku = číslo i se slovem ze 4+ písmen za ním (zkušební zakázky, řada PROJ). */
+ ['2026 - OPR - CN - 7270 - TEST', true], ['2026-PROJ-CN-0012', true], ['2026 - OPR - CN - 0500 - NANECISTO', true],
+ ['2026-OPR-CN-0500-TEST', true], ['2026 - OPR - CN - Vinohradská', false], ['Vinohradská 2026 - OPR - CN - 1', false],
  ['Vinohradská', false], ['Novák', false], ['Bytový dům Praha 5', false], ['Kolbenova 12', false],
  ['šachta 2', false], ['', false], ['OPR CN', false], [null, false]].forEach(([t, ma]) =>
   test('cnTvarCisla(' + JSON.stringify(t) + ') = ' + ma, CN.cnTvarCisla(t) === ma));

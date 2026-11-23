@@ -11,8 +11,8 @@ Nad integrací `8411eb9` (v23.11.2). Pracovní verze v23.11.3 (přečísluje koo
 - Nápověda hledání: `hledaniNapovedaHtml` + `HLEDANI_TITULEK` v `ui/online_ui.js` (okno Zakázky online i Přehled).
 - Protokol: kód beze změny, ověřeno testem (všechny cesty uložení volají `protokolZapisTed`).
 
-**Testy:** `src/test_cn_cislo_nabidky.js` 52, `netlify/test_cn_cislo_nabidky.mjs` 23 (zapsána do SADY v `netlify/mutace.mjs`).
-Mutace [CN] jádro 8/8 (+ JADRA: cislo_nabidky.js, ui/cislo_nabidky_ui.js), server 4/4. Kolo --bez-mutaci proti 8411eb9
+**Testy:** `src/test_cn_cislo_nabidky.js` 58, `netlify/test_cn_cislo_nabidky.mjs` 24 (zapsána do SADY v `netlify/mutace.mjs`).
+Mutace [CN] jádro 9/9 (+ JADRA: cislo_nabidky.js, ui/cislo_nabidky_ui.js), server 4/4. Kolo --bez-mutaci proti 8411eb9
 VŠE ZELENÉ (527/0/6, hodiny 428/0/1, 12/12), SHODA 367/367.
 
 **Nálezy / otázky pro koordinaci:**
@@ -24,3 +24,13 @@ VŠE ZELENÉ (527/0/6, hodiny 428/0/1, 12/12), SHODA 367/367.
   „číslo nejde změnit“. Vrácení = smazat větev `ZAMEK_CISLO_CESTA` v `zamekZakCestaZmrazena` a blok CN v `zakazka_kontrola.mjs`.
 
 **Další krok:** revize poradce (zámky), zkouška na testu (hotovoKdyz #727).
+
+**Revize Fable (23. 11., SLOUČIT PO OPRAVÁCH, `podklady/revize/REVIZE_CN_727.md` ve větvi `claude/revize-cn-727`):**
+S1 opraveno (tvar řady `CN_TVAR_RADY` na začátku = číslo; TEST / PROJ / NANECISTO), S2 mez v B276 + otázka CN-O3,
+N1 test nahrazen skutečným chováním (mezera na konci → 403). Jen zapsáno:
+- N2: obnova prodané zakázky (`!obnova`) bez testu a mutace.
+- N3: „Vyhledat zakázku“ mimo online kanál — ve složce okno bez textu, v kanálu soubor `fileIn.click()` z dialogu;
+  duplicita jen online.
+- N4: kolize je tvrdé zamítnutí — po změně X → Y nejde napsat zpět X (otevřít X přes Načíst zakázku); sdělit J. V. u CN-O1.
+- N5: obchodník u odeslané nabídky dostane jen hlášku A3, hledání se nenabídne.
+

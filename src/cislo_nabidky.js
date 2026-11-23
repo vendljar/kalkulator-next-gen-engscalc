@@ -25,9 +25,14 @@
  * SOD — nejvýš tři písmena), pořadí a přípon („.2", „-B"); hledaný text
  * (akce, adresa, zákazník, obchodník) má skoro vždy delší slovo. Holé pořadí
  * („555") je číslo. Prázdno ani nedopsaná předloha se neposuzují. */
+/* Revize S1 (23. 11. 2026): text, který ZAČÍNÁ tvarem řady (rok - zkratka -
+ * zkratka - číslice, s mezerami i bez), je číslo bez ohledu na zbytek —
+ * zkušební zakázky „… - 7270 - TEST", řada „2026-PROJ-CN-0012", „… - NANECISTO". */
+const CN_TVAR_RADY = /^\d{4}\s*-\s*\p{L}{2,5}\s*-\s*\p{L}{2,5}\s*-\s*\d/u;
 function cnTvarCisla(text) {
   const t = String(text == null ? '' : text).trim();
   if (!t || !/\d/.test(t)) return false;
+  if (CN_TVAR_RADY.test(t)) return true;
   return !/\p{L}{4,}/u.test(t);
 }
 

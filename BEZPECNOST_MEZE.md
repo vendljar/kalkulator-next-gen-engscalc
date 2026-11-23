@@ -2441,6 +2441,14 @@ Větev `claude/cn-cislo-nabidky` nad integrací `8411eb9`. Testy `netlify/test_c
   nový záznam bez uložené verze, proto se porovnává s číslem v zámku ukládané prodané varianty (jako B56)
   a s uloženou verzí, existuje-li. Cesta ven = odemknout prodej (vedoucí / administrátor s důvodem), pak platí
   B56 (číslo odeslané nabídky jen administrátor). *Mez:* obnova ze zálohy se přeskakuje (doklad; hlídá ji B56).
+  *Mez (revize S2, 23. 11. 2026):* pravidlo čte `zamek.cislo` **z těla požadavku** — nové číslo = nový soubor,
+  uloženou verzi server nemá. „Nezmění nikdo“ proto platí pro **uložený** prodaný záznam (ten se nezmění žádnou
+  rolí ani `prepsat: true`). Volání API mimo aplikaci umí poslat stav před prodejem s novým číslem, shodným
+  `zamek.cislo` a `prodano` → vznikne NOVÝ prodaný záznam pod jiným číslem (razítka z relace, autor = volající).
+  Není to eskalace práv — totéž jde legitimně (nová zakázka → odeslat → Prodáno); původní záznam zůstává, stopa =
+  autor a razítka nového záznamu. Kopii stavu PO prodeji dnes zastaví jen snímek lhůt (409, CN-N1) — náhoda, ne
+  pojistka. *Otázka pro J. V. (CN-O3):* tvrdší pojistka — odmítnout nový záznam, jehož zámek nebo deal Pipedrive
+  už nese jiná zakázka — samostatná úloha, neprogramováno.
 - **Dotaz na změnu čísla, nabídka hledání a duplicita (#727 body 1–3) jsou jen v prohlížeči.** Volání API mimo
   aplikaci číslo neprodané a neodeslané zakázky změní bez dotazu; cizí zakázku pod stejným číslem dál odmítne
   server (B10, 409 kolize). Stopou je protokol zakázky (B66) a `upravil`.
