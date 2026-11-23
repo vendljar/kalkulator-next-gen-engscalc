@@ -1,6 +1,6 @@
 # STAV kola 53 — TESTOVÁNÍ 3: Pipedrive deal 432, novinky v22.11.6–v22.11.10, data testu (23. 11. 2026)
 
-Stav: **PŘÍPRAVA** — čeká se na nasazení v23.11.1 na test (`/api/zdravi` → `"verze":"23.11.1"`).
+Stav: **PROBÍHÁ** — test v23.11.1 (e96e03f) od 13:28 UTC (`/api/zdravi`), `PIPEDRIVE_ZAPIS = ano`. Body 1 a 3 hotové, bod 2 běží.
 
 ## Hlavička
 
@@ -54,12 +54,38 @@ jako zkušební; (c) šablony CN v18 a PROJ v9 z main (jen čtení) nahrát a zv
 
 ## Výsledky
 
-(doplní se)
+### 1 · Pipedrive, deal 432
+
+| bod | výsledek | poznámka |
+|---|---|---|
+| 1a | OK | J. V. přepnul „Vygenerovat nabídku“ = Ano ~13:31 UTC; webhook CN-432 našel podle vazby, akce beze změny (protokol bez nového záznamu — kód zapisuje do protokolu jen změnu), vazba `webhook` beze změny; automatizace pole „Vygenerovat nabídku“ vrátila na prázdné |
+| 1b | OK | „Odkaz na kalkulaci“ v dealu 432 = `https://testengscalc.netlify.app/?zakazka=CN-432.json` (změna dealu 13:31:49 UTC); J. V. odkaz otevřel a kalkulaci uložil 13:31:57 (viz K53-I1) |
+| 1c | OK | vazba kalkulace založené webhookem `stav: webhook` = v pořádku bez potvrzení; `potvrdit` vrací 409 „Vazba už je potvrzená.“ (RA #723 „V pořádku jen admin“ na testu ještě není — až v23.11.2) |
+| 1d | NEOVĚŘENO | vazba „čeká“ jen u existující kalkulace bez vazby navázané podle čísla — na dealu 432 by to znamenalo rozbít platnou vazbu CN-432 (zrušení = deal v odmítnutých, další webhook 409) |
+| 1e | OK | CN-432 (šachta 1 = 2 ks) → poznámka „Šachty v nabídce: 1 varianta šachty, celkem 2 ks (Šachta 1 2 ks) — nabídka CN-432“; opakované uložení = táž poznámka (stejné id); + další zákazník → poznámka „Další zákazníci na zakázce: • TEST K53 Zákazník B s.r.o. — nabídka zatím neodeslána (CN-432-B) — nabídka CN-432“; obě ověřeny v Pipedrive |
+| 1f | OK | druhá zakázka `TEST - 2026 - OPR - CN - 9853` s `pdDealId` 432 a 2 ks: uloženo 200, poznámka do dealu nezapsána, varování „Deal v Pipedrive nepatří této zakázce (zakázka nemá vazbu … a pole „Odkaz na kalkulaci“ v dealu nemíří na tuto zakázku) — do dealu se nic nezapsalo“ |
+| 1g | OK | „Opravit firmu“ náhled CN-432 → 409 „Organizace dealu v Pipedrive nemá IČ — opravu firmy nejde ověřit.“ (zápis nezkoušen — organizace sdílená TEST dealy) |
+| 1h | OK | `/api/pd/vazba` se starým razítkem → 409 „Zakázku mezitím někdo uložil — otevřete ji znovu.“ (kontrola razítka před akcí) |
+| 1i | NEOVĚŘENO | varování při vypnutém zápisu nejde bez vypnutí `PIPEDRIVE_ZAPIS` (pokrývá jednotkový test RJ) |
+| 1j | ČEKÁ NA J. V. | druhá automatizace („Deal - generate offer -> send data to Make“): v dealu 432 žádná nová poznámka od Make; historii běhů automatizací API nevidí — ověří J. V. v historii dealu |
+
+### 3 · Data testu
+
+| bod | výsledek | poznámka |
+|---|---|---|
+| 3a | OK | Firma → podmínky PROJ → termíny vymazány (výchozí), zveřejněno 13:36:42 UTC, ostatní údaje beze změny; náhled Lhůt PROJ 8 řádků, 2× hrubopis DPZ, bez upozornění na pevný text |
+| 3b | OK | P-0001–P-0006 → zamítnuto s odpovědí „Zkušební záznam testovacího sezení (zkouška dávky PR 22. 11.), nejde o vadu.“ |
+| 3c | OK | zveřejněno z main (jen čtení): nabidka v18 CZ/EN/DE/FR, nabidkaProj v9 CZ/EN/DE/FR; otisky = main (CN CZ f090ef47…, PROJ CZ 2abd9a08…), mutace se `zdrojOtisk` platné CZ |
 
 ## Nálezy
 
-(doplní se)
+- **K53-I1** (informace, nízká, dopad na cenu: ne): první uložení kalkulace založené webhookem zapíše do protokolu
+  „a dalších 106 změn“ (montazZakladHod, sazby, doprava, kurz, fixy… — doplnění ceníku do kalkulace bez ceníku).
+  Protokol tím zahltí šum; návrh: první doplnění ceníku do webhookové kalkulace zapsat jedním řádkem.
+- **K53-I2** (informace, rozdíl dat test × main, mimo zadání): Firma → texty termínů OCK (`kapTerminy` CZ/EN/DE/FR) — na main
+  chybí řádek „5 let záruka na celé dílo.“ (a překlady), na testu je. Nesynchronizováno (text nabídky = J. V.).
 
 ## Úklid
 
-(doplní se)
+- CN-432: šachta 1 = 2 ks, další zákazník „TEST K53 Zákazník B s.r.o.“ (CN-432-B); v dealu 432 poznámky id 1110 (šachty) a 1111 (zákazníci).
+- `TEST - 2026 - OPR - CN - 9853` (druhá zakázka s `pdDealId` 432) zůstává.
