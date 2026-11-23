@@ -134,7 +134,7 @@ jako návrh do roadmapy.
 ### Co jsem ověřil
 
 - `test_sa_sablony` 67 / 0, `test_sablona_obsah` 102 / 0 (firemní šablony přeskočeny), `test_nn_sablony` 34 / 0.
-- Pojistka nových testů: test z `5b4efc8` nad kódem `b3d710a` → 40 OK, **27 FAIL**.
+- Pojistka nových testů: test z `5b4efc8` nad kódem `b3d710a` → 50 OK, **17 FAIL**.
 - Mutace `[SA]` v samostatné pracovní kopii: **23 / 23 chycených** (výchozí stav 313 sad zelených). Celý běh mutací
   ani kolo jsem nepouštěl.
 - Všechny pokusy z první revize znovu nad novým kódem:
