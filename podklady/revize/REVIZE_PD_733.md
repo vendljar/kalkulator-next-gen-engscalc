@@ -119,3 +119,43 @@ Neověřeno: celé kolo ani mutace [PD] jsem nepouštěl (jen přečetl jejich s
   někdo ručně neopraví nebo se nezaloží znovu (na testu deal TEST z kola 53).
 - `uzivatel()`: e-mail z textu má přednost, při neshodě jméno před čárkou; samotný neznámý
   e-mail dává důvod. V pořádku.
+
+---
+
+## Dorevize oprav N1–N5 (`git diff ac99910..ca45d69`, 23. 11. 2026)
+
+### Verdikt: SLOUČIT
+
+| Kontrola nad ca45d69 | Výsledek |
+|---|---|
+| `testovaci_kolo.sh --jen build,porovnani --proti ac99910` | **SHODA**, 367/367 |
+| `netlify/test_pd_cerstva.mjs` | 30/0 |
+| `netlify/test_553_webhook.mjs`, `netlify/test_k40c_webhook.mjs` | 77/0, 118/0 |
+| `src/test_pd_cerstva_ui.js`, `src/test_zamek_prepnuti.js` | 26/0, 35/0 |
+| `overit_pd_cerstva.mjs` (Chromium) | 24/0 |
+
+Celé kolo a mutace jsem znovu nepouštěl (předávka dávky hlásí VŠE ZELENÉ nad 31b8083).
+
+- **N1 opraveno.** Server: `netlify/lib/zakazka_kontrola.mjs:433` odmítne 409 každé uložení
+  z prohlížeče s `pdCerstva === true` (mimo obnovu) — jediná cesta zápisu z prohlížeče
+  (`functions/zakazky.mjs:200`), takže kryje i klon, duplikát a zálohu z prohlížeče. Webhook
+  touto kontrolou nejde, zakládání funguje. Odpověď nenese `kolize`, klient ji ukáže doslova
+  (žádná nabídka „Přepsat serverovou verzi“). Klient: `zamekCteniOdemkniUI` i `zamekCteniStop`
+  nepřipravenou kalkulaci neodemknou a řeknou proč. V prohlížeči ověřeno: odemčení neproběhne,
+  přímý zápis vrátí 409, na serveru zůstane příznak.
+- **N2 opraveno.** `onlineCerstvaDopriprav` rozhoduje zámkem čtení, ne otiskem. Scénář „ceník
+  dorazí později“ v `overit_pd_cerstva.mjs` si podmínku **nesplňuje sám**: jen zavolá
+  `onlineNactiProgram(); render()` a čeká — otisk ani zámek neupravuje. Na ac99910 by selhal
+  (moje sonda tam dala marži 0).
+- **N3 opraveno.** Dopříprava jen nad nasazenou platnou verzí (`PROG_STAV.pouzita.verze ===
+  db.platny.verze`) nebo pod složkou.
+- **N5 opraveno** (věta lišty: obnovit stránku F5).
+- **N4 zůstává** (nízká, nebrání sloučení): `overit_pd_cerstva.mjs` pořád není v
+  `testovaci_kolo.sh` ani v CI; pouští se ručně.
+
+Nová díra v ceně: nenašel jsem. Dvě drobnosti bez vlivu na cenu (server je zastaví):
+
+- `zamekKryciCteniUvolni` (`src/ui/zamek_ui.js:121`) a duplikace zakázky zámek čtení shazují bez
+  dotazu na `pdCerstva`. U nepřipravené kalkulace by pak uživatel psal a uložení skončilo 409;
+  dopříprava už neproběhne (okno není zamčené), pomůže až F5. Stačí časem doplnit tutéž
+  podmínku; týká se jen stavu „ceník se nenačetl“.
