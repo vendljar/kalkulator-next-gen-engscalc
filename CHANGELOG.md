@@ -8,9 +8,9 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v23.11.6 — PV: zápis prodeje do dealu v Pipedrive (#597), autor kalkulace z webhooku = vlastník dealu (#734), větev claude/pv-pipedrive
+## v23.11.7 — PV: zápis prodeje do dealu v Pipedrive (#597), autor kalkulace z webhooku = vlastník dealu (#734), větev claude/pv-pipedrive
 
-Nad integrací `1280831` (v23.11.5). Pracovní verze v23.11.6 (číslo přidělí koordinace). **Cenu kalkulací nemění**
+Nad integrací `1280831` (v23.11.5). Verze v23.11.7 (koordinace; v23.11.6 je SA). **Cenu kalkulací nemění**
 (porovnání sestavení proti integraci: SHODA). Do živého Pipedrive nic — testy jen proti simulátoru; zkušební zápis
 na deal TEST udělá testovací sezení po nasazení.
 
