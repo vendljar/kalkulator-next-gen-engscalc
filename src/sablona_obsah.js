@@ -69,7 +69,79 @@ const SABLONA_ODKAZ_POVOLENY = /^(https?:\/\/|mailto:)/i;
  * v textu, v kresbě). Jinde (a:blip r:link / r:embed, v:imagedata …) by
  * Word vnější adresu mohl stáhnout jako obsah. */
 const SABLONA_ODKAZ_PRVKY = ['hyperlink', 'hlinkClick', 'hlinkHover', 'hlinkMouseOver'];
-const SABLONA_POLE_ZAKAZANA = ['INCLUDETEXT', 'INCLUDEPICTURE', 'INCLUDE', 'IMPORT', 'LINK', 'DDEAUTO', 'DDE', 'DATABASE', 'RD'];
+const SABLONA_POLE_ZAKAZANA = ['INCLUDETEXT', 'INCLUDEPICTURE', 'INCLUDE', 'IMPORT', 'LINK', 'DDEAUTO', 'DDE', 'DATABASE', 'RD',
+  /* B271 (audit 20. 11. 2026): při aktualizaci polí (F9, tisk) vloží Word
+   * cestu k souboru (FILENAME \p) a jméno uživatele počítače (USERNAME,
+   * AUTHOR) do dokumentu, který jde zákazníkovi. */
+  'FILENAME', 'USERNAME', 'AUTHOR'];
+/* B272 (audit 20. 11. 2026): strop jedné XML části šablony. Strop rozbalení
+ * celé šablony je 64 MB (ZIP_ROZBALENO_MAX); jedna XML část těsně pod ním
+ * zaměstnala server rozborem asi 1,9 s. Firemní šablony mají zabalené
+ * nejvýš ~1,4 MB i s obrázky a XML části v jednotkách stovek kB až jednotkách
+ * MB; 8 MB je s rezervou nad nimi a rozbor takové části trvá desítky ms. */
+const SABLONA_XML_CAST_MAX = 8 * 1024 * 1024;
+/* DEKÓDOVÁNÍ %xx V NÁZVU POLOŽKY (revize SA R4, 23. 11. 2026). Celé
+ * decodeURIComponent při jediné neplatné sekvenci (%ZZ, „100%") vyhodí výjimku
+ * a kontrola pak viděla jen surový název (word/%2e%2e/x%ZZ.xml). Dekóduje se
+ * proto každý běh platných %xx zvlášť jako UTF-8; neplatné UTF-8 (prodloužené
+ * kódování tečky %C0%AE) dá U+FFFD, které sablonaNazevVada odmítne. Neplatné
+ * „%" zůstane, jak je. */
+function sablonaNazevDekoduj(nazev) {
+  return String(nazev).replace(/(?:%[0-9a-f]{2})+/gi, beh => {
+    const b = new Uint8Array(beh.length / 3);
+    for (let i = 0; i < b.length; i++) b[i] = parseInt(beh.substr(i * 3 + 1, 2), 16);
+    return new TextDecoder().decode(b);
+  });
+}
+/* B270 (audit 20. 11. 2026): název položky ZIPu, který po rozbalení míří
+ * mimo složku (../), je absolutní (/x), má zpětné lomítko (některé programy
+ * ho berou za oddělovač) nebo řídicí znak. Revize SA R5: segment jen
+ * z teček a mezer („.. ", „..%20" — Windows koncové tečky a mezery ořezává),
+ * prázdný segment uprostřed (word//x.xml; prázdný smí jen na konci = složka),
+ * dvojtečka kdekoli (C:x, datový proud NTFS x.xml:ads) a U+FFFD (neplatné
+ * UTF-8). Word sám píše jen ASCII názvy bez těchto tvarů. */
+function sablonaNazevVada(nazev) {
+  const tvary = [nazev];
+  const d = sablonaNazevDekoduj(nazev);
+  if (d !== nazev) tvary.push(d);
+  for (const t of tvary) {
+    if (/[\u0000-\u001f\u007f]/.test(t)) return 'řídicí znak v názvu položky';
+    if (t.indexOf('\ufffd') >= 0) return 'neplatný znak v názvu položky';
+    if (t.indexOf('\\') >= 0) return 'zpětné lomítko v názvu položky';
+    if (/^\//.test(t)) return 'absolutní cesta položky';
+    if (t.indexOf(':') >= 0) return 'dvojtečka v názvu položky';
+    const seg = t.split('/');
+    if (seg.some(s => s !== '' && /^[. ]*$/.test(s))) return 'cesta položky mimo balíček (../)';
+    if (seg.some((s, i) => s === '' && i < seg.length - 1)) return 'prázdný úsek cesty položky (//)';
+  }
+  return '';
+}
+/* Klíč pro shodu jmen (B270, revize SA R5): dekódovaný, malými, NFC, bez
+ * koncových teček a mezer úseku, se sloučenými lomítky — dvě položky, které
+ * by program se shovívavým čtením rozbalil na totéž místo. */
+function sablonaNazevKlic(nazev) {
+  return sablonaNazevDekoduj(nazev).replace(/\\/g, '/').normalize('NFC').toLowerCase()
+    .split('/').map(s => s.replace(/[. ]+$/, '')).filter((s, i, a) => s !== '' || i === a.length - 1).join('/');
+}
+/* JE ČÁST XML? (revize SA R1/R2, 23. 11. 2026) — jedno rozhodnutí pro strop
+ * i rozbor, z bajtů a bez dekódování celé části. Přeskočí BOM (UTF-8,
+ * UTF-16) a bajty 0x00, tab, CR, LF a mezeru; první jiný bajt musí být „<"
+ * (pokryje UTF-8, UTF-16 i UTF-32 LE/BE). Dřív strop rozhodoval z prvních
+ * 64 B a rozbor z celého textu — 65 mezer před „<" strop obešlo. */
+function sablonaJeXmlBajty(data) {
+  if (typeof data === 'string') return /^[\s\u0000\uFEFF]*</.test(data);
+  if (!data) return false;
+  const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+  let i = 0;
+  if (u8[0] === 0xEF && u8[1] === 0xBB && u8[2] === 0xBF) i = 3;
+  else if ((u8[0] === 0xFF && u8[1] === 0xFE) || (u8[0] === 0xFE && u8[1] === 0xFF)) i = 2;
+  for (; i < u8.length; i++) {
+    const b = u8[i];
+    if (b === 0x00 || b === 0x09 || b === 0x0A || b === 0x0D || b === 0x20) continue;
+    return b === 0x3C;
+  }
+  return false;
+}
 /* Cíl vztahu, který Word nebere jako část balíčku: schéma (http:, file:, C:)
  * nebo síťová cesta (\\server, //server). */
 const SABLONA_CIL_VNEJSI = /^([a-z][a-z0-9+.-]*:|[\\/]{2})/i;
@@ -101,9 +173,9 @@ function sablonaObsahText(data) {
   else if (u8.length > 1 && u8[0] === 0x3C && u8[1] === 0) le = true;
   else if (u8.length > 1 && u8[0] === 0 && u8[1] === 0x3C) le = false;
   if (le !== null) {
-    let s = '';
-    for (let i = od; i + 1 < u8.length; i += 2) s += String.fromCharCode(le ? u8[i] | (u8[i + 1] << 8) : (u8[i] << 8) | u8[i + 1]);
-    return s;
+    /* Revize SA R2: dřív smyčka String.fromCharCode po znaku (60 MB ~3,3 s). */
+    const konec = od + ((u8.length - od) & ~1);
+    try { return new TextDecoder(le ? 'utf-16le' : 'utf-16be').decode(u8.subarray(od, konec)); } catch (e) { return ''; }
   }
   try { return new TextDecoder().decode(u8); } catch (e) { return ''; }
 }
@@ -198,9 +270,6 @@ function sablonaAtributPole(tag, prefix, jmeno) {
   const h = presne[ocek] || [];
   return { hodnota: h.length ? h[0] : '', nejasny: cizi.length ? cizi[0] : (h.length > 1 ? ocek : '') };
 }
-function sablonaJeXml(text) {
-  return /^[\s\uFEFF]*</.test(text);
-}
 
 /* Typ pole = první slovo kódu. Kód, který začíná vnořeným polem (\u0001),
  * má typ až z výsledku vnořeného pole — ten předem nikdo nezná. */
@@ -293,22 +362,36 @@ function sablonaPoleVady(xml) {
 function sablonaObsahVadyZipu(polozky) {
   const vady = [];
   const pridej = (t) => { if (vady.indexOf(t) < 0) vady.push(t); };
-  const odkazy = {};   // B248: zdrojová část (malými) → [Id povolených vnějších odkazů]
+  const odkazy = Object.create(null);   // B248: zdrojová část (malými) → [Id povolených vnějších odkazů]
+  const jmena = new Set();             // B270: klíč názvu (sablonaNazevKlic) → už byl (revize SA R7: Set, ne {})
   (Array.isArray(polozky) ? polozky : []).forEach(p => {
     if (!p || typeof p.nazev !== 'string') return;
     const nazev = p.nazev;
-    let jmeno = nazev;
-    try { jmeno = decodeURIComponent(nazev); } catch (e) { /* nechat jak je */ }
-    const male = jmeno.toLowerCase().replace(/\\/g, '/');
+    const male = sablonaNazevDekoduj(nazev).toLowerCase().replace(/\\/g, '/');
+    /* B270: název mimo balíček a dvě položky téhož jména (OPC nerozlišuje
+     * velikost písmen ani %xx) — kontrola by četla jednu, Word jinou. */
+    const vadaNazvu = sablonaNazevVada(nazev);
+    if (vadaNazvu) pridej(vadaNazvu + ' (' + nazev + ')');
+    const klic = sablonaNazevKlic(nazev);
+    if (jmena.has(klic)) pridej('dvě položky téhož jména (' + nazev + ')');
+    jmena.add(klic);
     if (/(^|\/)embeddings\//.test(male) || /(^|\/)oleobject[^/]*$/.test(male)) pridej('vložený objekt (' + nazev + ')');
     if (/(^|\/)vbaproject/.test(male) || /(^|\/)vbadata/.test(male)) pridej('makra VBA (' + nazev + ')');
     if (male.indexOf('activex') >= 0) pridej('prvek ActiveX (' + nazev + ')');
 
+    /* Revize SA R1/R2: jedno rozhodnutí „je XML" (přípona nebo první bajt
+     * „<") pro strop i rozbor; ne-XML část (obrázek, font) se nedekóduje. */
+    const jeRels = /\.rels$/.test(male);
+    if (!jeRels && !/\.xml$/.test(male) && !sablonaJeXmlBajty(p.data)) return;
+    /* B272: XML část nad strop se nerozebírá (rozbor by zaměstnal server). */
+    const delka = p.data && typeof p.data.length === 'number' ? p.data.length : 0;
+    if (delka > SABLONA_XML_CAST_MAX) {
+      pridej('XML část větší než ' + Math.round(SABLONA_XML_CAST_MAX / 1024 / 1024) + ' MB (' + nazev + ')');
+      return;
+    }
     const text = sablonaObsahText(p.data);
     const kodovani = sablonaKodovaniVada(p.data, text);
     if (kodovani) { pridej(kodovani + ' (' + nazev + ')'); return; }
-    const jeRels = /\.rels$/.test(male);
-    if (!jeRels && !/\.xml$/.test(male) && !sablonaJeXml(text)) return;
 
     if (/<!(DOCTYPE|ENTITY)\b/i.test(text)) pridej('deklarace DOCTYPE / ENTITY (' + nazev + ')');
     const neuzavrene = [];
@@ -376,9 +459,7 @@ function sablonaObsahVadyZipu(polozky) {
   return vady;
 }
 function sablonaMaleJmeno(nazev) {
-  let jmeno = nazev;
-  try { jmeno = decodeURIComponent(nazev); } catch (e) { /* nechat jak je */ }
-  return jmeno.toLowerCase().replace(/\\/g, '/');
+  return sablonaNazevDekoduj(nazev).toLowerCase().replace(/\\/g, '/');
 }
 /* VNĚJŠÍ ODKAZ POUŽITÝ JAKO OBSAH (B248, audit 20. 11. 2026). Vztah typu
  * hyperlink na https:// prošel jako „odkaz, který Word sám nestahuje" — jenže
@@ -435,7 +516,7 @@ async function sablonaObsahVady(vstup) {
   else if (vstup && typeof vstup.byteLength === 'number') u8 = new Uint8Array(vstup);
   else return ['šablona je prázdná'];
   let polozky;
-  try { polozky = await cti(u8); } catch (e) { return ['soubor nejde rozbalit jako .docx (' + e.message + ')']; }
+  try { polozky = await cti(u8, { xmlCastMax: SABLONA_XML_CAST_MAX }); } /* B272 */ catch (e) { return ['soubor nejde rozbalit jako .docx (' + e.message + ')']; }
   return sablonaObsahVadyZipu(polozky);
 }
 /* Odstavce textu šablony (base64 / ArrayBuffer / Uint8Array) pro kontrolu
@@ -459,4 +540,4 @@ function sablonaObsahVadyText(vady) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { SABLONA_VZTAHY_ZAKAZANE, sablonaObsahVadyZipu, sablonaObsahVady, sablonaObsahVadyText, sablonaOdstavce, sablonaB64NaBajty, sablonaXmlUnesc };
+  module.exports = { SABLONA_VZTAHY_ZAKAZANE, sablonaObsahVadyZipu, sablonaObsahVady, sablonaObsahVadyText, sablonaOdstavce, sablonaB64NaBajty, sablonaXmlUnesc, sablonaNazevVada, sablonaNazevDekoduj, sablonaNazevKlic, sablonaJeXmlBajty, sablonaObsahText, SABLONA_POLE_ZAKAZANA, SABLONA_XML_CAST_MAX };

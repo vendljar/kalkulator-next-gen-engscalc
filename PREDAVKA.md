@@ -36,6 +36,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/ra-rozhodnuti` | (tato dávka) | v23.11.2 | RA #723 #724 #726 + log webhooku nad integrací 133a8f5; verzi přečísluje koordinace |
 | `claude/pd-webhook-uprava` | (tato dávka) | v23.11.5 | PD #733 #732 #728 #729 nad 173ab6a; verzi přidělí koordinace |
 | `claude/mt-mutace-2311` | (tato dávka) | v23.11.3 | MT #735: 4 nechycené mutace kola 45162888071 — jen testy, nad c8d3d9d |
+| `claude/sa-sablony` | (tato dávka) | v23.11.6 | SA #719–#721 kontrola šablon nad 133a8f5; verzi přečísluje koordinace |
 | `claude/lak-lakovani` | (tato dávka) | v22.11.8 | LAK #666 lakování z nabídky lakovny nad 05a496d, s integrací 36e2681 |
 | `claude/pv-pipedrive` | (tato dávka) | v23.11.7 | PV #597 zápis prodeje do dealu + #734 autor = vlastník dealu nad 1280831; revize Fable; verzi přidělí koordinace |
 
@@ -44,7 +45,7 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 
 ## Běžící dávky
 
-- Sloučené dávky (PD, CN, RA, LAK, JT, NN, PR, BZ, HN, RJ, VZD, MT) — oddíly přesunuty do `podklady/predavky/2026-11.md` (23. 11. 2026). Běží: SA (opravy po revizi), RP (prototyp ručních položek, čeká na J. V.).
+- Sloučené dávky (SA, PD, CN, RA, LAK, JT, NN, PR, BZ, HN, RJ, VZD, MT) — oddíly přesunuty do `podklady/predavky/2026-11.md` (23. 11. 2026). Běží: PV (#734 + #597), RP (prototyp ručních položek, čeká na J. V.).
 
 ## Dávka PV (`claude/pv-pipedrive`, 23. 11. 2026)
 
