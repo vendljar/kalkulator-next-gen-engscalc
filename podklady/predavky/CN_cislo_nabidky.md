@@ -12,7 +12,8 @@ Nad integrací `8411eb9` (v23.11.2). Pracovní verze v23.11.3 (přečísluje koo
 - Protokol: kód beze změny, ověřeno testem (všechny cesty uložení volají `protokolZapisTed`).
 
 **Testy:** `src/test_cn_cislo_nabidky.js` 52, `netlify/test_cn_cislo_nabidky.mjs` 23 (zapsána do SADY v `netlify/mutace.mjs`).
-Mutace [CN] jádro 8 (+ JADRA: cislo_nabidky.js, ui/cislo_nabidky_ui.js), server 4.
+Mutace [CN] jádro 8/8 (+ JADRA: cislo_nabidky.js, ui/cislo_nabidky_ui.js), server 4/4. Kolo --bez-mutaci proti 8411eb9
+VŠE ZELENÉ (527/0/6, hodiny 428/0/1, 12/12), SHODA 367/367.
 
 **Nálezy / otázky pro koordinaci:**
 - CN-N1: změna čísla odeslané varianty, která nese snímek lhůt z prodeje (i po odemčení prodeje), → 409 „snímek

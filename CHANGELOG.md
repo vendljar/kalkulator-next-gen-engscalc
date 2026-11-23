@@ -34,7 +34,8 @@ pod novým číslem.
   a úplnou nápovědu v bublině. Pole „Najít zakázku“ do lišty se nepřidává (J. V. 23. 11.).
 - **Příručka obchodníka:** odstavec o čísle nabídky a hledání (kapitola ukládání).
 - **Testy:** `src/test_cn_cislo_nabidky.js` (52), `netlify/test_cn_cislo_nabidky.mjs` (23), s pojistkou (viz
-  commit). Mutace [CN]: jádro 8, server 4.
+  commit). Mutace [CN]: jádro 8/8, server 4/4. Kolo `--bez-mutaci --proti origin/claude/integrace-16-10` VŠE ZELENÉ
+  (sady 527/0/6, hodiny 428/0/1, statické 12/12), porovnání sestavení SHODA 367/367.
 - **Nález CN-N1 (mimo rozsah):** změna čísla odeslané varianty, která už nese snímek lhůt z prodeje (i po odemčení
   prodeje), končí 409 „snímek podmínek nové odeslané nabídky nesedí“ — nové číslo = nový záznam bez uložené verze.
 
