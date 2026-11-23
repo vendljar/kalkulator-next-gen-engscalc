@@ -588,8 +588,8 @@ const MATICE = [
     proc: 'zakládá kalkulace z dealu — chrání ho klíč PIPEDRIVE_WEBHOOK_KLIC, relace ne',
     prava: { 'nepřihlášený': 401, 'Obchodník': 401, 'Vedoucí': 401, 'Administrátor': 401 } },
 
-  /* Vazba z webhooku (K40c #581): V pořádku / Zrušit vazbu / Vazba je chybná —
-   * každý přihlášený, zrušení jen autor zakázky a administrátor (rozhoduje
+  /* Vazba z webhooku (K40c #581): V pořádku jen administrátor (RA #723), Vazba je
+   * chybná každý přihlášený, zrušení jen autor zakázky a administrátor (rozhoduje
    * uložená zakázka). Tady zakázka vazbu nemá → 409 všem přihlášeným.
    * Podrobnosti netlify/test_k40c_webhook.mjs. */
   { fn: pdVazbaFn, soubor: 'pd_vazba.mjs', nazev: 'Pipedrive — vazba z webhooku (POST /api/pd/vazba)',

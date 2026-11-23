@@ -77,6 +77,9 @@ function lhutyProjKarta() {
         .map(r => `<li><b>${esc(r[0])}</b> — ${esc(r[1])}</li>`).join('');
     } catch (e) { return ''; }
   })();
+  /* RA #726: vlastní TERMÍNY bez řádků dpz+studie / dpz-studie — upozornění i u náhledu. */
+  let dpzVar = '';
+  try { dpzVar = PODMINKY.podminkyTerminyDpzVarovani(f.podminky) || ''; } catch (e) { dpzVar = ''; }
   return `<div class="sec-title" id="lhutyProjKarta">Lhůty PROJ (termíny krycího listu a nabídky)</div>
     <div class="note" style="margin-top:0">Z tabulky se <b>po prodeji</b> (datum podpisu z tlačítka Prodáno) dopočítají termíny
       v krycím listu PROJ — řetězem jen přes činnosti, které varianta nabízí; u rozpětí se počítá s <b>horní mezí</b>,
@@ -93,6 +96,8 @@ function lhutyProjKarta() {
       (vlastní znění v Nastavení → Smlouvy / Šablony nebo vlastní překlad) — čísla v nich se z tabulky nemění:
       <ul>${pevne.map(p => `<li>${esc(p.jazyk.toUpperCase())}: ${esc(p.cinnost)} — „${esc(p.text)}“</li>`).join('')}</ul>
       Vraťte je na výchozí znění (prázdné pole), nebo čísla upravte ručně.</div>` : ''}
+    ${dpzVar ? `<div class="note" data-terminy-dpz="1" style="color:var(--warn);margin-top:6px">⚠ ${esc(dpzVar)}
+      (Nastavení → Smlouvy / Šablony → Texty nabídky PROJ → Termíny)</div>` : ''}
     ${ukazka ? `<details style="margin-top:6px"><summary class="note">Termíny v nabídce PROJ s těmito lhůtami (česky)</summary><ul class="note">${ukazka}</ul></details>` : ''}
     <div class="btns" style="margin-top:6px"><button class="mini" onclick="lhutyUiVychozi()"${dis}>↺ Výchozí lhůty</button></div>`;
 }

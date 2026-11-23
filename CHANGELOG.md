@@ -8,6 +8,25 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v23.11.2 — RA: rozhodnutí J. V. 23. 11. (#723, #724, #726, log webhooku), větev claude/ra-rozhodnuti
+
+Nad integrací `133a8f5` (v23.11.1). Pracovní verze v23.11.2 — číslo a čísla roadmapy přidělí koordinace.
+Cenu ani text dokumentů nemění (porovnání sestavení SHODA, viz zpráva koordinaci). Meze B258, B259 (pracovní).
+
+- **Pipedrive — „V pořádku“ jen administrátor (#723):** vazbu dealu z webhooku ve stavu „ceka“ potvrzuje jen
+  administrátor; autor zakázky, jiný obchodník i vedoucí dostanou 403. Ostatní místo tlačítka vidí „čeká na
+  potvrzení správcem“; „Vazba je chybná“ a „Zrušit vazbu“ beze změny.
+- **Číslo PROJ po odeslání a prodeji (#724, BZ-I1):** k odeslané nebo prodané nabídce nejde doplnit, změnit ani
+  smazat číslo PROJ — klient pole zmrazí, server odmítne 403 pro každou roli (jako strana zakázky B231).
+- **Nastavení — zastaralé řádky DPZ (#726, VZD-N1):** Texty nabídky PROJ (Termíny) a karta Lhůty PROJ upozorní,
+  když vlastní text TERMÍNY nemá řádky `dpz+studie` a `dpz-studie`, s doporučením vymazat pole (= výchozí
+  znění). Jen upozornění, data se nemění.
+- **Log webhooku Pipedrive:** po zápisu odkazu do dealu jeden řádek do logu funkce (dealId, akce, odkazDoDealu,
+  varování) — bez osobních údajů, tokenu a obsahu kalkulace; důvod nezapsání odkazu jde dohledat v logu Netlify.
+- **Testy:** `netlify/test_ra_rozhodnuti.mjs` (#724), `src/test_ra_vazba_ui.js` (#723 klient),
+  `src/test_ra_terminy_proj.js` (#726), doplněné `test_k40c_webhook.mjs` (#723 server, log) a `overit_xss.mjs`;
+  každý s pojistkou (viz commit). Mutace [RA]: server 12, jádro 3.
+
 ## v23.11.1 — CI-24: mutace serveru v Actions ve 24 částech; rozhodnutí J. V. 23. 11. do roadmapy
 
 Nad integrací `408987d` (v22.11.10). Verze v23.11.1 (koordinace). Aplikace beze změny — kód je stejný jako v22.11.10;

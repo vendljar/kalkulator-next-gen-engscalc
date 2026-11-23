@@ -53,7 +53,7 @@ import {
   pdWebhookCisloZaklad, pdWebhookPismeno, pdWebhookCisloSedi, pdWebhookCisloVarianta, pdWebhookVariantaPripona,
   pdWebhookOtisk, PD_WEBHOOK_POLE_ARES,
   PD_WEBHOOK_MAX, PD_WEBHOOK_TELO_MAX, PD_WEBHOOK_AUTOR, PD_WEBHOOK_AUTOR_JMENO, PD_WEBHOOK_ULOZISTE,
-  PD_WEBHOOK_KLIC_PROMENNA,
+  PD_WEBHOOK_KLIC_PROMENNA, pdWebhookLogRadek,
 } from '../lib/pd_webhook.mjs';
 
 /* Mapa polí bez „Odkazu na kalkulaci“ se obnoví nejvýš jednou za 15 min
@@ -322,6 +322,8 @@ async function zpracuj(req, dealId, ULO, G) {
       varovani.push('Odkaz se do dealu nezapsal: ' + ((e instanceof PdChyba) ? e.message : 'chyba spojení') + ' Kalkulace je uložená.');
     }
   }
+  /* RA (J. V. 23. 11. 2026): jeden řádek do logu funkce — proč se odkaz (ne)zapsal. */
+  console.log(pdWebhookLogRadek(dealId, vysledek.akce, odkazDoDealu, varovani));
   const z = vysledek.zmena;
   return json({ ok: true, akce: vysledek.akce, dealId, soubor: jmeno, odkaz,
     zmeneno: z.zmeneno, ponechano: z.ponechano, zamceno: z.zamceno, odkazDoDealu, varovani,

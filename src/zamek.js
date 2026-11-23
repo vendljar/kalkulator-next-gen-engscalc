@@ -589,6 +589,28 @@ function zamekStranaZnak(zak) {
 const ZAMEK_STRANA_HLASKA = 'Zakázka má odeslanou (uzamčenou) nabídku — strana zakázky (jen projekce / jen realizace, '
   + 'vedoucí strana podle čísla nabídky) se už nemění, rozhoduje o ceně, controllingu i hodnotě dealu. '
   + 'Pokračujte novou zakázkou, nebo požádejte administrátora o odemčení.';
+/* ČÍSLO NABÍDKY PROJ PO ZÁMKU (RA #724, BZ-I1; J. V. 23. 11. 2026): k odeslané
+ * nebo prodané nabídce (zamčená varianta) se číslo PROJ (`projHlavicka.cislo`,
+ * stranaCislo('proj')) nedoplňuje ani nemění — stejně jako příznaky strany
+ * (B231): pro každou roli, cesta ven je odemčení správcem nebo nová zakázka
+ * (projekce má vlastní číslo řady OVP). Dřív šlo číslo PROJ doplnit, i když
+ * vedoucí strana zůstala OCK. Server: zamekStranaZmena → 403. */
+const ZAMEK_CISLO_PROJ_CESTA = 'ZAK.projHlavicka.cislo';
+const ZAMEK_CISLO_PROJ_HLASKA = 'Zakázka má odeslanou (uzamčenou) nebo prodanou nabídku — číslo nabídky PROJ se k ní už '
+  + 'nedoplňuje ani nemění. Projekci nabídněte novou zakázkou s vlastním číslem (řada OVP), '
+  + 'nebo požádejte administrátora o odemčení.';
+/* Hodnota čísla PROJ k porovnání: text bez okrajových mezer; nedopsaná předloha
+ * čísla (nová zakázka ji v hlavičce PROJ nese) = prázdno, jako hlavickaVyplneno;
+ * cizí typ jako JSON (nesmí projít jako „beze změny"); chybějící hlavička PROJ = prázdno. */
+function zamekCisloProjZnak(zak) {
+  const h = zak && zak.projHlavicka;
+  const x = (h && typeof h === 'object' && !Array.isArray(h)) ? h.cislo : undefined;
+  if (x === undefined || x === null) return '';
+  if (typeof x !== 'string') return JSON.stringify(x);
+  const t = x.trim();
+  const predloha = typeof ZAK_CISLO_PREDLOHA === 'string' ? ZAK_CISLO_PREDLOHA.trim() : '';
+  return predloha && t === predloha ? '' : t;
+}
 /* Serverová pojistka: změnil se příznak strany zakázky se zamčenou variantou?
  * Zámek se bere z ULOŽENÉ verze; varianta, kterou v témže uložení odemkl
  * správce, se nepočítá (jako zamekZakZmeny). Vrací důvod nebo ''. */
@@ -599,6 +621,7 @@ function zamekStranaZmena(stara, nova) {
     return variantaUzamcena(sv) && (!nv || variantaUzamcena(nv));
   });
   if (!zamcene.length) return '';
+  if (zamekCisloProjZnak(stara) !== zamekCisloProjZnak(nova)) return ZAMEK_CISLO_PROJ_HLASKA;   // RA #724
   const a = zamekStranaZnak(stara), b = zamekStranaZnak(nova);
   /* Revize Fable R2: zmrazí se i VÝSLEDEK — počítaná (vyřazená) strana, kterou
    * bez příznaků určuje číslo nabídky (doplněné číslo OCK u zakázky jen
@@ -619,6 +642,9 @@ function zamekZakCestaZmrazena(zak, cesta) {
   /* B231: příznak strany zmrazí kterákoli zamčená varianta. */
   if (ZAMEK_STRANA_CESTY.indexOf(cesta) >= 0)
     return ((zak && zak.varianty) || []).some(v => variantaUzamcena(v)) ? ZAMEK_STRANA_HLASKA : '';
+  /* RA #724: číslo PROJ zmrazí kterákoli zamčená (odeslaná / prodaná) varianta. */
+  if (cesta === ZAMEK_CISLO_PROJ_CESTA)
+    return ((zak && zak.varianty) || []).some(v => variantaUzamcena(v)) ? ZAMEK_CISLO_PROJ_HLASKA : '';
   /* #674 d: řídící zákazník s písmenem (stal se řídícím výměnou), kterému
    * odešla nabídka — název, sídlo, IČO a DIČ v hlavičce zmrazené (jako
    * u dalšího zákazníka; server vzServerZakaznici § 5). */
@@ -1425,4 +1451,5 @@ if (typeof module !== 'undefined')
                      zamekKryciPoleVNabidce, zamekKryciPoleVolne, zamekKryciPolePlnaMoc, zamekDataPorovnani, zamekJsonKanon, zamekDataRozdilCesta,
                      ZAMEK_KRYCI_PO_CN, zamekKryciPoleStav, zamekKryciPoleZname, zamekSnimekSpocti, zamekSnimek,
                      zamekDphVolna, zamekNabidkaPohled, zamekZakCesty, zamekSodHlavicky, zamekZakStav, zamekZakCestaZmrazena, zamekZakZmeny, zamekZakHlavickaOznac,
-                     zamekZakRidici, ZAMEK_KRYCI_PO_SOD_VOLNE, ZAMEK_STRANA_CESTY, zamekStranaZnak, zamekStranaZmena, zamekStranaSnimek };
+                     zamekZakRidici, ZAMEK_KRYCI_PO_SOD_VOLNE, ZAMEK_STRANA_CESTY, zamekStranaZnak, zamekStranaZmena, zamekStranaSnimek,
+                     ZAMEK_CISLO_PROJ_CESTA, ZAMEK_CISLO_PROJ_HLASKA, zamekCisloProjZnak };

@@ -88,10 +88,16 @@ const test = (n, cond, info) => {
 };
 const kopie = (x) => JSON.parse(JSON.stringify(x));
 const odpovedi = [];
+/* RA (23. 11. 2026): řádky logu funkce „pd_webhook: …“ (po kroku 7) se zachytí. */
+const logyWebhooku = [];
+const puvodniLog = console.log;
+console.log = (...a) => { if (typeof a[0] === 'string' && a[0].startsWith('pd_webhook: ')) logyWebhooku.push(a[0]); else puvodniLog(...a); };
+const webhook200 = [];
 async function volej(dealId) {
   const r = await webhook(new Request('https://testweb.example/api/pd/webhook', { method: 'POST',
     headers: { 'content-type': 'application/json', 'x-kalkulator-klic': KLIC }, body: JSON.stringify({ dealId }) }));
   const text = await r.text(); odpovedi.push(text);
+  if (r.status === 200) webhook200.push(text);
   let j = {}; try { j = JSON.parse(text); } catch (e) { j = {}; }
   return { status: r.status, ...j };
 }
@@ -381,10 +387,27 @@ nastavIco(D5, ICO1);
 const r5 = await zalozRucne(cn5);
 const S5 = r5.soubor;
 await volej(D5.id);
-r = await vazba(S5, 'potvrdit', cCizi);
-test('„V pořádku“ (kdokoli přihlášený) → 200, stav „potvrzeno“, protokol', r.status === 200 && zakazka(S5).pdVazbaWebhook.stav === 'potvrzeno'
+/* RA #723 (J. V. 23. 11. 2026): „V pořádku“ jen administrátor — cizí obchodník i autor 403. */
+{
+  const raz = zakazka(S5).uloRazitko, pocet = zakazka(S5).protokol.length;
+  r = await vazba(S5, 'potvrdit', cCizi);
+  test('RA #723: „V pořádku“ cizím obchodníkem → 403, vazba „ceka“, razítko ani protokol beze změny', r.status === 403
+    && zakazka(S5).pdVazbaWebhook.stav === 'ceka' && zakazka(S5).uloRazitko === raz && zakazka(S5).protokol.length === pocet, r);
+  r = await vazba(S5, 'potvrdit', cAutor);
+  test('RA #723: „V pořádku“ autorem zakázky → 403, vazba „ceka“', r.status === 403 && zakazka(S5).pdVazbaWebhook.stav === 'ceka'
+    && zakazka(S5).uloRazitko === raz, r);
+  await post(uzivatele, 'http://x/api/uzivatele', { akce: 'zaloz', email: 'vedouci.ra@priklad.cz', jmeno: 'Vedoucí RA', role: 'Vedoucí', heslo: 'Heslo12345x' }, cA);
+  const cVed = await login('vedouci.ra@priklad.cz', 'Heslo12345x');
+  r = await vazba(S5, 'potvrdit', cVed);
+  test('RA #723: „V pořádku“ vedoucím → 403', !!cVed && r.status === 403 && zakazka(S5).pdVazbaWebhook.stav === 'ceka', r);
+  r = await vazba(S5, 'chybna', cAutor);
+  test('RA #723: „Vazba je chybná“ autorem dál projde (200, stav „ceka“)', r.status === 200 && zakazka(S5).pdVazbaWebhook.stav === 'ceka'
+    && !!zakazka(S5).pdVazbaWebhook.nahlaseno, r);
+}
+r = await vazba(S5, 'potvrdit', cA);
+test('„V pořádku“ administrátorem → 200, stav „potvrzeno“, protokol', r.status === 200 && zakazka(S5).pdVazbaWebhook.stav === 'potvrzeno'
   && zakazka(S5).protokol.some((p) => /potvrdil/.test(p.co)), [r.status, zakazka(S5).pdVazbaWebhook]);
-r = await vazba(S5, 'potvrdit', cCizi);
+r = await vazba(S5, 'potvrdit', cA);
 test('… podruhé 409 (není co potvrzovat)', r.status === 409);
 r = await volej(D5.id);
 test('webhook po potvrzení vazbu nevrátí do „ceka“', zakazka(S5).pdVazbaWebhook.stav === 'potvrzeno', zakazka(S5).pdVazbaWebhook);
@@ -448,7 +471,9 @@ r = await opravOrg(S3, 'nahled', cAutor);
 test('RJ N1: nepotvrzená vazba („ceka“) — oprava firmy 409 neověřeno, do Pipedrive nic', r.status === 409 && r.stav === 'neovereno'
   && /čeká na potvrzení/.test(r.chyba || '') && pdPatche('/organizations/') === pO, r);
 r = await vazba(S3, 'potvrdit', cAutor);
-test('RJ N1: autor vazbu potvrdí („V pořádku“)', r.status === 200 && zakazka(S3).pdVazbaWebhook.stav === 'potvrzeno', r);
+test('RA #723: autor vazbu nepotvrdí (403)', r.status === 403 && zakazka(S3).pdVazbaWebhook.stav === 'ceka', r);
+r = await vazba(S3, 'potvrdit', cA);
+test('RJ N1: administrátor vazbu potvrdí („V pořádku“)', r.status === 200 && zakazka(S3).pdVazbaWebhook.stav === 'potvrzeno', r);
 r = await opravOrg(S3, 'nahled', cAutor);
 test('náhled autorem: rozdíly název a adresa, DIČ chybí v účtu → věta v dialogu', r.status === 200
   && r.rozdily.map((x) => x.klic).join() === 'nazev,adresa' && r.dicChybi === true && /DIČ se do Pipedrive nezapíše/.test(r.dicVeta)
@@ -512,5 +537,28 @@ const vse = odpovedi.join('\n');
 test('v odpovědích není e-mail kontaktu ani telefon', !/[A-Za-z0-9._%+-]+@(?!priklad\.cz)[A-Za-z0-9.-]+\.[A-Za-z]{2,}/.test(vse) && !/\+420 000/.test(vse));
 test('… ani klíč webhooku a hashe polí', !vse.includes(KLIC) && !vse.includes(HASH_ODKAZ) && !vse.includes(HASH_IC));
 test('do sítě za celý běh nic', venku.length === 0, venku);
+
+/* ---------- 9. LOG FUNKCE (RA, J. V. 23. 11. 2026) ---------- */
+console.log('\n===== 9. LOG WEBHOOKU =====\n');
+{
+  const radky = logyWebhooku.map((l) => { try { return JSON.parse(l.slice('pd_webhook: '.length)); } catch (e) { return null; } });
+  test('RA: každé úspěšné doručení webhooku zapíše do logu právě jeden řádek', radky.length === webhook200.length && radky.length > 0,
+    [radky.length, webhook200.length]);
+  test('RA: řádek nese dealId, akci, odkazDoDealu a varování (a nic dalšího)', radky.every((x) => x
+    && JSON.stringify(Object.keys(x)) === JSON.stringify(['dealId', 'akce', 'odkazDoDealu', 'varovani']) && Array.isArray(x.varovani)), radky[0]);
+  const shoda = webhook200.every((t, i) => { const o = JSON.parse(t); const x = radky[i] || {};
+    return x.dealId === String(o.dealId) && x.akce === o.akce && x.odkazDoDealu === o.odkazDoDealu
+      && JSON.stringify(x.varovani) === JSON.stringify(o.varovani); });
+  test('RA: hodnoty v logu = hodnoty v odpovědi webhooku (dealId, akce, odkazDoDealu, varování)', shoda, logyWebhooku[0]);
+  test('RA: v logu je i důvod nezapsání (varování simulátoru projde)', radky.some((x) => x.varovani.some((v) => /SIMULÁTOR/.test(v))));
+  const log = logyWebhooku.join('\n');
+  test('RA: v logu není e-mail, telefon, klíč webhooku, hash pole ani URL odkazu', !/@/.test(log) && !/\+420/.test(log)
+    && !log.includes(KLIC) && !log.includes(HASH_ODKAZ) && !log.includes(HASH_IC) && !/https?:/.test(log), log.slice(0, 300));
+  const l = W.pdWebhookLogRadek('12', 'aktualizovano', 'nezapsano', ['a\u0007b\nc', 'x'.repeat(1000)]);
+  const lo = JSON.parse(l.slice('pd_webhook: '.length));
+  test('RA: řídicí znaky z varování pryč, varování zkrácené na 300 znaků, jeden řádek', !/\n/.test(l) && lo.varovani[0] === 'a b c'
+    && lo.varovani[1].length === W.PD_WEBHOOK_LOG_VAROVANI_MAX && W.PD_WEBHOOK_LOG_VAROVANI_MAX === 300, l.slice(0, 120));
+}
+console.log = puvodniLog;
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL' + (fail ? '\nSelhalo:\n  ' + selhalo.join('\n  ') : ''));
 process.exit(fail ? 1 : 0);
