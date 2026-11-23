@@ -24,6 +24,13 @@ zaškrtnutí se pouští jen v `novaZakazkaUI`.
   `zamekCteniVypni`, jinak zámek čtení jako dřív.
 - #729: `pdWebhookZadani` kontakt = jen jméno osoby.
 
+## Revize Fable (52ec1ab): SLOUČIT PO OPRAVĚ → opraveno
+
+N1 nepřipravená čerstvá kalkulace se neodemyká, dopříprava `onlineCerstvaDopriprav` po nasazení ceníku
+v `onlineTik` (jen beze změn); N3 `cenikPouzit` po nasazení hned; N4 ne v náhledu; N5 test celých dat.
+N2 = otázka níže. Bod 4 koordinace: `uzivatel()` v `pd_prevod.mjs` podle e-mailu v textu, jinak jménem.
+Bod 5 (příplatky > 255) beze změny (rozhodnuto dřív).
+
 ## Otázka pro J. V. (#728)
 
 Kalkulaci z webhooku (autor `pipedrive-webhook`) smí odemknout jen administrátor a vedoucí — obchodník
@@ -32,5 +39,5 @@ kalkulátoru), samostatný úkol.
 
 ## Testy
 
-`netlify/test_pd_cerstva.mjs` 28, `src/test_pd_cerstva_ui.js` 12, `overit_pd_cerstva.mjs` 16 (vynucený
-závod s nasazením ceníku). Pojistka: na 173ab6a všechny tři padají. Mutace [PD] 12.
+`netlify/test_pd_cerstva.mjs` 29, `src/test_pd_cerstva_ui.js` 21, `test_pd_prevod` +5, `overit_pd_cerstva.mjs` 16 (vynucený
+závod s nasazením ceníku). Pojistka: na 173ab6a všechny tři padají. Mutace [PD] 20. Kolo 52ec1ab: S3 SHODA 367/367 proti c8d3d9d, statické 12/12.

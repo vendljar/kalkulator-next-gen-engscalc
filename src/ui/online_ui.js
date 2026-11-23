@@ -1751,7 +1751,32 @@ function onlineCenikNasadHned() {
   if (pouzita && pouzita.verze === p.verze) return true;
   if (typeof progPouzij !== 'function') return false;
   progPouzij(p);
+  /* Revize Fable N3: nasazeno — onlineTik ho už podruhé nenasazuje. */
+  ONLINE_STAV.cenikPouzit = true;
+  if (typeof UKAZKOVE_CEKANI !== 'undefined') UKAZKOVE_CEKANI.overujeOd = null;
   return true;
+}
+
+/* Revize Fable N1: čerstvá kalkulace, která se při otevření nepřipravila
+ * (platný ceník se nenačetl), se připraví, jakmile ceník onlineTik nasadí.
+ * Neuloženou práci uživatele (zámek čtení ji stejně nepustí) nepřepisuje:
+ * jen kalkulaci, která se od otevření neměnila. Okno zůstává jen ke čtení. */
+function onlineCerstvaDopriprav() {
+  if (typeof ZAK === 'undefined' || !ZAK || ZAK.pdCerstva !== true || !ONLINE_STAV.soubor
+    || typeof pdCerstvaPriprav !== 'function') return 0;
+  let beze = false;
+  try { beze = !!ONLINE_STAV.posledni && JSON.stringify(ZAK) === ONLINE_STAV.posledni; } catch (e) { beze = false; }
+  if (!beze) return 0;
+  const n = pdCerstvaPriprav(ZAK, { vychozi: (ock, proj) => {
+    if (typeof zobrazeniVychoziAplikuj === 'function' && typeof NAST !== 'undefined') zobrazeniVychoziAplikuj(NAST.zobrazeni, ock, proj);
+  } });
+  if (!n) return 0;
+  if (typeof syncVarianta === 'function') syncVarianta();
+  if (typeof uloSrovnejSPlatnymCenikem === 'function') uloSrovnejSPlatnymCenikem();
+  try { ONLINE_STAV.posledni = JSON.stringify(ZAK); } catch (e) { /* nechat */ }
+  if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
+  onlineZprava('Kalkulace z Pipedrive připravena jako nová zakázka (platný ceník a výchozí zaškrtnutí).');
+  return n;
 }
 
 function onlineObnovPosledni() {
@@ -1881,7 +1906,11 @@ async function onlineOtevri(soubor, volby) {
     /* #728 (J. V. 23. 11. 2026): kalkulace z dealu, kterou webhook založil
      * a nikdo ji ještě neuložil, se z odkazu v dealu otevře rovnou k úpravám
      * — jen když ji uživatel smí odemknout (zamekCteniSmiOdemknout). */
-    const odemknout = volby.zOdkazu === true && cerstva
+    /* Revize Fable N1: jen PŘIPRAVENÁ (nad platným ceníkem) — jinak by první
+     * úprava uložila marži 0 a server by příznak zahodil natrvalo. N4: ne
+     * v náhledu role / účtu (ruční odemčení ho taky zastaví). */
+    const odemknout = volby.zOdkazu === true && cerstva && pripraveno > 0
+      && !(typeof nahledJakykoli === 'function' && nahledJakykoli())
       && (typeof zamekCteniSmiOdemknout !== 'function' || zamekCteniSmiOdemknout(ZAK, ONLINE_STAV.ja));
     if (odemknout && typeof zamekCteniVypni === 'function') zamekCteniVypni();
     else if (typeof zamekCteniZapni === 'function') zamekCteniZapni();
@@ -1904,6 +1933,7 @@ async function onlineOtevri(soubor, volby) {
     ONLINE_STAV.posledni = JSON.stringify(ZAK);
     onlineZprava('Otevřeno online: ' + soubor + '.'
       + (pripraveno ? ' Kalkulace z Pipedrive připravena jako nová zakázka (platný ceník a výchozí zaškrtnutí).' : '')
+      + (cerstva && !pripraveno ? ' Kalkulace z Pipedrive čeká na platný ceník — zůstává jen ke čtení; připraví se, jakmile se ceník načte (jinak ji otevřete znovu).' : '')
       + (prep && (prep.prepocteno || prep.svetlikyStavba || prep.svetlikyMaterialBez) && typeof uloPrepocetVeta === 'function' ? ' ' + uloPrepocetVeta(prep) : ''));
     /* VS #570 (R21): zakázka s víc šachtami a vypnutá funkce — lišta; vypínač
      * se ze serveru čte jen u takové zakázky. */
@@ -3002,6 +3032,7 @@ function onlineTik() {
       ONLINE_STAV.cenikPouzit = true;
       setTimeout(() => {
         progPouzij(ONLINE_STAV.db.platny);
+        onlineCerstvaDopriprav();   // revize Fable N1 (#733)
         onlineZprava('Platí online ceník – ' + programPopisVerze(ONLINE_STAV.db.platny) + '.');
         /* ceník je nasazený — lišta se teď rozhoduje nad skutečnými daty (PS #558) */
         if (typeof UKAZKOVE_CEKANI !== 'undefined') UKAZKOVE_CEKANI.overujeOd = null;

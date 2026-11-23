@@ -27,18 +27,21 @@ const vyjmi = (jmeno) => {
   const konec = zdroj.indexOf('\n}\n', m.index);
   return zdroj.slice(m.index, konec + 2);
 };
-const KOD = ['onlineCenikNasadHned', 'onlineObnovPosledni', 'onlineOtevri'].map(vyjmi);
+const KOD = ['onlineCenikNasadHned', 'onlineCerstvaDopriprav', 'onlineObnovPosledni', 'onlineOtevri'].map(vyjmi);
 test('funkce jsou v online_ui.js', KOD.every(Boolean), KOD.map(k => k.length));
 
 function pripravit(volby) {
   const log = [];
   const ctx = {
     console, log, JSON, Promise, Object, Array, String,
+    UKAZKOVE_CEKANI: { overujeOd: 1 },
+    historieOznacUlozeno: () => log.push('oznacUlozeno'),
     ONLINE_STAV: { ja: volby.ja, db: volby.platny === false ? { platny: null } : { platny: { verze: 9 } }, rejstrik: [{ soubor: 'CN-1.json' }] },
     PROG_STAV: { pouzita: volby.nasazeno ? { verze: 9 } : null },
     NAST: { zobrazeni: { mat: 'M' } },
     ZAK: null,
     progJede: () => false,
+    nahledJakykoli: () => !!volby.nahled,
     progPouzij: (p) => { log.push('progPouzij:' + p.verze); ctx.PROG_STAV.pouzita = { verze: p.verze }; },
     onlineApi: () => Promise.resolve({ zakazka: JSON.parse(JSON.stringify(volby.zakazka)) }),
     importZakazka: (z) => { log.push('import'); return z; },
@@ -77,9 +80,35 @@ const zamek = (log) => log.filter(x => x.startsWith('zamek:')).join();
   await vm.runInContext('onlineObnovPosledni()', c);
   test('#733 už nasazená verze ceníku se znovu nenasazuje, příprava proběhne', !c.log.some(x => x.startsWith('progPouzij')) && c.log.includes('priprav'), c.log);
 
+  c = pripravit({ ja: ADMIN, zakazka: CERSTVA, odkaz: true });
+  await vm.runInContext('onlineObnovPosledni()', c);
+  test('revize N3: nasazení HNED označí ceník jako nasazený (onlineTik ho nenasadí podruhé)',
+    c.ONLINE_STAV.cenikPouzit === true && c.UKAZKOVE_CEKANI.overujeOd === null);
+
   c = pripravit({ ja: ADMIN, zakazka: CERSTVA, odkaz: true, platny: false });
   await vm.runInContext('onlineObnovPosledni()', c);
-  test('#733 bez platného online ceníku se nepřipravuje (příznak zůstane)', !c.log.includes('priprav') && !c.log.some(x => x.startsWith('progPouzij')), c.log);
+  test('#733 bez platného online ceníku se nepřipravuje (příznak zůstane)', !c.log.includes('priprav') && !c.log.some(x => x.startsWith('progPouzij'))
+    && c.ZAK.pdCerstva === true, c.log);
+  test('revize N1: nepřipravená čerstvá kalkulace zůstane jen ke čtení (i z odkazu)', zamek(c.log) === 'zamek:zapni', c.log);
+  test('revize N1: … a lišta řekne proč', c.log.some(x => /čeká na platný ceník/.test(x)), c.log);
+  /* Dopříprava po odloženém nasazení ceníku (onlineTik → onlineCerstvaDopriprav). */
+  c.ONLINE_STAV.posledni = JSON.stringify(c.ZAK);
+  c.log.length = 0;
+  test('revize N1: po nasazení ceníku se nezměněná čerstvá kalkulace dopřipraví', vm.runInContext('onlineCerstvaDopriprav()', c) === 1
+    && c.log.includes('priprav') && c.log.includes('srovnej') && c.ONLINE_STAV.posledni === JSON.stringify(c.ZAK) && c.log.includes('oznacUlozeno'), c.log);
+  test('revize N1: dopříprava kalkulaci neodemkne', !c.log.some(x => x.startsWith('zamek:')), c.log);
+  c.log.length = 0;
+  test('revize N1: podruhé (příznak pryč) už nic', vm.runInContext('onlineCerstvaDopriprav()', c) === 0 && !c.log.includes('priprav'));
+  c = pripravit({ ja: ADMIN, zakazka: CERSTVA, odkaz: true, platny: false });
+  await vm.runInContext('onlineObnovPosledni()', c);
+  c.ONLINE_STAV.posledni = '{"jina":1}'; c.log.length = 0;
+  test('revize N1: změněnou kalkulaci (neuložená práce) dopříprava nepřepíše', vm.runInContext('onlineCerstvaDopriprav()', c) === 0 && !c.log.includes('priprav'), c.log);
+  test('revize N1: onlineTik volá dopřípravu hned po nasazení ceníku',
+    /progPouzij\(ONLINE_STAV\.db\.platny\);\s*onlineCerstvaDopriprav\(\);/.test(zdroj));
+
+  c = pripravit({ ja: ADMIN, zakazka: CERSTVA, odkaz: true, nahled: true });
+  await vm.runInContext('onlineObnovPosledni()', c);
+  test('revize N4: v náhledu role / účtu se z odkazu neodemyká', zamek(c.log) === 'zamek:zapni', c.log);
 
   c = pripravit({ ja: ADMIN, zakazka: CERSTVA });
   await vm.runInContext("onlineOtevri('CN-1.json')", c);

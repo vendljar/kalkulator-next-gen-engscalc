@@ -144,12 +144,16 @@ function uzivatel(text, spolecne) {
   const lide = spolecne.uzivatele;
   if (!Array.isArray(lide)) return { duvod: 'seznam uživatelů Pipedrive není k dispozici' };
   const t = String(text).trim();
-  let hit;
-  if (/@/.test(t)) hit = lide.filter((u) => String(u.email || '').toLowerCase() === t.toLowerCase());
-  else {
+  /* PD bod 4 (náhled CN-432, J. V. 23. 11. 2026): krycí list nese „jméno[,
+   * telefon], e-mail“ (kryciObchodnikKontakt) — celý text se s e-mailem
+   * uživatele nikdy neshodoval. E-mail = první slovo se „@“; nesedí-li nebo
+   * chybí, rozhodne jméno před první čárkou (bez titulů). */
+  const email = (t.match(/[^\s,;<>()]+@[^\s,;<>()]+/) || [''])[0].toLowerCase();
+  let hit = email ? lide.filter((u) => String(u.email || '').trim().toLowerCase() === email) : [];
+  if (!hit.length) {
     const jmeno = (s) => pdNorm(String(s).split(',')[0]).replace(TITULY, ' ').replace(/\s+/g, ' ').trim();
     const j = jmeno(t);
-    hit = j ? lide.filter((u) => jmeno(u.name || '') === j) : [];
+    hit = j && !/@/.test(j) ? lide.filter((u) => jmeno(u.name || '') === j) : [];
   }
   if (hit.length === 1) return { hodnota: hit[0].id };
   return { duvod: hit.length ? '„' + t + '" odpovídá víc uživatelům Pipedrive' : '„' + t + '" mezi uživateli Pipedrive není' };

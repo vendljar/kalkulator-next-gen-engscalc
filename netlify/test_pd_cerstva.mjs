@@ -163,6 +163,14 @@ test('zadání OCK i PROJ (výchozí zaškrtnutí z matice) = Nová zakázka', J
 test('… a výchozí zaškrtnutí se oproti uložené kalkulaci opravdu změnilo (test není prázdný)',
   JSON.stringify(pred.varianty[0].data.ock.zadani) !== JSON.stringify(d2.ock.zadani));
 test('hlavička z dealu (číslo, název akce, zákazník, kontakt) zůstala', ['cislo', 'nazevAkce', 'objednatel', 'kontakt', 'ico'].every((k) => z2[k] === pred[k]) && !!z2.nazevAkce);
+{
+  /* Revize Fable N5: celá data varianty (mimo krycí list z dealu) = Nová zakázka. */
+  const bezKryci = (x) => { const k = kopie(x); delete k.kryci; return k; };
+  test('celá data varianty mimo krycí list = Nová zakázka (techspec, slevy, zaokrouhlení, …)',
+    (() => { const a = bezKryci(d2), b = bezKryci(nova); const k = [...new Set(Object.keys(a).concat(Object.keys(b)))];
+      return k.length > 10 && k.every((x) => JSON.stringify(a[x]) === JSON.stringify(b[x])); })(),
+    Object.keys(nova).filter((k) => k !== 'kryci' && JSON.stringify(d2[k]) !== JSON.stringify(nova[k])));
+}
 test('krycí list (datum z dealu) zůstal', JSON.stringify(d2.kryci) === JSON.stringify(pred.varianty[0].data.kryci));
 const prep = G.cenikPrepoctiRozpracovane(z2, dnesni(), { zahr: null, verze: 7, platnoOd: '2026-11-23', build: 'x' });
 test('#732: přepočet na platný ceník po přípravě nemění žádnou cenu (jen razítko)', prep.prepocteno === 0 && prep.zmen === 0, prep);

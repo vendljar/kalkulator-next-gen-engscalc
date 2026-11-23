@@ -28,8 +28,15 @@ sestavení: viz zpráva koordinaci).
   Ostatní otevírání i zámky odeslaných a prodaných variant beze změny.
 - **Kontaktní osoba z dealu jen jméno (#729):** webhook zapíše do Kontaktní osoby jen jméno osoby dealu, bez e-mailu
   a telefonu. Odeslané (zmrazené) kalkulace beze změny.
-- **Testy:** `netlify/test_pd_cerstva.mjs` (server, jádro, #729), `src/test_pd_cerstva_ui.js` (otevření, zámek čtení),
-  `overit_pd_cerstva.mjs` (prohlížeč, vynucený závod s nasazením ceníku); každý s pojistkou (viz commit). Mutace [PD] 12.
+- **Pipedrive — „Nabídku vypracoval“ a „Odpovědná osoba za projekci“ (náhled CN-432):** uživatel Pipedrive se hledá
+  podle e-mailu obsaženého v textu krycího listu („jméno[, telefon], e-mail“), když nesedí, podle jména před čárkou.
+  Dřív se celý text porovnával s e-mailem → „nelze převést“.
+- **Revize Fable (N1, N3, N4):** kalkulace z dealu, která se nepřipravila (platný ceník se nenačetl), zůstane jen ke
+  čtení s vysvětlením a připraví se, jakmile se ceník nasadí (jen bez neuložené práce); ceník nasazený při otevření
+  se v `onlineTik` nenasazuje podruhé; v náhledu role / účtu se z odkazu neodemyká.
+- **Testy:** `netlify/test_pd_cerstva.mjs` (server, jádro, #729), `src/test_pd_cerstva_ui.js` (otevření, zámek čtení,
+  dopříprava), `overit_pd_cerstva.mjs` (prohlížeč, vynucený závod s nasazením ceníku), doplněné `test_pd_prevod.mjs`
+  (bod 4) a `test_zamek_prepnuti.js` (výjimka #728 ze zámku čtení); každý s pojistkou (viz commit). Mutace [PD] 20.
 
 ## v23.11.2 — RA: rozhodnutí J. V. 23. 11. (#723, #724, #726, log webhooku), větev claude/ra-rozhodnuti
 
