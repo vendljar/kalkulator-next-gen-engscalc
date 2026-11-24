@@ -308,6 +308,7 @@ function zakOdpojUlozeni() {
   if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
   ONLINE_STAV.soubor = ''; ONLINE_STAV.razitko = ''; ONLINE_STAV.posledni = ''; ONLINE_STAV.kdyUlozeno = null;
   ONLINE_STAV.kolize = null;   // kolize patřila té předchozí zakázce (V27)
+  ONLINE_STAV.smazana = '';    // K54-N1: i značka „smazána na serveru“
   /* Nová zakázka = od téhle chvíle se po refreshi vracet není kam (31. 8. 2026). */
   if (typeof onlinePoslednizapamatuj === 'function') onlinePoslednizapamatuj('');
   if (ONLINE_STAV.timer) { clearTimeout(ONLINE_STAV.timer); ONLINE_STAV.timer = null; }

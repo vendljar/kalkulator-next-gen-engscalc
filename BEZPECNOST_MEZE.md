@@ -2506,3 +2506,22 @@ Testy `netlify/test_pv_597_zapis.mjs`, `netlify/test_pv_734_autor.mjs`, `overit_
   opravit firmu; dřív u webhookové kalkulace jen administrátor); O2 — zápis prodeje hlídá právo `crm.pipedrive`
   („Čtení obchodních případů z Pipedrive“) + autor / kdo prodal / vedoucí / administrátor. Kód je zatím podle
   doporučení revize (O1 ano, O2 zatím stačí).
+
+## K54-N1 — smazaná kalkulace se uložením nevzkřísí (#750, rychlá cesta, 24. 11. 2026)
+
+Větev `claude/rychla-K54-N1`, revize Fable `podklady/revize/REVIZE_K54N1.md` (větev `claude/revize-k54n1`; SLOUČIT
+PO OPRAVÁCH — N1, N2, N5–N8 opraveny, N4 zapsáno sem, N3 čeká na J. V.). Testy `netlify/test_k54n1_smazana.mjs`,
+`src/test_k54n1_smazani_ui.js`, mutace [K54N1].
+
+- **Pojistka serveru chrání přímé uložení z okna, které kalkulaci načetlo.** `POST /api/zakazky` odmítne 409 `smazana`
+  tělo s razítkem a `ocekavanySoubor` = cílové jméno, pod nímž nic neleží. Okno, které mazalo, kalkulaci zavře
+  a zahodí kroky Zpět/Znovu i zálohu smazané v prohlížeči (N1/N2); okno, které dostalo 409, další uložení neposílá (N5).
+- **PŘIJATO (revize N4) — vědomé kroky starou kopii založit umí.** Přečíslování v okně se smazanou kalkulací (druhá
+  karta, kolega) ji uloží pod novým číslem i s `pdDealId`; import souboru JSON, duplikát a klon ji uloží jako novou
+  zakázku (jediná cesta, jak smazanou kalkulaci z kopie vrátit). Kalkulace bez razítka (před B10), správcovská oprava
+  přípon a ukázková data (těla bez `ocekavanySoubor`) beze změny. Souběh DELETE × POST ve dvou instancích funkce —
+  známá mez Blobs bez podmíněného zápisu (viz K7-S1). Robustní varianta (náhrobek smazané kalkulace / totožnost
+  záznamu) mění formát dat a zavřela by i záchranu importem — rozhodnutí J. V., samostatná položka roadmapy.
+- **OTEVŘENO (revize N3, čeká na J. V.):** po smazání a založení čerstvé kalkulace webhookem pod týmž číslem dostane
+  staré okno běžnou kolizi B10 a „Přepsat serverovou verzi“ čerstvou kalkulaci přepíše starou kopií (stejné jako
+  před opravou).
