@@ -123,12 +123,43 @@ const NAHLED = { ok: true, rezim: 'simulator', deal: { id: 1234, nazev: 'Deal TE
     const { ctx, zak, v } = prostredi();
     const blob = { arrayBuffer: () => Promise.resolve(Uint8Array.from([80, 75, 3, 4, 0, 255]).buffer) };
     ctx.odeslPdSoubor(v.id, blob);
-    test('Word se drží pro tutéž zakázku a variantu', /Přiložit Word k dealu/.test(ctx.odeslPdKarta()));
-    ctx.ZAK = zk.novaZakazka(); ctx.ZAK.varianty[0] = v; ctx.ZAK.pdDealId = '1234';
+    test('R5: Word před zapsáním údajů dealu tlačítko nenabídne', !/Přiložit Word k dealu/.test(ctx.odeslPdKarta()));
+    zak.pdOdeslani = { deal: '1234', varianty: { [v.id]: { zamekKdy: v.zamek.kdy, pole: { stav: 'zapsano', kdy: '2026-11-24' } } } };
+    test('Word se drží pro tutéž zakázku a variantu (po zapsání údajů)', /Přiložit Word k dealu/.test(ctx.odeslPdKarta()));
+    /* R6: onlineOtevri vymění ZAK (nový objekt téže zakázky) — Word zůstává. */
+    ctx.ZAK = JSON.parse(JSON.stringify(zak));
+    test('R6: po načtení zakázky znovu (nový objekt ZAK) Word a tlačítko zůstávají', /Přiložit Word k dealu/.test(ctx.odeslPdKarta()));
+    ctx.ONLINE_STAV.soubor = 'Z-jina.json';
     test('…jiná zakázka (stejné id varianty) Word nepřevezme', !/Přiložit Word k dealu/.test(ctx.odeslPdKarta()));
+    ctx.ONLINE_STAV.soubor = 'Z-0116.json';
+    const jinyZamek = JSON.parse(JSON.stringify(zak)); jinyZamek.varianty[0].zamek.kdy = '2026-12-01T10:00:00.000Z';
+    jinyZamek.pdOdeslani.varianty[v.id].zamekKdy = jinyZamek.varianty[0].zamek.kdy; ctx.ZAK = jinyZamek;
+    test('…nový zámek téže varianty (po odemčení) starý Word nepřevezme', !/Přiložit Word k dealu/.test(ctx.odeslPdKarta()));
     ctx.ZAK = zak;
     const b64 = await ctx.odeslPdBase64(blob);
     test('base64 Wordu se nerozbije', b64 === Buffer.from([80, 75, 3, 4, 0, 255]).toString('base64'), b64);
+  }
+  {
+    /* R6: nepovedené přiložení → po onlineOtevri tlačítko „Přiložit Word“ zůstává k opakování. */
+    const err = Object.assign(new Error('Pipedrive momentálně neodpovídá'), { data: {} });
+    const { ctx, zak, v, volani } = prostredi({ api: () => Promise.reject(err) });
+    zak.pdOdeslani = { deal: '1234', varianty: { [v.id]: { zamekKdy: v.zamek.kdy, pole: { stav: 'zapsano', kdy: 'x' } } } };
+    ctx.odeslPdSoubor(v.id, { arrayBuffer: () => Promise.resolve(new Uint8Array([1, 2]).buffer) });
+    ctx.onlineOtevri = () => { ctx.ZAK = JSON.parse(JSON.stringify(zak)); return Promise.resolve(true); };
+    await ctx.odeslPdPrilozUI();
+    test('R6: přiložení selhalo → hláška a tlačítko zůstává pro opakování', volani.length === 1 && /nepřiložil/.test(ctx.ODESL_PD.info)
+      && /Přiložit Word k dealu/.test(ctx.odeslPdKarta()), [ctx.ODESL_PD.info]);
+  }
+  {
+    /* R4: první tisk dalšímu zákazníkovi → karta jen informativní, žádné volání API. */
+    const { ctx, zak, v, volani } = prostredi({ api: () => Promise.resolve(NAHLED) });
+    v.zamek.tisky[0].zakaznik = { id: 'z-dalsi', pismeno: 'B', cislo: 'CN-B' };
+    ctx.vzRidiciId = () => 'z-ridici';
+    ctx.odeslPdPoZamku(v, 'nabidka', Promise.resolve(true));
+    await cekej(5);
+    const html = ctx.odeslPdKarta();
+    test('R4: CN pro dalšího zákazníka → hláška, bez API, karta bez tlačítek zápisu', volani.length === 0 && /dalšímu zákazníkovi/.test(ctx.ODESL_PD.info)
+      && /odeslPdJiny/.test(html) && !/odeslPdNahled|odeslPdZapsat/.test(html), [volani.length, html.slice(0, 200)]);
   }
   {
     const { ctx, zak } = prostredi();

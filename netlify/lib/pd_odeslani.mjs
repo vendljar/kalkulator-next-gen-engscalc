@@ -20,6 +20,7 @@
  * functions/pd_odeslani.mjs.
  * ============================================================ */
 import { createHash } from 'node:crypto';
+import { createRequire } from 'node:module';
 
 export const PD_ODESLANI_POLE = 'pdOdeslani';
 /* Dokumenty, jejichž PRVNÍ tisk = odeslání nabídky (ZAMEK_DOKUMENTY v zamek.js). */
@@ -86,8 +87,8 @@ export function pdOdeslaniStrany(zak, v, G = globalThis, jekly = null) {
 /* Cílová fáze odeslání z prostředí: číslo = id fáze, jiný text = název. */
 export function pdOdeslaniFazeKonfigurace(env = process.env) {
   const t = String((env || {})[PD_FAZE_ODESLANO_PROMENNA] || '').trim();
-  if (/^[0-9]{1,10}$/.test(t) && +t > 0) return { id: +t, nazev: '' };
-  return { id: null, nazev: t.slice(0, 120) || PD_FAZE_ODESLANO_NAZEV };
+  if (/^[0-9]{1,10}$/.test(t) && +t > 0) return { id: +t, nazev: '', promenna: PD_FAZE_ODESLANO_PROMENNA };
+  return { id: null, nazev: t.slice(0, 120) || PD_FAZE_ODESLANO_NAZEV, promenna: PD_FAZE_ODESLANO_PROMENNA };
 }
 
 /* Řádek „Fáze dealu“ pro odeslání: JEN DOPŘEDU podle pořadí fází v pipeline
@@ -112,8 +113,9 @@ export function pdOdeslaniFaze(fazeSeznam, deal, konf, najdi) {
   if (f.duvod) { r.stav = 'nelze'; r.duvod = f.duvod + ' — fáze zůstane, ostatní údaje se zapíšou'; return { radek: r, stageId: null, zastaveno: '' }; }
   const cilova = seznam.find((x) => +x.id === +f.faze.id);
   r.hodnotaText = text(cilova);
-  if (st && st !== 'open') {
-    r.stav = 'ponechano'; r.duvod = 'deal je ' + (st === 'won' ? 'vyhraný' : 've stavu ' + st) + ' — fáze se nemění';
+  if (st !== 'open') {   // revize PO R8: neznámý stav = fázi neposouvat
+    r.stav = 'ponechano'; r.duvod = st === 'won' ? 'deal je vyhraný — fáze se nemění'
+      : st ? 'deal je ve stavu ' + st + ' — fáze se nemění' : 'stav dealu není známý — fáze se nemění';
     return { radek: r, stageId: null, zastaveno: '' };
   }
   if (aktualni && +aktualni.id === +cilova.id) {
@@ -161,9 +163,19 @@ export function pdOdeslaniOtisk(dealId, updateTime, patch, zamekKdy, poznamka) {
   return createHash('sha256').update(t).digest('hex').slice(0, 32);
 }
 
-/* Soubor Wordu z base64: tvar docx (zip s [Content_Types].xml a
- * word/document.xml), velikost. Vrací { data: Buffer } nebo { chyba, status }. */
-export function pdOdeslaniDocx(b64) {
+/* Soubor Wordu z base64 (revize PO R5): velikost, platný ZIP (docxgen
+ * zipPrecti — týž čtecí kód jako kontrola šablon, strop XML části), povinné
+ * části [Content_Types].xml a word/document.xml, BEZ maker, vložených objektů
+ * a ActiveX (názvy částí i typy obsahu, vzor sablonaObsahVadyZipu).
+ * Vrací { data: Buffer } nebo { chyba, status }. */
+const DOCX_ZAKAZANE_CASTI = [/(^|\/)vbaproject/, /(^|\/)vbadata/, /(^|\/)embeddings\//, /(^|\/)oleobject[^/]*$/, /activex/];
+const DOCX_ZAKAZANE_TYPY = /macroEnabled|vbaProject|oleObject|activeX/i;
+let ZIP_CTI = null;
+function zipCti() {
+  if (!ZIP_CTI) ZIP_CTI = createRequire(import.meta.url)('../../src/docxgen.js').zipPrecti;
+  return ZIP_CTI;
+}
+export async function pdOdeslaniDocx(b64) {
   if (typeof b64 !== 'string' || !b64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(b64))
     return { chyba: 'Soubor nabídky chybí nebo není v pořádku.', status: 400 };
   if (Math.floor(b64.length * 3 / 4) > PD_ODESLANI_SOUBOR_MAX + 3)
@@ -171,8 +183,19 @@ export function pdOdeslaniDocx(b64) {
   const data = Buffer.from(b64, 'base64');
   if (data.length > PD_ODESLANI_SOUBOR_MAX)
     return { chyba: 'Soubor nabídky je větší než ' + (PD_ODESLANI_SOUBOR_MAX / 1048576) + ' MB — přiložte ho k dealu ručně.', status: 413 };
-  if (data.length < 30 || data.readUInt32LE(0) !== 0x04034b50 || data.indexOf('[Content_Types].xml') < 0 || data.indexOf('word/document.xml') < 0)
-    return { chyba: 'Soubor není dokument Wordu (.docx) — do Pipedrive se nepřiloží.', status: 400 };
+  const neniWord = { chyba: 'Soubor není dokument Wordu (.docx) — do Pipedrive se nepřiloží.', status: 400 };
+  if (data.length < 30 || data.readUInt32LE(0) !== 0x04034b50) return neniWord;
+  let polozky;
+  try { polozky = await zipCti()(new Uint8Array(data.buffer, data.byteOffset, data.length), { xmlCastMax: 8 * 1024 * 1024 }); }
+  catch (e) { return neniWord; }
+  const jmena = (Array.isArray(polozky) ? polozky : []).map((p) => String((p && p.nazev) || '').replace(/\\/g, '/'));
+  const male = jmena.map((n) => n.toLowerCase());
+  if (!male.includes('[content_types].xml') || !male.includes('word/document.xml')) return neniWord;
+  const makra = { chyba: 'Soubor obsahuje makra, vložené objekty nebo ActiveX — do Pipedrive se nepřiloží.', status: 400 };
+  if (male.some((n) => DOCX_ZAKAZANE_CASTI.some((re) => re.test(n)))) return makra;
+  const ct = polozky[male.indexOf('[content_types].xml')];
+  const ctText = ct && ct.data ? Buffer.from(ct.data).toString('utf8') : '';
+  if (DOCX_ZAKAZANE_TYPY.test(ctText)) return makra;
   return { data };
 }
 
@@ -183,9 +206,14 @@ export function pdOdeslaniNazevSouboru(cislo, datum) {
   return 'CN_' + c + d + '.docx';
 }
 
-/* ---------- stav zápisu v zakázce (`zak.pdOdeslani`, píše jen server) ---------- */
+/* ---------- stav zápisu v zakázce (`zak.pdOdeslani`, píše jen server) ----------
+ * Revize PO R2: stav po VARIANTÁCH — { deal, poznamka: { stav, kdy, id, otisk },
+ * varianty: { <id varianty>: { zamekKdy, pole, soubor } } }. Poznámka je jedna
+ * na zakázku a deal; jiný deal = nový záznam bez id poznámky (revize R12 M4). */
 const STAVY_KROKU = ['ceka', 'zapsano', 'chyba', 'zahajeno', 'bez'];
 const ID_TVAR = /^[1-9][0-9]{0,11}$/;
+const VAR_TVAR = /^[A-Za-z0-9._:-]{1,80}$/;
+export const PD_ODESLANI_VARIANT_MAX = 50;
 function krok(x, navic = []) {
   if (!x || typeof x !== 'object' || Array.isArray(x) || !STAVY_KROKU.includes(x.stav)) return null;
   const o = { stav: x.stav, kdy: cisty(x.kdy, 40) };
@@ -201,13 +229,20 @@ function krok(x, navic = []) {
 export function pdOdeslaniNorm(x) {
   if (!x || typeof x !== 'object' || Array.isArray(x)) return null;
   const deal = typeof x.deal === 'string' && ID_TVAR.test(x.deal) ? x.deal : '';
-  const varianta = typeof x.varianta === 'string' ? x.varianta.slice(0, 80) : '';
-  if (!deal || !varianta) return null;
-  const o = { deal, varianta, zamekKdy: cisty(x.zamekKdy, 40) };
-  const pole = krok(x.pole), pozn = krok(x.poznamka, ['id', 'otisk']), soubor = krok(x.soubor, ['id', 'nazev', 'velikost']);
-  if (pole) o.pole = pole;
+  if (!deal) return null;
+  const o = { deal, varianty: {} };
+  const pozn = krok(x.poznamka, ['id', 'otisk']);
   if (pozn) o.poznamka = pozn;
-  if (soubor) o.soubor = soubor;
+  const v = x.varianty && typeof x.varianty === 'object' && !Array.isArray(x.varianty) ? x.varianty : {};
+  for (const id of Object.keys(v).filter((k) => VAR_TVAR.test(k)).slice(0, PD_ODESLANI_VARIANT_MAX)) {
+    const e = v[id];
+    if (!e || typeof e !== 'object' || Array.isArray(e)) continue;
+    const z = { zamekKdy: cisty(e.zamekKdy, 40) };
+    const pole = krok(e.pole), soubor = krok(e.soubor, ['id', 'nazev', 'velikost']);
+    if (pole) z.pole = pole;
+    if (soubor) z.soubor = soubor;
+    o.varianty[id] = z;
+  }
   return o;
 }
 /* Při uložení zakázky z prohlížeče se pole bere z ULOŽENÉ verze (vzor
@@ -220,17 +255,45 @@ export function pdOdeslaniDrz(stara, zak, volby = {}) {
   if (v) zak[PD_ODESLANI_POLE] = v; else delete zak[PD_ODESLANI_POLE];
 }
 
-/* Stav pro tento zámek: jiný deal / varianta / zámek = nový záznam, id
- * poznámky téhož dealu zůstává (opakované odeslání poznámku upraví). */
-export function pdOdeslaniZaznam(stary, deal, varianta, zamekKdy) {
+/* Záznam pro deal: jiný deal = nový (bez id poznámky). */
+export function pdOdeslaniZaznam(stary, deal) {
   const s = pdOdeslaniNorm(stary);
-  if (s && s.deal === deal && s.varianta === varianta && s.zamekKdy === zamekKdy) return s;
-  const o = { deal, varianta, zamekKdy };
-  if (s && s.deal === deal && s.poznamka && s.poznamka.id) o.poznamka = { stav: 'ceka', kdy: '', id: s.poznamka.id };
-  return o;
+  return s && s.deal === deal ? s : { deal, varianty: {} };
+}
+/* Stav varianty pro tento zámek (jiný zámek = nový stav varianty). */
+export function pdOdeslaniVariantaStav(rec, varianta, zamekKdy, zalozit = false) {
+  const e = rec && rec.varianty ? rec.varianty[varianta] : null;
+  if (e && e.zamekKdy === zamekKdy) return e;
+  if (!zalozit) return null;
+  const n = { zamekKdy };
+  rec.varianty[varianta] = n;
+  return n;
 }
 export function pdOdeslaniKrok(stav, duvod, navic = {}, kdy = new Date().toISOString()) {
   const o = Object.assign({ stav, kdy }, navic);
   if (stav === 'chyba') o.duvod = cisty(duvod || 'zápis se nepovedl', PD_ODESLANI_DUVOD_MAX);
   return o;
+}
+
+/* Zastavení celého odeslání (zápis i soubor, revize PO R1, R4): ztracený
+ * nebo smazaný deal, cizí číslo nabídky v dealu, první tisk pro DALŠÍHO
+ * zákazníka (víc zákazníků — deal vede řídící). '' = nic nebrání. */
+export function pdOdeslaniZastaveni(dealData, cizi, jinyZakaznik) {
+  const st = dealData ? String(dealData.status || '') : '';
+  if (st === 'lost' || st === 'deleted')
+    return 'Deal je ' + (st === 'lost' ? 'ztracený (prohraný)' : 'smazaný') + ' — odeslání nabídky se do něj nezapisuje.';
+  if (cizi) return 'Deal patří nabídce ' + cizi + ' (Číslo nabídky v dealu) — odeslání se do něj nezapíše. Převzít deal jde až zápisem prodeje.';
+  if (jinyZakaznik) return 'Nabídka odešla dalšímu zákazníkovi (' + jinyZakaznik + ') — deal vede řídící zákazník, do Pipedrive se nic nezapisuje.';
+  return '';
+}
+
+/* Zákazník, kterému šel PRVNÍ tisk (VZ-E3 razítko „komu“ v zamek.tisky[0]),
+ * není řídící → jeho písmeno / číslo; jinak ''. */
+export function pdOdeslaniJinyZakaznik(zak, v, G = globalThis) {
+  const t = v && v.zamek && Array.isArray(v.zamek.tisky) ? v.zamek.tisky[0] : null;
+  const k = t && t.zakaznik && typeof t.zakaznik === 'object' ? t.zakaznik : null;
+  if (!k || !k.id) return '';
+  const rid = typeof G.vzRidiciId === 'function' ? G.vzRidiciId(zak) : '';
+  if (rid && String(k.id) === String(rid)) return '';
+  return cisty(k.cislo || k.pismeno || k.id, 60) || 'další zákazník';
 }

@@ -40,7 +40,8 @@ import { pdProdejZmeny, pdProdejCnSedi, pdProdejOznacRadky, pdProdejChybaVeta } 
 import {
   PD_ODESLANI_POLE, PD_ODESLANI_TYPY, PD_ODESLANI_STROP, PD_ODESLANI_VOLANI_MS, PD_ODESLANI_CELKEM_MS, PD_ODESLANI_SOUBOR_MS,
   pdOdeslaniDefinice, pdOdeslaniVarianta, pdOdeslaniStrany, pdOdeslaniFazeKonfigurace, pdOdeslaniFaze, pdOdeslaniPoznamkaText,
-  pdOdeslaniOtisk, pdOdeslaniDocx, pdOdeslaniNazevSouboru, pdOdeslaniZaznam, pdOdeslaniKrok,
+  pdOdeslaniOtisk, pdOdeslaniDocx, pdOdeslaniNazevSouboru, pdOdeslaniZaznam, pdOdeslaniKrok, pdOdeslaniVariantaStav,
+  pdOdeslaniZastaveni, pdOdeslaniJinyZakaznik,
 } from '../lib/pd_odeslani.mjs';
 
 const SOUBOR_TVAR = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
@@ -102,7 +103,7 @@ export default async (req) => {
     return json({ ok: false, chyba: 'Chybí potvrzení náhledu — nejdřív zobrazte, co se zapíše.' }, 400);
   let docx = null;
   if (akce === 'soubor') {
-    docx = pdOdeslaniDocx(telo.obsah);
+    docx = await pdOdeslaniDocx(telo.obsah);
     if (docx.chyba) return json({ ok: false, chyba: docx.chyba }, docx.status);
   }
   const zdroje = {};
@@ -135,14 +136,15 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
   const kdo = String(relace.jmeno || relace.email || '');
   const cisloPapir = String(v.zamek.cislo || (typeof G.variantaCislo === 'function' ? G.variantaCislo(ulozena, v) : '') || '');
 
-  /* Výsledek kroku do zak.pdOdeslani a protokolu (jen zápisové akce). */
+  /* Výsledek kroku do zak.pdOdeslani (po variantách, R2) a protokolu.
+   * Vrací nové razítko, nebo '' = nic se nezapsalo (zámek mezitím odemčen). */
   const zaznamenej = async (zmena, veta) => {
     const r = await vyhradne('zakazky/z/' + soubor, async () => {
       const zak = await s.cti('z/' + soubor);
       const x = zak && (zak.varianty || []).find((y) => y && y.id === varId);
       if (!x || !x.zamek || x.zamek.kdy !== zamekKdy) return {};   // zámek mezitím odemčen — nic se nepřipisuje
-      const rec = pdOdeslaniZaznam(zak[PD_ODESLANI_POLE], deal, varId, zamekKdy);
-      zmena(rec);
+      const rec = pdOdeslaniZaznam(zak[PD_ODESLANI_POLE], deal);
+      zmena(rec, pdOdeslaniVariantaStav(rec, varId, zamekKdy, true));
       zak[PD_ODESLANI_POLE] = rec;
       if (veta) pdProtokol(zak, kdo, veta);
       const razitko = ULO.uloRazitkoNove();
@@ -153,6 +155,7 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
     if (r.zak) await pdRejstrikZapis(s, ULO, vyhradne, r.zak, soubor, r.razitko, String(relace.email || ''));
     return r.razitko || '';
   };
+  const krokKlic = akce === 'soubor' ? 'soubor' : 'pole';
 
   const strop = akce === 'nahled'
     ? await pdStropCerstvych(relace.email, 'odeslani', PD_DEAL_MAX)
@@ -161,7 +164,7 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
     : 'Zápis odeslání do tohoto dealu byl za poslední hodinu zkoušen příliš často.' }, 429);
   /* B235/B236: bez PIPEDRIVE_ZAPIS = ano se do skutečného Pipedrive nic nezapíše. */
   if (akce !== 'nahled' && !pdZapisPovolen()) {
-    const razitko = await zaznamenej((rec) => { rec[akce === 'soubor' ? 'soubor' : 'pole'] = pdOdeslaniKrok('chyba', PD_ZAPIS_VYPNUTY); },
+    const razitko = await zaznamenej((rec, e) => { e[krokKlic] = pdOdeslaniKrok('chyba', PD_ZAPIS_VYPNUTY); },
       'Zápis odeslání nabídky do dealu ' + deal + ' se neprovedl: ' + PD_ZAPIS_VYPNUTY);
     return json({ ok: false, stav: 'chyba', chyba: PD_ZAPIS_VYPNUTY, razitko }, 503);
   }
@@ -169,30 +172,47 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
   const zavolej = volani();
   const varovani = [];
   if (pdRezim() === 'simulator') varovani.push('Odpovídá SIMULÁTOR Pipedrive se smyšlenými daty — nic z toho není skutečné CRM.');
-  const selhani = async (status, krokKlic, text, podrobnost = '', extra = {}) => {
-    const razitko = await zaznamenej((rec) => { rec[krokKlic] = pdOdeslaniKrok('chyba', text); },
-      'Zápis odeslání nabídky do dealu ' + deal + ' se nepovedl (' + ({ pole: 'údaje dealu', poznamka: 'poznámka', soubor: 'soubor' }[krokKlic]) + '): ' + text);
+  const selhani = async (status, klic, text, podrobnost = '', extra = {}) => {
+    const razitko = await zaznamenej((rec, e) => { e[klic] = pdOdeslaniKrok('chyba', text); },
+      'Zápis odeslání nabídky do dealu ' + deal + ' se nepovedl (' + ({ pole: 'údaje dealu', soubor: 'soubor' }[klic]) + '): ' + text);
     return json({ ok: false, stav: 'chyba', chyba: text, ...(podrobnost && podrobnost !== text ? { podrobnost } : {}), razitko, ...extra }, status);
   };
 
-  let pole;
+  let pole, dealData;
   try {
     pole = await pdPoleMapa();
     const ov = await pdDealPatriZakazce(ulozena, deal, { zavolej: (c) => zavolej(c), poleMapa: async () => pole,
       odkaz: pdWebhookOdkaz(soubor, req) }, G);
     if (!ov.ok) return akce === 'nahled' ? json({ ok: false, stav: 'neovereno', chyba: ov.duvod }, 409)
-      : selhani(409, akce === 'soubor' ? 'soubor' : 'pole', ov.duvod, '', { kod: 'neovereno' });
+      : selhani(409, krokKlic, ov.duvod, '', { kod: 'neovereno' });
+    dealData = await zavolej('/api/v2/deals/' + Number(deal));
+    if (!dealData || typeof dealData !== 'object') throw new PdChyba('Pipedrive deal zakázky nezná.', 404);
   } catch (e) {
-    if (e instanceof PdChyba) return akce === 'nahled' ? chybaPd(e) : selhani(e.stav === 404 ? 404 : 502, akce === 'soubor' ? 'soubor' : 'pole', pdProdejChybaVeta(e), e.message);
+    if (e instanceof PdChyba) return akce === 'nahled' ? chybaPd(e) : selhani(e.stav === 404 ? 404 : 502, krokKlic, pdProdejChybaVeta(e), e.message);
     throw e;
   }
 
-  if (akce === 'soubor') return souborKrok({ ulozena, v, deal, cisloPapir, docx, zavolej, zaznamenej, selhani, G });
+  /* Zastavení platí pro zápis I soubor (revize PO R1): ztracený / smazaný deal,
+   * cizí číslo nabídky, první tisk dalšímu zákazníkovi (R4). */
+  const mapa = (pole && pole.mapa) || {};
+  const cnDealu = mapa.cisloNabidky ? pdHodnota(((dealData.custom_fields || {})[mapa.cisloNabidky])).trim() : '';
+  const cisloZak = String((typeof G.zakazkaCisloVedouci === 'function' ? G.zakazkaCisloVedouci(ulozena) : ulozena.cislo) || '');
+  const cizi = cnDealu && !pdProdejCnSedi(cisloZak, cnDealu, ulozena) ? cnDealu : '';
+  const jinyZakaznik = pdOdeslaniJinyZakaznik(ulozena, v, G);
+  const zastaveno = pdOdeslaniZastaveni(dealData, cizi, jinyZakaznik);
+  const rec = ulozena[PD_ODESLANI_POLE] && ulozena[PD_ODESLANI_POLE].deal === deal ? ulozena[PD_ODESLANI_POLE] : null;
+  const recTento = rec ? pdOdeslaniVariantaStav(rec, varId, zamekKdy) : null;
 
-  let dealData, uzivatele, fazeSeznam;
+  if (akce === 'soubor') {
+    if (zastaveno) return selhani(409, 'soubor', zastaveno, '', { kod: 'zastaveno' });
+    /* R5: Word jde k dealu až po potvrzeném a zapsaném náhledu (údaje dealu). */
+    if (!(recTento && recTento.pole && recTento.pole.stav === 'zapsano'))
+      return json({ ok: false, kod: 'nejdrivZapis', chyba: 'Word se k dealu přikládá až po potvrzení a zápisu odeslání do Pipedrive.' }, 409);
+    return souborKrok({ ulozena, v, deal, cisloPapir, docx, zavolej, zaznamenej, selhani, recTento, G });
+  }
+
+  let uzivatele, fazeSeznam;
   try {
-    dealData = await zavolej('/api/v2/deals/' + Number(deal));
-    if (!dealData || typeof dealData !== 'object') throw new PdChyba('Pipedrive deal zakázky nezná.', 404);
     const u = await zavolej('/api/v1/users');
     uzivatele = Array.isArray(u) ? u.map((x) => ({ id: x.id, name: String(x.name || '') || ('uživatel Pipedrive ' + x.id), email: x.email })) : undefined;
     const f = await zavolej('/api/v2/stages', { dotaz: { limit: 500 } });
@@ -206,17 +226,19 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
   if (podklad.chyba) return json({ ok: false, chyba: podklad.chyba }, 409);
   const z = pdZamyslenyZapis(pdOdeslaniDefinice(POLE_DEALU), podklad.strany, pole, { uzivatele, mena: 'CZK', deal: dealData }, {}, zdroje);
   const faze = pdOdeslaniFaze(fazeSeznam, dealData, pdOdeslaniFazeKonfigurace(), pdFazeNajdi);
-  const mapa = (pole && pole.mapa) || {};
-  const cnDealu = mapa.cisloNabidky ? pdHodnota(((dealData.custom_fields || {})[mapa.cisloNabidky])).trim() : '';
-  const cisloZak = String((typeof G.zakazkaCisloVedouci === 'function' ? G.zakazkaCisloVedouci(ulozena) : ulozena.cislo) || '');
-  const cizi = cnDealu && !pdProdejCnSedi(cisloZak, cnDealu, ulozena) ? cnDealu : '';
-  const zastaveno = faze.zastaveno || (cizi ? 'Deal patří nabídce ' + cizi + ' (Číslo nabídky v dealu) — odeslání se do něj nezapíše. '
-    + 'Převzít deal jde až zápisem prodeje.' : '');
-  let patch = z.patch ? JSON.parse(JSON.stringify(z.patch)) : null;
+  /* R3 (doporučení revize, rozhodne J. V. #765): prodaná zakázka nebo vyhraný
+   * deal — hodnotu ani pole krycího listu NEPOSÍLAT (deal nese prodej / SoD),
+   * jen poznámka a Word. */
+  const prodana = typeof G.prodStav === 'function' && !!G.prodStav(ulozena);
+  const jenPoznamka = prodana || String(dealData.status || '') === 'won'
+    ? (prodana ? 'zakázka je prodaná' : 'deal je vyhraný') + ' — údaje dealu se nemění, zapíše se jen poznámka (a Word)' : '';
+  let patch = z.patch && !jenPoznamka ? JSON.parse(JSON.stringify(z.patch)) : null;
   if (patch && faze.stageId) patch.stage_id = faze.stageId;
   const zmeny = patch ? pdProdejZmeny(patch, dealData) : { patch: null, klice: [], hodnota: false, faze: false };
   if (zmeny.patch && zmeny.patch.status !== undefined) delete zmeny.patch.status;   // stav dealu nikdy (pojistka)
-  const radky = pdProdejOznacRadky(z.radky.concat([faze.radek]), mapa, zmeny);
+  const radkyVse = z.radky.concat([faze.radek]).map((r) => (jenPoznamka && r.stav === 'zapise'
+    ? Object.assign({}, r, { stav: 'ponechano', duvod: jenPoznamka }) : r));
+  const radky = pdProdejOznacRadky(radkyVse, mapa, zmeny);
 
   /* Poznámka: všechny odeslané varianty s cenou, šachty, zpracovatel, odkaz. */
   const datum = typeof G.nabidkaDatum === 'function' ? G.nabidkaDatum(ulozena, v) : String(v.zamek.datumNabidky || '');
@@ -231,15 +253,13 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
     vypracoval: zpr ? [zpr.titul, zpr.jmeno].filter(Boolean).join(' ') : '', odkaz: pdWebhookOdkaz(soubor, req), znacka: pdPoznamkaZnacka(ulozena) });
   radky.push({ klic: 'datumNabidky', nazev: 'Datum nabídky', vCrm: '', hodnotaText: datum, stav: 'nelze', posle: false, bezeZmeny: false,
     duvod: 'pole „Datum nabídky“ v Pipedrive zatím není — datum je v poznámce dealu' });
-  const rec = ulozena[PD_ODESLANI_POLE] || null;
-  const recTento = rec && rec.deal === deal && rec.varianta === varId && rec.zamekKdy === zamekKdy ? rec : null;
   const otisk = pdOdeslaniOtisk(deal, dealData.update_time, zmeny.patch, zamekKdy, poznamkaText);
   const zapsanoNazvy = radky.filter((r) => r.posle).map((r) => r.nazev);
 
   if (akce === 'nahled') {
     return json({ ok: true, rezim: pdRezim(), deal: { id: dealData.id, nazev: dealData.title || '', stav: dealData.status || '', faze: dealData.stage_id || null },
       radky, poznamka: poznamkaText, datum, cislo: cisloPapir, otisk, zapisPovolen: pdZapisPovolen(), nicKZapisu: !zmeny.patch,
-      zastaveno, cizi: cizi ? { cislo: cizi } : null, stav: recTento, varovani });
+      zastaveno, jenPoznamka, cizi: cizi ? { cislo: cizi } : null, stav: recTento, poznamkaStav: rec && rec.poznamka ? rec.poznamka : null, varovani });
   }
 
   /* ---------- ZÁPIS (pole + hodnota + fáze, pak poznámka) ---------- */
@@ -257,7 +277,7 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
   const kdyPole = new Date().toISOString();
   /* Poznámka: shodný otisk u téže poznámky = nic; jinak úprava / založení. */
   const notaOtisk = pdPoznamkaOtisk(poznamkaText);
-  const notaStara = rec && rec.deal === deal && rec.poznamka ? rec.poznamka : null;
+  const notaStara = rec && rec.poznamka ? rec.poznamka : null;
   let nota;
   if (notaStara && notaStara.stav === 'zapsano' && notaStara.id && notaStara.otisk === notaOtisk) nota = { id: notaStara.id, akce: 'beze-zmeny' };
   else {
@@ -270,10 +290,10 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
     }
   }
   const veta = 'Zápis odeslání nabídky ' + cisloPapir + ' do dealu ' + deal + ': '
-    + (zapsanoNazvy.length ? 'zapsáno — ' + zapsanoNazvy.join(', ') : 'deal už měl všechny hodnoty, nic se neměnilo')
+    + (zapsanoNazvy.length ? 'zapsáno — ' + zapsanoNazvy.join(', ') : jenPoznamka ? 'údaje dealu beze změny (' + jenPoznamka.split(' — ')[0] + ')' : 'deal už měl všechny hodnoty, nic se neměnilo')
     + (nota.chyba ? '; poznámka se nezapsala: ' + nota.chyba : nota.akce === 'beze-zmeny' ? '' : '; poznámka ' + (nota.akce === 'upraveno' ? 'upravena' : 'založena'));
-  const razitko = await zaznamenej((rec2) => {
-    rec2.pole = pdOdeslaniKrok('zapsano', '', {}, kdyPole);
+  const razitko = await zaznamenej((rec2, e) => {
+    e.pole = pdOdeslaniKrok('zapsano', '', {}, kdyPole);
     rec2.poznamka = nota.chyba ? pdOdeslaniKrok('chyba', nota.chyba, notaStara && notaStara.id ? { id: notaStara.id } : {})
       : pdOdeslaniKrok('zapsano', '', { id: nota.id, otisk: notaOtisk });
   }, veta);
@@ -282,30 +302,30 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
 }
 
 /* ---------- SOUBOR NABÍDKY K DEALU ---------- */
-async function souborKrok({ ulozena, v, deal, cisloPapir, docx, zavolej, zaznamenej, selhani, G }) {
+async function souborKrok({ ulozena, v, deal, cisloPapir, docx, zavolej, zaznamenej, selhani, recTento, G }) {
   const datum = typeof G.nabidkaDatum === 'function' ? G.nabidkaDatum(ulozena, v) : String(v.zamek.datumNabidky || '');
   const nazev = pdOdeslaniNazevSouboru(cisloPapir, datum);
   const velikost = docx.data.length;
-  const rec = ulozena[PD_ODESLANI_POLE];
-  const tento = rec && rec.deal === deal && rec.varianta === v.id && rec.zamekKdy === v.zamek.kdy ? rec.soubor : null;
+  const tento = recTento ? recTento.soubor : null;
   if (tento && tento.stav === 'zapsano') return json({ ok: true, stav: 'zapsano', uz: true, nazev: tento.nazev || nazev });
   try {
-    /* Pokus, jehož výsledek se nedozvěděl (zahájeno / chyba): nejdřív se podívat,
-     * zda soubor u dealu už není (Pipedrive nemá klíč idempotence). */
-    if (tento && (tento.stav === 'zahajeno' || tento.stav === 'chyba')) {
-      const seznam = await zavolej('/api/v1/deals/' + Number(deal) + '/files', { dotaz: { limit: 100 } });
-      const shoda = (Array.isArray(seznam) ? seznam : []).find((f) => f && String(f.name || f.file_name || '') === nazev && Number(f.file_size) === velikost);
-      if (shoda) {
-        const razitko = await zaznamenej((r) => { r.soubor = pdOdeslaniKrok('zapsano', '', { id: Number(shoda.id) || undefined, nazev, velikost }); },
-          'Soubor nabídky ' + nazev + ' u dealu ' + deal + ' už je (předchozí pokus) — označeno jako přiložené');
-        return json({ ok: true, stav: 'zapsano', uz: true, nazev, razitko });
-      }
+    /* Revize PO R2: shodu názvu a velikosti u dealu hledat VŽDY před nahráním
+     * (nepotvrzený pokus, jiná varianta téhož čísla, nové odeslání po odemčení) —
+     * Pipedrive nemá klíč idempotence. Čte se prvních 100 souborů dealu (B280). */
+    const seznam = await zavolej('/api/v1/deals/' + Number(deal) + '/files', { dotaz: { limit: 100 } });
+    const shoda = (Array.isArray(seznam) ? seznam : []).find((f) => f && String(f.name || f.file_name || '') === nazev && Number(f.file_size) === velikost);
+    if (shoda) {
+      const razitko = await zaznamenej((r, e) => { e.soubor = pdOdeslaniKrok('zapsano', '', { id: Number(shoda.id) || undefined, nazev, velikost }); },
+        'Soubor nabídky ' + nazev + ' u dealu ' + deal + ' už je — označeno jako přiložené');
+      return json({ ok: true, stav: 'zapsano', uz: true, nazev, razitko });
     }
   } catch (e) {
     if (e instanceof PdChyba) return selhani(e.stav === 504 ? 504 : 502, 'soubor', pdProdejChybaVeta(e), e.message);
     throw e;
   }
-  await zaznamenej((r) => { r.soubor = pdOdeslaniKrok('zahajeno', '', { nazev, velikost }); }, '');
+  /* R9: bez zapsaného stavu „zahájeno“ se nenahrává (zámek mezitím odemčen). */
+  const zahajeno = await zaznamenej((r, e) => { e.soubor = pdOdeslaniKrok('zahajeno', '', { nazev, velikost }); }, '');
+  if (!zahajeno) return json({ ok: false, kod: 'zamekNeulozen', chyba: 'Odeslaná nabídka se mezitím změnila (odemčení) — Word se nepřiložil.' }, 409);
   let vysl;
   try {
     const f = new FormData();
@@ -317,7 +337,7 @@ async function souborKrok({ ulozena, v, deal, cisloPapir, docx, zavolej, zazname
     throw e;
   }
   const id = vysl && Number(vysl.id);
-  const razitko = await zaznamenej((r) => { r.soubor = pdOdeslaniKrok('zapsano', '', { id: Number.isInteger(id) && id > 0 ? id : undefined, nazev, velikost }); },
+  const razitko = await zaznamenej((r, e) => { e.soubor = pdOdeslaniKrok('zapsano', '', { id: Number.isInteger(id) && id > 0 ? id : undefined, nazev, velikost }); },
     'Soubor nabídky ' + nazev + ' přiložen k dealu ' + deal);
   return json({ ok: true, stav: 'zapsano', nazev, razitko });
 }

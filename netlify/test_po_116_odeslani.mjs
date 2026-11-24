@@ -104,7 +104,11 @@ const DEN_TEXT = DEN.split('-').reverse().map((x) => String(+x)).join('. ');
 const pouzite = [];
 async function odeslanaZakazka({ faze = 22, typ = 'nabidka' } = {}) {
   const deal = D().dealy.find((d) => d.status === 'open' && d.org_id && d.person_id && d.pipeline_id === 1
-    && d.owner_id === U[1].id && /^CN-\d+ /.test(d.title) && !pouzite.includes(d.id));
+    && d.owner_id === U[1].id && /^CN-\d+ /.test(d.title) && !pouzite.includes(d.id))
+    /* Došly-li dealy Petry: další otevřený deal se smyšleným číslem a vlastníkem Petrou. */
+    || Object.assign(D().dealy.find((d) => d.status === 'open' && d.org_id && d.person_id && d.pipeline_id === 1 && !pouzite.includes(d.id)
+      && !/^(OVP-CN|OPR)/.test(d.title)) || {}, { owner_id: U[1].id, user_id: U[1].id });
+  if (!/^CN-\d+ /.test(deal.title)) deal.title = 'CN-' + (600 + pouzite.length) + ' ' + deal.title.replace(/^\S*\s*/, '');
   pouzite.push(deal.id);
   deal.stage_id = faze;
   const w = await (await webhook(new Request('https://testweb.example/api/pd/webhook', { method: 'POST',
@@ -128,19 +132,18 @@ async function odeslanaZakazka({ faze = 22, typ = 'nabidka' } = {}) {
 }
 const zaklad = (A) => ({ soubor: A.soubor, varianta: A.varianta, zamekKdy: A.zamekKdy });
 const radek = (d, k) => (d.radky || []).find((x) => x.klic === k) || {};
-const stav = (soubor) => zakazka(soubor).pdOdeslani || null;
+/* Stav zápisu odeslané varianty (varianta 0) + poznámka zakázky (revize PO R2: stav po variantách). */
+const stav = (soubor, varId) => { const z = zakazka(soubor); const r = z.pdOdeslani; if (!r) return null;
+  const e = (r.varianty || {})[varId || z.varianty[0].id] || {}; return { ...e, deal: r.deal, poznamka: r.poznamka }; };
 const cenaVarianty = (soubor) => { const z = zk.importZakazka(kopie(zakazka(soubor))); const v = z.varianty[0];
   return Math.round(G.cenaNabidkyOck(G.vypocetZ(v, JEKLY), v.data.sleva, v.data.zaokr).cena * 100) / 100; };
-/* Minimální platný docx (zip: [Content_Types].xml + word/document.xml, bez komprese). */
-function docx(navic = 0) {
-  const soubory = [['[Content_Types].xml', '<Types/>'], ['word/document.xml', '<w:document/>' + ' '.repeat(navic)]];
-  const casti = [];
-  for (const [jm, obsah] of soubory) {
-    const h = Buffer.alloc(30); h.writeUInt32LE(0x04034b50, 0); h.writeUInt16LE(jm.length, 26);
-    const b = Buffer.from(obsah); h.writeUInt32LE(b.length, 18); h.writeUInt32LE(b.length, 22);
-    casti.push(h, Buffer.from(jm), b);
-  }
-  return Buffer.concat(casti).toString('base64');
+/* Platný docx (ZIP s centrálním adresářem, zipZapis z docxgen.js); `casti` přidá další části. */
+const { zipZapis } = require('../src/docxgen.js');
+async function docx(navic = 0, casti = [], ct = '<Types/>') {
+  const enc = new TextEncoder();
+  const polozky = [['[Content_Types].xml', ct], ['word/document.xml', '<w:document/>' + ' '.repeat(navic)], ...casti]
+    .map(([nazev, obsah]) => ({ nazev, data: enc.encode(obsah) }));
+  return Buffer.from(await zipZapis(polozky).arrayBuffer()).toString('base64');
 }
 const souboryDealu = (id) => (D().soubory || []).filter((f) => f.deal_id === id);
 
@@ -274,34 +277,39 @@ test('varianta poprvé zamčená smlouvou (ne CN) → 409 „neniNabidka“', r.
 
 /* ---------- 5. SOUBOR NABÍDKY ---------- */
 puvodniLog('\n===== 5. SOUBOR =====\n');
-r = await odesl({ ...zaklad(A), akce: 'soubor', obsah: docx(), nazev: '../podvrh.exe' }, cP);
+r = await odesl({ ...zaklad(A), akce: 'soubor', obsah: await docx(), nazev: '../podvrh.exe' }, cP);
 const sA = souboryDealu(A.deal.id);
 test('soubor → 200, u dealu jeden soubor .docx, název ze serveru (ne od klienta)', r.status === 200 && r.stav === 'zapsano' && sA.length === 1
   && /^CN_[A-Za-z0-9._-]+_\d{4}-\d{2}-\d{2}\.docx$/.test(sA[0].name) && sA[0].name.endsWith('_' + DEN + '.docx') && sA[0].file_type.includes('wordprocessingml'), [r, sA]);
 test('zak.pdOdeslani.soubor = zapsano s názvem a velikostí; protokol', stav(A.soubor).soubor.stav === 'zapsano' && stav(A.soubor).soubor.nazev === sA[0].name
   && stav(A.soubor).soubor.velikost === sA[0].file_size && (zakazka(A.soubor).protokol || []).some((p) => /Soubor nabídky .* přiložen k dealu/.test(p.co)), stav(A.soubor));
-r = await odesl({ ...zaklad(A), akce: 'soubor', obsah: docx() }, cP);
+r = await odesl({ ...zaklad(A), akce: 'soubor', obsah: await docx() }, cP);
 test('opakované přiložení: „už přiloženo“, žádný další soubor', r.status === 200 && r.uz === true && souboryDealu(A.deal.id).length === 1, r);
 r = await odesl({ ...zaklad(A), akce: 'soubor', obsah: Buffer.from('%PDF-1.4 ahoj světe, tohle není docx').toString('base64') }, cP);
 test('soubor, který není docx → 400', r.status === 400 && /Wordu/.test(r.chyba), r);
 r = await odesl({ ...zaklad(A), akce: 'soubor', obsah: 'není base64!' }, cP);
 test('neplatné base64 → 400', r.status === 400, r);
-r = await odesl({ ...zaklad(A), akce: 'soubor', obsah: docx(PO.PD_ODESLANI_SOUBOR_MAX + 10) }, cP);
+r = await odesl({ ...zaklad(A), akce: 'soubor', obsah: await docx(PO.PD_ODESLANI_SOUBOR_MAX + 10) }, cP);
 test('soubor nad limit → 413', r.status === 413, r);
 { const B = await odeslanaZakazka();
+  const nbb = await odesl({ ...zaklad(B), akce: 'nahled' }, cP);
+  const rs0 = await odesl({ ...zaklad(B), akce: 'soubor', obsah: await docx() }, cP);
+  test('R5: Word před potvrzeným zápisem → 409 „nejdrivZapis“, nic se nepřiložilo', rs0.status === 409 && rs0.kod === 'nejdrivZapis'
+    && souboryDealu(B.deal.id).length === 0, rs0);
+  await odesl({ ...zaklad(B), akce: 'zapis', otisk: nbb.otisk }, cP);
   SIM.pdSimNastav({ scenar: 'zapisVisi' });
-  const rb = await odesl({ ...zaklad(B), akce: 'soubor', obsah: docx() }, cP);
+  const rb = await odesl({ ...zaklad(B), akce: 'soubor', obsah: await docx() }, cP);
   SIM.pdSimNastav({ scenar: '' });
   test('odpověď na nahrání nedorazila → 504, stav chyba (soubor u dealu ale je)', rb.status === 504 && stav(B.soubor).soubor.stav === 'chyba'
     && souboryDealu(B.deal.id).length === 1, [rb, stav(B.soubor)]);
-  const rc = await odesl({ ...zaklad(B), akce: 'soubor', obsah: docx() }, cP);
+  const rc = await odesl({ ...zaklad(B), akce: 'soubor', obsah: await docx() }, cP);
   test('další pokus soubor u dealu najde → zapsano, pořád jediný soubor', rc.status === 200 && rc.uz === true && souboryDealu(B.deal.id).length === 1
     && stav(B.soubor).soubor.stav === 'zapsano', [rc, souboryDealu(B.deal.id).length]);
   const C = await odeslanaZakazka();
   const nc = await odesl({ ...zaklad(C), akce: 'nahled' }, cP);
   await odesl({ ...zaklad(C), akce: 'zapis', otisk: nc.otisk }, cP);
   SIM.pdSimNastav({ poPozadavku: (x) => { if (x === 'POST /api/v1/files') SIM.pdSimNastav({ scenar: 'vypadek' }); } });
-  const rd = await odesl({ ...zaklad(C), akce: 'soubor', obsah: docx() }, cP);
+  const rd = await odesl({ ...zaklad(C), akce: 'soubor', obsah: await docx() }, cP);
   SIM.pdSimNastav({ scenar: '', poPozadavku: null });
   test('pole zapsaná, soubor selhal → stav pole zapsano, soubor chyba s pevnou větou', rd.status === 502 && stav(C.soubor).pole.stav === 'zapsano'
     && stav(C.soubor).soubor.stav === 'chyba' && /neodpovídá/.test(stav(C.soubor).soubor.duvod), [rd, stav(C.soubor)]);
@@ -311,7 +319,7 @@ test('soubor nad limit → 413', r.status === 413, r);
 puvodniLog('\n===== 6. PRÁVA A OCHRANY =====\n');
 r = await odesl({ ...zaklad(A), akce: 'nahled' }, cC);
 test('cizí obchodník (ne autor, neodeslal) → 403', r.status === 403, r);
-r = await odesl({ ...zaklad(A), akce: 'soubor', obsah: docx() }, cC);
+r = await odesl({ ...zaklad(A), akce: 'soubor', obsah: await docx() }, cC);
 test('…ani soubor → 403', r.status === 403, r);
 r = await odesl({ ...zaklad(A), akce: 'nahled' }, cA);
 test('administrátor smí', r.status === 200, r);
@@ -323,7 +331,7 @@ test('administrátor smí', r.status === 200, r);
   test('bez vazby z webhooku a bez odkazu v dealu → náhled 409 „neovereno“', nc.status === 409 && nc.stav === 'neovereno', nc);
   const rc = await odesl({ ...zaklad(C), akce: 'zapis', otisk: 'a'.repeat(32) }, cP);
   test('…zápis 409, žádný PATCH, stav chyba', rc.status === 409 && rc.kod === 'neovereno' && patche().length === p0 && stav(C.soubor).pole.stav === 'chyba', [rc, stav(C.soubor)]);
-  const rs = await odesl({ ...zaklad(C), akce: 'soubor', obsah: docx() }, cP);
+  const rs = await odesl({ ...zaklad(C), akce: 'soubor', obsah: await docx() }, cP);
   test('…soubor 409, nic se nepřiložilo', rs.status === 409 && souboryDealu(C.deal.id).length === 0, rs);
 }
 { const C = await odeslanaZakazka();
@@ -350,7 +358,7 @@ process.env.PIPEDRIVE_DOMENA = 'zkusebni';
   r = await odesl({ ...zaklad(A), akce: 'zapis', otisk: 'a'.repeat(32) }, cP);
   test('bez PIPEDRIVE_ZAPIS=ano → zápis 503, do sítě nic, stav chyba', r.status === 503 && /vypnutý/.test(r.chyba) && venku.length === v0
     && stav(A.soubor).pole.stav === 'chyba', [r, venku.slice(v0)]);
-  r = await odesl({ ...zaklad(A), akce: 'soubor', obsah: docx() }, cP);
+  r = await odesl({ ...zaklad(A), akce: 'soubor', obsah: await docx() }, cP);
   test('…i soubor 503, do sítě nic', r.status === 503 && venku.length === v0, r);
 }
 delete process.env.PIPEDRIVE_TOKEN; delete process.env.PIPEDRIVE_DOMENA;
@@ -364,8 +372,160 @@ process.env.PIPEDRIVE_SIMULATOR = '1';
   const k = zk.zakazkaDuplikuj(zakazka(A.soubor), '9999');
   test('kopie zakázky (Duplikovat) stav zápisu nepřebírá', k && !k.pdOdeslani, k && k.pdOdeslani);
 }
-test('docx: tvar a název souboru', !PO.pdOdeslaniDocx(docx()).chyba && PO.pdOdeslaniDocx(Buffer.from('PK\u0003\u0004xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx').toString('base64')).status === 400
-  && PO.pdOdeslaniNazevSouboru('0555.2 B/x', '2026-11-24') === 'CN_0555.2_B_x_2026-11-24.docx');
+{ /* R5: kontrola Wordu jako ZIP (vzor sablona_obsah.js). */
+  const ok1 = await PO.pdOdeslaniDocx(await docx());
+  const pk = await PO.pdOdeslaniDocx(Buffer.from('PK\u0003\u0004[Content_Types].xml word/document.xml xxxxxxxxxxxxxxxx').toString('base64'));
+  const vba = await PO.pdOdeslaniDocx(await docx(0, [['word/vbaProject.bin', 'x']]));
+  const mac = await PO.pdOdeslaniDocx(await docx(0, [], '<Types><Override ContentType="application/vnd.ms-word.document.macroEnabled.main+xml"/></Types>'));
+  const ole = await PO.pdOdeslaniDocx(await docx(0, [['word/embeddings/oleObject1.bin', 'x']]));
+  const bez = await PO.pdOdeslaniDocx(Buffer.from('x').toString('base64'));
+  test('docx: platný projde; neplatný ZIP s podřetězci, makra (část i typ obsahu), vložený objekt → 400', !ok1.chyba && pk.status === 400
+    && vba.status === 400 && /makra/.test(vba.chyba) && mac.status === 400 && ole.status === 400 && bez.status === 400, [ok1.chyba, pk, vba, mac, ole]);
+  test('název souboru skládá server', PO.pdOdeslaniNazevSouboru('0555.2 B/x', '2026-11-24') === 'CN_0555.2_B_x_2026-11-24.docx');
+}
+
+/* ---------- 7. REVIZE PO (R1–R4, R7–R9, R12) ---------- */
+puvodniLog('\n===== 7. REVIZE PO =====\n');
+const pripravOdeslanou = async (volby) => { const X = await odeslanaZakazka(volby);
+  const nx = await odesl({ ...zaklad(X), akce: 'nahled' }, cP);
+  const rx = await odesl({ ...zaklad(X), akce: 'zapis', otisk: nx.otisk }, cP);
+  if (rx.status !== 200) throw new Error('příprava zápisu ' + JSON.stringify(rx)); return X; };
+{ /* R1: soubor respektuje zastavení (ztracený / smazaný deal, cizí CN). */
+  for (const [jak, uprav] of [['ztracený deal', (d) => { d.status = 'lost'; }], ['cizí číslo nabídky', (d) => { d.custom_fields[HASH_CN] = 'CN-77777'; }]]) {
+    const X = await pripravOdeslanou();
+    uprav(D().dealy.find((d) => d.id === X.deal.id));
+    const rx = await odesl({ ...zaklad(X), akce: 'soubor', obsah: await docx() }, cP);
+    test('R1: ' + jak + ' → soubor 409 „zastaveno“, nic se nepřiložilo, stav chyba', rx.status === 409 && rx.kod === 'zastaveno'
+      && souboryDealu(X.deal.id).length === 0 && stav(X.soubor).soubor.stav === 'chyba', [rx, souboryDealu(X.deal.id).length]);
+  }
+  const X = await odeslanaZakazka();
+  const nx = await odesl({ ...zaklad(X), akce: 'nahled' }, cP);
+  D().dealy.find((d) => d.id === X.deal.id).status = 'deleted';
+  const rx = await odesl({ ...zaklad(X), akce: 'nahled' }, cP);
+  test('R12: smazaný deal → náhled nenačte (404) a zápis nic nepošle', rx.status !== 200 && (await odesl({ ...zaklad(X), akce: 'zapis', otisk: nx.otisk }, cP)).status >= 400, rx);
+  test('R12: zastavení smazaného dealu (čistá logika)', /smazaný/.test(PO.pdOdeslaniZastaveni({ status: 'deleted' }, '', '')));
+}
+{ /* R2: dvě odeslané varianty — stav po variantách, soubor stejného názvu a velikosti se nenahraje znovu. */
+  const X = await pripravOdeslanou();
+  await odesl({ ...zaklad(X), akce: 'soubor', obsah: await docx() }, cP);
+  const g = zakazka(X.soubor);
+  G.cenikDnesniProVariantu = () => ({ cenik: kopie(platny().cenik), proj: { cenik: kopie(platny().cenikProj) } });
+  const z = zk.importZakazka(kopie(g)); delete G.cenikDnesniProVariantu;
+  const kl = zam.klonujVariantu(z, z.varianty[0].id);
+  const v2 = z.varianty.find((x) => x.id !== z.varianty[0].id);
+  zam.zamkniVariantu(v2, { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Test PO', cislo: zam.variantaCislo(z, v2),
+    vysledek: zam.zamekVysledekSpocti(v2, JEKLY, 'v-po116'), snimek: zam.zamekSnimekSpocti(v2), datumNabidky: DEN });
+  const ru = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: z, ocekavaneRazitko: g.uloRazitko }, cP)).json();
+  const u = zakazka(X.soubor); const V2 = { soubor: X.soubor, varianta: v2.id, zamekKdy: u.varianty.find((x) => x.id === v2.id).zamek.kdy };
+  const n2 = await odesl({ ...V2, akce: 'nahled' }, cP);
+  const r2 = await odesl({ ...V2, akce: 'zapis', otisk: n2.otisk }, cP);
+  test('R2: zápis druhé varianty nesmaže stav první (pole i soubor zapsáno)', !!kl && ru.ok && r2.status === 200 && stav(X.soubor).pole.stav === 'zapsano'
+    && stav(X.soubor).soubor.stav === 'zapsano' && stav(X.soubor, v2.id).pole.stav === 'zapsano', [ru.chyba, r2.status, zakazka(X.soubor).pdOdeslani]);
+  test('R2: poznámka zůstala jedna a vyjmenuje obě odeslané varianty', (D().poznamky || []).filter((p) => p.deal_id === X.deal.id && /^Nabídka odeslána/.test(p.content)).length === 1
+    && (n2.poznamka.match(/^· /gm) || []).length === 2, n2.poznamka);
+  /* Stav varianty 1 se ztratí (např. odemčení a nové odeslání): u dealu shodný název a velikost → nepřiloží znovu. */
+  const zz = zakazka(X.soubor); delete zz.pdOdeslani.varianty[zz.varianty[0].id].soubor; zapisZakazku(X.soubor, zz);
+  const r3 = await odesl({ ...zaklad(X), akce: 'soubor', obsah: await docx() }, cP);
+  test('R2: shoda názvu a velikosti u dealu → „už přiloženo“, druhý soubor nevznikne', r3.status === 200 && r3.uz === true && souboryDealu(X.deal.id).length === 1, [r3, souboryDealu(X.deal.id).length]);
+  const zz2 = zakazka(X.soubor); delete zz2.pdOdeslani.varianty[zz2.varianty[0].id].soubor; zapisZakazku(X.soubor, zz2);
+  const r4 = await odesl({ ...zaklad(X), akce: 'soubor', obsah: await docx(5) }, cP);
+  test('R12: stejný název, jiná velikost = nový soubor', r4.status === 200 && !r4.uz && souboryDealu(X.deal.id).length === 2, [r4, souboryDealu(X.deal.id).length]);
+}
+{ /* R3: prodaná zakázka / vyhraný deal — hodnota ani pole KL se neposílají, jen poznámka. */
+  const X = await odeslanaZakazka();
+  D().dealy.find((d) => d.id === X.deal.id).status = 'won';
+  D().dealy.find((d) => d.id === X.deal.id).value = 999999;
+  const p0 = patche().length;
+  const nx = await odesl({ ...zaklad(X), akce: 'nahled' }, cP);
+  const rx = await odesl({ ...zaklad(X), akce: 'zapis', otisk: nx.otisk }, cP);
+  test('R3: vyhraný deal → žádný PATCH, hodnota 999 999 zůstala, poznámka založena', /vyhraný/.test(nx.jenPoznamka) && rx.status === 200
+    && patche().length === p0 && D().dealy.find((d) => d.id === X.deal.id).value === 999999 && rx.poznamka === 'zalozeno'
+    && !(nx.radky || []).some((r) => r.posle), [nx.jenPoznamka, rx, patche().length - p0]);
+  const Y = await odeslanaZakazka();
+  const g = zakazka(Y.soubor); const a = zk.importZakazka(kopie(g));
+  OBJ.prodNastav(a, a.varianty[0], OBJ.objDnes(), { kdo: PETRA });
+  const rp = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: a, ocekavaneRazitko: g.uloRazitko }, cP)).json();
+  const ny = await odesl({ ...zaklad(Y), akce: 'nahled' }, cP);
+  test('R3: prodaná zakázka → jen poznámka (nic k zápisu do polí, důvod v řádcích)', rp.ok && /prodaná/.test(ny.jenPoznamka) && ny.nicKZapisu === true
+    && (ny.radky || []).some((r) => r.stav === 'ponechano' && /prodaná/.test(r.duvod)), [rp.chyba, ny.jenPoznamka, ny.nicKZapisu]);
+}
+{ /* R4: první tisk pro dalšího zákazníka (razítko komu) → server 409 zastaveno. */
+  const X = await odeslanaZakazka();
+  const zx = zakazka(X.soubor); zx.varianty[0].zamek.tisky[0].zakaznik = { id: 'z-dalsi', pismeno: 'B', cislo: 'CN-B' }; zapisZakazku(X.soubor, zx);
+  const orig = G.vzRidiciId; G.vzRidiciId = () => 'z-ridici';
+  const nx = await odesl({ ...zaklad(X), akce: 'nahled' }, cP);
+  const rx = await odesl({ ...zaklad(X), akce: 'zapis', otisk: nx.otisk }, cP);
+  G.vzRidiciId = orig;
+  test('R4: CN pro dalšího zákazníka → náhled zastaven, zápis 409, nic do dealu', /dalšímu zákazníkovi/.test(nx.zastaveno) && rx.status === 409 && rx.kod === 'zastaveno', [nx.zastaveno, rx]);
+}
+{ /* R7, R8 (čistá logika fáze). */
+  const F = D().faze.map((f) => ({ ...f }));
+  const { pdFazeNajdi } = await import('./lib/pd_prevod.mjs');
+  const f99 = PO.pdOdeslaniFaze(F, { status: 'open', stage_id: 22, pipeline_id: 1 }, PO.pdOdeslaniFazeKonfigurace({ PIPEDRIVE_FAZE_ODESLANO: '99999' }), pdFazeNajdi);
+  test('R7: chybějící fáze hlásí PIPEDRIVE_FAZE_ODESLANO', /PIPEDRIVE_FAZE_ODESLANO/.test(f99.radek.duvod) && !/PRODANO/.test(f99.radek.duvod), f99.radek.duvod);
+  const fBez = PO.pdOdeslaniFaze(F, { stage_id: 22, pipeline_id: 1 }, PO.pdOdeslaniFazeKonfigurace({}), pdFazeNajdi);
+  test('R8: deal bez stavu → fáze se neposouvá', fBez.stageId === null && fBez.radek.stav === 'ponechano', fBez.radek);
+}
+{ /* R12: kdo odeslal ≠ autor smí; autor, který neodeslal, smí; cizí ne. */
+  const z = { autor: 'autor@priklad.cz' }, v = { zamek: { zpracovatel: { email: 'odeslal@priklad.cz' } } };
+  const { pdOdeslaniSmi } = await import('./functions/pd_odeslani.mjs');
+  test('R12: smí kdo odeslal i autor, cizí ne', pdOdeslaniSmi(z, v, { role: 'Obchodník', email: 'odeslal@priklad.cz' })
+    && pdOdeslaniSmi(z, v, { role: 'Obchodník', email: 'autor@priklad.cz' }) && !pdOdeslaniSmi(z, v, { role: 'Obchodník', email: 'cizi@priklad.cz' })
+    && pdOdeslaniSmi(z, v, { role: 'Vedoucí', email: 'x@priklad.cz' }));
+}
+{ /* R12: záznam po odemčení (jiný zámek) se nepřipíše; R9: bez „zahájeno“ se nenahrává. */
+  const X = await pripravOdeslanou();
+  const zx = zakazka(X.soubor); zx.varianty[0].zamek.kdy = '2026-01-01T00:00:00.000Z'; zapisZakazku(X.soubor, zx);
+  const pred = JSON.stringify(zakazka(X.soubor).pdOdeslani);
+  const rx = await odesl({ ...zaklad(X), akce: 'nahled' }, cP);
+  test('R12: zámek mezitím jiný → 409 zamekNeulozen, stav zakázky beze změny', rx.status === 409 && rx.kod === 'zamekNeulozen'
+    && JSON.stringify(zakazka(X.soubor).pdOdeslani) === pred, rx);
+  /* R9: zámek se změní těsně před zapsáním „zahájeno“ (háček simulátoru po výpisu souborů). */
+  const Y = await pripravOdeslanou();
+  SIM.pdSimNastav({ poPozadavku: (x) => { if (/^GET \/api\/v1\/deals\/\d+\/files/.test(x)) {
+    const zy = zakazka(Y.soubor); zy.varianty[0].zamek.kdy = '2026-01-02T00:00:00.000Z'; zapisZakazku(Y.soubor, zy); } } });
+  const ry = await odesl({ ...zaklad(Y), akce: 'soubor', obsah: await docx() }, cP);
+  SIM.pdSimNastav({ poPozadavku: null });
+  test('R9: stav „zahájeno“ se nezapsal → 409, nic se nenahrálo', ry.status === 409 && souboryDealu(Y.deal.id).length === 0, [ry, souboryDealu(Y.deal.id).length]);
+}
+{ /* R12: změna dealu zakázky → id poznámky starého dealu se nepoužije. */
+  const rec = PO.pdOdeslaniZaznam({ deal: '1001', poznamka: { stav: 'zapsano', kdy: '', id: 9001, otisk: 'a'.repeat(16) }, varianty: {} }, '1002');
+  test('R12: jiný deal = nový záznam bez id poznámky', rec.deal === '1002' && !rec.poznamka);
+}
+{ /* R12: strop náhledu, 413 u náhledu, obnova ze souboru / z otisku. */
+  const klic = 'pd_cache/strop:odeslani:' + PETRA.toLowerCase();
+  const puv = pamet.get(klic);
+  pamet.set(klic, JSON.stringify({ od: Date.now(), pocet: 30 }));
+  const rs = await odesl({ ...zaklad(A), akce: 'nahled' }, cP);
+  if (puv === undefined) pamet.delete(klic); else pamet.set(klic, puv);
+  test('R12: strop náhledů → 429', rs.status === 429, rs);
+  const velke = await odesl({ ...zaklad(A), akce: 'nahled', zdroje: { ock: { x: 'y'.repeat(600 * 1024) } } }, cP);
+  test('R12: náhled s tělem nad 512 kB → 413', velke.status === 413, velke);
+  const st = { deal: '1001', varianty: { a: { zamekKdy: 'k', pole: { stav: 'zapsano', kdy: 'x' } } } };
+  const zs = { pdOdeslani: { deal: '1002', varianty: {} } }; PO.pdOdeslaniDrz(st && { pdOdeslani: st }, zs, { obnova: true, zeSouboru: true });
+  const zo = { pdOdeslani: { deal: '1002', varianty: {} } }; PO.pdOdeslaniDrz({ pdOdeslani: st }, zo, { obnova: true, zeSouboru: false });
+  test('R12: obnova ze souboru bere uložený stav, z otisku stav otisku', zs.pdOdeslani.deal === '1001' && zo.pdOdeslani.deal === '1002', [zs, zo]);
+}
+{ /* R12: souběh — dva zápisy a dva soubory naráz → jeden PATCH, jeden soubor. */
+  const X = await odeslanaZakazka();
+  const nx = await odesl({ ...zaklad(X), akce: 'nahled' }, cP);
+  const p0 = patche().length;
+  const [a1, a2] = await Promise.all([odesl({ ...zaklad(X), akce: 'zapis', otisk: nx.otisk }, cP), odesl({ ...zaklad(X), akce: 'zapis', otisk: nx.otisk }, cP)]);
+  test('R12: souběžné zápisy → jeden 200, druhý 409; jeden PATCH', [a1.status, a2.status].sort().join() === '200,409' && patche().length === p0 + 1, [a1.status, a2.status]);
+  const [s1, s2] = await Promise.all([odesl({ ...zaklad(X), akce: 'soubor', obsah: await docx() }, cP), odesl({ ...zaklad(X), akce: 'soubor', obsah: await docx() }, cP)]);
+  test('R12: souběžné soubory → u dealu jediný soubor', s1.status === 200 && s2.status === 200 && souboryDealu(X.deal.id).length === 1, [s1, s2, souboryDealu(X.deal.id).length]);
+}
+{ /* R12: dlouhá poznámka se zkrátí na 2000 znaků se značkou na konci; escapování v Pipedrive. */
+  const t = PO.pdOdeslaniPoznamkaText({ cislo: 'CN-1', datum: '2026-11-24', varianty: Array.from({ length: 20 }, (_, i) => ({ nazev: 'V'.repeat(80) + i, cislo: 'CN-1.' + i, ock: 1 })),
+    sachty: 'S'.repeat(600), vypracoval: 'X', odkaz: 'https://x/' + 'y'.repeat(290), znacka: ' — nabídka CN-1' });
+  test('R12: poznámka nejvýš 2000 znaků + značka, značka zůstane na konci', t.length <= PO.PD_ODESLANI_POZNAMKA_MAX + 1 && t.endsWith('\n— nabídka CN-1') && t.includes('…'), t.length);
+  const X = await odeslanaZakazka();
+  const zx = zakazka(X.soubor); zx.varianty[0].nazev = '<img src=x onerror=alert(1)>'; zapisZakazku(X.soubor, zx);
+  const nx = await odesl({ ...zaklad(X), akce: 'nahled' }, cP);
+  await odesl({ ...zaklad(X), akce: 'zapis', otisk: nx.otisk }, cP);
+  const pz = (D().poznamky || []).find((p) => p.deal_id === X.deal.id && /^Nabídka odeslána/.test(p.content));
+  test('R12: název varianty v poznámce escapovaný (žádné <img>)', pz && !/<img/.test(pz.content) && /&lt;img/.test(pz.content), pz && pz.content);
+}
 
 test('do sítě za celý běh nic', venku.length === 0, venku);
 puvodniLog('\n' + ok + ' OK, ' + fail + ' FAIL' + (fail ? '\nSelhalo:\n  ' + selhalo.join('\n  ') : ''));

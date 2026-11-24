@@ -29,20 +29,43 @@ function odeslPdReset(v) {
   }
 }
 
-/* Word z tlačítka „Word“ (zakazka_ui / nabidka_proj_ui) — jen v paměti okna. */
+/* Word z tlačítka „Word“ (zakazka_ui / nabidka_proj_ui) — jen v paměti okna.
+ * Revize PO R6: vázaný na zakázku (ONLINE_STAV.soubor) a variantu, ne na
+ * objekt ZAK — onlineOtevri po pokusu o zápis ZAK vymění a Word musí zůstat
+ * pro opakování. Zámek se ověří až při přiložení (zamekKdy z prvního zámku). */
+function odeslPdKlic(varId) {
+  return (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.soubor ? ONLINE_STAV.soubor : '') + '|' + varId;
+}
 function odeslPdSoubor(varId, blob) {
-  if (!varId || !blob) return;
-  ODESL_PD.soubory = { [varId]: { blob, zak: ZAK } };
+  if (!varId || !blob || typeof ONLINE_STAV === 'undefined' || !ONLINE_STAV.soubor) return;
+  ODESL_PD.soubory = { [odeslPdKlic(varId)]: { blob, zamekKdy: '' } };
 }
 function odeslPdBlob(v) {
-  const x = v && ODESL_PD.soubory[v.id];
-  return x && x.zak === ZAK ? x.blob : null;
+  const x = v && ODESL_PD.soubory[odeslPdKlic(v.id)];
+  if (!x) return null;
+  if (!x.zamekKdy && v.zamek && v.zamek.kdy) x.zamekKdy = v.zamek.kdy;   // první zámek po stažení Wordu
+  return x.zamekKdy && v.zamek && x.zamekKdy === v.zamek.kdy ? x.blob : null;
+}
+/* VZ (revize PO R4): první tisk pro DALŠÍHO zákazníka do dealu řídícího nepíše. */
+function odeslPdJinyZakaznik(v) {
+  const t = v && v.zamek && Array.isArray(v.zamek.tisky) ? v.zamek.tisky[0] : null;
+  const k = t && t.zakaznik;
+  if (!k || !k.id) return '';
+  const rid = typeof vzRidiciId === 'function' ? vzRidiciId(ZAK) : '';
+  return rid && String(k.id) === String(rid) ? '' : String(k.cislo || k.pismeno || k.id);
+}
+function odeslPdStavVarianty(v) {
+  const r = ZAK && ZAK.pdOdeslani;
+  const e = r && r.varianty && v ? r.varianty[v.id] : null;
+  return e && e.zamekKdy === v.zamek.kdy ? e : null;
 }
 
 /* Volá zamekPoTisku po PRVNÍM zámku varianty (`ulozeni` = slib uložení zámku). */
 function odeslPdPoZamku(v, typ, ulozeni) {
   if (!v || !ODESL_PD_TYPY.includes(typ)) return;
   ODESL_PD.zak = null; odeslPdReset(v);
+  const jiny = odeslPdJinyZakaznik(v);
+  if (jiny) { ODESL_PD.info = 'Nabídka odešla dalšímu zákazníkovi (' + jiny + ') — deal vede řídící zákazník, do Pipedrive se nic nezapisuje.'; render(); return; }
   if (!ZAK.pdDealId) { ODESL_PD.info = 'Zakázka není navázaná na deal v Pipedrive — do Pipedrive se nic nezapsalo (nabídka platí).'; render(); return; }
   if (!odeslPdMuze()) {
     ODESL_PD.info = 'Zápis odeslání do Pipedrive jde jen online s právem „Pipedrive: čtení a zápis do vlastních obchodních případů“ — do Pipedrive se nic nezapsalo.';
@@ -170,18 +193,21 @@ function odeslPdKarta() {
   if (typeof ZAK === 'undefined' || !ZAK) return '';
   const v = aktivniVarianta(ZAK);
   if (!odeslPdOdeslana(v)) return '';
-  const rec = ZAK.pdOdeslani && ZAK.pdOdeslani.varianta === v.id && ZAK.pdOdeslani.zamekKdy === v.zamek.kdy ? ZAK.pdOdeslani : null;
+  const rec = odeslPdStavVarianty(v);
+  const pozn = ZAK.pdOdeslani && ZAK.pdOdeslani.poznamka;
+  const jiny = odeslPdJinyZakaznik(v);
   const tento = ODESL_PD.zak === ZAK && ODESL_PD.varId === v.id;
   if (!tento && !rec && !(ZAK.pdDealId && odeslPdMuze())) return '';
   if (!tento) odeslPdReset(v);
-  const kroky = rec ? [odeslPdKrokText(rec.pole, 'údaje dealu'), odeslPdKrokText(rec.poznamka, 'poznámka'), odeslPdKrokText(rec.soubor, 'soubor Wordu')].filter(Boolean) : [];
+  const kroky = rec ? [odeslPdKrokText(rec.pole, 'údaje dealu'), odeslPdKrokText(pozn, 'poznámka'), odeslPdKrokText(rec.soubor, 'soubor Wordu')].filter(Boolean) : [];
   const hlava = `<div class="note" id="odeslPdStav"><b>Odeslání do Pipedrive</b> (údaje krycího listu, číslo nabídky, hodnota dealu,
     fáze „Nabídka odeslána“ jen dopředu, poznámka${odeslPdBlob(v) ? ', Word' : ''}): ${kroky.length ? esc(kroky.join(' · ')) : 'nezapsáno'}</div>`;
   const info = ODESL_PD.info ? `<div class="note" id="odeslPdInfo"><b>${esc(ODESL_PD.info)}</b></div>` : '';
   const chybaBlok = ODESL_PD.chyba ? `<div class="note" id="odeslPdChyba" style="color:var(--red, #c0392b)">${esc(ODESL_PD.chyba)}</div>` : '';
+  if (jiny) return `<div class="zamek-lista zamek-odeslpd" id="odeslPdKarta">${hlava}<div class="note" id="odeslPdJiny">Nabídka odešla dalšímu zákazníkovi (${esc(jiny)}) — deal vede řídící zákazník, do Pipedrive se nic nezapisuje.</div></div>`;
   if (!ZAK.pdDealId || !odeslPdMuze()) return `<div class="zamek-lista zamek-odeslpd" id="odeslPdKarta">${hlava}${info}</div>`;
   const d = ODESL_PD.data;
-  const souborBtn = odeslPdBlob(v) && !(rec && rec.soubor && rec.soubor.stav === 'zapsano')
+  const souborBtn = odeslPdBlob(v) && rec && rec.pole && rec.pole.stav === 'zapsano' && !(rec.soubor && rec.soubor.stav === 'zapsano')
     ? ` <button class="mini" id="odeslPdPriloz" onclick="odeslPdPrilozUI()" ${ODESL_PD.nacita ? 'disabled' : ''}>Přiložit Word k dealu</button>` : '';
   const btnNahled = `<button class="mini" id="odeslPdNahled" onclick="odeslPdNahled(0)" ${ODESL_PD.nacita ? 'disabled' : ''}>${ODESL_PD.nacita ? '⏳ Pracuji…'
     : d ? 'Načíst znovu' : rec && rec.pole && rec.pole.stav === 'zapsano' ? 'Porovnat s Pipedrive znovu' : rec ? 'Zkusit zápis znovu' : 'Ukázat, co se zapíše do Pipedrive'}</button>`;
@@ -198,5 +224,5 @@ function odeslPdKarta() {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { ODESL_PD, ODESL_PD_TYPY, odeslPdSoubor, odeslPdPoZamku, odeslPdKarta, odeslPdOdeslana, odeslPdNahled, odeslPdZapis, odeslPdBase64 };
+  module.exports = { ODESL_PD, ODESL_PD_TYPY, odeslPdSoubor, odeslPdBlob, odeslPdPoZamku, odeslPdKarta, odeslPdOdeslana, odeslPdNahled, odeslPdZapis, odeslPdPrilozUI, odeslPdBase64, odeslPdJinyZakaznik };
 }
