@@ -197,6 +197,7 @@ console.log('===== 7. víc šachet: engineering JEDNOU za variantu (J. V. 24. 11
   const ven = r.priplatky.find(p => p.key === 'ventilator') || r.priplatky.find(p => p.key !== 'engineering');
   const ven1 = r.sachty[0].vysl.priplatky.find(p => p.key === ven.key);
   test('ostatní příplatky dál × ks (5 ×)', Math.abs(ven.naklad - 5 * ven1.naklad) < 1e-6, [ven.key, ven.naklad, ven1.naklad]);
+  test('rezerva ostatních příplatků sečtena × ks (controlling víc šachet)', ven1.rezervaNaklad > 0 && Math.abs(ven.rezervaNaklad - 5 * ven1.rezervaNaklad) < 1e-6, [ven.rezervaNaklad, ven1.rezervaNaklad]);
   const soucet = r.priplatky.reduce((a, p) => a + p.sMarzi, 0);
   test('„Příplatky celkem" = součet sloučených řádků (engineering jednou)', r.souhrn.priplatkyCena === Math.ceil(soucet / 1000) * 1000,
     [r.souhrn.priplatkyCena, soucet]);

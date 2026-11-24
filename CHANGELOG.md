@@ -25,7 +25,7 @@ kopírují zdroj, import ani stará data ho nedostanou).
 - **#761 Režie:** nová kalkulace nemá přepínače „Výstup ze zaměření pro zákazníka“ (řádek vždy 1 × C.vystupZamereniKc,
   specifikace „ano“) a „Statické posouzení opláštění“ (řádek jen u šachty s opláštěním). Starší kalkulace přepínače mají dál.
 - Server hlídá tvar příznaku (i u šachet 2+). Příručka výpočtu doplněna.
-- Testy: `src/test_er_nova_kalkulace.js` (88 OK; proti c89e872 padá), mutace jádra [ER] 25 (výsledek v předávce); porovnání sestavení
+- Testy: `src/test_er_nova_kalkulace.js` (89 OK; proti c89e872 padá), mutace jádra [ER] 25/25 chycené; porovnání sestavení
   proti integraci: fixtury 7/7 a fuzz 300/300 SHODA, 60 očekávaných rozdílů jen u případů z `novaZakazka()`
   (`podklady/porovnani/ocekavane_er_2026-11-24.txt`); zlaté sady #560/VS očištěny o příznak (svěřené rozhodnutí ER-1).
 
