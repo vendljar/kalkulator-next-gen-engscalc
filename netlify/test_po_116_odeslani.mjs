@@ -283,8 +283,10 @@ test('soubor → 200, u dealu jeden soubor .docx, název ze serveru (ne od klien
   && /^CN_[A-Za-z0-9._-]+_\d{4}-\d{2}-\d{2}\.docx$/.test(sA[0].name) && sA[0].name.endsWith('_' + DEN + '.docx') && sA[0].file_type.includes('wordprocessingml'), [r, sA]);
 test('zak.pdOdeslani.soubor = zapsano s názvem a velikostí; protokol', stav(A.soubor).soubor.stav === 'zapsano' && stav(A.soubor).soubor.nazev === sA[0].name
   && stav(A.soubor).soubor.velikost === sA[0].file_size && (zakazka(A.soubor).protokol || []).some((p) => /Soubor nabídky .* přiložen k dealu/.test(p.co)), stav(A.soubor));
+pred = pozadavky().length;
 r = await odesl({ ...zaklad(A), akce: 'soubor', obsah: await docx() }, cP);
-test('opakované přiložení: „už přiloženo“, žádný další soubor', r.status === 200 && r.uz === true && souboryDealu(A.deal.id).length === 1, r);
+test('opakované přiložení: „už přiloženo“ podle stavu, bez výpisu souborů dealu a bez dalšího souboru', r.status === 200 && r.uz === true
+  && souboryDealu(A.deal.id).length === 1 && !pozadavky().slice(pred).some((x) => /\/files/.test(x)), [r, pozadavky().slice(pred)]);
 r = await odesl({ ...zaklad(A), akce: 'soubor', obsah: Buffer.from('%PDF-1.4 ahoj světe, tohle není docx').toString('base64') }, cP);
 test('soubor, který není docx → 400', r.status === 400 && /Wordu/.test(r.chyba), r);
 r = await odesl({ ...zaklad(A), akce: 'soubor', obsah: 'není base64!' }, cP);
