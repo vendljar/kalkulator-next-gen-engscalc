@@ -106,24 +106,21 @@ export default async (req) => {
 
   let ULO, JEKLY;
   try { ({ ULO, JEKLY } = await jadro()); await jadroPd(); } catch (e) { PD_JADRO = null; return jadroChyba(e); }
-  /* Word se kontroluje až s načteným jádrem (čtení ZIP sablonaZipPolozky, revize PO R5). */
-  let docx = null;
-  if (akce === 'soubor') {
-    docx = await pdOdeslaniDocx(telo.obsah);
-    if (docx.chyba) return json({ ok: false, chyba: docx.chyba }, docx.status);
-  }
+  /* Word se rozbalí až v zpracuj — po právech k zakázce a stropu pokusů (dorevize D3). */
+  const obsah = akce === 'soubor' ? telo.obsah : null;
+  if (akce === 'soubor' && (typeof obsah !== 'string' || !obsah)) return json({ ok: false, chyba: 'Soubor nabídky chybí nebo není v pořádku.' }, 400);
   const G = globalThis;
   const s = await uloziste('zakazky');
   const prvni = await s.cti('z/' + soubor);
   if (!prvni || typeof prvni !== 'object') return json({ ok: false, chyba: 'Zakázka nenalezena.' }, 404);
   const dealPredem = G.ctrlPdDealIdNorm(prvni.pdDealId) || '';
-  const ctx = { req, relace, s, soubor, varId, zamekKdy, akce, otiskKlienta, docx, zdroje, ULO, JEKLY, G };
+  const ctx = { req, relace, s, soubor, varId, zamekKdy, akce, otiskKlienta, obsah, zdroje, ULO, JEKLY, G };
   /* Zápis do téhož dealu jeden po druhém (vzor PV S2). */
   if (akce !== 'nahled' && dealPredem) return vyhradne('pd_odeslani/deal:' + dealPredem, () => zpracuj(ctx));
   return zpracuj(ctx);
 };
 
-async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKlienta, docx, zdroje, ULO, JEKLY, G }) {
+async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKlienta, obsah, zdroje, ULO, JEKLY, G }) {
   const ulozena = await s.cti('z/' + soubor);
   if (!ulozena || typeof ulozena !== 'object') return json({ ok: false, chyba: 'Zakázka nenalezena.' }, 404);
   const vv = pdOdeslaniVarianta(ulozena, varId, zamekKdy);
@@ -168,6 +165,12 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
     const razitko = await zaznamenej((rec, e) => { e[krokKlic] = pdOdeslaniKrok('chyba', PD_ZAPIS_VYPNUTY); },
       'Zápis odeslání nabídky do dealu ' + deal + ' se neprovedl: ' + PD_ZAPIS_VYPNUTY);
     return json({ ok: false, stav: 'chyba', chyba: PD_ZAPIS_VYPNUTY, razitko }, 503);
+  }
+  /* Word: rozbalení a kontrola obsahu až tady — po právech a stropu (dorevize D3), před sítí. */
+  let docx = null;
+  if (akce === 'soubor') {
+    docx = await pdOdeslaniDocx(obsah, G);
+    if (docx.chyba) return json({ ok: false, chyba: docx.chyba, ...(docx.vady ? { vady: docx.vady } : {}) }, docx.status);
   }
 
   const zavolej = volani();

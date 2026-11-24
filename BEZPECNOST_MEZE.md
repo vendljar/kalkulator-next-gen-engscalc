@@ -2567,11 +2567,18 @@ Testy `netlify/test_po_116_odeslani.mjs` (simulátor), `src/test_po_116_ui.js`, 
   při uložení zahodí, obnova ze souboru ji nepřebírá, kopie zakázky (Duplikovat) ji maže.
 - **B279 — obsah přiloženého Wordu server neověřuje proti nabídce — ZÚŽENO (revize PO R5, potvrdí J. V. #764).** Soubor
   posílá prohlížeč (Word vzniká v prohlížeči). Server ho rozbalí jako ZIP (`zipPrecti` z docxgen.js, týž čtecí kód
-  jako kontrola šablon), vyžaduje `[Content_Types].xml` a `word/document.xml`, odmítne makra VBA, vložené objekty
-  a ActiveX (názvy částí i typy obsahu, vzor `sablonaObsahVadyZipu`), velikost nejvýš 4 MB, název složí sám
-  (`CN_<číslo>_<datum>.docx`) a soubor přijme až po zapsaných údajích dealu (potvrzená tabulka). Zbývá: oprávněný
-  uživatel s platnou vazbou může k vlastnímu dealu přiložit jiný (čistý) docx do 4 MB — zápis jde pod tokenem
-  aplikace, ne pod jeho účtem Pipedrive. Stopa: protokol zakázky.
+  jako kontrola šablon), vyžaduje `[Content_Types].xml` a `word/document.xml` a nad rozbalenými částmi pustí TUTÉŽ
+  kontrolu jako u šablon (`sablonaObsahVadyZipu`, dorevize D1: makra, vložené objekty, ActiveX, vnější
+  attachedTemplate, aFChunk, vnější vztahy, kódování UTF-16, %-kódované a duplicitní názvy); velikost nejvýš 4 MB,
+  název složí sám (`CN_<číslo>_<datum>.docx`), soubor přijme až po zapsaných údajích dealu (potvrzená tabulka)
+  a rozbalí ho až po kontrole práv k zakázce a stropu pokusů (dorevize D3; strop rozbalení B272 sdílený se
+  šablonami). Zbývá: oprávněný uživatel s platnou vazbou může k vlastnímu dealu přiložit jiný (čistý) docx do 4 MB —
+  zápis jde pod tokenem aplikace, ne pod jeho účtem Pipedrive. Stopa: protokol zakázky. J. V. mez přijal (#764).
+- **Komu šel první tisk, říká prohlížeč — PŘIJATO (dorevize D2, třída B279).** Razítko `zamek.tisky[0].zakaznik`
+  skládá server (`vzServerRazitka`), ale z id zákazníka, které pošle prohlížeč (bez id = řídící). Upravený prohlížeč
+  tak může tisk pro dalšího zákazníka vydávat za tisk řídícímu a zastavení R4 obejít. Dosah: jen vlastní deal
+  oprávněného uživatele a jeho vlastní záznam o tisku; id řídícího je stálé (`zak.vzRidici.id`), výměna řídícího
+  stará razítka nepřepíše. Bez opravy.
 - **B280 — přiložení souboru není idempotentní na straně Pipedrive — ZÚŽENO (revize PO R2, R9, R11).** Files API nemá
   klíč idempotence. Před KAŽDÝM nahráním se u dealu hledá soubor téhož názvu a velikosti (převezme se), před POST
   se zapíše stav `zahajeno` (bez zápisu se nenahrává — zámek mezitím odemčen). Zbývá: hledá se mezi prvními 100

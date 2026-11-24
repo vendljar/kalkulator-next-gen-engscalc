@@ -162,13 +162,13 @@ export function pdOdeslaniOtisk(dealId, updateTime, patch, zamekKdy, poznamka) {
   return createHash('sha256').update(t).digest('hex').slice(0, 32);
 }
 
-/* Soubor Wordu z base64 (revize PO R5): velikost, platný ZIP (docxgen
- * zipPrecti — týž čtecí kód jako kontrola šablon, strop XML části), povinné
- * části [Content_Types].xml a word/document.xml, BEZ maker, vložených objektů
- * a ActiveX (názvy částí i typy obsahu, vzor sablonaObsahVadyZipu).
+/* Soubor Wordu z base64 (revize PO R5, dorevize D1): velikost, platný ZIP
+ * (sablonaZipPolozky — týž čtecí kód a strop B272 jako kontrola šablon),
+ * povinné části [Content_Types].xml a word/document.xml a nad rozbalenými
+ * částmi TÁŽ kontrola jako u šablon (sablonaObsahVadyZipu: makra, vložené
+ * objekty, ActiveX, attachedTemplate, aFChunk, vnější vztahy, kódování,
+ * %-kódované a duplicitní názvy…). Jakákoli vada = soubor se nepřiloží.
  * Vrací { data: Buffer } nebo { chyba, status }. */
-const DOCX_ZAKAZANE_CASTI = [/(^|\/)vbaproject/, /(^|\/)vbadata/, /(^|\/)embeddings\//, /(^|\/)oleobject[^/]*$/, /activex/];
-const DOCX_ZAKAZANE_TYPY = /macroEnabled|vbaProject|oleObject|activeX/i;
 export async function pdOdeslaniDocx(b64, G = globalThis) {
   if (typeof b64 !== 'string' || !b64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(b64))
     return { chyba: 'Soubor nabídky chybí nebo není v pořádku.', status: 400 };
@@ -183,14 +183,11 @@ export async function pdOdeslaniDocx(b64, G = globalThis) {
   if (typeof G.sablonaZipPolozky !== 'function') return { chyba: 'Kontrola Wordu se na serveru nenačetla — soubor se nepřiložil.', status: 503 };
   try { polozky = await G.sablonaZipPolozky(new Uint8Array(data.buffer, data.byteOffset, data.length)); }
   catch (e) { return neniWord; }
-  const jmena = (Array.isArray(polozky) ? polozky : []).map((p) => String((p && p.nazev) || '').replace(/\\/g, '/'));
-  const male = jmena.map((n) => n.toLowerCase());
+  const male = (Array.isArray(polozky) ? polozky : []).map((p) => String((p && p.nazev) || '').replace(/\\/g, '/').toLowerCase());
   if (!male.includes('[content_types].xml') || !male.includes('word/document.xml')) return neniWord;
-  const makra = { chyba: 'Soubor obsahuje makra, vložené objekty nebo ActiveX — do Pipedrive se nepřiloží.', status: 400 };
-  if (male.some((n) => DOCX_ZAKAZANE_CASTI.some((re) => re.test(n)))) return makra;
-  const ct = polozky[male.indexOf('[content_types].xml')];
-  const ctText = ct && ct.data ? Buffer.from(ct.data).toString('utf8') : '';
-  if (DOCX_ZAKAZANE_TYPY.test(ctText)) return makra;
+  if (typeof G.sablonaObsahVadyZipu !== 'function') return { chyba: 'Kontrola Wordu se na serveru nenačetla — soubor se nepřiložil.', status: 503 };
+  const vady = G.sablonaObsahVadyZipu(polozky);
+  if (vady.length) return { chyba: 'Soubor obsahuje prvky, které Word načítá nebo spouští mimo dokument (makra, vložené objekty, vnější šablony či odkazy) — do Pipedrive se nepřiloží.', vady: vady.slice(0, 5), status: 400 };
   return { data };
 }
 

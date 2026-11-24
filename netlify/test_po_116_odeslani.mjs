@@ -103,6 +103,7 @@ const DEN_TEXT = DEN.split('-').reverse().map((x) => String(+x)).join('. ');
  * a vytiskne cenovou nabídku (první zámek = odeslání) → uloží. */
 const pouzite = [];
 async function odeslanaZakazka({ faze = 22, typ = 'nabidka' } = {}) {
+  pamet.delete('pd_cache/strop:odeslani:' + PETRA.toLowerCase());   // strop náhledů (30/h) testuje R12 zvlášť
   const deal = D().dealy.find((d) => d.status === 'open' && d.org_id && d.person_id && d.pipeline_id === 1
     && d.owner_id === U[1].id && /^CN-\d+ /.test(d.title) && !pouzite.includes(d.id))
     /* Došly-li dealy Petry: další otevřený deal se smyšleným číslem a vlastníkem Petrou. */
@@ -489,6 +490,20 @@ const pripravOdeslanou = async (volby) => { const X = await odeslanaZakazka(volb
   const ry = await odesl({ ...zaklad(Y), akce: 'soubor', obsah: await docx() }, cP);
   SIM.pdSimNastav({ poPozadavku: null });
   test('R9: stav „zahájeno“ se nezapsal → 409, nic se nenahrálo', ry.status === 409 && souboryDealu(Y.deal.id).length === 0, [ry, souboryDealu(Y.deal.id).length]);
+}
+{ /* D4: nový zámek téže varianty = nový stav (starý se nevrací). */
+  const X = await pripravOdeslanou();
+  const K2 = new Date(Date.now() + 1000).toISOString();
+  const zx = zakazka(X.soubor); zx.varianty[0].zamek.kdy = K2; zapisZakazku(X.soubor, zx);
+  const n2 = await odesl({ ...zaklad(X), zamekKdy: K2, akce: 'nahled' }, cP);
+  const rec = { deal: '1', varianty: { a: { zamekKdy: 'k1', pole: { stav: 'zapsano', kdy: 'x' } } } };
+  test('D4: nový zámek téže varianty → náhled bez stavu starého zámku', n2.status === 200 && n2.stav === null, [n2.status, n2.stav]);
+  test('D4: pdOdeslaniVariantaStav — jiný zámek = null, se založením nový prázdný', PO.pdOdeslaniVariantaStav(rec, 'a', 'k2') === null
+    && !PO.pdOdeslaniVariantaStav(rec, 'a', 'k2', true).pole && rec.varianty.a.zamekKdy === 'k2');
+}
+{ /* D3: Word se rozbaluje až po právech — cizí obchodník s ne-Wordem dostane 403, ne 400. */
+  const r = await odesl({ ...zaklad(A), akce: 'soubor', obsah: Buffer.from('není to Word').toString('base64') }, cC);
+  test('D3: kontrola Wordu až po právech (cizí obchodník → 403)', r.status === 403, r);
 }
 { /* R12: změna dealu zakázky → id poznámky starého dealu se nepoužije. */
   const rec = PO.pdOdeslaniZaznam({ deal: '1001', poznamka: { stav: 'zapsano', kdy: '', id: 9001, otisk: 'a'.repeat(16) }, varianty: {} }, '1002');

@@ -45,6 +45,11 @@ Pipedrive jen simulátor — zkouška na dealu TEST až v testovacím sezení se
   PIPEDRIVE_FAZE_ODESLANO (R7); deal bez stavu fázi neposouvá (R8); bez zapsaného „zahájeno“ se nenahrává (R9);
   testy přeživších mutací revize (R12). Testy: server 85/85, karta 23/23, mutace [PO] 44/44; kolo `--bez-mutaci`
   VŠE ZELENÉ, S3 SHODA 367/367.
+- **Dorevize Fable (SLOUČIT, D1–D5):** Word přikládaný k dealu prochází TOUŽ kontrolou jako šablony
+  (`sablonaObsahVadyZipu` — i vnější šablona, aFChunk, vnější OLE, UTF-16, %-kódované názvy; D1) a rozbalí se až po
+  kontrole práv a stropu (D3); test nového zámku (D4); D2 zapsáno k B279, D5 do příručky. Nový test
+  `src/test_po_116_docx.js` (Word vygenerovaný aplikací projde, 5 průniků z dorevize odmítnuto; pojistka: nad 6ddd54e
+  5 FAIL).
 
 ## v24.11.6 — RP: ruční položky kalkulace OCK v nabídce CN a krycím listu (#736, #740), větev claude/rp-rucni-polozky
 
