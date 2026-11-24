@@ -99,8 +99,8 @@ Větev `claude/zk-zakaznici-ze-zakazek` nad `c89e872`. Nic na weby, do Pipedrive
   (`functions/zakaznici_ze_zakazek.mjs`, logika `lib/zakaznici_ze_zakazek.mjs`): náhled po kouscích (zakázky →
   seskupení podle IČO → ARES jen pro IČO bez karty, 10/volání, pauza 400 ms, 600/náhled, 1 500/den), zápis po
   potvrzení ze serverového náhledu s novým ověřením zakázky, protokol bez osobních údajů. UI `src/ui/zakaznici_ui.js`.
-- **Testy:** `netlify/test_zk_zakaznici_ze_zakazek.mjs` 73 OK, `overit_zk_zakaznici.mjs` 15 OK, `test_prava.mjs`
-  a `test_zalohy.mjs` N4 doplněny; mutace [ZK] MUTACE_PREDAVKA; kolo `--bez-mutaci --proti origin/claude/integrace-16-10` KOLO_PREDAVKA.
+- **Testy:** `netlify/test_zk_zakaznici_ze_zakazek.mjs` 74 OK, `overit_zk_zakaznici.mjs` 15 OK, `test_prava.mjs`
+  a `test_zalohy.mjs` N4 doplněny; mutace [ZK] 24/24; kolo `--bez-mutaci --proti origin/claude/integrace-16-10` VŠE ZELENÉ, SHODA 367/367.
 - **Pro J. V. (k vědomí / rozhodnutí):** (1) úložiště `zakaznici_hromadne` (náhled, denní počítadlo, protokol) je
   **výjimka ze zálohy** — doporučení: ponechat (karty samy se zálohují); (2) diakritika v názvu se při shodě
   s ARES **nezahazuje** („Novy dum“ ≠ „Nový dům“ → nesedí) — doporučení: ponechat přísně, takové položky založit ručně;

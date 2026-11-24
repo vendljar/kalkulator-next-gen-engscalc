@@ -27,9 +27,9 @@ Podnět J. V. 24. 11.: v databázi zákazníků na ostrém webu jsou 2 karty —
   s pauzou 400 ms, strop 600 na náhled a 1 500 za den; výpadek = „zkusit znovu“, nic se nezapíše). Náhled nenese
   kontakty, odpověď nenese jména souborů zakázek. Náhled, denní počítadlo a protokol jsou ve vlastním úložišti
   `zakaznici_hromadne` — **výjimka ze zálohy** (provozní stopa, k vědomí J. V.); karty jsou v zálohovaném `zakaznici`.
-- Testy s pojistkou: `netlify/test_zk_zakaznici_ze_zakazek.mjs` (před ZK import selže; 73 OK), harness
+- Testy s pojistkou: `netlify/test_zk_zakaznici_ze_zakazek.mjs` (před ZK import selže; 74 OK), harness
   `overit_zk_zakaznici.mjs` (15 OK; před opravou panelu po přepnutí účtu 1 FAIL), matice práv `test_prava.mjs`,
-  úplnost zálohy `test_zalohy.mjs` N4; mutace [ZK] MUTACE_VYSLEDEK.
+  úplnost zálohy `test_zalohy.mjs` N4; mutace [ZK] 24/24; kolo `--bez-mutaci` VŠE ZELENÉ (543 + 441 sad, 12/12 statických), porovnání sestavení SHODA 367/367.
 
 ## v24.11.5 — K54-N1 #750: smazaná otevřená kalkulace se zavře a uložením nevzkřísí, větev claude/rychla-K54-N1
 
