@@ -158,5 +158,25 @@ console.log('===== 9. UI: pole v Práce a režie jen u staré kalkulace =====');
   test('sloupec Výchozí u příplatku čte kódový základ', /vychoziPolozkaChk\(ZOBRAZENI_PRIPLATEK \+ x\.key,\s*\n?\s*\(typeof zobrazeniPriplatekZaklad/.test(src));
 }
 
+console.log('===== 10. krycí list a controlling =====');
+{
+  nacti('./controlling.js'); nacti('./kryci.js');
+  const r = vypocet(stare({ engineeringPriplatek: true }), ZC.zkusebniCenik(), JEKLY, true);
+  const rad = ctrlRozvrhOck(r, { fixes: true });
+  const e = rad.filter(x => x.pKey === 'engineering');
+  test('controlling: engineering mezi příplatky (mimo základ), cesta C.engineeringKc',
+    e.length === 1 && e[0].sekce === 'priplatky' && e[0].vZakladu === false && e[0].cenaPath === 'C.engineeringKc' && e[0].naklad === 10000, e);
+  test('controlling: v Režii engineering není', !rad.some(x => x.sekce === 'rezie' && /ENGINEERING/.test(x.nazev)));
+  const rs = ctrlRozvrhOck(vypocet(stare(), ZC.zkusebniCenik(), JEKLY, true), { fixes: true });
+  test('controlling staré kalkulace: engineering v Režii', rs.some(x => x.sekce === 'rezie' && x.nazev === 'ENGINEERING' && x.vZakladu === true));
+  const zak = novaZakazka(); const v = zak.varianty[0];
+  Object.assign(v.data.ock.zadani, ROZMERY); v.data.cenik = ZC.zkusebniCenik();
+  const k1 = kryciCtx(zak, v, JEKLY);
+  test('krycí list: engineering mimo nabídku se nevypíše', !/ENGINEERING/.test(k1.priplatky || ''), k1.priplatky);
+  v.data.ock.zadani.priplatkyVynechat = v.data.ock.zadani.priplatkyVynechat.filter(k => k !== 'engineering');
+  const k2 = kryciCtx(zak, v, JEKLY);
+  test('krycí list: zaškrtnutý engineering ve výčtu příplatků v nabídce', /ENGINEERING/.test(k2.priplatky || ''), k2.priplatky);
+}
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);
