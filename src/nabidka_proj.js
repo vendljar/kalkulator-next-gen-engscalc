@@ -689,7 +689,7 @@ function nabidkaProjDalsiUjednani(zadani) {
 /* DT #745: ISO den cenové nabídky PROJ (viz DATUM v nabidkaProjData). */
 function nabidkaProjDatumIso(zak, varianta, h, moznosti) {
   const z = varianta && varianta.zamek;
-  const zalozeni = !!(moznosti && moznosti.datumZalozeni) || typeof nabidkaDatum !== 'function'
+  const zalozeni = typeof nabidkaDatum !== 'function'
     || !!(z && z.zamceno && !(typeof zamekDatumPlatne === 'function' && zamekDatumPlatne(z.datumNabidky)));
   if (!zalozeni) return nabidkaDatum(zak, varianta, moznosti && moznosti.ted);
   return (varianta && varianta.datum)
@@ -1101,9 +1101,9 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
      * něm bylo staré o týdny. Varianta bez `datum` (všechny starší) spadne na
      * hlavičku přesně jako dosud — historické nabídky se nemění. */
     /* DT #745: datum nabídky = den tisku (Praha), odeslaná drží den odeslání
-     * (nabidkaDatum). Zámek bez `datumNabidky` (před DT) a smlouva o dílo
-     * (`moznosti.datumZalozeni`) beze změny — datum založení varianty
-     * (nález D2: varianta, starší spadnou na hlavičku). */
+     * (nabidkaDatum). Zámek bez `datumNabidky` (před DT) beze změny — datum
+     * založení varianty (nález D2: varianta, starší spadnou na hlavičku).
+     * Totéž datum cituje smlouva o dílo („ze dne“, J. V. 24. 11. 2026). */
     DATUM: datumCz(nabidkaProjDatumIso(zak, varianta, h, moznosti)),
     NAZEV_AKCE: h.nazevAkce || '…',
     CISLO_NABIDKY: String(h.cislo || '').replace(/\s+/g, ''),

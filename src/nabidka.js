@@ -253,12 +253,12 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
   const placeholders = {
     OBJEDNATEL: zak.objednatel || '…',
     OBJEDNATEL_KONTAKT: zak.kontakt || '…',
-    /* DT #745: datum nabídky = den tisku (Praha); odeslaná drží den odeslání
-     * (nabidkaDatum v zamek.js). Smlouva o dílo tiskne dál datum založení
-     * varianty (nález D2: v.datum, starší spadnou na zak.datum). */
-    DATUM: datumCz((moznosti && moznosti.datumZalozeni) || typeof nabidkaDatum !== 'function'
-      ? (typeof variantaDatum === 'function' ? variantaDatum(zak, varianta) : zak.datum)
-      : nabidkaDatum(zak, varianta, moznosti && moznosti.ted)),
+    /* DT #745: datum nabídky = den tisku (Praha); odeslaná drží den odeslání,
+     * zámek před DT datum založení (nabidkaDatum v zamek.js). Totéž datum
+     * cituje smlouva o dílo („nabídka ze dne“, J. V. 24. 11. 2026). */
+    DATUM: datumCz(typeof nabidkaDatum === 'function'
+      ? nabidkaDatum(zak, varianta, moznosti && moznosti.ted)
+      : (typeof variantaDatum === 'function' ? variantaDatum(zak, varianta) : zak.datum)),
     NAZEV_AKCE: zak.nazevAkce || TSv.nazevAkce || '…',
     /* Číslo varianty ≥ 2 se připojuje tečkou (…-555.2) — zadání 19. 8. 2026. */
     CISLO_NABIDKY: String((typeof cisloSVariantou === 'function'

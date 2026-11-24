@@ -890,8 +890,8 @@ function zamekKdyProblem(kdy, ted) {
  *    jinak by dotisk staré nabídky nesl jiné datum než originál.
  *
  * `v.datum` / `zak.datum` (datum založení) se NEMĚNÍ: dál slouží stáří
- * ceníku, controllingu a seznamům. Smlouva o dílo a plná moc ho tisknou
- * dál (sodData / sodProjData → `moznosti.datumZalozeni`).
+ * ceníku, controllingu a seznamům a tiskne ho plná moc. Smlouva o dílo
+ * cituje „nabídku ze dne“ = toto datum (J. V. 24. 11. 2026, #746).
  *
  * `datumNabidky` je MIMO klíč zámku (uloZamekKlic) — cenu, číslo ani otisk
  * nemění a starší klient bez něj ukládá bez 409. Píše se jen při PRVNÍM

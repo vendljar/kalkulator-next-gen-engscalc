@@ -10,6 +10,8 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
+| 24. 11. 2026 | DT: datum cenové nabídky = den tisku (Europe/Prague); odeslaná (zamčená) drží den odeslání/zámku — i když se zamkla tiskem SoD; staré zámky beze změny. Rozsah CN OCK i PROJ všech jazyků a krycí list; plná moc a datum založení zakázky/varianty beze změny. | #745 |
+| 24. 11. 2026 | DT (#746): smlouva o dílo cituje „nabídku ze dne“ STEJNÝM datem jako nabídka (nabidkaDatum), OCK i PROJ; ostatní text a data SoD (datum podpisu apod.) beze změny. | #746, src/sod.js |
 | 24. 11. 2026 | PV O1: vlastník dealu jako autor kalkulace založené webhookem má práva autora (zrušit vazbu na deal, změnit deal zakázky, opravit firmu); „V pořádku“ dál jen administrátor. O2 (právo pro zápis prodeje) — vysvětlení vyžádáno. | #597, #734; BEZPECNOST_MEZE oddíl PV |
 | 23. 11. 2026 | CN-O2: číslo nabídky PRODANÉ zakázky nezmění nikdo ani administrátor; cesta = odemknout prodej (vedoucí/admin, protokol), změnit s potvrzením, znovu Prodáno. B3: na main s Pipedrive zapnout poznámku šachet hned; „Víc zákazníků“ (poznámka zákazníků + organizace = vítěz) až po plném průchodu A9 na testu. | #727 (dávka CN), #730 |
 | 23. 11. 2026 | Pipedrive (dialog koordinace): autorem kalkulace z webhooku bude vlastník dealu (#734); kód integrace dělají jen dávky přes koordinaci, sezení „Pipedrive API integrace“ řeší jen integrátora a nastavení Pipedrive; zápis prodeje #597 až po sloučení PD (#733); rozsah #597 a DPH podle dřívějších rozhodnutí (23. 10., 2. 11., 16. 11.). | roadmapa #597, #734, #730 |

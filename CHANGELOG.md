@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## (verzi přidělí koordinace) — DT: datum cenové nabídky = den tisku (#745), větev claude/dt-datum-tisku
+## (verzi přidělí koordinace) — DT: datum cenové nabídky = den tisku (#745, #746), větev claude/dt-datum-tisku
 
 Nad integrací `0fd6410` (v24.11.1). Rozhodnutí J. V. 24. 11. 2026. **Cenu, číslo nabídky ani otisk zámku nemění**
 (datum není v klíči zámku ani v otisku; porovnání sestavení proti `origin/test`: viz zpráva koordinaci).
@@ -20,9 +20,10 @@ Nad integrací `0fd6410` (v24.11.1). Rozhodnutí J. V. 24. 11. 2026. **Cenu, č�
   odesláním, jinak den odeslání). **Zámky před DT** pole nemají → dotisk beze změny (datum založení).
 - Krycí list OCK/PROJ „Dne“ = datum nabídky (zmrazené hodnoty starých zámků beze změny); objednávka PROJ
   „nabídka ze dne“ = datum nabídky.
-- **Beze změny:** smlouva o dílo a plná moc (`moznosti.datumZalozeni`), `v.datum`/`zak.datum` (stáří ceníku,
-  controlling, seznamy). Otázka #746 pro J. V.: datum „nabídky ze dne“ ve SoD.
-- Testy: `src/test_dt_datum_tisku.js` (pojistka: před 45 FAIL, po 56 OK), `netlify/test_dt_datum_tisku.mjs`
+- **Smlouva o dílo** (OCK i PROJ) cituje „nabídku ze dne“ týmž datem jako nabídka (#746, J. V. 24. 11. 2026);
+  ostatní text a data SoD beze změny. Zámek vzniklý tiskem SoD = den odeslání nabídky.
+- **Beze změny:** plná moc, `v.datum`/`zak.datum` (stáří ceníku, controlling, seznamy).
+- Testy: `src/test_dt_datum_tisku.js` (pojistka: před 49 FAIL, po 60 OK), `netlify/test_dt_datum_tisku.mjs`
   (před 6 FAIL, po 12 OK); mutace `[DT]` v `netlify/mutace.mjs`.
 
 ## v24.11.1 — MT2: zpevnění testů kola (#737 mutace #553 kontakt, #738 sady kolem půlnoci), větev claude/mt2-testy

@@ -6,7 +6,8 @@
  *  - neodeslaná: den tisku v Europe/Prague (i online náhled = co dostane tisk dnes),
  *  - odeslaná se `zamek.datumNabidky`: drží den odeslání (dotisk = papír zákazníka),
  *  - odeslaná bez něj (zámky před DT): beze změny variantaDatum,
- *  - smlouva o dílo a plná moc beze změny (datum založení varianty),
+ *  - smlouva o dílo cituje „nabídku ze dne“ = totéž datum (J. V. 24. 11., #746),
+ *    plná moc beze změny (datum založení varianty),
  *  - krycí list „Dne" = datum nabídky, objednávka PROJ „nabídka ze dne" taky.
  * Pole je mimo klíč zámku: cenu, číslo ani otisk nemění.
  *
@@ -128,19 +129,30 @@ test('nabidkaDatum je exportovaná', typeof ZM.nabidkaDatum === 'function');
   test('PROJ: dotisk zámku před DT → datum založení', NP.nabidkaProjData(zak, v, 'cz', { ted: TISK }).placeholders.DATUM === '01.10.2026');
 }
 
-/* ---------- 3) smlouva o dílo a plná moc beze změny ---------- */
+/* ---------- 3) smlouva o dílo: „nabídka ze dne“ = datum nabídky (J. V. 24. 11. 2026, #746);
+ *            plná moc beze změny ---------- */
 {
-  const { zak, v } = zakazka();
-  v.data.kryci = { hodnoty: {} }; v.data.kryciProj = { hodnoty: {} };
-  let s = null, sp = null, er = '';
-  try { s = SOD.sodData(zak, v, JEKLY, 'cz'); sp = SOD.sodProjData(zak, v, 'cz'); } catch (e) { er = e.message; }
-  test('SoD OCK: DATUM = datum založení varianty (beze změny)', !!s && s.placeholders.DATUM === '01.10.2026', er || (s && s.placeholders.DATUM));
-  test('SoD PROJ: DATUM = datum založení varianty (beze změny)', !!sp && sp.placeholders.DATUM === '01.10.2026', er || (sp && sp.placeholders.DATUM));
-  if (typeof SOD.plnaMocData === 'function') {
-    let pm = null; try { pm = SOD.plnaMocData(zak, v, 'cz'); } catch (e) { pm = null; }
-    /* (datumCz v plné moci je z prohlížeče; tady bez něj vrací ISO) */
-    if (pm) test('plná moc: DATUM = datum založení varianty (beze změny)', ['01.10.2026', '2026-10-01'].includes(pm.placeholders.DATUM), pm.placeholders.DATUM);
-  }
+  const cz = iso => iso.split('-').reverse().join('.');
+  const dnes = ZM.zamekDenPraha ? ZM.zamekDenPraha() : '';
+  const sod = (zak, v) => {
+    v.data.kryci = v.data.kryci || { hodnoty: {} }; v.data.kryciProj = v.data.kryciProj || { hodnoty: {} };
+    try { return [SOD.sodData(zak, v, JEKLY, 'cz').placeholders.DATUM, SOD.sodProjData(zak, v, 'cz').placeholders.DATUM]; }
+    catch (e) { return [e.message, e.message]; }
+  };
+  { const { zak, v } = zakazka(); const [o, p] = sod(zak, v);
+    test('SoD OCK nezamčená: ze dne = dnešek v Praze (datum nabídky)', o === cz(dnes), o);
+    test('SoD PROJ nezamčená: ze dne = dnešek v Praze (datum nabídky)', p === cz(dnes), p);
+    if (typeof SOD.plnaMocData === 'function') {
+      let pm = null; try { pm = SOD.plnaMocData(zak, v, 'cz'); } catch (e) { pm = null; }
+      /* (datumCz v plné moci je z prohlížeče; tady bez něj vrací ISO) */
+      if (pm) test('plná moc: DATUM = datum založení varianty (beze změny)', ['01.10.2026', '2026-10-01'].includes(pm.placeholders.DATUM), pm.placeholders.DATUM);
+    } }
+  { const { zak, v } = zakazka(); odesli(v, '2026-11-10T09:00:00.000Z', '2026-11-10'); const [o, p] = sod(zak, v);
+    test('SoD OCK odeslaná 10. 11.: ze dne = 10.11.2026', o === '10.11.2026', o);
+    test('SoD PROJ odeslaná 10. 11.: ze dne = 10.11.2026', p === '10.11.2026', p); }
+  { const { zak, v } = zakazka(); odesli(v, '2026-11-10T09:00:00.000Z'); const [o, p] = sod(zak, v);
+    test('SoD OCK zámek před DT: ze dne = datum založení (beze změny)', o === '01.10.2026', o);
+    test('SoD PROJ zámek před DT: ze dne = datum založení (beze změny)', p === '01.10.2026', p); }
 }
 
 /* ---------- 4) krycí list „Dne" = datum nabídky ---------- */

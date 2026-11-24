@@ -208,7 +208,7 @@ function sodJazykZabrana(typ, L, maMutaci, podilCestiny) {
 function sodData(zak, varianta, jekly, lang, sablona) {
   const zabranaDph = sodDphZabrana(zak, varianta);   // B189: bez režimu DPH smlouva nevznikne
   if (zabranaDph) throw new Error(zabranaDph);
-  const d = nabidkaData(zak, varianta, jekly, lang, undefined, { zive: true, datumZalozeni: true });   // Z1: SoD nese živé podmínky a DPH; DT #745: datum založení varianty, ne den tisku
+  const d = nabidkaData(zak, varianta, jekly, lang, undefined, { zive: true });   // Z1: SoD nese živé podmínky a DPH; DT #745: „nabídka ze dne“ = datum nabídky (nabidkaDatum)
   const L = d.jazyk || 'cz';
   /* Objednané příplatky (#447 C6) — cena díla = nabídka + objednané. */
   const objPryc = sodObjednaneSymboly(d, zak, varianta, jekly, L, sablona);
@@ -557,7 +557,7 @@ function sodPokutaZhotovitele(placeholders, sablona, symbol, text) {
 function sodProjData(zak, varianta, lang, sablona) {
   /* Smlouva nese cenu díla: činnosti po slevě, ať se sečtou na cenu, kterou
    * objednatel platí (řádek slevy smlouva nemá). */
-  const d = nabidkaProjData(zak, varianta, lang, { slevaZvlast: false, zive: true, datumZalozeni: true });   // Z1: živé podmínky a DPH; DT #745: datum založení varianty
+  const d = nabidkaProjData(zak, varianta, lang, { slevaZvlast: false, zive: true });   // Z1: živé podmínky a DPH; DT #745: „ze dne“ = datum nabídky
   /* Bloky studie jsou bloky NABÍDKY PROJ v7 (D1) — smlouva má vlastní seznam
    * (sodProjRozsah); cizí jméno by u šablony SoD v4 zastavilo dokument. */
   d.blokyPryc = [];
