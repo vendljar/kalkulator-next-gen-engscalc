@@ -390,8 +390,9 @@ const prodej = await stranka.evaluate(() => {
 });
 zkus('#540: karta Prodej na konci krycího listu, Prodáno u odeslané nabídky povolené', prodej.pred.karta && prodej.pred.tlacitko
   && prodej.pred.volne === 'editovatelne', JSON.stringify(prodej.pred));
-zkus('#540: po Prodáno štítek, „čeká na odeslání", náhled Pipedrive, volné pole zamčené, obchodník neodemkne',
-  /✔ Prodáno/.test(prodej.po.text) && /čeká na odeslání/.test(prodej.po.text) && /Co by se zapsalo do Pipedrive/.test(prodej.po.text)
+/* PV #597: stav zápisu do Pipedrive „čeká na zápis" (zapíše se až po potvrzení v tabulce). */
+zkus('#540: po Prodáno štítek, „čeká na zápis", náhled Pipedrive, volné pole zamčené, obchodník neodemkne',
+  /✔ Prodáno/.test(prodej.po.text) && /čeká na zápis/.test(prodej.po.text) && /Co by se zapsalo do Pipedrive/.test(prodej.po.text)
   && prodej.po.volne === 'zmrazeno' && !/Odemknout prodej(?! smí)/.test(prodej.po.text), prodej.po.text.slice(0, 300));
 zkus('#540: vedoucí má tlačítko Odemknout prodej', /Odemknout prodej(?! smí)/.test(prodej.ved), prodej.ved.slice(0, 200));
 

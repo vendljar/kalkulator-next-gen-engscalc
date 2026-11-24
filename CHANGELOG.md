@@ -8,6 +8,105 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v24.11.1 — MT2: zpevnění testů kola (#737 mutace #553 kontakt, #738 sady kolem půlnoci), větev claude/mt2-testy
+
+Nad integrací `db1e9e7` (v23.11.7). **Aplikace beze změny, cenu ani dokumenty nemění** (porovnání sestavení proti
+integraci: SHODA). Jen testy a nástroje kola (svěřená rozhodnutí MT2-1, MT2-2).
+
+- **#737 — nechycená mutace „#553: kontakt v odpovědi“** (Actions 45263862973, část serveru 3/24): test zeslábl po
+  PD #729 (kontakt = jen jméno osoby dealu), hlídal jen e-mail a telefon. `test_553_webhook.mjs` teď hlídá i jména
+  kontaktních osob a pole `kontakt` v odpovědích. Pojistka: mutace před 0 z 1, po 1 z 1 chycená.
+- **#738 — sady červené mezi 00:00 a 01:00 Praha:** `test_bz_bezpecnost`, `test_cn_cislo_nabidky`, `test_nn_nizke`,
+  `test_ra_rozhodnuti` braly datum prodeje v UTC, server razí odeslání v pražském dni. Sdílený pomocník
+  `netlify/pomoc_den.mjs`, falešné hodiny `netlify/pomoc_falesne_hodiny.mjs`, hlídka `netlify/test_mt2_pulnoc.mjs`
+  (zima 23:30 UTC, léto 22:30 UTC, poledne). Pojistka: před 8 FAIL, po 16 OK. Klient bere datum prodeje
+  z `objDnes()` (Praha) — v aplikaci vada není.
+
+## v23.11.7 — PV: zápis prodeje do dealu v Pipedrive (#597), autor kalkulace z webhooku = vlastník dealu (#734), větev claude/pv-pipedrive
+
+Nad integrací `1280831` (v23.11.5), sloučeno s `9f2445a` (v23.11.6 SA). Verze v23.11.7 (koordinace; v23.11.6 je SA). **Cenu kalkulací nemění**
+(porovnání sestavení proti integraci: SHODA). Do živého Pipedrive nic — testy jen proti simulátoru; zkušební zápis
+na deal TEST udělá testovací sezení po nasazení.
+
+- **Zápis prodeje do dealu (#597, rozsah J. V. — PIPEDRIVE_SPUSTENI B1):** po stisku Prodáno ukáže karta Prodej
+  tabulku „pole / dnes v Pipedrive / nová hodnota“ a do dealu zapíše teprve po potvrzení obchodníkem: pole
+  krycího listu podle mapy (prázdné se neposílá, nepřevoditelné a text nad 255 znaků se nepošle s důvodem,
+  přenesená DPH → „0 % – přenesená daňová povinnost“, u kombinované rozhoduje OCK), hodnotu dealu (cena prodané
+  varianty bez DPH, kombinovaná = součet, po tisku SoD cena díla s objednanými příplatky — počítá ji server
+  z uložené zakázky) a fázi „Vyhrané k podpisu SoD“; stav dealu nikdy. Jen změněná pole jedním zápisem.
+- **Pojistky zápisu:** jen se zapnutým zápisem (`PIPEDRIVE_ZAPIS = ano`), jen s platnou vazbou deal ↔ zakázka
+  (vazba z webhooku nebo odkaz na kalkulaci v dealu), jen s právem Pipedrive (autor, kdo prodal, vedoucí,
+  administrátor). Deal mezitím změněný v Pipedrive (nebo jiný podklad) = nic se nezapíše a ukáže se nový náhled.
+  Jiné „Číslo nabídky (CN)“ v dealu zápis zastaví — převzít deal jde jen tlačítkem „Převzít deal a zapsat“
+  s potvrzením; k dealu se zapíše poznámka a do protokolu převzetí. Časový limit volání a strop pokusů na deal.
+- **Selhání zápisu prodej nezastaví:** karta ukáže „zápis selhal“ s důvodem a tlačítko „Zkusit zápis znovu“;
+  úspěch „zapsáno“ s datem. Výsledek píše jen server do záznamu prodeje a do protokolu zakázky.
+- **Autor kalkulace z Pipedrive (#734):** kalkulaci založenou webhookem dostane za autora vlastník dealu (účet
+  kalkulátoru se stejným e-mailem jako uživatel Pipedrive) — z odkazu v dealu si ji otevře k úpravám sám (#728).
+  Když vlastníka nejde jednoznačně spárovat (bez účtu, vypnutý účet, bez e-mailu, duplicitní e-mail, výpadek),
+  zůstane technický účet jako dosud a důvod jde do logu webhooku. Opakované doručení autora nemění.
+- **Opravy po revizi Fable:** údaje krycího listu do dealu skládá server z uložené zakázky (prohlížeč je podvrhnout
+  nemůže, ani Číslo nabídky); převzetí dealu se do protokolu zapíše už před zápisem a poznámka k dealu se doplní i po
+  nepotvrzeném pokusu; dva souběžné zápisy do jednoho dealu jdou za sebou; dotaz webhooku na uživatele Pipedrive má
+  vlastní časový limit (výpadek = technický autor); do zakázky a protokolu jdou jen naše věty, ne text chyby Pipedrive.
+- Testy: `netlify/test_pv_597_zapis.mjs` 73/0, `netlify/test_pv_734_autor.mjs` 56/0, `overit_pv_prodej.mjs` 19/0,
+  mutace serveru [PV] 25; `test_prava` (nová funkce), `test_k40c_webhook` a `overit_controlling` upravené texty.
+
+---
+
+## v23.11.6 — SA: kontrola šablon Word B270–B272 (#719–#721), větev claude/sa-sablony
+
+Nad integrací `133a8f5` (v23.11.1). Verze pracovní (číslo přidělí koordinace). Cenu ani text dokumentů nemění. Jen administrátor
+(zveřejnění šablony). Meze v `BEZPECNOST_MEZE.md`, oddíl SA.
+
+- **Šablony Word:** kontrola odmítne položku ZIPu s `../`, absolutní cestou, zpětným lomítkem nebo řídicím znakem
+  a dvě položky téhož jména (B270, #719); pole `FILENAME` (i `\p`), `USERNAME` a `AUTHOR` (B271, #720); XML část
+  nad 8 MB — rozbalení se zastaví hned (B272, #721; PoC C12 ~0,1 s místo ~1 s).
+- **Revize Fable (SLOUČIT PO OPRAVÁCH):** R1 strop B272 rozhoduje „je XML" z bajtů pro strop i rozbor (dřív 64 B
+  vs. celý text — 65 mezer před „<" v `.bin` strop obešlo), ne-XML části se nedekódují; R2 UTF-16 přes TextDecoder
+  (60 MB „A\0" dřív ~3,3 s); R4 dekódování `%xx` po bězích (neplatné `%` už nevypne kontrolu); R5 odmítne segment
+  z teček a mezer (`.. `, `..%20`), prázdný úsek `//`, dvojtečku kdekoli a U+FFFD, duplicity po sloučení lomítek
+  a ořezu koncových teček; R7 `Set` / `Object.create(null)`. R3 (další pole) čeká na J. V.
+- **Testy:** `src/test_sa_sablony.js` 67 (pojistka: nad 133a8f5 54 FAIL, nad b3d710a před revizí 17 FAIL; první
+  verze 41 testů měla 30 FAIL, ne 29), mutace [SA] 23/23; kolo po revizi `--bez-mutaci` proti 133a8f5 VŠE ZELENÉ
+  (523/0/6, hodiny 424/0/1, 12/12, SHODA 367/367); zadání mutací B141/B142 podle
+  upraveného kódu. Kolo `--bez-mutaci` proti 133a8f5: sady 523/0/6, hodiny 424/0/1, statické 12/12, SHODA 367/367;
+  mutace jádra 1308/1308 (4 části); mutace serveru jen cíleně „sablon“ 31/31 — celý server v Actions.
+
+## v23.11.5 — PD: kalkulace z Pipedrive jako Nová zakázka (#733, #732), odkaz z dealu k úpravám (#728), kontakt jen jméno (#729), větev claude/pd-webhook-uprava
+
+Nad integrací `173ab6a` (v23.11.2). Verze v23.11.5 (koordinace; integrace je v23.11.4). **Mění cenu kalkulací
+založených webhookem Pipedrive** (oprava vady K53-N2); ostatních kalkulací ani pevné sady se netýká (porovnání
+sestavení: viz zpráva koordinaci).
+
+- **Kalkulace z dealu má marži a ceny z platného ceníku (#733, nález K53-N2):** webhook zakládá kalkulaci na serveru
+  bez ceníku a výchozího zaškrtnutí; prohlížeč ji při otevření odkazem doplnil z ceníku ze sestavení (platný ceník
+  se nasazoval až odloženě) a přepočet „rozdělané“ zakázky pak marži, sazbu DPH a ceny „dle nabídky“ nechal na 0.
+  Nově webhook kalkulaci označí jako čerstvou (`pdCerstva`, píše jen server, uložení z prohlížeče ho vždy zahodí)
+  a prohlížeč ji při prvním otevření nad platným ceníkem připraví přesně jako „Novou zakázku“ (ceník OCK i PROJ,
+  zadání, výchozí zaškrtnutí z matice zobrazení); hlavička a datum z dealu zůstanou. Rozdělané zakázky obchodníků
+  chráněné dál stejně.
+- **Protokol při prvním uložení (#732):** po přípravě přepočet nemění žádnou cenu — první uložení zapíše jen
+  skutečnou změnu, ne desítky řádků ceníku.
+- **Odkaz z dealu otevře kalkulaci k úpravám (#728):** čerstvou kalkulaci z webhooku (dosud neuloženou člověkem)
+  otevře odkaz `?zakazka=` z dealu odemčenou — jen tomu, kdo ji smí odemknout (autor, vedoucí, administrátor).
+  Ostatní otevírání i zámky odeslaných a prodaných variant beze změny.
+- **Kontaktní osoba z dealu jen jméno (#729):** webhook zapíše do Kontaktní osoby jen jméno osoby dealu, bez e-mailu
+  a telefonu. Odeslané (zmrazené) kalkulace beze změny.
+- **Pipedrive — „Nabídku vypracoval“ a „Odpovědná osoba za projekci“ (náhled CN-432):** uživatel Pipedrive se hledá
+  podle e-mailu obsaženého v textu krycího listu („jméno[, telefon], e-mail“), když nesedí, podle jména před čárkou.
+  Dřív se celý text porovnával s e-mailem → „nelze převést“.
+- **Revize Fable (N1, N3, N4):** kalkulace z dealu, která se nepřipravila (platný ceník se nenačetl), zůstane jen ke
+  čtení s vysvětlením a připraví se, jakmile se ceník nasadí (jen bez neuložené práce); ceník nasazený při otevření
+  se v `onlineTik` nenasazuje podruhé; v náhledu role / účtu se z odkazu neodemyká.
+- **Dorevize Fable (N1–N5):** nepřipravenou kalkulaci z Pipedrive (příznak v těle) server neuloží (409) a ručně ji
+  odemknout nejde („Odemknout“ ani dialog při zápisu); dopříprava po pozdním načtení ceníku rozhoduje zámkem čtení
+  (dřív ji v prohlížeči blokovalo srovnání s otiskem) a jen nad nasazenou platnou verzí; lišta radí obnovit stránku
+  (F5). `overit_pd_cerstva.mjs` má scénář „ceník dorazí později“ (v kole i CI globem `overit_*.mjs`).
+- **Testy:** `netlify/test_pd_cerstva.mjs` (server, jádro, #729), `src/test_pd_cerstva_ui.js` (otevření, zámek čtení,
+  dopříprava), `overit_pd_cerstva.mjs` (prohlížeč, vynucený závod s nasazením ceníku), doplněné `test_pd_prevod.mjs`
+  (bod 4) a `test_zamek_prepnuti.js` (výjimka #728 ze zámku čtení); každý s pojistkou (viz commit). Mutace [PD] 24.
+
 ## v23.11.4 — MT: 4 nechycené mutace z celého kola Actions 45162888071 (#735), větev claude/mt-mutace-2311
 
 Nad integrací `c8d3d9d`. Verze v23.11.4 (přidělila koordinace). Mění se jen testy;

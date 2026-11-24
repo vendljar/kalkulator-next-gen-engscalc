@@ -308,6 +308,13 @@ console.log('\n===== ODPOVĚDI =====\n');
 const vse = odpovedi.join('\n');
 test('v odpovědích není e-mail', !/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/.test(vse), (vse.match(/[\w.+-]+@[\w.-]+\.\w+/) || [])[0]);
 test('… ani telefon kontaktu', !/\+420 000/.test(vse));
+/* MT2 (24. 11. 2026): od PD #729 nese kontakt jen JMÉNO osoby dealu — kontrola
+ * e-mailu a telefonu by únik kontaktu do odpovědi nechytila. Jméno je osobní
+ * údaj (K8-S3): žádné jméno kontaktní osoby zapsané webhookem v odpovědi. */
+const jmenaKontaktu = [...new Set(zakazkyKlice().map((k) => (JSON.parse(pamet.get(k)) || {}).kontakt).filter((x) => x && x.length > 2))];
+test('webhook zapsal aspoň jedno jméno kontaktu (kontrola není prázdná)', jmenaKontaktu.length > 0, jmenaKontaktu);
+test('… ani jméno kontaktní osoby', !jmenaKontaktu.some((j) => vse.includes(j)), jmenaKontaktu.filter((j) => vse.includes(j)));
+test('… ani pole kontakt', !/"kontakt"\s*:/.test(vse));
 test('… ani klíč webhooku nebo token', !vse.includes(KLIC) && !vse.includes(KLIC.slice(0, 20)) && !/x-api-token/i.test(vse));
 test('… ani hash pole Pipedrive', !vse.includes(HASH_ODKAZ) && !vse.includes(HASH_ADRESA));
 
@@ -329,6 +336,11 @@ delete G.cenikDnesniProVariantu;
 test('prohlížeč doplní ceník z platného (cena nevzniká na serveru)', !!vOkne.varianty[0].data.cenik
   && vOkne.varianty[0].data.cenik.zkusebni === ZC.zkusebniCenik().zkusebni && vOkne.varianty[0].data.cenik.montazHodKc === ZC.zkusebniCenik().montazHodKc
   && !vOkne.varianty[0].data.cenikVynechan, vOkne.varianty[0].data.cenik && vOkne.varianty[0].data.cenik.montazHodKc);
+/* PD #733: prohlížeč čerstvou kalkulaci z webhooku při otevření připraví
+ * (onlineOtevri → pdCerstvaPriprav) a příznak pdCerstva zahodí; s příznakem
+ * by ji server odmítl (409, dorevize PD N1 — hlídá test_pd_cerstva.mjs). */
+test('PD #733: kalkulace z webhooku přichází s příznakem pdCerstva', ulozena.pdCerstva === true);
+delete vOkne.pdCerstva;
 vOkne.varianty[0].data.ock.zadani.zdvih = 12;
 const ul = await post(zakazky, 'http://x/api/zakazky', { zakazka: vOkne, ocekavaneRazitko: G.uloRazitko(ulozena) }, cO);
 const ulj = await ul.json();

@@ -59,6 +59,7 @@ Test je proti main napřed o 141 commitů.
 |---|---|---|---|---|
 | #614 (dřív K40-N1) | Vada ceny v main: po přepnutí typu šachty se čelní sklo přejmenuje a zůstane vyřazené (opraveno v testu v12.11.1) | 40 | oprava ve verzi v12.11.1, v testu ještě ne | — |
 | #696 (dřív B231, AZ-1) | B231: příznak strany zakázky (jenProj/jenOck) po zámku a Prodáno zmrazený | 50 | opraveno v testu (v22.11.3), v main ne | — |
+| #733 (dřív K53-N2) | Kalkulace založená webhookem Pipedrive má marži 0 % a ceny dle nabídky 0 | 53 | oprava ve verzi v23.11.5, v testu ještě ne | — |
 
 ## Čeká na J. V.
 
@@ -94,4 +95,4 @@ K tomu 13 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --ziv
 
 ## Nehotové položky evidence
 
-Celkem 54: J. V. 38, kolega 4, koordinace 10, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 47: J. V. 38, kolega 4, koordinace 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.

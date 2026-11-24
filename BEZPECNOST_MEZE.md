@@ -2406,6 +2406,40 @@ Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md` (tabulka �
 - **Zbytek N1 (PR) — OPRAVENO.** Viz B257 (jen štítek pole, strukturální selektor).
 - **#703 — B233 zbytek — PŘIJATO JAKO MEZ** (J. V. 22. 11. 2026). Viz B233.
 
+## SA — kontrola šablon Word B270–B272 (dávka SA, 23. 11. 2026, v23.11.6)
+
+Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md`, PoC `podklady/audit_2026-11-20/poc_DO_sablona_server.mjs`
+(C5–C7, C12 → ODOLNÉ), roadmapa #719–#721. Test `src/test_sa_sablony.js`, mutace [SA] 10. Jen administrátor (zveřejnění šablony).
+
+- **B270 — názvy položek ZIPu — OPRAVENO.** Kontrola obsahu šablony (`sablonaNazevVada`, prohlížeč, generátor i server)
+  odmítne položku s `..` / `.` v cestě, absolutní cestou (`/x`, `C:x`), zpětným lomítkem nebo řídicím znakem — i zakódovanou
+  (`%2e%2e`) — a dvě položky téhož jména (bez ohledu na velikost písmen a `%xx`; dvojí `word/document.xml`). *Mez:* prázdný
+  segment (`word//x.xml`) projde — Word i zip ho berou jako běžný název uvnitř balíčku. *Revize SA R4/R5/R7 (opraveno):*
+  `%xx` se dekóduje po bězích (neplatné `%` nevypne kontrolu), odmítne se segment jen z teček a mezer (`.. `,
+  `..%20`), prázdný úsek `//` (kromě koncového lomítka složky), dvojtečka kdekoli a U+FFFD; duplicita se porovnává
+  po sloučení lomítek, ořezu koncových teček a mezer a NFC. *Mez (revize R6, vrstva ZIP):* `zipPrecti` čte tolik
+  položek, kolik říká počet v koncovém záznamu, a jméno v lokální hlavičce neporovnává — položku skrytou menším
+  počtem kontrola nevidí; generátor ZIP zapisuje znovu z toho, co kontrola viděla (zákazník ji nedostane), týká se
+  jen surové šablony v úložišti. Návrh do roadmapy.
+- **B271 — pole s údaji počítače — OPRAVENO.** `FILENAME` (i `\p`), `USERNAME` a `AUTHOR` jsou mezi zakázanými poli
+  (`SABLONA_POLE_ZAKAZANA`). *Mez:* příbuzná pole `USERINITIALS`, `USERADDRESS`, `LASTSAVEDBY` a vlastnosti dokumentu
+  (`DOCPROPERTY`, `INFO`) dál projdou — k rozhodnutí J. V., zda je přidat. Revize SA R3: `INFO FileName \p`,
+  `INFO Author`, `DOCPROPERTY Author|LastSavedBy` a `TEMPLATE \p` vrátí totéž co zakázaná pole — doporučení přidat
+  všech šest (`USERINITIALS`, `USERADDRESS`, `LASTSAVEDBY`, `TEMPLATE`, `INFO`, `DOCPROPERTY`) po ověření nad
+  firemními šablonami (`KNG_PODKLADY`). Jméno autora nese i `docProps/core.xml` (`dc:creator`, `cp:lastModifiedBy`)
+  a generátor ho kopíruje do každé nabídky — návrh do roadmapy.
+- **B272 — strop jedné XML části — OPRAVENO.** `SABLONA_XML_CAST_MAX` = 8 MB: `zipPrecti(u8, { xmlCastMax })` zastaví
+  rozbalení položky `.xml` / `.rels` nad strop hned (PoC C12: 60 MB část ~0,1 s místo ~1 s na serveru) a kontrola nad
+  rozbalenými položkami odmítne i XML obsah nad strop bez přípony (generátor v prohlížeči). Firemní šablony mají zabalené
+  ~1,4 MB i s obrázky; XML části v nich jsou v řádu stovek kB. *Mez:* strop neověřen na firemních šablonách
+  (`KNG_PODKLADY` v sezení nebyl) — šablonu nad stropem server i generátor odmítnou (bezpečný směr); ověřit
+  `src/test_sablona_obsah.js` s `KNG_PODKLADY` před nasazením. Kvadratické výrazy uvnitř 8 MB dál viz SEC-M17;
+  ceníky v Excelu a obrázky strop části nemají (celkový strop rozbalení 64 MB beze změny). *Revize SA R1/R2
+  (opraveno):* „je XML" se rozhoduje jednou z bajtů (přípona `.xml`/`.rels`, nebo první bajt `<` po BOM, bílých
+  znacích a nulách) pro strop i rozbor; ne-XML část se nedekóduje vůbec, UTF-16 čte TextDecoder. XML obsah v části
+  bez přípony `.xml` se rozbalí až do celkového stropu 64 MB a odmítne se po rozbalení (strop při rozbalení jen
+  podle přípony). Legitimně narazí jen SVG obrázek nad 8 MB.
+
 ## RA — rozhodnutí J. V. 23. 11. 2026 (#723, #724, #726, log webhooku)
 
 Větev `claude/ra-rozhodnuti` nad integrací `133a8f5`. Testy `netlify/test_k40c_webhook.mjs`,
@@ -2452,3 +2486,23 @@ Větev `claude/cn-cislo-nabidky` nad integrací `8411eb9`. Testy `netlify/test_c
 - **Dotaz na změnu čísla, nabídka hledání a duplicita (#727 body 1–3) jsou jen v prohlížeči.** Volání API mimo
   aplikaci číslo neprodané a neodeslané zakázky změní bez dotazu; cizí zakázku pod stejným číslem dál odmítne
   server (B10, 409 kolize). Stopou je protokol zakázky (B66) a `upravil`.
+
+## PV — zápis prodeje do dealu (#597) a autor = vlastník dealu (#734) (dávka PV, 23. 11. 2026, v23.11.7)
+
+Větev `claude/pv-pipedrive`, revize Fable `podklady/revize/REVIZE_PV.md` (SLOUČIT PO OPRAVÁCH; V1, S1–S4 opraveny).
+Testy `netlify/test_pv_597_zapis.mjs`, `netlify/test_pv_734_autor.mjs`, `overit_pv_prodej.mjs`, mutace [PV].
+Číslo B277 je pracovní (přidělí koordinace).
+
+- **B277 — okno mezi čtením dealu a zápisem — PŘIJATO (revize PV, mez 3).** `POST /api/pd/prodej` přečte deal
+  (`update_time` jde do otisku potvrzeného náhledu) a pak pošle PATCH. Pipedrive podmíněný zápis nemá, takže úprava
+  dealu v Pipedrive během té chvíle (pod 3 s) se přepíše posílanými poli. Zúžení: posílají se jen pole, která se
+  proti dealu mění; náhled ukazuje „dnes v Pipedrive“; souběh dvou zápisů z aplikace řadí výhradní úsek na deal
+  (revize S2 — druhý vidí nový `update_time` → 409). Platí jen v instanci funkce; dvě instance Netlify se nevidí.
+- **Texty krycího listu do dealu skládá server (revize V1 — OPRAVENO).** Z požadavku se `strany` nečtou; hodnoty jdou
+  z uložené (po Prodáno zmrazené) zakázky, včetně Čísla nabídky = značky vlastníka dealu (#115 B).
+- **Chyby Pipedrive do zakázky jen pevnou větou (revize S4 — OPRAVENO).** `v.prodano.pipedrive.duvod` a protokol nesou
+  vlastní větu podle stavu (`pdProdejChybaVeta`); surový text Pipedrive jen v odpovědi (`podrobnost`) tomu, kdo zapisoval.
+- *O1 rozhodnuto J. V. 24. 11. 2026: ano.* *Otázka pro J. V.:* O1 — vlastník dealu jako autor kalkulace z webhooku má práva autora (zrušit vazbu, změnit deal,
+  opravit firmu; dřív u webhookové kalkulace jen administrátor); O2 — zápis prodeje hlídá právo `crm.pipedrive`
+  („Čtení obchodních případů z Pipedrive“) + autor / kdo prodal / vedoucí / administrátor. Kód je zatím podle
+  doporučení revize (O1 ano, O2 zatím stačí).

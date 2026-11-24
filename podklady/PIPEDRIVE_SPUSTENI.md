@@ -13,10 +13,10 @@ Stav: ☐ čeká · ◐ rozpracováno · ☑ hotovo. Roadmapa #730 (zastřešuje
 | A4 | Druhá automatizace „Deal - generate offer -> send data to Make“ vypnuta (reagovala na stejné pole) | J. V. | ☑ 23. 11. |
 | A5 | RA na testu: „V pořádku“ jen administrátor (#723), log výsledku webhooku | koordinace → test | ☐ |
 | A6 | Kalkulace z Pipedrive se otevře rovnou k úpravám (#728) | dávka → test | ☐ |
-| A6b | Autor kalkulace z webhooku = vlastník dealu (#734) | dávka → test | ☐ |
+| A6b | Autor kalkulace z webhooku = vlastník dealu (#734) | dávka → test | ◐ hotovo v dávce PV (`claude/pv-pipedrive`, v23.11.7), čeká na revizi, test a ověření na dealu TEST (vlastník s účtem ve stejném e-mailu) |
 | A7 | Kontaktní osoba z dealu jen jméno, bez e-mailu a telefonu (#729) | dávka → test | ☐ |
 | A8 | Vazba „čeká / V pořádku“ a vypnutý zápis (dosud neověřeno bez zásahu do nastavení) | testovací sezení | ☐ |
-| A9 | Plný průchod: deal → kalkulace → tisk nabídky → Prodáno → (zápis prodeje podle #597) | J. V. + testovací sezení | ☐ |
+| A9 | Plný průchod: deal → kalkulace → tisk nabídky → Prodáno → potvrzení tabulky → zápis prodeje (#597) | J. V. + testovací sezení | ◐ zápis #597 hotový v dávce PV (jen simulátor); po nasazení do testu zkušební zápis na deal TEST: tabulka „dnes / nová“, hodnota dealu, fáze 26, stav dealu beze změny, CN, „zapsáno“ v kartě a protokolu |
 
 ## B. Rozhodnutí J. V. před main
 

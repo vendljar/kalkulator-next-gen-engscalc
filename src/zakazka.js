@@ -1702,6 +1702,47 @@ function svetlikyMaterialBezPocet(zak, jekly) {
   return n;
 }
 
+/* KALKULACE ZALOŽENÁ WEBHOOKEM PIPEDRIVE PŘI PRVNÍM OTEVŘENÍ (#733, nález
+ * K53-N2, J. V. 23. 11. 2026). Server ji zakládá `novaZakazka()` nad ceníkem
+ * ze sestavení (v repu vynulovaný) a výchozí zaškrtnutí z matice zobrazení
+ * nezná; zakázka má přitom číslo i název akce, takže by ji přepočet na platný
+ * ceník bral jako rozdělanou práci a marži, sazbu DPH a ceny „dle nabídky“
+ * by nechal na nule. Příznak `pdCerstva` (píše jen webhook, uložení z
+ * prohlížeče ho zahodí) říká, že do ní ještě nikdo nesáhl — prohlížeč ji
+ * proto připraví PŘESNĚ jako „Novou zakázku“: ceník OCK i PROJ, zadání
+ * (předvolby a rozsahy z ceníku) z `novaVariantaData()` nad PLATNÝM ceníkem
+ * a výchozí zaškrtnutí (`vychozi(zadaniOck, zadaniProj)` =
+ * zobrazeniVychoziAplikuj). Hlavičku a krycí list (datum z dealu) nechává.
+ * Volající musí mít platný ceník nasazený (onlineOtevri). Zamčená varianta
+ * se nemění (u čerstvé žádná není). Vrací počet připravených variant;
+ * příznak po přípravě zmizí, takže se nic neopakuje. */
+function pdCerstvaPriprav(zak, opts) {
+  opts = opts || {};
+  if (!zak || zak.pdCerstva !== true || !Array.isArray(zak.varianty) || typeof novaVariantaData !== 'function') return 0;
+  let n = 0;
+  zak.varianty.forEach(v => {
+    const d = v && v.data;
+    if (!d) return;
+    const odeslana = typeof variantaUzamcena === 'function' ? variantaUzamcena(v) : !!(v.zamek && v.zamek.zamceno);
+    if (odeslana) return;
+    const nova = novaVariantaData();
+    d.cenik = nova.cenik;
+    d.cenikRada = nova.cenikRada;
+    d.cenikRucni = nova.cenikRucni;
+    d.zadaniRucni = nova.zadaniRucni;
+    delete d.cenikRazitko;
+    if (!d.ock || typeof d.ock !== 'object') d.ock = {};
+    d.ock.zadani = nova.ock.zadani;
+    if (!d.proj || typeof d.proj !== 'object') d.proj = {};
+    d.proj.zadani = nova.proj.zadani;
+    d.proj.cenik = nova.proj.cenik;
+    if (typeof opts.vychozi === 'function') opts.vychozi(d.ock.zadani, d.proj.zadani);
+    n++;
+  });
+  delete zak.pdCerstva;
+  return n;
+}
+
 /* Opak při načtení: doplní ceník z platného a vrátí odchylky. Volá ho
  * importZakazka; bez platného ceníku (Node bez prohlížeče) se bere ceník ze
  * sestavení (DEFAULT_CENIK, DEFAULT_CENIK_PROJ). */
@@ -1980,7 +2021,7 @@ function zakazkaDuplikuj(zak, noveCislo) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { zakStatikaOplRucniDopln, zadaniCislaZTextu, svetlikyStavbaPrevod, svetlikyMaterialBezPocet, zakImportVzorCeniku, zakazkaBezCeniku, zakazkaCenikDopln, zakazkaCenikRozdil, zakazkaCenikPouzij, slevaRozhodnutiZahod, zakazkaDuplikuj, zakazkaCisloDalsi, sodCisloNavrh, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
+  module.exports = { pdCerstvaPriprav, zakStatikaOplRucniDopln, zadaniCislaZTextu, svetlikyStavbaPrevod, svetlikyMaterialBezPocet, zakImportVzorCeniku, zakazkaBezCeniku, zakazkaCenikDopln, zakazkaCenikRozdil, zakazkaCenikPouzij, slevaRozhodnutiZahod, zakazkaDuplikuj, zakazkaCisloDalsi, sodCisloNavrh, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
                      zadaniRucniZnac, zadaniRucniZrus, zadaniZCeniku, uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, obrazekDataUrlPlatny, uvodniFotoPlatna, uvodniFotoOcisti, uvodniFotoVarovani, OBRAZEK_TYPY_FOTO, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
                      nastavRidici, ridiciVarianta, aktivniVarianta, importZakazka, StorageAdapter,
                      zakazkaUnikatniId,

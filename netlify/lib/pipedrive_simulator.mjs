@@ -210,6 +210,8 @@ export function pdSimVychoziData() {
       id, title: (cislo ? cislo + ' ' : 'Poptávka ') + akce, status,
       value: 50000 + (i % 40) * 25000, currency: 'CZK',
       ...(i % 10 === 9 ? { stage_id: 31 + (i % 2), pipeline_id: 2 } : { stage_id: 22 + (i % 5), pipeline_id: 1 }), user_id: uzivatele[i % uzivatele.length].id,
+      /* Vlastník dealu (API v2 `owner_id`, #734 — autor kalkulace z webhooku). */
+      owner_id: uzivatele[i % uzivatele.length].id,
       org_id: org, person_id: osoba,
       add_time: datum(i) + 'T08:00:00Z', update_time: datum(60 + (i * 7) % 240) + 'T10:' + String(i % 60).padStart(2, '0') + ':00Z',
       custom_fields: cf,
@@ -281,8 +283,30 @@ function strankuj(seznam, dotaz) {
 
 const kopie = (x) => JSON.parse(JSON.stringify(x));
 
-/* Náhrada `fetch` pro pdZavolej. Vrací Promise<Response>. */
+/* Náhrada `fetch` pro pdZavolej. Vrací Promise<Response>.
+ * Scénář `zapisVisi` (revize PV S1): zápis (ne GET) se PROVEDE, ale odpověď
+ * nedorazí nikdy — jen zrušení požadavku ho ukončí (Pipedrive zapsal, my nevíme).
+ * Scénář `odmitnuti` (revize PV S4): zápis odmítne 400 s textem, který opakuje
+ * hodnotu (smyšlený e-mail) — do záznamu prodeje se nesmí dostat. */
 export async function pdSimFetch(url, init = {}) {
+  const s = stav();
+  const sc0 = aktualniScenar(s);
+  const zapis = String(init.method || 'GET').toUpperCase() !== 'GET';
+  if (zapis && sc0 === 'odmitnuti') {
+    s.pozadavky.push(String(init.method).toUpperCase() + ' ' + new URL(String(url)).pathname);
+    return chyba(400, 'Invalid value for field: uzivatel.odmitnuty@priklad.cz');
+  }
+  if (zapis && sc0 === 'zapisVisi') {
+    const puv = s.scenar;
+    s.scenar = '';
+    try { await pdSimFetchVnitrni(url, init); } finally { s.scenar = puv; }
+    return new Promise((_, ne) => {
+      if (init.signal) init.signal.addEventListener('abort', () => ne(new Error('aborted')), { once: true });
+    });
+  }
+  return pdSimFetchVnitrni(url, init);
+}
+async function pdSimFetchVnitrni(url, init = {}) {
   const s = stav();
   const u = new URL(String(url));
   const metoda = String(init.method || 'GET').toUpperCase();

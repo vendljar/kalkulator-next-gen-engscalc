@@ -34,61 +34,42 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/bz-bezpecnost` | (tato dávka) | v22.11.3 | BZ audit B231–B236, B195 nad cda289e; revize Fable |
 | `claude/cn-cislo-nabidky` | (tato dávka) | v23.11.3 | CN #727 číslo nabídky nad 8411eb9 |
 | `claude/ra-rozhodnuti` | (tato dávka) | v23.11.2 | RA #723 #724 #726 + log webhooku nad integrací 133a8f5; verzi přečísluje koordinace |
+| `claude/pd-webhook-uprava` | (tato dávka) | v23.11.5 | PD #733 #732 #728 #729 nad 173ab6a; verzi přidělí koordinace |
 | `claude/mt-mutace-2311` | (tato dávka) | v23.11.3 | MT #735: 4 nechycené mutace kola 45162888071 — jen testy, nad c8d3d9d |
+| `claude/sa-sablony` | (tato dávka) | v23.11.6 | SA #719–#721 kontrola šablon nad 133a8f5; verzi přečísluje koordinace |
 | `claude/lak-lakovani` | (tato dávka) | v22.11.8 | LAK #666 lakování z nabídky lakovny nad 05a496d, s integrací 36e2681 |
+| `claude/pv-pipedrive` | (tato dávka) | v23.11.7 | PV #597 zápis prodeje do dealu + #734 autor = vlastník dealu nad 1280831; revize Fable; verzi přidělí koordinace |
 
 Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontrola: `python3 nastroje/release_odkaz.py --chybejici`
 (22. 11.: žádná — main v19.11.11, tag vydán).
 
 ## Běžící dávky
 
-- **CN #727** (`claude/cn-cislo-nabidky`, v23.11.3 prac.): HOTOVO, k revizi; detail `podklady/predavky/CN_cislo_nabidky.md`.
-- **RA** (`claude/ra-rozhodnuti`, v23.11.2 prac., nad 133a8f5): rozhodnutí J. V. 23. 11. — #723 „V pořádku“ jen
-  administrátor (server 403, klient štítek „čeká na potvrzení správcem“), #724 číslo PROJ po zámku / prodeji
-  (`zamekStranaZmena` 403 každé roli, klient `zamekZakCestaZmrazena`), #726 upozornění na zastaralé řádky DPZ
-  (Texty nabídky PROJ + Lhůty PROJ, jen varování), log `pd_webhook:` po kroku 7. Testy test_ra_rozhodnuti (21),
-  test_ra_vazba_ui (6), test_ra_terminy_proj (13), test_k40c_webhook (118), overit_xss; mutace [RA] 12 + 3.
-  Meze B258/B259 (pracovní). **Před sloučením revize Fable** (práva a zámky). #726 body 1 a 3 (data testu,
-  main) mimo dávku.
-- **LAK #666** (`claude/lak-lakovani`, v22.11.8, nad 05a496d + 36e2681): cena z nabídky lakovny jako částka řádku
-  `C.lak.nabidkaKc` (mimo ceník/Nastavení, `RC_CASTKY_RADKU` v `rucni_ceny.js`), ruční cena #561 se zdrojem a potvrzením;
-  bez zdroje = nepotvrzená (zábrana, 403). Svěřené LAK-1/LAK-2, otázky #716. Testy `test_666_lakovani` (53 + 31), revize Fable L1/L2 opraveny,
-  `overit_lakovani` 13, mutace [LAK] 10/10 + 12/12, kolo proti 36e2681 VŠE ZELENÉ, SHODA 367/367. PG blok přesunut (je v archivu 2026-11).
-- **JT #713** (`claude/jt-jazyk-tisku`, prac.): HOTOVO, detail `podklady/predavky/JT_jazyk_tisku.md`.
-- **NN** (`claude/nn-nizke-nalezy`, v22.11.10, nad ae0b542): #702 B237–B256, #703 mez, #705, #708, #711, #712, N1, PR-T1/T2; revize Fable R2–R5 (R2 mez → #722), nové #719–#721. Kolo viz CHANGELOG. Detail MEZE oddíl NN.
-- **PR #707** (`claude/pr-pripominky`, v22.11.5): Připomínky z aplikace, mez B257, HOTOVO; revize poradce před sloučením. Detail a bezpečnostní rozhodnutí: `podklady/predavky/PR_pripominky.md`.
-- **BZ** (`claude/bz-bezpecnost`, v22.11.3, nad cda289e): opravy auditu 20. 11. (rozhodnutí J. V. 21. 11.), #696–#704
-  prac. Testy `netlify/test_bz_bezpecnost.mjs`, `test_bz_pipedrive.mjs`, mutace [BZ] 21. **Před sloučením revize Fable.**
-  Rozhodnutí v dávce (k revizi): (1) B231: zmrazeny jen příznaky `jenProj`/`jenOck`, pro každou roli, ven = odemčení
-  správcem; snímek `zamek.strana` je razítko mimo klíč (drží server); obnova příznak bere ze zálohy; změna strany
-  po revizi zmrazena i strana podle čísla (R2). Dotisk nově hlídá i `rucniCenyZamekProblem`. (2) B232: „nesouhlasí“ dál jen
-  varuje (B59), neodmítá (#704-2); test P6 v `test_prava` zúžen na texty a klíče bez čísel. (3) B233: Blobs 8.2.0
-  nemá podmíněný zápis → `vyhradne` v instanci; mezi instancemi mez (#703). (4) B234: návrh změny = pole `navrhy`
-  na kartě (vzor `popisyNavrhy`), převzetí/zamítnutí autor nebo administrátor; „správce“ = role Administrátor;
-  historie `zakaznici/h/<klíč>` (50), v záloze (N4) i obnově. (5) B235/B236: jednotný vypínač nebyl → nová proměnná
-  Netlify `PIPEDRIVE_ZAPIS=ano` (výchozí VYP, simulátor nehlídá) v `pdZavolej`; vazba dealu (`lib/pd_overeni.mjs`):
-  vazba z webhooku / odkaz na kalkulaci / číslo nabídky (pole CN, jinak z názvu); strop 30 nových dealů/h na
-  uživatele; dvě zakázky s různým číslem na dealu píše jen ta s číslem dealu; oprava firmy (B209) beze změny
-  (#704-4). (6) B195: kód beze změny, ověřeno testem; mez opravena. Upravené cizí testy: `test_koncova_cena` N4,
-  `test_vyjimky` B153/B155 (stav „před B231“ zapsán přímo do úložiště), přípravky Pipedrive (deal nese číslo
-  nabídky zakázky), `test_vsd_pd_poznamka` 10 (N3 → jedna poznámka).
-  Revize Fable: R1–R5 + flake opraveno, #705, #704 (5)(6). PG v archivu.
-- **HN** (`claude/hn-harnessy`, v22.11.2, nad cda289e = v19.11.11): jen testy a nástroje kola. #638 harnessy zobrazení /
-  záporné bez pauz + test_577 T4 (náhodný token končící X) (příčina: `ADMIN_EMAIL` čtený při importu → `nastroje/harness_prostredi.mjs`), #644 test_vz_unik
-  (falešná shoda ceny s razítkem času, ne únik), #646 overit_sod + syntetické šablony (`nastroje/smlouvy_syntet.mjs`),
-  #647 případy `k40:*` v porovnání sestavení (+ `podklady/porovnani/ocekavane_k40n1_main_2026-11-21.txt` pro main × test),
-  #695 kolo bez playwrightu = chyba s návodem (`KNG_BEZ_PROHLIZECE=1`), `PRESKOCENO_CAST` v souhrnu.
-  Statické kontroly nově 10. Svěřená HN-T1/T2. Tabulka S7 přesunuta do archivu `2026-11.md`. Kolo VŠE ZELENÉ (496/0/6, hodiny 401/0/1, 10/10, SHODA 367/367 proti 885577e). HOTOVO, předáno koordinaci.
-- **RJ** (`claude/rj-rozhodnuti`, v22.11.7, nad 05a496d, sloučeno s integrací 21eeffa): rozhodnutí J. V. 22. 11. (#704, #706, #709, #710,
-  #665 podpis) → roadmapa #714 (dávka), #715 (podpis). (2) nový zámek „nesouhlasi“ → 409 `zamekNesouhlasi` + dialog Ctrl+F5;
-  (3) R2 potvrzeno testem; (4) oprava firmy přes `pd_overeni` (409 neovereno); (6)(7) pravidlo 3 zrušeno, druhá zakázka
-  na dealu zapisuje s vlastní vazbou, s vypnutým zápisem poznámka varuje; #665 `podpisOtisk` ve snímku + kopie `podpisy/zamek/<otisk>`, GET `?podpisZamku=`;
-  #710-4 koordinace 403 u uzavřené správcem; #706 `nastroje/kontrola_konfliktu.sh` (staticke 11). #709 → vlna F (stav
-  „odlozeno“ schéma nezná). Testy `netlify/test_rj_rozhodnuti.mjs` + přípravky PD (odkaz místo čísla). Kolo proti 21eeffa
-  VŠE ZELENÉ (514/0/6, hodiny 416/0/1, 11/11, SHODA 367/367), mutace [RJ] server 16/16, jádro 5/5. HOTOVO, k revizi.
-  v22.11.9 (#717): revize N1 („ceka“), R2 (zrušená vazba), N2, I3; R1 → otázka #718; kolo proti 60086f7 VŠE ZELENÉ, [RJ] 22/22. Mez: „V pořádku“ smí i autor.
-- **VZD** (`claude/vzd-drobnosti`, v22.11.1, s integrací 885577e): HOTOVO. Kolo VŠE ZELENÉ (505/0/7, hodiny 410/0/1, 9/9, SHODA 359/359),
-  mutace [VZD] jádro 16/16, server 4/4. #674 d a podpis u #665 k potvrzení J. V. Detail v CHANGELOG.
+- Sloučené dávky (SA, PD, CN, RA, LAK, JT, NN, PR, BZ, HN, RJ, VZD, MT) — oddíly přesunuty do `podklady/predavky/2026-11.md` (23. 11. 2026). Běží: PV (#734 + #597), RP (prototyp ručních položek, čeká na J. V.).
+
+## Dávka PV (`claude/pv-pipedrive`, 23. 11. 2026)
+
+- Nad integrací 1280831 (v23.11.5), v23.11.7. **#734:** webhook při založení dohledá vlastníka dealu
+  (owner_id → GET /api/v1/users → e-mail → aktivní účet) = autor; jinak technický účet + varování a `autor` v logu.
+  Vazba nese `zalozil` (pdVazbaDokladaZapis). **#597:** POST `/api/pd/prodej` náhled/zápis (functions/pd_prodej.mjs,
+  lib/pd_prodej.mjs, lib/jadro_pd.cjs), karta Prodej v `src/ui/sod_ui.js`; stav `v.prodano.pipedrive` zapsano/chyba.
+- Testy: test_pv_597_zapis 57/0, test_pv_734_autor 51/0, overit_pv_prodej 19/0, mutace [PV] 18/18 chycených,
+  kolo `--bez-mutaci --proti origin/claude/integrace-16-10` VŠE ZELENÉ (534/0, hodiny 433/0, S3 SHODA 367/367); sloučeno s 9f2445a.
+- Do živého Pipedrive nic. Po nasazení do testu: testovací sezení zkušební zápis na deal TEST (PIPEDRIVE_SPUSTENI A6b, A9).
+- Revize Fable (`podklady/revize/REVIZE_PV.md`): V1 (texty krycího listu ze serveru), S1 (převzetí: úmysl před PATCH,
+  poznámka při opakování), S2 (výhradní úsek na deal), S3 (limit `/users` ve webhooku), S4 (pevné věty chyb) opraveny;
+  mez okna GET–PATCH = B277. Otázky pro J. V.: O1 práva vlastníka-autora, O2 právo pro zápis prodeje (kód podle doporučení).
+- Návrhy do roadmapy (revize N1–N6): N1 vypnutý uživatel PD (`active_flag`) jako autor; N2 `pdPoleMapa` v časovém rozpočtu
+  zápisu; N3 deal se čte dvakrát (vrátit ho z `pdDealPatriZakazce`); N4 neúspěch kvůli vypnutému zápisu / vazbě nemá psát
+  zakázku ani přepsat „zapsano“; N5 řádek logu `pd_prodej` bez osobních údajů; N6 komentář `icoShoda` v `pd_vazba.mjs:53`.
+
+## Dávka MT2 (`claude/mt2-testy`, 24. 11. 2026)
+
+- Nad integrací db1e9e7 (v23.11.7), v24.11.1. Jen testy a nástroje kola (svěřená MT2-1, MT2-2); aplikace beze změny.
+- **#737:** mutace „#553: kontakt v odpovědi“ nechycená — test zeslábl po #729 (kontakt = jméno). `test_553_webhook.mjs`
+  hlídá jména kontaktů a pole `kontakt` v odpovědích; mutace před 0/1, po 1/1.
+- **#738:** sady bz/cn/nn/ra červené 00–01 Praha (datum prodeje v UTC). `netlify/pomoc_den.mjs` (dnesPraha),
+  `netlify/pomoc_falesne_hodiny.mjs`, hlídka `test_mt2_pulnoc.mjs`; před 8 FAIL, po 16 OK. Klient bere `objDnes()` — v aplikaci vada není.
 
 ## Čeká na J. V.
 

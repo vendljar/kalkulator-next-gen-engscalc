@@ -117,7 +117,9 @@ export function pdWebhookZadani(nase, cnDealu) {
   const n = nase || {};
   const txt = (x) => String(x == null ? '' : x).replace(/\s+/g, ' ').trim().slice(0, 500);
   const strana = /^\s*projekce/i.test(String(n.typZakazky || '')) ? 'proj' : 'ock';
-  const kontakt = [txt(n.kontakt), txt(n.kontaktObjednatel)].filter(Boolean).join(', ');
+  /* #729 (J. V. 23. 11. 2026): kontaktní osoba jen JMÉNO osoby dealu — e-mail
+   * a telefon zůstávají v Pipedrive (n.kontaktObjednatel se do hlavičky nebere). */
+  const kontakt = txt(n.kontakt);
   const datum = /^\d{4}-\d{2}-\d{2}$/.test(String(n.terminPlneni || '').slice(0, 10)) ? String(n.terminPlneni).slice(0, 10) : '';
   return {
     strana,
@@ -319,8 +321,76 @@ export function pdWebhookOdkaz(soubor, req, env = process.env) {
  * znaky pryč a každé zkrácené na 300 znaků, aby text chyby Pipedrive nemohl
  * řádek rozbít ani nafouknout. Žádný token, URL odkazu ani obsah kalkulace. */
 export const PD_WEBHOOK_LOG_VAROVANI_MAX = 300;
-export function pdWebhookLogRadek(dealId, akce, odkazDoDealu, varovani) {
+/* #734: `autor` = výsledek dohledání autora nové kalkulace (pdWebhookAutor:
+ * 'vlastnik' | 'nenalezen' | 'nejednoznacny' | 'bez-vlastnika' | 'bez-emailu'
+ * | 'chyba'; '' = kalkulace se nezakládala) — jen stav, nikdy e-mail ani jméno. */
+export function pdWebhookLogRadek(dealId, akce, odkazDoDealu, varovani, autor = '') {
   const cisty = (x, max) => String(x == null ? '' : x).replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, max);
-  return 'pd_webhook: ' + JSON.stringify({ dealId: cisty(dealId, 20), akce: cisty(akce, 40), odkazDoDealu: cisty(odkazDoDealu, 40),
-    varovani: (Array.isArray(varovani) ? varovani : []).slice(0, 20).map((v) => cisty(v, PD_WEBHOOK_LOG_VAROVANI_MAX)) });
+  const r = { dealId: cisty(dealId, 20), akce: cisty(akce, 40), odkazDoDealu: cisty(odkazDoDealu, 40) };
+  if (autor) r.autor = cisty(autor, 40);
+  r.varovani = (Array.isArray(varovani) ? varovani : []).slice(0, 20).map((v) => cisty(v, PD_WEBHOOK_LOG_VAROVANI_MAX));
+  return 'pd_webhook: ' + JSON.stringify(r);
+}
+
+/* ============================================================
+ * AUTOR KALKULACE ZALOŽENÉ WEBHOOKEM = VLASTNÍK DEALU (#734, J. V. 23. 11. 2026)
+ *
+ * Kalkulace z Pipedrive se má obchodníkovi otevřít rovnou k úpravám (#728);
+ * s autorem „pipedrive-webhook“ ji ale odemkne jen administrátor nebo vedoucí.
+ * Při ZALOŽENÍ (jen tehdy — opakované doručení autora nemění) se proto
+ * dohledá vlastník dealu: owner_id dealu (API v2; v1 user_id) → uživatel
+ * Pipedrive (GET /api/v1/users, tentýž seznam jako zápis uživatelských polí)
+ * → jeho e-mail → účet kalkulátoru se stejným e-mailem (úložiště `uzivatele`,
+ * klíč = e-mail malými písmeny). Autorem je ten účet.
+ *
+ * Bez rozšíření práv: kdykoli to není jednoznačné, zůstane technický účet
+ * PD_WEBHOOK_AUTOR (dnešní stav) a výsledek jde do logu funkce a do varování:
+ *   bez-vlastnika   deal nemá vlastníka (owner_id),
+ *   nenalezen       vlastník mezi uživateli Pipedrive není, nebo účet
+ *                   kalkulátoru s jeho e-mailem neexistuje / je vypnutý,
+ *   bez-emailu      uživatel Pipedrive nemá e-mail,
+ *   nejednoznacny   víc uživatelů Pipedrive se stejným id nebo e-mailem,
+ *                   nebo účet nese jiný e-mail než klíč,
+ *   chyba           seznam uživatelů se nenačetl (výpadek, strop, token).
+ * E-mail vlastníka se nikam nevrací (odpověď webhooku, log, protokol) —
+ * zakázka ho nese jen jako `autor`, jako každá jiná zakázka.
+ *
+ * `nactiUzivatele()` → pole uživatelů Pipedrive (může vyhodit),
+ * `ucet(emailMalymi)` → záznam účtu kalkulátoru nebo null.
+ * Vrací { stav, autor?, autorJmeno? }.
+ * ============================================================ */
+export const PD_WEBHOOK_AUTOR_STAVY = ['vlastnik', 'nenalezen', 'bez-vlastnika', 'bez-emailu', 'nejednoznacny', 'chyba'];
+export const PD_WEBHOOK_AUTOR_VAROVANI = {
+  'bez-vlastnika': 'Deal nemá vlastníka',
+  nenalezen: 'Vlastník dealu nemá v kalkulátoru aktivní účet se stejným e-mailem',
+  'bez-emailu': 'Vlastník dealu nemá v Pipedrive e-mail',
+  nejednoznacny: 'Vlastníka dealu nejde jednoznačně spárovat s účtem kalkulátoru',
+  chyba: 'Seznam uživatelů Pipedrive se nenačetl',
+};
+export function pdWebhookVlastnikId(deal) {
+  const d = deal || {};
+  const x = d.owner_id != null && d.owner_id !== '' ? d.owner_id : d.user_id;
+  const id = x && typeof x === 'object' ? x.id : x;
+  return /^[1-9][0-9]{0,11}$/.test(String(id == null ? '' : id)) ? Number(id) : 0;
+}
+export async function pdWebhookAutor(deal, { nactiUzivatele, ucet } = {}) {
+  const id = pdWebhookVlastnikId(deal);
+  if (!id) return { stav: 'bez-vlastnika' };
+  let lide;
+  try { lide = await nactiUzivatele(); } catch (e) { return { stav: 'chyba' }; }
+  if (!Array.isArray(lide)) return { stav: 'chyba' };
+  const em = (u) => String((u && u.email) || '').trim().toLowerCase();
+  const ja = lide.filter((u) => u && Number(u.id) === id);
+  if (!ja.length) return { stav: 'nenalezen' };
+  if (ja.length > 1) return { stav: 'nejednoznacny' };
+  const email = em(ja[0]);
+  if (!email) return { stav: 'bez-emailu' };
+  if (!/^[^\s@<>]+@[^\s@<>]+$/.test(email) || email === PD_WEBHOOK_AUTOR) return { stav: 'nenalezen' };
+  if (lide.filter((u) => em(u) === email).length > 1) return { stav: 'nejednoznacny' };
+  let u = null;
+  try { u = typeof ucet === 'function' ? await ucet(email) : null; } catch (e) { return { stav: 'chyba' }; }
+  if (!u || typeof u !== 'object' || u.aktivni === false) return { stav: 'nenalezen' };
+  if (String(u.email || '').trim().toLowerCase() !== email) return { stav: 'nejednoznacny' };
+  const jmeno = String(u.jmeno == null ? '' : u.jmeno).replace(/[\u0000-\u001f\u007f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+  return { stav: 'vlastnik', autor: email, autorJmeno: jmeno };
 }

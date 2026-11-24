@@ -31,7 +31,7 @@ function crc32(u8) {
  * paměti. Rozbaluje se proto po kouscích a nad strop se čtení zastaví.
  * Firemní šablony i ceníky v Excelu jsou rozbalené v jednotkách MB. */
 const ZIP_ROZBALENO_MAX = 64 * 1024 * 1024;
-async function zipRozbal(komprimovana, zbyva) {
+async function zipRozbal(komprimovana, zbyva, zprava) {
   const ds = new DecompressionStream('deflate-raw');
   const ctecka = new Blob([komprimovana]).stream().pipeThrough(ds).getReader();
   const kusy = [];
@@ -42,7 +42,7 @@ async function zipRozbal(komprimovana, zbyva) {
     n += value.length;
     if (n > zbyva) {
       try { await ctecka.cancel(); } catch (e) { /* nic */ }
-      throw new Error('ZIP se rozbalí na víc než ' + Math.round(ZIP_ROZBALENO_MAX / 1024 / 1024) + ' MB.');
+      throw new Error(zprava || ('ZIP se rozbalí na víc než ' + Math.round(ZIP_ROZBALENO_MAX / 1024 / 1024) + ' MB.'));
     }
     kusy.push(value);
   }
@@ -63,7 +63,11 @@ async function zipRozbal(komprimovana, zbyva) {
  * konce, který věrohodnosti nevyhoví a leží ZA věrohodným koncem (tam ho
  * jiné programy hledají), proto archiv odmítne. Podpis uvnitř dat před ním
  * (4 bajty náhodou v obrázku) nevadí — revize 12. 10. 2026, R1. */
-async function zipPrecti(u8) {
+/* STROP JEDNÉ XML ČÁSTI (B272, audit 20. 11. 2026): volby.xmlCastMax (kontrola
+ * šablony, sablona_obsah.js SABLONA_XML_CAST_MAX) zastaví rozbalení položky
+ * .xml / .rels nad strop hned — ne až po rozbalení celých 64 MB. */
+async function zipPrecti(u8, volby) {
+  const xmlMax = volby && volby.xmlCastMax > 0 ? volby.xmlCastMax : 0;
   const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
   // najdi End of Central Directory (PK\x05\x06) od konce
   const kandidati = [], neverohodne = [];
@@ -98,11 +102,16 @@ async function zipPrecti(u8) {
     const komprimovana = u8.subarray(dataZac, dataZac + velKomp);
     rozsahy.push([dataZac, dataZac + velKomp]);
     let data;
+    let mez = zbyva, zprava = '';
+    if (xmlMax && xmlMax < zbyva && /\.(xml|rels)$/i.test(nazev)) {
+      mez = xmlMax;
+      zprava = 'XML část větší než ' + Math.round(xmlMax / 1024 / 1024) + ' MB (' + nazev + ').';
+    }
     if (metoda === 0) {
-      if (komprimovana.length > zbyva) throw new Error('ZIP se rozbalí na víc než ' + Math.round(ZIP_ROZBALENO_MAX / 1024 / 1024) + ' MB.');
+      if (komprimovana.length > mez) throw new Error(zprava || ('ZIP se rozbalí na víc než ' + Math.round(ZIP_ROZBALENO_MAX / 1024 / 1024) + ' MB.'));
       data = new Uint8Array(komprimovana);
     }
-    else if (metoda === 8) data = await zipRozbal(komprimovana, zbyva);
+    else if (metoda === 8) data = await zipRozbal(komprimovana, mez, zprava);
     else throw new Error('Nepodporovaná komprese v ZIP: ' + metoda);
     zbyva -= data.length;
     polozky.push({ nazev, data });

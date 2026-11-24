@@ -53,12 +53,14 @@ import {
   pdWebhookCisloZaklad, pdWebhookPismeno, pdWebhookCisloSedi, pdWebhookCisloVarianta, pdWebhookVariantaPripona,
   pdWebhookOtisk, PD_WEBHOOK_POLE_ARES,
   PD_WEBHOOK_MAX, PD_WEBHOOK_TELO_MAX, PD_WEBHOOK_AUTOR, PD_WEBHOOK_AUTOR_JMENO, PD_WEBHOOK_ULOZISTE,
-  PD_WEBHOOK_KLIC_PROMENNA, pdWebhookLogRadek,
+  PD_WEBHOOK_KLIC_PROMENNA, pdWebhookLogRadek, pdWebhookAutor, PD_WEBHOOK_AUTOR_VAROVANI,
 } from '../lib/pd_webhook.mjs';
 
 /* Mapa polí bez „Odkazu na kalkulaci“ se obnoví nejvýš jednou za 15 min
  * (pole mohl integrátor právě založit; obnova stojí 20 tokenů). */
 const MAPA_OBNOVA_MS = 15 * 60 * 1000;
+/* #734 / revize PV S3: časový limit dotazu na uživatele Pipedrive (autor kalkulace). */
+export const PD_WEBHOOK_UZIVATELE_MS = 2500;
 
 async function bezpecne(cesta) {
   try { return await pdZavolej(cesta); } catch (e) { return null; }
@@ -232,6 +234,22 @@ async function zpracuj(req, dealId, ULO, G) {
   if (subjekt && subjekt.zanikla) varovani.push('Subjekt je v ARES zaniklý' + (subjekt.datumZaniku ? ' (' + subjekt.datumZaniku + ')' : '') + ' — údaje převzaty, zkontrolujte zákazníka.');
   if (aresRozdily.length && aresVolano) varovani.push('Organizace v Pipedrive se liší od ARES: ' + pdOrgText(aresRozdily) + '.');
 
+  /* 5c) AUTOR NOVÉ KALKULACE = VLASTNÍK DEALU (#734). Jen při založení —
+   * opakované doručení autora nemění. Nejasný výsledek = technický účet
+   * (bez rozšíření práv) + varování a log; e-mail se nikam nevrací. */
+  let autorVysledek = null;
+  if (!stara) {
+    autorVysledek = await pdWebhookAutor(deal, {
+      /* Revize PV S3: pomocný dotaz s vlastním limitem a bez opakování — výpadek
+       * = technický autor, webhook kvůli němu nesmí spadnout. */
+      nactiUzivatele: () => pdZavolej('/api/v1/users', { casLimitMs: PD_WEBHOOK_UZIVATELE_MS, pokusu: 1 }),
+      ucet: async (email) => (await uloziste('uzivatele')).cti(email),
+    });
+    if (autorVysledek.stav !== 'vlastnik')
+      varovani.push((PD_WEBHOOK_AUTOR_VAROVANI[autorVysledek.stav] || 'Vlastníka dealu nejde určit')
+        + ' — autorem kalkulace zůstal technický účet; odemkne ji administrátor nebo vedoucí.');
+  }
+
   /* 6) ZÁPIS KALKULACE — ve výhradním úseku zakázky (vzor SEC-S1). */
   const vysledek = await vyhradne('zakazky/z/' + jmeno, async () => {
     const tesne = await s.cti('z/' + jmeno);
@@ -241,6 +259,12 @@ async function zpracuj(req, dealId, ULO, G) {
     if (!stara) {
       zak = G.novaZakazka();
       pdWebhookHlavicka(zak, zadani.strana).cislo = zadani.cislo;
+      /* #733 (K53-N2, J. V. 23. 11. 2026): čerstvá kalkulace z dealu, dosud
+       * neotevřená člověkem. Server ceník nevolí (P12) a výchozí zaškrtnutí
+       * z matice zobrazení nezná — prohlížeč ji při otevření připraví jako
+       * „Novou zakázku“ (pdCerstvaPriprav v src/zakazka.js) a příznak zahodí.
+       * Píše ho jen server: od klienta se nebere nikdy (pdVazbaDrz). */
+      zak.pdCerstva = true;
       akce = 'zalozeno';
     } else {
       zak = JSON.parse(JSON.stringify(stara));
@@ -258,6 +282,9 @@ async function zpracuj(req, dealId, ULO, G) {
        * existující kalkulace s pdDealId bez vazby (pdDealId zadal obchodník,
        * třeba předem s číslem cizího dealu) dostane taky „ceka“. */
       stav: vazbaPlati ? vazbaPlati.stav : (stara ? 'ceka' : 'webhook'), ares,
+      /* #734: kalkulaci založil webhook — vazba dokládá zápis (pdVazbaDokladaZapis)
+       * i když autorem je vlastník dealu, ne technický účet. Píše jen server. */
+      ...((!stara || (vazbaPlati && vazbaPlati.zalozil)) ? { zalozil: true } : {}),
       /* Revize K40c N1: po výpadku ARES se otisk IČO NEUKLÁDÁ — další doručení
        * se stejným IČO se zeptá znovu (u 'neplatne' / 'nenalezeno' ne). */
       icoOtisk: aresVolano && ares !== 'vypadek' ? icoOtisk : (vazbaPlati ? vazbaPlati.icoOtisk : ''),
@@ -275,7 +302,10 @@ async function zpracuj(req, dealId, ULO, G) {
       neplatne: 'IČO neprojde kontrolní číslicí — firma z dealu', nenalezeno: 'IČO v ARES není — firma z dealu',
       vypadek: 'ARES neodpověděl — firma z dealu' }[ares] || '');
     pdProtokol(zak, PD_WEBHOOK_AUTOR, (bezVazby ? (stara ? 'Navázáno na deal ' + dealId + ' podle čísla nabídky ' + zadani.cislo
-      : 'Založeno z dealu ' + dealId + ' (číslo nabídky ' + zadani.cislo + ')') : 'Aktualizace z dealu ' + dealId)
+      : 'Založeno z dealu ' + dealId + ' (číslo nabídky ' + zadani.cislo + ')'
+        + (autorVysledek ? (autorVysledek.stav === 'vlastnik' ? '; autor: vlastník dealu' + (autorVysledek.autorJmeno ? ' ' + autorVysledek.autorJmeno : '')
+          : '; autor: technický účet (' + (PD_WEBHOOK_AUTOR_VAROVANI[autorVysledek.stav] || autorVysledek.stav).toLowerCase() + ')') : ''))
+      : 'Aktualizace z dealu ' + dealId)
       + '; doplněno: ' + (pdPoleText(zmena.zmeneno) || 'nic')
       + (zmena.ponechano.length ? '; ponecháno (kalkulace má jinou hodnotu): ' + pdPoleText(zmena.ponechano) : '')
       + (aresVeta ? '; ' + aresVeta : ''));
@@ -288,8 +318,14 @@ async function zpracuj(req, dealId, ULO, G) {
       const prijem = zakazkaPrijmi(JSON.parse(JSON.stringify(zak)), ULO);
       if (!prijem.ok) return { odpoved: json({ ok: false, chyba: prijem.chyba }, prijem.status) };
       if (prijem.jmeno !== jmeno) return { odpoved: json({ ok: false, chyba: 'Číslo nabídky dává jiné jméno kalkulace.' }, 500) };
-      zak.autor = PD_WEBHOOK_AUTOR;
-      zak.autorJmeno = PD_WEBHOOK_AUTOR_JMENO;
+      /* #734: autorem je vlastník dealu (účet kalkulátoru podle e-mailu), jinak technický účet. */
+      if (autorVysledek && autorVysledek.stav === 'vlastnik') {
+        zak.autor = autorVysledek.autor;
+        if (autorVysledek.autorJmeno) zak.autorJmeno = autorVysledek.autorJmeno; else delete zak.autorJmeno;
+      } else {
+        zak.autor = PD_WEBHOOK_AUTOR;
+        zak.autorJmeno = PD_WEBHOOK_AUTOR_JMENO;
+      }
       /* BEZ CENÍKU (P12): ceník doplní prohlížeč z platného při otevření —
        * server ceník nevolí a cena z CRM do kalkulace nejde. */
       zak = G.zakazkaBezCeniku(zak, (v) => ({ cenik: v.data.cenik, proj: { cenik: v.data.proj && v.data.proj.cenik } }));
@@ -323,10 +359,12 @@ async function zpracuj(req, dealId, ULO, G) {
     }
   }
   /* RA (J. V. 23. 11. 2026): jeden řádek do logu funkce — proč se odkaz (ne)zapsal. */
-  console.log(pdWebhookLogRadek(dealId, vysledek.akce, odkazDoDealu, varovani));
+  const autorStav = vysledek.akce === 'zalozeno' && autorVysledek ? autorVysledek.stav : '';
+  console.log(pdWebhookLogRadek(dealId, vysledek.akce, odkazDoDealu, varovani, autorStav));
   const z = vysledek.zmena;
   return json({ ok: true, akce: vysledek.akce, dealId, soubor: jmeno, odkaz,
     zmeneno: z.zmeneno, ponechano: z.ponechano, zamceno: z.zamceno, odkazDoDealu, varovani,
+    ...(autorStav ? { autor: autorStav === 'vlastnik' ? 'vlastnik' : 'technicky' } : {}),
     ares, aresDotaz: aresVolano, aresRozdily,
     pozn: 'Cena se z Pipedrive nepřebírá — nabídku vygeneruje obchodník v kalkulaci.' });
 }

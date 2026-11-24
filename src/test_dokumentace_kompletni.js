@@ -175,9 +175,9 @@ const node = (cti(path.join(KOREN, 'netlify.toml')).match(/NODE_VERSION = "([\d.
 test('(b) verze Node ' + node + ' jako v netlify.toml', !!node && TEXT.includes('Node ' + node));
 const nodeAkce = (cti(path.join(KOREN, '.github', 'workflows', 'testy.yml')) || '').match(/cast: \[([^\]]*)\]/g) || [];
 /* T2 #543 (2. 11. 2026): server 16 částí (dřív 10, části přes limit 90 min).
- * CI-24 (23. 11. 2026): server 24 částí (1812 mutací, 16 částí přes limit 100 min). */
-test('(b) části mutací v Actions (server 24, jádro 3)', nodeAkce.length >= 2 && /'24\/24'/.test(nodeAkce[0]) && /'3\/3'/.test(nodeAkce[1])
-  && TEXT.includes('mutace serveru v 24 částech') && TEXT.includes('mutace jádra ve 3 částech'), nodeAkce);
+ * CI-24 (23. 11. 2026): server 24 částí; CI-32 (24. 11. 2026): server 32 částí (1852 mutací, 2 části z 24 přes limit 100 min). */
+test('(b) části mutací v Actions (server 32, jádro 3)', nodeAkce.length >= 2 && /'32\/32'/.test(nodeAkce[0]) && /'3\/3'/.test(nodeAkce[1])
+  && TEXT.includes('mutace serveru v 32 částech') && TEXT.includes('mutace jádra ve 3 částech'), nodeAkce);
 const role = (SD.match(/export const ROLE = \[([^\]]*)\]/) || [])[1].match(/'([^']+)'/g).map(r => r.slice(1, -1));
 const matice = tabulky(kap('kap-p-uzivatele')).find(t => /Matice práv/.test(t.titulek || ''));
 test('(b) matice práv má sloupec pro každou roli z kódu', !!matice && role.every(r => matice.hlavicka.includes(r)), role);
