@@ -105,7 +105,8 @@ Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.)
   datum nabídky zatím jen v poznámce (pole v Pipedrive chybí, #763), podklad = odesílaná varianta (#762).
 - Server `POST /api/pd/odeslani` (nahled / zapis / soubor), `lib/pd_odeslani.mjs`; karta `src/ui/odeslani_pd_ui.js`
   pod lištou zámku; stav `zak.pdOdeslani` jen ze serveru; simulátor umí soubory; `pdZavolej` multipart.
-- Testy (po opravách revize): `netlify/test_po_116_odeslani.mjs` 85/85, `src/test_po_116_ui.js` 23/23, `test_prava` 1055/0, mutace [PO] 44/44;
+- Testy (po dorevizi D1–D5): `netlify/test_po_116_odeslani.mjs` 88/88, `src/test_po_116_ui.js` 23/23, `src/test_po_116_docx.js` 13/13, `test_prava` 1055/0, mutace [PO] 45/45;
+  kolo nad 6469b40: sady 545/0, hodiny 444/0, statické 12/12; S3 proti 7339a9e (základ) SHODA 367/367, proti posunuté integraci 230eb6a 2 rozdíly EN TS_MUSTKY z ER/ZK (ne z PO);
   kolo `--bez-mutaci --proti origin/claude/integrace-16-10` VŠE ZELENÉ (sady 544/0, hodiny 443/0, statické 12/12),
   S3 SHODA 367/367.
 - Revize Fable (`claude/revize-po`, SLOUČIT PO OPRAVÁCH): R1–R12 opraveny ve větvi (R3, R4 podle doporučení, rozhodne J. V. v #765 d, #762 c).
