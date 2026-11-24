@@ -8,6 +8,33 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v24.11.2 (pracovní) — RP: ruční položky kalkulace OCK v nabídce CN a krycím listu (#736, #740), větev claude/rp-rucni-polozky
+
+Nad integrací `d655295`, sloučeno s `0fd6410` (v24.11.1). Rozhodnutí J. V. 23. 11. 2026 (podnět CN-431), prototyp
+a doporučení odsouhlaseny 24. 11. **Cenu kalkulací nemění** (jádro výpočtu beze změny); mění se text nabídky
+a krycího listu jen u zakázek, které ruční položku mají. Číslo verze přidělí koordinace.
+
+- **Ruční položka se tiskne vždy (#736).** Řádek, který obchodník přidá tlačítkem „+ přidat položku“ (bez vazby na
+  ceník, množství > 0), jde do technické specifikace do sekce podle sekce kalkulace: Hrubá OCK, ATYP, Spojovací
+  materiál, Lakování → KONSTRUKČNÍ ŘEŠENÍ ŠACHTY; Opláštění → OPLÁŠTĚNÍ ŠACHTY; Volitelné → DOPLŇKOVÉ KONSTRUKCE;
+  Můstky → MŮSTKY MEZI BUDOVOU A OCK; Režie → PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE. Řádek NÁZEV | „množství jednotka“
+  a pod tím dodatkový text (Word klon řádku poslední pozice sekce šablony CN v18, online Kompletní náhled podkladů).
+  Víc šachet: u své šachty, Režie s názvem šachty.
+- **Cena ruční položky v cenovém bloku** jako u můstků: VÝTAHOVÁ ŠACHTA / položka / (Cena před slevou / Sleva) /
+  CENA CELKEM; součet řádků = cena před slevou na korunu i na euro (cena s marží). Ruční položka Můstků se odečte
+  z řádku můstků, položka s cenou 0 jde jen do specifikace. CENA CELKEM bez podtitulu „výtahová šachta a můstky“.
+- **Krycí list OCK (BO i Tech):** řádek „Ruční položky v ceně“ (počet – název, množství jednotka, cena s marží,
+  sekce) jen u zakázky s ruční položkou; do Pipedrive se nepíše.
+- **Jednotka, dodatkový text a překlad (#740):** pod ruční položkou jednotka ks / bm / m² / kpl (výchozí ks, starý
+  soubor = ks), „Dodatkový text do cenové nabídky (nepovinné)“, cílová sekce a překlad EN/DE/FR. Slovník: bm → lm /
+  lfm / ml, kpl → set / Kpl. / ens. Kontrola před tiskem „Ruční položka zůstane v cizojazyčné nabídce česky“.
+- **Odeslaná nabídka** se při dotisku vytiskne s ručními položkami ze zmrazeného výsledku; čísla zámku, ověření
+  serveru (B59/B232) ani otisk se nemění.
+- Testy: `src/test_rp_rucni_polozky.js` (41), `src/test_np_nahled_word.js` oddíl G (náhled = Word s ručními
+  položkami); pojistka nad d655295 selže. Mutace [RP] 18. Vědomě upravené: test_kontroly (54 pravidel), test_kryci,
+  test_platby_ock, zlatá sada VS (jen texty dokumentů u 25 scénářů s ruční položkou), cisla_vydani.json,
+  tabulka zmrazení KL (nové pole jako Příplatky v nabídce — k potvrzení J. V.). Příručka kap. 18.
+
 ## v24.11.1 — MT2: zpevnění testů kola (#737 mutace #553 kontakt, #738 sady kolem půlnoci), větev claude/mt2-testy
 
 Nad integrací `db1e9e7` (v23.11.7). **Aplikace beze změny, cenu ani dokumenty nemění** (porovnání sestavení proti
