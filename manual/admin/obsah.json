@@ -1343,7 +1343,7 @@
             },
             {
               "pojem": "Kdo smí číst",
-              "vyklad": "Administrátor a role s právem *Čtení obchodních případů z Pipedrive* v matici zobrazení (výchozí: všichni). Stav dealu u zakázky vidí každý, kdo vidí zakázku."
+              "vyklad": "Administrátor a role s právem *Pipedrive: čtení a zápis do vlastních obchodních případů* v matici zobrazení (výchozí: všichni). Stav dealu u zakázky vidí každý, kdo vidí zakázku."
             },
             {
               "pojem": "Napojení",

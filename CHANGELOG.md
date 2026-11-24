@@ -8,11 +8,11 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v24.11.2 (pracovní) — RP: ruční položky kalkulace OCK v nabídce CN a krycím listu (#736, #740), větev claude/rp-rucni-polozky
+## v24.11.6 — RP: ruční položky kalkulace OCK v nabídce CN a krycím listu (#736, #740), větev claude/rp-rucni-polozky
 
-Nad integrací `d655295`, sloučeno s `0fd6410` (v24.11.1). Rozhodnutí J. V. 23. 11. 2026 (podnět CN-431), prototyp
+Nad integrací `d655295`, sloučeno s `0fd6410` (v24.11.1) a `c89e872` (v24.11.5). Rozhodnutí J. V. 23. 11. 2026 (podnět CN-431), prototyp
 a doporučení odsouhlaseny 24. 11. **Cenu kalkulací nemění** (jádro výpočtu beze změny); mění se text nabídky
-a krycího listu jen u zakázek, které ruční položku mají. Číslo verze přidělí koordinace.
+a krycího listu jen u zakázek, které ruční položku mají.
 
 - **Ruční položka se tiskne vždy (#736).** Řádek, který obchodník přidá tlačítkem „+ přidat položku“ (bez vazby na
   ceník, množství > 0), jde do technické specifikace do sekce podle sekce kalkulace: Hrubá OCK, ATYP, Spojovací
@@ -42,6 +42,90 @@ a krycího listu jen u zakázek, které ruční položku mají. Číslo verze p�
 - **Krycí list u šachty s víc kusy (N1, J. V. 24. 11.):** u ruční položky cena za kus a celkem, např. „12 000 Kč/ks ×
   2 ks = 24 000 Kč“ (BO i Tech, i odeslaná nabídka); u 1 ks jen cena.
 
+## v24.11.5 — K54-N1 #750: smazaná otevřená kalkulace se zavře a uložením nevzkřísí, větev claude/rychla-K54-N1
+
+Rychlá cesta nad integrací `0fd6410` (= test, v24.11.1). **Ceník ani sazby nemění** (porovnání sestavení: SHODA);
+dopad na cenu byl nepřímý — vzkříšená stará data smazané kalkulace (nález kola 54, CN-432 na testu).
+
+- **Klient (rozhodnutí J. V. 24. 11.):** smaže-li administrátor v Seznamu zakázek kalkulaci, kterou má otevřenou,
+  okno ji hned zavře (prázdná Nová zakázka, jako tlačítko Nová zakázka) s hláškou „Kalkulace <číslo> byla smazána.“
+  Dřív zůstala otevřená a upravitelná a první uložení ji na serveru založilo znovu ze staré kopie (zamčená varianta,
+  ceník s marží 0, protokol) — webhook Pipedrive ji pak jen aktualizoval. Nepovedené smazání ani smazání jiné
+  zakázky otevřenou nezavře.
+- **Server (pojistka):** uložení, které nese razítko a jméno záznamu (`ocekavanySoubor`), pod nímž už nic neleží,
+  `POST /api/zakazky` odmítne 409 `smazana` s vysvětlením — smazanou kalkulaci nevzkřísí ani jiná karta nebo kolega
+  (ani „Přepsat serverovou verzi“). Nová zakázka (i pod číslem smazané), přečíslování, obnova ze zálohy a webhook
+  (nová čerstvá kalkulace s `pdCerstva`) beze změny; formát dat beze změny.
+- **Revize Fable (`podklady/revize/REVIZE_K54N1.md`):** po smazání se zahodí kroky Zpět/Znovu a záloha smazané
+  kalkulace v prohlížeči (N1, N2 — Ctrl+Z ji dřív vrátil a autosave založil znovu); odpověď 409 `smazana` zastaví
+  ukládání a radí duplikovat nebo zavřít (N5); potvrzení mazání předem řekne, že se otevřená kalkulace zavře,
+  karta se nepřepíná (N6); mazání zruší naplánovaný autosave a počká na rozběhnuté uložení (N7); zbylé vědomé cesty
+  zapsány do `BEZPECNOST_MEZE.md` (N4).
+- **N3 (rozhodnutí J. V. 24. 11.):** čerstvou kalkulaci z Pipedrive (`pdCerstva`) nepřepíše stará kopie ani
+  „Přepsat serverovou verzi“ — 409 „Kalkulaci mezitím znovu založil Pipedrive — otevřete ji ze Seznamu / odkazem
+  z dealu; vaše kopie se neuložila.“ Řádné první uložení načtené čerstvé kalkulace projde. Totožnost čerstvé
+  kalkulace nese čas založení vazby z webhooku (`pdVazbaWebhook.kdy`), ne razítko verze — aktualizace webhookem nad
+  otevřenou kalkulací dá běžnou kolizi s „Načíst znovu / Přepsat“ a zápis do složky uložení neblokuje (dorevize D1/D2);
+  pojistka je ochrana proti omylu, ne bezpečnostní mez (D3). Značka „smazána“ platí i u okna bez jména záznamu a ruší
+  ji úspěšné uložení i odhlášení (D4).
+- Testy s pojistkou: `netlify/test_k54n1_smazana.mjs` (před 6 FAIL, N3 5 FAIL, D1/D2 3 FAIL; po 30 OK),
+  `src/test_k54n1_smazani_ui.js` (na `0fd6410` 21 FAIL, na `b23e832` 15 FAIL, D4 3 FAIL; po 34 OK); mutace [K54N1].
+
+## v24.11.4 — DT: datum cenové nabídky = den tisku (#745, #746), větev claude/dt-datum-tisku
+
+Nad integrací `0fd6410` (v24.11.1). Rozhodnutí J. V. 24. 11. 2026. **Cenu, číslo nabídky ani otisk zámku nemění**
+(datum není v klíči zámku ani v otisku). Porovnání sestavení proti `origin/test`: cena SHODA, 363/367 shodných,
+4 očekávané rozdíly jen v DATUM neodeslaných variant fixtur (`podklady/porovnani/ocekavane_dt_2026-11-24.txt`).
+
+- **Nabídka OCK i PROJ (všechny jazyky) nese den tisku** v Europe/Prague, ne datum založení kalkulace
+  (`nabidkaDatum` v `src/zamek.js`). Online náhled ukazuje datum, jaké dostane tisk dnes.
+- **Odeslaná nabídka drží den odeslání**: nové pole zámku `zamek.datumNabidky` (jen při prvním zamčení; mimo klíč
+  zámku; uložené drží server `uloZamekRazitkaDrz`, nový zámek ověří `zakazka_kontrola.mjs` — nejvýš 7 dní před
+  odesláním, jinak den odeslání). **Zámky před DT** pole nemají → dotisk beze změny (datum založení).
+- Krycí list OCK/PROJ „Dne“ = datum nabídky (zmrazené hodnoty starých zámků beze změny); objednávka PROJ
+  „nabídka ze dne“ = datum nabídky.
+- **Smlouva o dílo** (OCK i PROJ) cituje „nabídku ze dne“ týmž datem jako nabídka (#746, J. V. 24. 11. 2026);
+  ostatní text a data SoD beze změny. Zámek vzniklý tiskem SoD = den odeslání nabídky.
+- **Beze změny:** plná moc, `v.datum`/`zak.datum` (stáří ceníku, controlling, seznamy).
+- Tiskový náhled OCK i PROJ předá zámku den, který vytiskl (symbol DATUM), takže náhled otevřený přes půlnoc
+  a jeho dotisk se shodují (revize N1). Krycí list „Dne“ se při zámku dál zmrazí na den zámku (J. V., N4);
+  mez data vůči `zamek.kdy` = B278 v BEZPECNOST_MEZE (N5).
+- Testy: `src/test_dt_datum_tisku.js` (pojistka: nad 0fd6410 53 FAIL a pád, po 84 OK), `netlify/test_dt_datum_tisku.mjs`
+  (nad 0fd6410 12 FAIL, po 17 OK); mutace `[DT]` 18/18 chycených. Zlatá sada VS přegenerovaná (jen DATUM 4 neodeslaných
+  variant, svěřené DT-2), harness `overit_vz_tisk.mjs` (DT-1). Kolo `--bez-mutaci`: sady 537/0, hodiny 436/0, statické 12/12.
+
+## v24.11.3 — R3: zákaz dalších polí Wordu v šablonách (#751), větev claude/r3-pole-wordu
+
+Nad integrací `3cab0c5` (v24.11.2). **Cenu ani text dokumentů nemění** (firemní šablony mají jen pole `PAGE`).
+
+- **#751 (revize SA R3, rozhodnutí J. V. 24. 11. 2026):** kontrola nahrávané šablony Wordu (server, průvodce) i kontrola
+  při vyplňování nabídky (`docxObsahZkontroluj`) odmítne vedle `FILENAME`, `USERNAME`, `AUTHOR` (B271, #720) i pole
+  `USERINITIALS`, `USERADDRESS`, `LASTSAVEDBY`, `TEMPLATE`, `INFO` a `DOCPROPERTY` — vkládají jméno a iniciály uživatele,
+  kdo naposledy uložil, cestu k šabloně a vlastnosti dokumentu (`INFO Author` dřív obešlo zákaz `AUTHOR`). Ve `fldSimple`,
+  ve složeném poli i s kódem rozděleným do běhů, malými písmeny, v uvozovkách, s přepínači; hláška „pole <TYP> (část)“.
+  Test `src/test_sa_sablony.js` (36 tvarů + 6 × generátor; PAGE, REF a slova v textu projdou), pojistka: před opravou
+  70 OK / 42 FAIL, po 112 / 0. V `src/test_sablona_obsah.js` legitimní případ `slovaPodobna` místo `DOCPROPERTY` nese
+  `REF DatabaseVerze`. Mutace jádra `[R3]` (6), mutace `[SA] B271` přepsaná na nový řádek.
+
+## v24.11.2 — UT: texty v aplikaci (#741 nápověda Opláštění, #742 popisek práva Pipedrive), test šablon (#743), větev claude/ut-texty
+
+Nad integrací `0fd6410` (v24.11.1). **Cenu ani text dokumentů nemění** (porovnání sestavení proti `origin/test`: viz zpráva koordinaci).
+
+- **#741 — nápověda u volby Opláštění podle zvolené hodnoty (J. V. 24. 11. 2026, varianta A):** po stěnách
+  „Jiný typ zasklení viz níže.“; standard podle toho, co se počítá (`skloVolba`): exteriér „Zasklení VSG 4.4.1 +
+  Izolační dvojsklo“, interiér mezi příčníky „Zasklení VSG 4.4.1“, interiér na terče „Zasklení VSG 4.4.2“. Title se
+  mění se změnou typu šachty a zasklení. Řádek skla v tabulce a Detail výpočtu mají dál nápovědu „Jiné sklo…“.
+  Test `src/test_ut_741_napoveda_opl.js`, pojistka: před 15 FAIL, po 14 OK; mutace `[UT] #741` (4).
+- **#742 — O2, rozhodnutí J. V. 24. 11. 2026 (varianta a):** právo `crm.pipedrive` zůstává (klíč beze změny), popisek
+  v Nastavení → Zobrazení je nově „Pipedrive: čtení a zápis do vlastních obchodních případů“ (hlídá i zápis prodeje
+  do dealu, #597). Tentýž název citují karta Prodej, chyba 403 z `/api/pd/*`, hláška výběru organizace dealu,
+  příručka administrátora a kompletní příručka, `NASAZENI_NETLIFY.md`, `BEZPECNOST_MEZE.md` (O2 rozhodnuto).
+  Mutace B80 přepsaná na nový řádek, nové mutace `[UT] #742` (4). Test `src/test_ut_742_popisek_pd.js`,
+  pojistka: před opravou 18 FAIL, po 20 OK.
+- **#743 (K54-I1) — test šablon:** `src/test_sablona_obsah.js` kontroluje všechny `Sablona_*.docx` z `KNG_PODKLADY`
+  (dřív pevný seznam CN v14 / PROJ v4 → CN v18 a PROJ v9 se přeskočily). Pojistka: stará sada s podklady jen s vadnou
+  CN v18 zelená, nová 1 FAIL. Svěřené rozhodnutí UT-3. **#744 (K54-I2)** — jazykové SoD projekce na testu: čeká na J. V.
+- Mutační harness: obě nové sady UT v `SADY` (dřív tam `test_ut_742` chyběl a mutace `[UT] #742` ho nepouštěly).
 ## v24.11.1 — MT2: zpevnění testů kola (#737 mutace #553 kontakt, #738 sady kolem půlnoci), větev claude/mt2-testy
 
 Nad integrací `db1e9e7` (v23.11.7). **Aplikace beze změny, cenu ani dokumenty nemění** (porovnání sestavení proti

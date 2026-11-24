@@ -493,6 +493,7 @@ function onlineOdhlas() {
     onlineZobrazeniHesloZapomen();                 // B168: heslo k matici jen v rámci přihlášení
     if (typeof NAST !== 'undefined') NAST.nahledRole = '';
     ONLINE_STAV.rejstrik = []; ONLINE_STAV.soubor = ''; ONLINE_STAV.razitko = ''; ONLINE_STAV.posledni = '';
+    ONLINE_STAV.smazana = ''; ONLINE_STAV.smazanaText = '';   // K54-N1 dorevize D4
     onlinePoslednizapamatuj('');   // po odhlášení se nikam nevracíme
     ONLINE_STAV.kdyUlozeno = null;
     ONLINE_STAV.uzivatele = []; ONLINE_STAV.uzivateleNacteno = false; ONLINE_STAV.formHeslo = '';
@@ -1483,6 +1484,17 @@ function onlineUloz(opts) {
       ? true : onlineUloz(opts);
     return ONLINE_STAV.ukladaBeh.then(znovu, znovu);
   }
+  /* K54-N1 (#750, revize Fable N5): kalkulace mezitím smazaná na serveru
+   * (409 smazana) se už neukládá — žádné opakování, autosave stojí, hláška
+   * drží. Značku ruší jen jiná zakázka (otevření, Nová zakázka, duplikát). */
+  /* Dorevize D4: okno bez jména záznamu (nová zakázka pod číslem čerstvé) se
+   * porovnává se jménem, které by uložení dalo. */
+  if (ONLINE_STAV.smazana && ONLINE_STAV.smazana === (ONLINE_STAV.soubor
+      || (typeof uloJmenoSouboru === 'function' ? uloJmenoSouboru(ZAK) : ''))) {
+    if (!opts.tiche) { onlineZprava(onlineSmazanaText(), 'varovani'); render(); }
+    if (opts.fronta) onlineTiskNeulozenDialog(onlineSmazanaText());
+    return Promise.resolve(false);
+  }
   /* Po kolizi verzí se nic neukládá, dokud uživatel nezvolí jednu z cest
    * (načíst znovu / přepsat) — jinak by se 409 sypaly do konzole dál. */
   if (ONLINE_STAV.kolize) {
@@ -1534,7 +1546,9 @@ function onlineUloz(opts) {
    * verzi, ze které jsme nevyšli. Kolizi řeší hláška s dvěma tlačítky (V27);
    * `prepsat: true` zůstává jako výslovná cesta pro volajícího. */
   const snimkyNove = (typeof zamekSnimkyVrat === 'function') ? zamekSnimkyVrat() : [];   // Z1, K7-K2
-  const telo = { zakazka: ZAK, ocekavaneRazitko: ONLINE_STAV.razitko || '' };
+  /* K54-N1 (#750): i jméno záznamu, ze kterého okno vyšlo — server podle něj
+   * pozná kalkulaci mezitím smazanou a nezaloží ji znovu (409 smazana). */
+  const telo = { zakazka: ZAK, ocekavaneRazitko: ONLINE_STAV.razitko || '', ocekavanySoubor: ONLINE_STAV.soubor || '' };
   /* CO SE SKUTEČNĚ ODESLALO (K7-K1). „Naposledy uloženo" se bere z tohohle
    * otisku, ne z ZAK v okamžiku odpovědi — změna provedená během letícího
    * zápisu (typicky zámek po tisku) by se jinak tvářila jako uložená. */
@@ -1553,6 +1567,7 @@ function onlineUloz(opts) {
     /* VZ T1 (N3): skutečnou organizaci dealu píše jen server — převzít, ať hlavička a náhled poznámky sedí na zápis. */
     if (Object.prototype.hasOwnProperty.call(o, 'pdOrgDealu')) { if (o.pdOrgDealu) ZAK.pdOrgDealu = o.pdOrgDealu; else delete ZAK.pdOrgDealu; }
     ONLINE_STAV.kolize = null;
+    ONLINE_STAV.smazana = ''; ONLINE_STAV.smazanaText = '';   // dorevize D4: uloženo = značka neplatí
     onlinePoslednizapamatuj(o.soubor);   // po refreshi se sem vrátíme
     ONLINE_STAV.posledni = zmenaBehem ? onlineOdeslanoSRazitkem(odeslanoText, o.razitko, o.zamkyPrijato) : JSON.stringify(ZAK);
     ONLINE_STAV.kdyUlozeno = new Date();
@@ -1598,6 +1613,18 @@ function onlineUloz(opts) {
     /* Server odmítá i pokus přepsat odeslanou (uzamčenou) nabídku – jeho
      * zdůvodnění se ukáže doslova, je z téhož kódu jako hláška u složky.
      * Selhání zápisu nikdy nekončí tichem. */
+    /* K54-N1 (N5): kalkulace byla mezitím smazána — trvalý stav, ne chyba k opakování.
+     * N3 (J. V. 24. 11.): totéž, když pod jménem mezitím leží čerstvá kalkulace
+     * z Pipedrive (pdCerstvaJina) — hláška je pak ta ze serveru. */
+    if (e && e.data && (e.data.smazana || e.data.pdCerstvaJina)) {
+      ONLINE_STAV.smazana = ONLINE_STAV.soubor || String(e.data.soubor || '')
+        || (typeof uloJmenoSouboru === 'function' ? uloJmenoSouboru(ZAK) : '');
+      ONLINE_STAV.smazanaText = e.data.pdCerstvaJina ? String(e.data.chyba || '') : '';
+      if (ONLINE_STAV.timer) { clearTimeout(ONLINE_STAV.timer); ONLINE_STAV.timer = null; }
+      onlineZprava(onlineSmazanaText(), 'varovani');
+      if (opts.fronta) onlineTiskNeulozenDialog(onlineSmazanaText());
+      return false;
+    }
     /* RJ (#704-2): nový zámek s čísly, která nesouhlasí s výpočtem serveru (409,
      * kód zamekNesouhlasi) — „uložte znovu" nepomůže; vlastní dialog s radou Ctrl+F5. */
     if (onlineZamekNesouhlasi(e)) {
@@ -1614,6 +1641,14 @@ function onlineUloz(opts) {
           e => { ONLINE_STAV.pracuje = false; ONLINE_STAV.ukladaBeh = null; render(); throw e; });
   ONLINE_STAV.ukladaBeh = beh;
   return beh;
+}
+
+/* K54-N1 (N5): text pro okno, jehož kalkulaci mezitím někdo smazal. */
+function onlineSmazanaText() {
+  if (ONLINE_STAV.smazanaText) return ONLINE_STAV.smazanaText;   // N3: hláška serveru
+  const c = String((typeof ZAK !== 'undefined' && ZAK && ZAK.cislo) || '').trim();
+  return 'Kalkulace ' + (c ? c + ' ' : '') + 'byla mezitím smazána — neuloženo. Chcete-li práci zachovat, '
+    + 'uložte ji jako novou zakázku (Duplikovat zakázku), jinak ji zavřete (Nová zakázka).';
 }
 
 /* ---------- kolize verzí při zápisu (nález V27, 8. 9. 2026) ---------- */
@@ -1901,6 +1936,7 @@ async function onlineOtevri(soubor, volby) {
     syncVarianta();
     ONLINE_STAV.soubor = soubor;
     ONLINE_STAV.kolize = null;
+    ONLINE_STAV.smazana = ''; ONLINE_STAV.smazanaText = '';   // K54-N1 (N5): načtená zakázka na serveru leží
     onlinePoslednizapamatuj(soubor);
     ONLINE_STAV.razitko = (typeof uloRazitko === 'function') ? uloRazitko(ZAK) : '';
     ONLINE_STAV.posledni = JSON.stringify(ZAK);
@@ -4477,10 +4513,23 @@ async function onlineSmazVybrane() {
   const seznam = zaznamy.slice(0, 12).map(z => '• ' + (z.cislo || '(bez čísla)')
     + (z.nazevAkce ? ' — ' + z.nazevAkce : '')).join('\n')
     + (zaznamy.length > 12 ? '\n• … a další ' + (zaznamy.length - 12) : '');
+  /* K54-N1 (revize Fable N6): je-li mezi vybranými právě otevřená kalkulace,
+   * potvrzení řekne předem, že se zavře (a s ní neuložené změny). */
+  /* K54-N1 (#750, J. V. 24. 11. 2026): otevřená kalkulace, která se právě
+   * smazala, se hned ZAVŘE (prázdná Nová zakázka, jako tlačítko Nová zakázka).
+   * Do v24.11.1 ji aplikace v paměti držela dál a jen „zapomněla“, kam patří —
+   * první uložení ji pak na serveru založilo znovu ze staré kopie. */
+  const otevrena = ONLINE_STAV.soubor && vybrane.indexOf(ONLINE_STAV.soubor) >= 0 ? ONLINE_STAV.soubor : '';
+  const zaznamOtevrene = otevrena ? zaznamy.find(z => z.soubor === otevrena) : null;
+  const cisloOtevrene = String((zaznamOtevrene && zaznamOtevrene.cislo) || (ZAK && ZAK.cislo) || otevrena || '').trim();
+  const vetaOtevrena = otevrena
+    ? '\n\nMezi vybranými je právě otevřená kalkulace ' + cisloOtevrene + ' — po smazání se zavře'
+      + ((typeof historieNeulozeno === 'function' && historieNeulozeno()) ? ' a její neuložené změny se ztratí.' : '.')
+    : '';
   if (!await potvrd('Opravdu smazat ' + vybrane.length + ' '
     + (vybrane.length === 1 ? 'zakázku' : (vybrane.length < 5 ? 'zakázky' : 'zakázek')) + ' z databáze?\n\n'
     + seznam + '\n\nSmazané zakázky jsou pryč i s historií cen a variant. '
-    + 'Vrátit je jde jen ze zálohy databáze.')) return;
+    + 'Vrátit je jde jen ze zálohy databáze.' + vetaOtevrena)) return;
   /* Druhé potvrzení JEN tam, kde v zakázce leží vytištěná nabídka. */
   let iOdeslane = false;
   if (odeslanych) {
@@ -4488,31 +4537,45 @@ async function onlineSmazVybrane() {
       + 'Odeslaná nabídka je doklad o tom, co odešlo zákazníkovi. Opravdu smazat i ji?')) return;
     iOdeslane = true;
   }
+  /* K54-N1 (revize Fable N7): naplánovaný autosave otevřené kalkulace se zruší
+   * a rozběhnuté uložení se nechá doběhnout — jeho odpověď by jinak dorazila
+   * až po zavření a zapsala jméno a razítko do nové prázdné zakázky. */
+  if (otevrena) {
+    if (ONLINE_STAV.timer) { clearTimeout(ONLINE_STAV.timer); ONLINE_STAV.timer = null; }
+    if (ONLINE_STAV.ukladaBeh) { try { await ONLINE_STAV.ukladaBeh; } catch (e) { /* výsledek uložení tu nerozhoduje */ } }
+  }
   ONLINE_STAV.pracuje = true; render();
   const nepovedlo = [];
   let hotovo = 0;
+  let otevrenaSmazana = false;
   const dalsi = (i) => {
     if (i >= vybrane.length) return Promise.resolve();
     const s = vybrane[i];
     return onlineApi('/api/zakazky?soubor=' + encodeURIComponent(s)
       + (iOdeslane ? '&ismazatOdeslane=1' : ''), null, 'DELETE')
-      .then(() => { hotovo++; })
+      .then(() => { hotovo++; if (otevrena && s === otevrena) otevrenaSmazana = true; })
       .catch(e => { nepovedlo.push(s + ' (' + e.message + ')'); })
       .then(() => dalsi(i + 1));
   };
   dalsi(0).then(() => {
     ONLINE_STAV.prehled.vybrane = [];
-    /* Když jsme smazali právě otevřenou zakázku, aplikace ji v paměti drží
-     * dál — to je v pořádku, jen se už nemá tvářit, že je uložená. */
-    if (vybrane.indexOf(ONLINE_STAV.soubor) >= 0 && typeof zakOdpojUlozeni === 'function')
-      zakOdpojUlozeni();
+    /* Zavírá se jen opravdu smazaná a jen pokud je pořád otevřená ta, která
+     * byla otevřená při potvrzení. Bez dotazu na neuložené změny — kalkulace
+     * už v databázi není a uložit ji znovu nejde (server ji odmítne). */
+    if (otevrenaSmazana && ONLINE_STAV.soubor === otevrena) {
+      zakNovaZakazkaProved({ bezPrepnuti: true });
+      /* Revize Fable N1/N2: krok Zpět ani záloha v prohlížeči smazanou nevrátí. */
+      historieZapomen(otevrena, cisloOtevrene);
+    }
     return onlineNactiRejstrik();
   }).then(() => {
-    onlineZprava(nepovedlo.length
+    const souhrn = nepovedlo.length
       ? ('Smazáno ' + hotovo + ', nepovedlo se: ' + nepovedlo.join('; '))
       : ('Smazáno ' + hotovo + ' '
-        + (hotovo === 1 ? 'zakázka' : (hotovo < 5 ? 'zakázky' : 'zakázek')) + '.'),
-    nepovedlo.length ? 'varovani' : '');
+        + (hotovo === 1 ? 'zakázka' : (hotovo < 5 ? 'zakázky' : 'zakázek')) + '.');
+    onlineZprava(otevrenaSmazana
+      ? ('Kalkulace ' + cisloOtevrene + ' byla smazána.' + (hotovo > 1 || nepovedlo.length ? ' ' + souhrn : ''))
+      : souhrn, nepovedlo.length ? 'varovani' : '');
   }).then(() => { ONLINE_STAV.pracuje = false; render(); });
 }
 

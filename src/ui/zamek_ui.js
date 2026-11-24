@@ -519,7 +519,13 @@ function zamekPoTisku(typ, varId, sablona, navic) {
   /* #665: snímek zpracovatele (přihlášený) — server ho při uložení přepíše z relace. */
   const zpracovatel = (prvni && typeof zamekZpracovatelSnimek === 'function' && typeof zpracovatelAktualni === 'function')
     ? zamekZpracovatelSnimek(zpracovatelAktualni()) : null;
-  zamkniVariantu(v, Object.assign({ typ, kdo: zamekKdo(), cislo: variantaCislo(ZAK, v), otisk, vysledek, snimek, zpracovatel,
+  /* DT #745: den na papíře odeslané nabídky — z tiskového náhledu ten, který
+   * náhled ukazuje (navic.datumNabidky), jinak dnešek v Europe/Prague
+   * (Word vzniká těsně před zámkem; zámek tiskem SoD = den odeslání). */
+  const datumNabidky = !prvni ? null
+    : (navic && typeof zamekDatumNabidkyProblem === 'function' && !zamekDatumNabidkyProblem(navic.datumNabidky, new Date().toISOString()))
+      ? navic.datumNabidky : (typeof zamekDenPraha === 'function' ? zamekDenPraha() : null);
+  zamkniVariantu(v, Object.assign({ typ, kdo: zamekKdo(), cislo: variantaCislo(ZAK, v), otisk, vysledek, snimek, zpracovatel, datumNabidky,
                       sablona: sablona || null, slovnik: zamekSlovnikTed(), sod: (navic && navic.sod) || null }, komu ? { zakaznik: komu } : {}));
   render();
   zamekPoTiskuUloz();

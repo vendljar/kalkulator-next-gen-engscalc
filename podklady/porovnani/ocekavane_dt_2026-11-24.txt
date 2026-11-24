@@ -1,0 +1,12 @@
+# Očekávané rozdíly DT (#745, #746) × test 0fd6410 (v24.11.1) — 24. 11. 2026
+# Formát: <vzor případu> <pole,pole|*>  # důvod   (popis v nastroje/porovnani_sada.js)
+#
+# Datum cenové nabídky = den tisku (Europe/Prague), SoD „nabídka ze dne“ = totéž datum
+# (rozhodnutí J. V. 24. 11. 2026). Porovnání má pevné hodiny 10. 11. 2026, takže se mění
+# jen NEODESLANÉ varianty fixtur, jejichž datum založení není 10. 11.: symbol DATUM
+# a text náhledu, Wordu a SoD. Cena, řádky, zámek, Pipedrive, controlling = SHODA;
+# odeslané varianty (zámky před DT) beze změny.
+fixtura:zakazka_2026-08-08_odeslana_bez_otisku.json:vmuhkstzx1      ph-cz,nahled-cz,docx,sod   # DT: DATUM 08.08. → den tisku
+fixtura:zakazka_2026-09-17_odeslana_stare_cislovani.json:vmuhkstzx2 ph-cz,nahled-cz,docx,sod   # DT: DATUM 17.09. → den tisku
+fixtura:zakazka_2026-09-17_odeslana_stare_cislovani.json:vmuhkstzy4 ph-cz,nahled-cz,docx,sod   # DT: DATUM 25.09. → den tisku
+fixtura:zakazka_2026-09-23_odemcena_znovu_odeslana.json:vmuhksu026  ph-cz,nahled-cz,docx,sod   # DT: DATUM 25.09. → den tisku

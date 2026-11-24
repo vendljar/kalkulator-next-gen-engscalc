@@ -421,7 +421,7 @@ const KRYCI_PROJ_SEKCE = [
   /* KL-7: patička z předlohy — 20. 8. 2026 stejná úprava jako v OCK. */
   { sekce: 'Ostatní', pole: [
     { id: 'podpisDne', label: 'Dne', verze: ['bo', 'techdata'], typ: 'date',
-      prefill: () => kryciDnesIso(), src: 'datum tisku' },
+      prefill: c => (typeof kryciDatumNabidky === 'function' ? kryciDatumNabidky(c) : kryciDnesIso()), src: 'datum cenové nabídky (den tisku)' },
     { id: 'podpisObchodnik', label: 'Obchodník', verze: ['bo', 'techdata'], prefill: c => kryciProjObchodnik(c.firma), src: 'přihlášený uživatel / Nastavení → Firma' },
     { id: 'podpisInformovanBo', label: 'Informováno Backoffice', verze: ['bo', 'techdata'], ph: 'kdo z BO byl o zakázce informován…' },
     { id: 'podpisInformovanTech', label: 'Informováno Technické odd.', verze: ['bo', 'techdata'], ph: 'kdo z technického oddělení byl informován…' },

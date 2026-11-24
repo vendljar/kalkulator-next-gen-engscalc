@@ -2422,11 +2422,16 @@ Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md`, PoC `podkl
   počtem kontrola nevidí; generátor ZIP zapisuje znovu z toho, co kontrola viděla (zákazník ji nedostane), týká se
   jen surové šablony v úložišti. Návrh do roadmapy.
 - **B271 — pole s údaji počítače — OPRAVENO.** `FILENAME` (i `\p`), `USERNAME` a `AUTHOR` jsou mezi zakázanými poli
-  (`SABLONA_POLE_ZAKAZANA`). *Mez:* příbuzná pole `USERINITIALS`, `USERADDRESS`, `LASTSAVEDBY` a vlastnosti dokumentu
-  (`DOCPROPERTY`, `INFO`) dál projdou — k rozhodnutí J. V., zda je přidat. Revize SA R3: `INFO FileName \p`,
-  `INFO Author`, `DOCPROPERTY Author|LastSavedBy` a `TEMPLATE \p` vrátí totéž co zakázaná pole — doporučení přidat
-  všech šest (`USERINITIALS`, `USERADDRESS`, `LASTSAVEDBY`, `TEMPLATE`, `INFO`, `DOCPROPERTY`) po ověření nad
-  firemními šablonami (`KNG_PODKLADY`). Jméno autora nese i `docProps/core.xml` (`dc:creator`, `cp:lastModifiedBy`)
+  (`SABLONA_POLE_ZAKAZANA`). **Revize SA R3 — OPRAVENO (rozhodnutí J. V. 24. 11. 2026, #751):** zakázaná jsou
+  i rovnocenná pole `USERINITIALS`, `USERADDRESS`, `LASTSAVEDBY`, `TEMPLATE` (i `\p` — cesta k Normal.dotm v profilu
+  uživatele), `INFO` a `DOCPROPERTY` (vlastnosti dokumentu — autor, firma, správce, název souboru; `INFO Author` dřív
+  obešlo zákaz `AUTHOR`). Platí při nahrání šablony (server, průvodce) i při vyplňování nabídky
+  (`docxObsahZkontroluj`), ve `fldSimple`, ve složeném poli i s kódem rozděleným do více běhů, bez ohledu na velikost
+  písmen, uvozovky a přepínače; hláška „pole <TYP> (část)“. Kolo 54 ověřilo 31 firemních šablon test + main — mají
+  jen pole `PAGE`. Test `src/test_sa_sablony.js`, mutace jádra [R3] 6. *Mez:* zakázán je celý typ `INFO`
+  a `DOCPROPERTY`, ne jen argumenty s údaji osob — šablona s vlastností „Název“ z `DOCPROPERTY` neprojde (bezpečný
+  směr; firemní šablony je nemají). Typ pole dodaný vnořeným polem se odmítá dál obecně (B115).
+  Jméno autora nese i `docProps/core.xml` (`dc:creator`, `cp:lastModifiedBy`)
   a generátor ho kopíruje do každé nabídky — návrh do roadmapy.
 - **B272 — strop jedné XML části — OPRAVENO.** `SABLONA_XML_CAST_MAX` = 8 MB: `zipPrecti(u8, { xmlCastMax })` zastaví
   rozbalení položky `.xml` / `.rels` nad strop hned (PoC C12: 60 MB část ~0,1 s místo ~1 s na serveru) a kontrola nad
@@ -2502,7 +2507,47 @@ Testy `netlify/test_pv_597_zapis.mjs`, `netlify/test_pv_734_autor.mjs`, `overit_
   z uložené (po Prodáno zmrazené) zakázky, včetně Čísla nabídky = značky vlastníka dealu (#115 B).
 - **Chyby Pipedrive do zakázky jen pevnou větou (revize S4 — OPRAVENO).** `v.prodano.pipedrive.duvod` a protokol nesou
   vlastní větu podle stavu (`pdProdejChybaVeta`); surový text Pipedrive jen v odpovědi (`podrobnost`) tomu, kdo zapisoval.
-- *O1 rozhodnuto J. V. 24. 11. 2026: ano.* *Otázka pro J. V.:* O1 — vlastník dealu jako autor kalkulace z webhooku má práva autora (zrušit vazbu, změnit deal,
+- *O1 rozhodnuto J. V. 24. 11. 2026: ano. O2 rozhodnuto J. V. 24. 11. 2026: varianta a — právo `crm.pipedrive` zůstává, popisek přejmenován (#742).* *Otázka pro J. V.:* O1 — vlastník dealu jako autor kalkulace z webhooku má práva autora (zrušit vazbu, změnit deal,
   opravit firmu; dřív u webhookové kalkulace jen administrátor); O2 — zápis prodeje hlídá právo `crm.pipedrive`
-  („Čtení obchodních případů z Pipedrive“) + autor / kdo prodal / vedoucí / administrátor. Kód je zatím podle
+  („Pipedrive: čtení a zápis do vlastních obchodních případů“) + autor / kdo prodal / vedoucí / administrátor. Kód je zatím podle
   doporučení revize (O1 ano, O2 zatím stačí).
+
+## DT — datum cenové nabídky = den tisku (#745, #746, dávka DT, 24. 11. 2026)
+
+Větev `claude/dt-datum-tisku` nad `0fd6410`. Testy `src/test_dt_datum_tisku.js`, `netlify/test_dt_datum_tisku.mjs`,
+mutace [DT]. Číslo B278 je pracovní (přidělí koordinace).
+
+- **`zamek.datumNabidky`** (den na papíře odeslané nabídky) je **mimo klíč zámku** (`uloZamekKlic`) — cenu, číslo,
+  otisk ani kontrolu shody (B59, B232) nemění. U uloženého zámku ho drží server (`uloZamekRazitkaDrz`: nepřepíše,
+  nesmaže, nedopíše starému zámku). Nový zámek: server přijme jen platný den ≤ den `kdy` v Praze a nejvýš 7 dní před
+  ním, jinak dosadí den `kdy`; obnova (otisk i soubor) datum mimo mez zahodí (dotisk pak tiskne datum založení).
+- **B278 — mez data nabídky se měří od `zamek.kdy`, které určuje prohlížeč — VĚDOMÁ MEZ (rozhodnutí J. V.
+  24. 11. 2026, revize DT N5: ponechat).** `kdy` smí být až 400 dní staré (tisk bez sítě, `zamekKdyProblem`), takže
+  upravený klient s právem odeslat nabídku může nový zámek opatřit datem nabídky až ~407 dní zpět (do budoucnosti
+  ne). Není to zhoršení proti stavu před DT: dřív nabídka tiskla `v.datum`, které klient psal bez jakékoli meze.
+  Přísnější varianta (datum nejvýš N dní před časem přijetí serverem, `prijato`) by zpřísnila i tisk bez sítě —
+  neprogramováno. Stopa: `zamek.prijato` (čas přijetí serverem) a `kdo` zámku.
+## K54-N1 — smazaná kalkulace se uložením nevzkřísí (#750, rychlá cesta, 24. 11. 2026)
+
+Větev `claude/rychla-K54-N1`, revize Fable `podklady/revize/REVIZE_K54N1.md` (větev `claude/revize-k54n1`; SLOUČIT
+PO OPRAVÁCH — N1, N2, N3 (rozhodnutí J. V.), N5–N8 opraveny, N4 zapsáno sem). Testy `netlify/test_k54n1_smazana.mjs`,
+`src/test_k54n1_smazani_ui.js`, mutace [K54N1].
+
+- **Pojistka serveru chrání přímé uložení z okna, které kalkulaci načetlo.** `POST /api/zakazky` odmítne 409 `smazana`
+  tělo s razítkem a `ocekavanySoubor` = cílové jméno, pod nímž nic neleží. Okno, které mazalo, kalkulaci zavře
+  a zahodí kroky Zpět/Znovu i zálohu smazané v prohlížeči (N1/N2); okno, které dostalo 409, další uložení neposílá (N5).
+- **PŘIJATO (revize N4) — vědomé kroky starou kopii založit umí.** Přečíslování v okně se smazanou kalkulací (druhá
+  karta, kolega) ji uloží pod novým číslem i s `pdDealId`; import souboru JSON, duplikát a klon ji uloží jako novou
+  zakázku (jediná cesta, jak smazanou kalkulaci z kopie vrátit). Kalkulace bez razítka (před B10), správcovská oprava
+  přípon a ukázková data (těla bez `ocekavanySoubor`) beze změny. Souběh DELETE × POST ve dvou instancích funkce —
+  známá mez Blobs bez podmíněného zápisu (viz K7-S1). Robustní varianta (náhrobek smazané kalkulace / totožnost
+  záznamu) mění formát dat a zavřela by i záchranu importem — rozhodnutí J. V., samostatná položka roadmapy.
+- **OPRAVENO (revize N3, J. V. 24. 11. 2026; dorevize D1/D2):** čerstvou kalkulaci z webhooku (`pdCerstva` na
+  serveru) uloží jen okno s toutéž kalkulací — totožnost nese čas založení vazby `pdVazbaWebhook.kdy` (webhook ho při
+  aktualizaci drží, nově založená kalkulace má jiný; razítko verze ne — mění ho aktualizace webhookem i zápis do
+  složky). Jiná nebo žádná vazba (stará kopie smazané kalkulace, nová zakázka pod týmž číslem) → 409 `pdCerstvaJina`
+  („Kalkulaci mezitím znovu založil Pipedrive …“) i s `prepsat`, bez kolize, takže se „Přepsat serverovou verzi“
+  nenabídne. Stejná vazba → běžná cesta včetně kolize B10 s „Načíst znovu / Přepsat“.
+- **PŘIJATO (dorevize D3): pojistka N3 je ochrana proti omylu, ne bezpečnostní mez.** Čas vazby je v načtené zakázce
+  (kdo smí zakázku načíst, smí ji i uložit — NN B237); úmyslně sestavený požadavek ji obejde. Chrání před starou
+  kopií v okně, ne před útočníkem.

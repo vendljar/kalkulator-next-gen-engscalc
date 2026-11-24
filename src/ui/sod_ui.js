@@ -446,7 +446,7 @@ function prodPdUiHtml(p) {
   const hlava = `<div class="note" id="prodPdStav" data-prodpd-stav="${esc(pd.stav || 'ceka')}">Zápis do Pipedrive (údaje krycího listu,
     hodnota dealu a přesun do fáze Vyhrané k podpisu SoD; stav dealu „Vyhrané“ se mění až po doručení podepsané SoD
     v Pipedrive): <b>${esc(stav)}</b>${kdy}${pd.stav === 'chyba' && pd.duvod ? ` — ${esc(pd.duvod)}` : ''}</div>`;
-  if (!prodPdUiMuze()) return hlava + `<div class="note">Zápis do Pipedrive jde online s právem „Čtení obchodních případů z Pipedrive“.</div>`;
+  if (!prodPdUiMuze()) return hlava + `<div class="note">Zápis do Pipedrive jde online s právem „Pipedrive: čtení a zápis do vlastních obchodních případů“.</div>`;
   if (PROD_PD.zak !== ZAK || PROD_PD.varianta !== p.v.id) { PROD_PD.data = null; PROD_PD.chyba = ''; PROD_PD.telo = null; }
   const d = PROD_PD.data;
   const popisBtn = pd.stav === 'chyba' ? 'Zkusit zápis znovu' : pd.stav === 'zapsano' ? 'Porovnat s Pipedrive znovu' : 'Ukázat, co se zapíše do Pipedrive';

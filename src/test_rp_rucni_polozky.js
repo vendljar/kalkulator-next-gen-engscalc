@@ -258,6 +258,7 @@ for (const [jm, o, L] of [['CZ bez slevy', {}, 'cz'], ['CZ sleva 5 %', { sleva: 
   v2.zamek = { zamceno: true, kdy: '2026-11-20T10:00:00.000Z', kdo: 'test@priklad.cz', cislo: z2.cislo,
     vysledek: kop(zamekVysledekSpocti(v2, J, 'test')), snimek: zamekSnimekSpocti(v2) };
   v2.data.ock.dalsi[0].zadani.vlastniPolozky.oplasteni[0].cena = 5000;   // podvrh po odeslání — KL ze zámku
+  v2.data.ock.dalsi[0].ks = 7;   // dorevize D2: počet kusů po odeslání se nesmí propsat — ks ze zmrazeného výsledku
   const kz = kryciData(z2, v2, J, 'bo').sekce[0].radky.find(x => x[0] === 'Ruční položky v ceně');
   test('H N1 odeslaná nabídka: krycí list ze zámku i s kusy', kz && n1(kz[1]), kz && kz[1]);
 }

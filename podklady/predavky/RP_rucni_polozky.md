@@ -1,9 +1,9 @@
 # RP — ruční položky kalkulace OCK v nabídce CN a krycím listu (#736, #740)
 
-Větev `claude/rp-rucni-polozky` nad d655295, sloučeno s integrací 0fd6410 (v24.11.1); pracovní v24.11.2 (číslo přidělí
-koordinace). Rozhodnutí J. V. 23. 11., prototyp a doporučení a)–f) odsouhlaseny 24. 11. (přes koordinaci).
+Větev `claude/rp-rucni-polozky` nad d655295, sloučeno s integrací 0fd6410 (v24.11.1) a c89e872 (v24.11.5); verze v24.11.6
+(koordinace). Rozhodnutí J. V. 23. 11., prototyp a doporučení a)–f) odsouhlaseny 24. 11. (přes koordinaci).
 
-**Stav 24. 11.: revize Fable SLOUČIT PO OPRAVÁCH (podklady/revize/REVIZE_RP.md na claude/revize-rp) — opravy T1, T2, S1, N2, N4, N5, N6, N10 hotové, čeká dorevize.** Prototyp https://claude.ai/artifact/N9Ro3detwDcydtf1XtDjxu.
+**Stav 24. 11.: dorevize Fable = SLOUČIT (b36b97a..e1fe98f); D2 doplněno (test H podvrh ks = 7, mutace chycená), D1 → #756 (nízké, neopraveno). Připraveno k fast-forwardu integrace.** Prototyp https://claude.ai/artifact/N9Ro3detwDcydtf1XtDjxu.
 
 **Kolo** `--bez-mutaci --proti origin/claude/integrace-16-10 --ocekavane podklady/porovnani/ocekavane_rp_rucni_polozky_2026-11-24.txt`:
 VŠE ZELENÉ (sady 536/0/6, hodiny 435/0/1, statické 12/12); porovnání 367: 230 SHODA, 137 očekávaných, 0 neočekávaných —

@@ -253,7 +253,7 @@ export async function pdPristup(req, volby = {}) {
     const z = await (await uloziste('program')).cti('zobrazeni');
     if (!ZOB.zobrazeniSmi(relace.role, PD_PRAVO, (z && z.matice) || null))
       return { chyba: json({ ok: false, chyba: 'Čtení z Pipedrive vám administrátor nepřidělil '
-        + '(Nastavení → Zobrazení → „Čtení obchodních případů z Pipedrive").' }, 403) };
+        + '(Nastavení → Zobrazení → „Pipedrive: čtení a zápis do vlastních obchodních případů").' }, 403) };
   }
   return { relace };
 }

@@ -124,6 +124,12 @@ async function novaZakazkaUI() {
   if (!await potvrd('Založit novou prázdnou zakázku?'
     + (neulozene ? ' Neuložené změny aktuální zakázky se ztratí.' : ''),
     { nadpis: 'Nová zakázka' })) return;
+  zakNovaZakazkaProved();
+}
+/* Samotné založení prázdné zakázky bez dotazu (K54-N1, #750): volá ho
+ * tlačítko Nová zakázka po potvrzení a Seznam zakázek po smazání právě
+ * otevřené kalkulace (J. V. 24. 11. 2026: „zavřít jako Nová zakázka“). */
+function zakNovaZakazkaProved(opts) {
   ZAK = novaZakazka(); syncVarianta();
   /* Výchozí zaškrtnutí položek (20. 8. 2026): sloupec Výchozí v kalkulaci
    * OCK i PROJ platí právě a jen tady — na ČERSTVÉM zadání, kde jsou ještě
@@ -138,7 +144,9 @@ async function novaZakazkaUI() {
    * zapsala do databáze jako záznam bez čísla (4. 8. 2026). */
   if (typeof zakOdpojUlozeni === 'function') zakOdpojUlozeni();
   if (typeof seznamReset === 'function') seznamReset();   // #18 – viz nactiZakazku
-  render(); prepniTab('kalk');
+  /* Ze Seznamu zakázek (smazání otevřené, revize Fable N6) se karta nepřepíná —
+   * administrátor tam může dál uklízet. */
+  render(); if (!(opts && opts.bezPrepnuti)) prepniTab('kalk');
   /* ČERSTVÁ ZAKÁZKA NEMÁ NEULOŽENÉ ZMĚNY (P5 / K14-N65, 25. 9. 2026).
    * Otisk „naposledy uloženo" nesl předchozí zakázku, takže se nová
    * porovnávala s ní — lišila se id varianty a klíčem protokolu a prohlížeč
@@ -1013,7 +1021,8 @@ async function nabidkaOckDokument() {
       vyp: P('Úpravy vypnuté. Ruční změny zůstávají, jen se do dokumentu už nedá psát.'),
       vraceno: P('Vráceno původní znění z kalkulace.'),
       zamceno: P('Varianta byla uzamčena jako odeslaná nabídka. Další úpravy provádějte v jejím klonu.'),
-    }, Object.assign({ typ: 'nabidkaTisk', varId: varianta.id }, vzTiskZamekNavic(vt)))}`);
+    }, Object.assign({ typ: 'nabidkaTisk', varId: varianta.id,
+      datumNabidky: typeof zamekDatumZeSymbolu === 'function' ? zamekDatumZeSymbolu(p.DATUM) : '' }, vzTiskZamekNavic(vt)))}`);
   w.document.write((sleduj ? neprelozenoSkript(L, neprelozenoKonec(), neprelozenoRucne([
     p.OBJEDNATEL, p.OBJEDNATEL_KONTAKT, p.NAZEV_AKCE, p.ADRESA, vt.zak.popisZameru])) : '')
     + '</body></html>');

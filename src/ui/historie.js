@@ -333,6 +333,31 @@ function historieZalohaHotovo() {
   historieTlacitka();
 }
 
+/* SMAZANÁ KALKULACE SE NESMÍ VRÁTIT KROKEM ZPĚT ANI ZE ZÁLOHY (K54-N1, #750,
+ * revize Fable N1/N2, 24. 11. 2026). Po smazání právě otevřené kalkulace
+ * (Seznam zakázek) ležel její otisk v zásobníku Zpět: Ctrl+Z ji vrátil do okna
+ * bez jména a razítka a automatické ukládání ji založilo znovu jako novou.
+ * Volá se JEN z cesty smazání, ne z tlačítka Nová zakázka (tam záznam na
+ * serveru leží a Zpět je k užitku). Zahodí kroky Zpět/Znovu a zálohu
+ * v prohlížeči — tu jen tehdy, když patří smazanému záznamu (jiná rozpracovaná
+ * práce, kterou lišta nabízí, zůstane). */
+function historieZapomen(soubor, cislo) {
+  HIST.zpet.length = 0;
+  HIST.znovu.length = 0;
+  try { HIST.posledni = JSON.stringify(ZAK); } catch (e) { HIST.posledni = null; }
+  const z = historieZalohaCti();
+  let jeho = false;
+  if (z) {
+    try {
+      const zak = JSON.parse(z.zakazka);
+      jeho = !!soubor && typeof uloJmenoSouboru === 'function' && uloJmenoSouboru(zak) === soubor;
+    } catch (e) { jeho = false; }
+    if (!jeho && cislo) jeho = String(z.cislo || '').trim() === String(cislo).trim();
+  }
+  if (jeho) { HIST.nabidka = null; historieZalohaHotovo(); historieListaPrekresli(); }
+  else historieTlacitka();
+}
+
 /* ---------- vrstva 3: varování před odchodem ---------- */
 
 /* Neuložené = od posledního exportu/importu do JSON se stav změnil.
