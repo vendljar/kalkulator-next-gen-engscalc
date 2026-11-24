@@ -4,7 +4,11 @@
 - Revidovaný rozdíl: `git diff 0fd6410..fe95509` (větev `claude/dt-datum-tisku`, 25 souborů, +610 −34).
 - Ve větvi DT se nic neměnilo; nic nešlo na weby, do Pipedrive ani na Disk.
 
-## Verdikt: SLOUČIT PO OPRAVÁCH
+## Verdikt po dorevizi (57f997c): SLOUČIT
+
+Podrobnosti v oddílu „Dorevize oprav“ na konci. Níže zůstává původní zpráva k fe95509.
+
+## Původní verdikt (fe95509): SLOUČIT PO OPRAVÁCH
 
 Kód dělá, co J. V. 24. 11. zadal, a nenašel jsem vadu, která by měnila cenu, číslo
 nabídky, otisk zámku nebo kontrolu shody tisku. Před sloučením je potřeba doplnit testy
@@ -198,3 +202,72 @@ a selže 8. Na závěr to nemá vliv, jen upřesnit číslo.
 Cena, řádky kalkulace, číslo nabídky, klíč a otisk zámku, snímek, zmrazený výsledek
 a kontrola shody (B59, B232 pracují s čísly výsledku, datum v nich není), controlling,
 Pipedrive, plná moc, datum podpisu smlouvy, `v.datum` a `zak.datum`.
+
+## Dorevize oprav — `fe95509..57f997c` (24. 11. 2026)
+
+Rozdíl: 11 souborů, +170 −7. V `src/` se změnily jen tři soubory: nová čistá funkce
+`zamekDatumZeSymbolu` v `zamek.js` a jeden výraz v náhledu OCK (`zakazka_ui.js`) a PROJ
+(`nabidka_proj_ui.js`). Zbytek jsou testy, mutace a dokumentace.
+
+### Verdikt: SLOUČIT
+
+Nálezy N1–N3 jsou opravené a mé mutace jsou chycené. Nová funkce neotvírá novou cestu
+k podvržení data. N4 a N5 jsou podle `ROZHODNUTI_LOG.md` rozhodnuté J. V. 24. 11.
+(N4 nechat, N5 ponechat a zapsat do mezí) a zápisy tomu odpovídají.
+
+### Co jsem spustil nad 57f997c
+
+| Co | Výsledek |
+|---|---|
+| `src/test_dt_datum_tisku.js` | 76 prošlo, 0 selhalo |
+| `netlify/test_dt_datum_tisku.mjs` | 17 prošlo, 0 selhalo |
+| Mých 5 mutací z první revize (obnova, `zamekPoTisku`, krycí list PROJ, skript náhledu, náhled OCK) | všech 5 zachyceno |
+| 4 nové mutace (náhled PROJ nepředá datum; `zamekDatumZeSymbolu` prohodí den a měsíc; bez kontroly platnosti; mez klienta v `zamekPoTisku` pryč) | všechny 4 zachyceny |
+| Porovnání sestavení fe95509 × 57f997c | SHODA, 367 z 367 |
+| Porovnání 0fd6410 × 57f997c se seznamem očekávaných | 363 shodných, 4 očekávané, 0 neočekávaných |
+| Sestavení a `overit_vz_tisk.mjs`, `overit_klon_tisk.mjs` (kopie stromu) | 198 OK a 53 OK, 0 FAIL |
+| `overit_online.mjs` (kopie stromu) | spadne po 4 krocích na časovém limitu přihlášení — stejně i nad fe95509, kde v plném kole v hlavním stromu prošel; je to vlastnost mé kopie stromu, ne oprav |
+
+Plné kolo nad 57f997c jsem znovu nepouštěl; koordinace hlásí kolo dávky „VŠE ZELENÉ“
+a mé porovnání sestavení s ním souhlasí.
+
+### `zamekDatumZeSymbolu` — podvržení, jazyky, formáty
+
+- **Jazyky.** Symbol DATUM má ve všech jazycích stejný tvar: CZ, EN, DE i FR, OCK i PROJ
+  dávají `24.11.2026` a `05.03.2026` (ověřeno voláním `nabidkaData` a `nabidkaProjData`).
+  Funkce tedy vrátí den ve všech jazycích; test v sadě to ale ověřuje jen pro češtinu (D1).
+- **Přísnost.** Bere jen `DD.MM.RRRR` s dvoumístným dnem a měsícem a platný kalendářní
+  den. `1.3.2026`, `05. 03. 2026`, text za datem, pátá číslice roku, `00.00.0000`,
+  `29.02.2027`, `…`, `null` i číslo dávají prázdný řetězec. Výsledek má vždy tvar
+  `RRRR-MM-DD`, takže do skriptu náhledu nejde nic jiného.
+- **Nová cesta k podvržení nevzniká.** Hodnota se bere ze symbolu spočítaného před
+  vykreslením, ne z textu upravitelného náhledu. Dál ji omezují stejné kontroly jako
+  dřív: `tiskListaSkript` (tvar), `zamekPoTisku` (mez vůči dnešku, jen první zamčení)
+  a server (mez vůči `kdy`). U zamčené varianty symbol nese datum zámku nebo založení,
+  ale `zamekPoTisku` ho u dotisku nepoužije.
+- **Když symbol nejde přečíst**, skript datum nepředá a zámek vezme dnešek — stejné
+  chování jako u Wordu.
+- Vyřešilo to i drobnost z N1: náhled už nepočítá datum podruhé, bere den, který vytiskl.
+
+### Stav nálezů
+
+| Nález | Stav |
+|---|---|
+| N1 řetěz „datum z náhledu → zámek“ bez testu | opraveno: testy nad skutečným kódem z `ui/` (skript náhledu, `zamekPoTisku`, výraz náhledu OCK a PROJ), 4 mutace |
+| N2 obnova | opraveno: 3 případy obnovy ze souboru, mutace |
+| N3 krycí list PROJ „Dne“ | opraveno: předvyplnění i řádek po odeslání, mutace |
+| N4 krycí list „Dne“ × nabídka přes půlnoc | rozhodnuto J. V.: nechat (zápis v `ROZHODNUTI_LOG.md`) |
+| N5 mez od času prohlížeče | rozhodnuto J. V.: ponechat; zapsáno v `BEZPECNOST_MEZE.md` jako B278 (pracovní číslo) |
+| N6–N8 | dokumentace doplněna |
+
+### Drobnosti z dorevize (neblokují)
+
+- **D1 (nízká, testy).** Test „náhled vloží den ze symbolu DATUM“ běží jen pro češtinu.
+  Formát je dnes ve všech jazycích stejný; kdyby se u některého jazyka změnil, zámek by
+  tiše spadl na dnešek a přes půlnoc by se dotisk lišil od papíru. Návrh: v testu projít
+  všechny čtyři jazyky a ověřit, že `zamekDatumZeSymbolu(p.DATUM)` není prázdné.
+- **D2 (informace).** Nové testy N1 a N2 hlídají chování, které bylo v kódu správně už
+  ve fe95509, takže jejich pojistkou nejsou „před opravou × po opravě“, ale mutace
+  (ověřil jsem, že je chytí). Nad fe95509 selže jen to, co potřebuje novou funkci.
+- **D3 (informace).** Rozhodnutí J. V. k N4 a N5 jsem neověřoval jinde než v zápisech
+  větve DT (`ROZHODNUTI_LOG.md`, `BEZPECNOST_MEZE.md`).
