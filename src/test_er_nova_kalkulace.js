@@ -268,7 +268,11 @@ console.log('===== 8b. server: příznak uložené kalkulace se nemění (revize
   test('první uložení čerstvé kalkulace z Pipedrive smí', !jeKv(U.uloTypyProblemy(pridat, pd)));
   test('nová varianta / zakázka (bez uložené) projde', !jeKv(U.uloTypyProblemy(pridat, null)));
   const zam = kopie(st2); zam.varianty[0].zamek = { zamceno: true };
-  test('zamčená uložená varianta se neposuzuje', !jeKv(U.uloTypyProblemy(pridat, zam)));
+  const zamBez = kopie(zam);
+  test('zamčená uložená varianta beze změny příznaku projde', !jeKv(U.uloTypyProblemy(zamBez, zam)));
+  test('odemčení a změna příznaku v jednom uložení = odmítnuto (dorevize D1)', jeKv(U.uloTypyProblemy(pridat, zam)));
+  const zamPridat = kopie(zam); zamPridat.varianty[0].data.ock.zadani.kalkVerze = 2;
+  test('zamčená varianta se změnou příznaku = odmítnuto', jeKv(U.uloTypyProblemy(zamPridat, zam)));
   test('věta pro obchodníka', /změnu pravidel výpočtu uložené kalkulace/.test(U.uloIdProblemyText(U.uloTypyProblemy(pridat, st2))));
 }
 

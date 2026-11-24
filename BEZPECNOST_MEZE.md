@@ -2551,3 +2551,19 @@ PO OPRAVÁCH — N1, N2, N3 (rozhodnutí J. V.), N5–N8 opraveny, N4 zapsáno s
 - **PŘIJATO (dorevize D3): pojistka N3 je ochrana proti omylu, ne bezpečnostní mez.** Čas vazby je v načtené zakázce
   (kdo smí zakázku načíst, smí ji i uložit — NN B237); úmyslně sestavený požadavek ji obejde. Chrání před starou
   kopií v okně, ne před útočníkem.
+
+## ER — příznak nové kalkulace `kalkVerze` (#757, #758, #761, dávka ER, 24. 11. 2026)
+
+Větev `claude/er-engineering-rezerva`, revize Fable `podklady/revize/REVIZE_ER.md` (větev `claude/revize-er`; SLOUČIT
+po opravách N1, N3, N5, N6 a dorevizi D1). Test `src/test_er_nova_kalkulace.js`, mutace jádra [ER].
+
+- **Server odmítne změnu příznaku uložené varianty a šachty** (revize N3, J. V. 24. 11. 2026): `uloTypyProblemy`
+  porovná `ock.zadani.kalkVerze` i `ock.dalsi[].zadani.kalkVerze` (šachta podle `id`) s uloženou verzí; jiná hodnota
+  → 400 s větou o změně pravidel výpočtu. Platí i pro uloženou ZAMČENOU variantu (dorevize D1: odemčení a změna
+  příznaku v jednom uložení neprojdou). Výjimky: obnova ze zálohy (`obnova`) a první uložení čerstvé kalkulace
+  z Pipedrive (`pdCerstva` v uložené verzi). Tvar příznaku (jen 2) hlídá server u všech šachet.
+- **PŘIJATO (dorevize ER): je to pojistka proti omylu a upravenému klientovi, ne hranice.** Příznak smí nést
+  (a tedy nový výpočet dostat) **nová varianta nebo šachta s novým `id`**, **nová zakázka** a **obnova ze souboru
+  administrátorem** — tam není uložený stav, se kterým porovnávat. Kdo smí zakázku uložit, smí ji takto založit znovu
+  (NN B237); běžné cesty aplikace (klon, duplikát, kopie šachty) příznak jen kopírují. Zamčené (odeslané) nabídky
+  chrání zmrazený výsledek zámku.

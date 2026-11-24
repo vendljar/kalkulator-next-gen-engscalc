@@ -1167,6 +1167,25 @@ function uloTypyProblemy(zak, stara, opts) {
     /* Ruční hodnoty krycího listu (B152) — i u zamčené varianty, protože
      * volná pole odeslané nabídky se doplňují dál (v14.10.5). */
     uloTypyKryci(d, sv && sv.data).forEach(k => out.push({ kde: pred + k, duvod: 'typ' }));
+    /* PŘÍZNAK NOVÉ KALKULACE SE NEMĚNÍ (revize ER N3, schválil J. V. 24. 11. 2026).
+     * Přidat nebo ubrat `kalkVerze` u uložené varianty / šachty by tiše
+     * přepnulo pravidla ceny. Běžná cesta příznak nemění nikdy (klon,
+     * duplikát, šachta 2+ = kopie). Výjimky: obnova ze zálohy a první
+     * uložení čerstvé kalkulace z Pipedrive (pdCerstvaPriprav ji skládá
+     * znovu z nové kalkulace). Stojí PŘED přeskočením zamčené varianty
+     * (dorevize ER D1): odemčení a změna příznaku v jednom uložení neprojdou.
+     * Meze (nové id, nová zakázka, obnova souborem) v BEZPECNOST_MEZE.md. */
+    if (sv && !obnova && !(stara && stara.pdCerstva === true) && d.ock && typeof d.ock === 'object') {
+      const kv = (z) => (z && typeof z === 'object' && z.kalkVerze != null && z.kalkVerze !== '') ? z.kalkVerze : null;
+      const so = (sv.data && sv.data.ock) || {};
+      if (so.zadani && kv(d.ock.zadani) !== kv(so.zadani))
+        out.push({ kde: pred + 'ock.zadani.kalkVerze', duvod: 'kalkVerze' });
+      const stDalsi = Array.isArray(so.dalsi) ? so.dalsi : [];
+      (Array.isArray(d.ock.dalsi) ? d.ock.dalsi : []).forEach((x, i) => {
+        const st = x && stDalsi.find(t => t && t.id === x.id);
+        if (st && kv(x.zadani) !== kv(st.zadani)) out.push({ kde: pred + 'ock.dalsi.' + i + '.zadani.kalkVerze', duvod: 'kalkVerze' });
+      });
+    }
     if (sv && sv.zamek && sv.zamek.zamceno) return;                // doklad — nesahat
     const vlastni = [];
     if (d.ock && typeof d.ock === 'object') {
@@ -1191,23 +1210,6 @@ function uloTypyProblemy(zak, stara, opts) {
         if (x !== undefined && x !== null && x !== '' && ULO_VYCTY_MIMO_VZOR.kalkVerze.indexOf(x) < 0)
           vlastni.push({ kde: 'ock.dalsi.' + i + '.zadani.kalkVerze', duvod: 'typ' });
       });
-      /* PŘÍZNAK NOVÉ KALKULACE SE NEMĚNÍ (revize ER N3, schválil J. V. 24. 11. 2026).
-       * Přidat nebo ubrat `kalkVerze` u uložené varianty / šachty by
-       * tiše přepnulo pravidla ceny. Běžná cesta příznak nemění nikdy (klon,
-       * duplikát, šachta 2+ = kopie). Výjimky: obnova ze zálohy a první
-       * uložení čerstvé kalkulace z Pipedrive (pdCerstvaPriprav ji skládá
-       * znovu z nové kalkulace). */
-      if (sv && !obnova && !(stara && stara.pdCerstva === true)) {
-        const kv = (z) => (z && typeof z === 'object' && z.kalkVerze != null && z.kalkVerze !== '') ? z.kalkVerze : null;
-        const so = (sv.data && sv.data.ock) || {};
-        if (so.zadani && kv(d.ock.zadani) !== kv(so.zadani))
-          vlastni.push({ kde: 'ock.zadani.kalkVerze', duvod: 'kalkVerze' });
-        const stDalsi = Array.isArray(so.dalsi) ? so.dalsi : [];
-        (Array.isArray(d.ock.dalsi) ? d.ock.dalsi : []).forEach((s, i) => {
-          const st = s && stDalsi.find(t => t && t.id === s.id);
-          if (st && kv(s.zadani) !== kv(st.zadani)) vlastni.push({ kde: 'ock.dalsi.' + i + '.zadani.kalkVerze', duvod: 'kalkVerze' });
-        });
-      }
     }
     /* Ceník varianty je celý vstup jádra — čísla jen ve tvaru, který jádro
      * čte jako člověk (B135). */
