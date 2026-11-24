@@ -154,10 +154,21 @@ const KONTROLY_SABLONA = { cache: {}, bezi: {} };
  * když kalendář OCK obsahuje něco, co šablona v13 s pevnými větami nevytiskne
  * (bez zálohy, splátka s 0 %, měsíční fakturace — kontrolyPlatbyDuvody). */
 /* VS-E5 (#595): i u víc šachet — pravidlo vsSablona (šablona bez rozpisu šachet). */
+/* RP (revize S1): má otevřená varianta ruční položku OCK (bez kid)? Pak se
+ * stáhne šablona a pravidlo rucniPolozkaWord zkontroluje kotvy. */
+function kontrolyMaRucniPolozku() {
+  try {
+    const ock = (typeof ZAK !== 'undefined' && ZAK && typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK).data.ock : null;
+    const zadani = ock ? [ock.zadani].concat((ock.dalsi || []).map(x => x && x.zadani)) : [];
+    return zadani.some(z => z && ((z.vlastniPolozky && Object.keys(z.vlastniPolozky).some(k =>
+      Array.isArray(z.vlastniPolozky[k]) && z.vlastniPolozky[k].some(p => p && !p.kid)))
+      || (Array.isArray(z.volitelneVlastni) && z.volitelneVlastni.length)));
+  } catch (e) { return false; }
+}
 function kontrolySablonaNabidka(sleva, jazyk, platby, vs) {
   const sleva_ = typeof slevaPlati === 'function' && slevaPlati(sleva);
   const platby_ = typeof kontrolyPlatbyDuvody === 'function' && kontrolyPlatbyDuvody(platby).length > 0;
-  if (!sleva_ && !platby_ && !vs) return null;
+  if (!sleva_ && !platby_ && !vs && !kontrolyMaRucniPolozku()) return null;
   return kontrolySablonaSymboly('nabidka', jazyk);
 }
 /* Totéž pro nabídku PROJ (P4): stahuje se jen, když je co hlídat — schválená

@@ -501,6 +501,58 @@ const sleva = (zak, pct) => { const v = zak.varianty[0]; v.data.sleva = Object.a
       pocet(n4, NENI.label) === 1 && !n4.some(t => /OTHER ARRANGEMENTS|DALŠÍ UJEDNÁNÍ/i.test(t)), { x: pocet(n4, NENI.label), p: n4.filter(t => /ARRANGEMENT/i.test(t)) });
   }
 
+  /* ---------- G) RUČNÍ POLOŽKY (dávka RP #736, J. V. 23./24. 11. 2026) ----------
+   * Ruční položka se tiskne do sekce specifikace podle sekce kalkulace (Word:
+   * klon řádku kotvy přes docxRadkyNavic, víc šachet ve smyčce šachet) a do
+   * cenového bloku (klon řádku můstků). Náhled = Word i s nimi. Pojistka:
+   * na d655295 ruční řádky ve Wordu ani v náhledu nejsou → G selže. */
+  {
+    const RUCNI = () => ({
+      hrubaOck: [{ nazev: 'Výztuha navíc', mnozstvi: 2.5, cena: 1200, jednotka: 'bm' }],
+      oplasteni: [{ nazev: 'Oplechování atiky', mnozstvi: 3, cena: 900, jednotka: 'm²', dodatek: 'pozink lakovaný RAL 7016' }],
+      volitelne: [{ nazev: 'Nosná konstrukce s pochozím dnem prohlubně', mnozstvi: 1, cena: 56000, dodatek: 'Pochozí plech tl. 5 mm' }],
+      rezie: [{ nazev: 'Doprava jeřábem', mnozstvi: 1, cena: 8000, jednotka: 'kpl' }],
+    });
+    const sRucnimi = (zak, i) => { const z = i ? zak.varianty[0].data.ock.dalsi[i - 1].zadani : zak.varianty[0].data.ock.zadani;
+      z.vlastniPolozky = Object.assign({}, z.vlastniPolozky, RUCNI()); return zak; };
+    const blizko = (w, a, b) => { const i = w.indexOf(a); return i >= 0 && w[i + 1] === b; };
+    const pocet = (n, t) => n.filter(x => x === t).length;
+    for (const [jm, zak] of [['bez slevy', sRucnimi(scenar('exteriérová', {}, true))],
+      ['sleva 5 %', sleva(sRucnimi(scenar('exteriérová', {}, true)), 5)],
+      ['s můstky', (() => { const z = sRucnimi(scenar('exteriérová', { mustky: kop(MUSTKY) }, true));
+        Object.assign(z.varianty[0].data.cenik, SKLADBA); return z; })()]]) {
+      const r = await shoda('G RP ' + jm, zak, zak.varianty[0]);
+      if (!r) continue;
+      const w = r.w;
+      test('G RP ' + jm + ': řádek NÁZEV | množství jednotka + dodatkový text (Word)',
+        blizko(w, 'NOSNÁ KONSTRUKCE S POCHOZÍM DNEM PROHLUBNĚ', '1 ks') && w[w.indexOf('NOSNÁ KONSTRUKCE S POCHOZÍM DNEM PROHLUBNĚ') + 2] === 'Pochozí plech tl. 5 mm'
+        && blizko(w, 'VÝZTUHA NAVÍC', '2,5 bm') && blizko(w, 'DOPRAVA JEŘÁBEM', '1 kpl') && blizko(w, 'OPLECHOVÁNÍ ATIKY', '3 m²'),
+        w.filter(t => /NAVÍC|ATIKY|NOSNÁ|JEŘÁB/.test(t)));
+      const sek = (n, sekce, dalsi) => { const a = w.indexOf(sekce), b = w.indexOf(dalsi), i = w.indexOf(n); return a >= 0 && i > a && (b < 0 || i < b); };
+      test('G RP ' + jm + ': řádky v sekcích podle převodu J. V.',
+        sek('VÝZTUHA NAVÍC', 'KONSTRUKČNÍ ŘEŠENÍ ŠACHTY', 'OPLÁŠTĚNÍ ŠACHTY') && sek('OPLECHOVÁNÍ ATIKY', 'OPLÁŠTĚNÍ ŠACHTY', 'DOPLŇKOVÉ KONSTRUKCE')
+        && sek('NOSNÁ KONSTRUKCE S POCHOZÍM DNEM PROHLUBNĚ', 'DOPLŇKOVÉ KONSTRUKCE', 'STAVEBNÍ A PŘÍPRAVNÉ PRÁCE')
+        && sek('DOPRAVA JEŘÁBEM', 'PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE', 'SOUČÁSTÍ DODÁVKY NENÍ'));
+      const iCena = w.lastIndexOf('NOSNÁ KONSTRUKCE S POCHOZÍM DNEM PROHLUBNĚ');
+      test('G RP ' + jm + ': cenový blok má řádek ruční položky (67 200,00 Kč) a CENA CELKEM bez podtitulu můstků',
+        iCena > w.indexOf('NOSNÁ KONSTRUKCE S POCHOZÍM DNEM PROHLUBNĚ') && w[iCena + 1] === '67 200,00 Kč'
+        && w.indexOf('CENA CELKEM') > iCena && !w.includes('výtahová šachta a můstky mezi budovou a OCK'), w.slice(iCena - 2, iCena + 3));
+    }
+    const zv = viceSachet({ mustky: true }); sRucnimi(zv, 0); sRucnimi(zv, 1);
+    const rv = await shoda('G RP víc šachet', zv, zv.varianty[0]);
+    if (rv) test('G RP víc šachet: sekce šachty u každé šachty (2×), Režie 2× s názvem šachty, žádný ruční řádek ceny',
+      pocet(rv.w, 'NOSNÁ KONSTRUKCE S POCHOZÍM DNEM PROHLUBNĚ') === 2 && pocet(rv.w, 'DOPRAVA JEŘÁBEM (Výtah A)') === 1
+      && pocet(rv.w, 'DOPRAVA JEŘÁBEM (Výtah B)') === 1 && !rv.w.includes('67 200,00 Kč'),
+      rv.w.filter(t => /NOSNÁ|JEŘÁB|67 200/.test(t)));
+    /* EN: šablona je česká — porovná se jen náhled (cena v eurech, jednotky ze slovníku) */
+    const ze = sRucnimi(scenar('exteriérová', {}, true));
+    ze.varianty[0].data.ock.zadani.vlastniPolozky.volitelne[0].jazyky = { en: { nazev: 'Load-bearing pit floor structure', dodatek: 'Walkable plate 5 mm' } };
+    const ne = nahledText(ze, ze.varianty[0], 'en');
+    test('G RP EN náhled: překlad z položky, jednotky lm / set, cena v eurech',
+      ne.includes('LOAD-BEARING PIT FLOOR STRUCTURE') && ne.includes('Walkable plate 5 mm') && ne.includes('2,5 lm') && ne.includes('1 set')
+      && ne.some(t => /^€ /.test(t)), ne.filter(t => /LOAD|lm$|set$/.test(t)));
+  }
+
   /* ---------- E) upozornění v pruhu ---------- */
   {
     const zak = scenar('exteriérová', {}, true);

@@ -10,6 +10,7 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
+| 24. 11. 2026 | RP N1: krycí list OCK (BO i Tech, i odeslaná nabídka ze zámku) u šachty s ks > 1 uvádí u ruční položky cenu za kus a celkem, např. „12 000 Kč/ks × 2 ks = 24 000 Kč“; u 1 ks jen cena. | #736, krycí list „Ruční položky v ceně“ |
 | 24. 11. 2026 | K54-N1 N3: zakázat přepsání čerstvé kalkulace z Pipedrive (`pdCerstva`) starou kopií — server odmítne 409 „Kalkulaci mezitím znovu založil Pipedrive — otevřete ji ze Seznamu / odkazem z dealu; vaše kopie se neuložila.“; řádné první uložení čerstvé projde | ukládání online, webhook Pipedrive |
 | 24. 11. 2026 | K54-N1 (#750): smazaná otevřená kalkulace se hned zavře (prázdná Nová zakázka) s hláškou „Kalkulace <číslo> byla smazána.“; server odmítne (409) uložení kalkulace, která na serveru už neexistuje | Seznam zakázek, ukládání online |
 | 24. 11. 2026 | Dotisk na ostrém webu nesl přihlášeného místo původního obchodníka (main v19.11.11 nemá #665/#715). Ponechat jen pro nové nabídky: blok „Vypracoval“ a sken podpisu z prvního odeslání (#665, #715) přijdou s nasazením testu do main; staré zámky bez snímku se dál dotisknou s přihlášeným. Nasazení do main až po dávkách RP, DT, K54-N1 a R3. R3 ano; KL „Ruční položky v ceně“ editovatelné; DT: N4 krycí list „Dne“ nechat, N5 mez zapsat. | #665, #715, #736, #745, #750, #751 |

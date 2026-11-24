@@ -278,7 +278,7 @@ function renderKryci() {
       : '<span class="pill kl-verze" title="jen Backoffice">BO</span>');
 
   const sekceHtml = KRYCI_SEKCE.map(s => {
-    const rows = s.pole.map(p => {
+    const rows = s.pole.filter(p => !p.jenKdyz || p.jenKdyz(c)).map(p => {   // RP: řádek jen s hodnotou
       if (p.bind) {   // obousměrné provázání s hlavičkou kalkulace (ZAK) – žádný ruční přepis
         /* VZ-F1 (VZ-N3): pole zákazníka (DIČ, zástupci) čte a zapisuje adresáta
          * listu — u dalšího zákazníka jeho položku, ne hlavičku řídícího. */

@@ -1684,16 +1684,73 @@ function vlastniDoCeniku(sekce, i) {
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   render();
 }
+/* Textové vlastnosti ruční položky (dávka RP: jednotka, dodatkový text) se
+ * neberou jako číslo; jednotka jen ze seznamu RP_JEDNOTKY. */
+const RP_TEXT_POLE = ['nazev', 'jednotka', 'dodatek'];
 function vlastniSet(sekce, i, k, v) {
   const p = vlastniPolozkyArr(sekce)[i];
   if (!p) return;
-  if (k !== 'nazev' && typeof zaporneOdmitni === 'function' && zaporneOdmitni(v)) return;   // B111
+  const text = RP_TEXT_POLE.indexOf(k) >= 0;
+  if (!text && typeof zaporneOdmitni === 'function' && zaporneOdmitni(v)) return;   // B111
+  if (k === 'jednotka' && RP_JEDNOTKY.indexOf(v) < 0) return;
   const puvodni = p.nazev;
-  p[k] = k === 'nazev' ? v : +v;
+  p[k] = text ? String(v == null ? '' : v) : +v;
+  if (k === 'dodatek' && !p.dodatek.trim()) delete p.dodatek;
   // přejmenování vlastní položky – přestěhuj ruční přepisy klíčované názvem (#4)
   if (k === 'nazev' && puvodni && puvodni !== p.nazev) prepisyPrejmenuj(Z, puvodni, p.nazev);
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   render();
+}
+
+/* ---- RUČNÍ POLOŽKA V NABÍDCE (dávka RP, J. V. 23. 11. 2026) ----
+ * Pod každou ruční položkou (vlastní řádek bez `kid`) řádek s jednotkou,
+ * dodatkovým textem do cenové nabídky a sekcí specifikace, do které se
+ * položka vytiskne (pevný převod RP_SEKCE_TS — obchodník ho nevolí).
+ * „překlad EN/DE/FR" rozbalí pole názvu a dodatkového textu v cizích
+ * jazycích (vzor #379); prázdné pole = slovník, jinak česky a kontrola
+ * „rucniPolozkaCesky" upozorní. */
+const RP_UI = { preklad: new Set() };
+function rpPrekladToggle(klic) {
+  if (RP_UI.preklad.has(klic)) RP_UI.preklad.delete(klic); else RP_UI.preklad.add(klic);
+  render();
+}
+function rpJazykSet(sekce, i, jaz, pole, v) {
+  const p = vlastniPolozkyArr(sekce)[i];
+  if (!p || ['en', 'de', 'fr'].indexOf(jaz) < 0 || ['nazev', 'dodatek'].indexOf(pole) < 0) return;
+  const t = String(v == null ? '' : v).trim();
+  if (!p.jazyky || typeof p.jazyky !== 'object') p.jazyky = {};
+  if (!p.jazyky[jaz]) p.jazyky[jaz] = {};
+  if (t) p.jazyky[jaz][pole] = t; else delete p.jazyky[jaz][pole];
+  if (!Object.keys(p.jazyky[jaz]).length) delete p.jazyky[jaz];
+  if (!Object.keys(p.jazyky).length) delete p.jazyky;
+  aktivniVarianta(ZAK).upraveno = new Date().toISOString();
+  render();
+}
+function rpPodRadek(r, NC) {
+  if (!r || !r.vlastni || r.kid || !r.sekce || !RP_SEKCE_TS[r.sekce]) return '';
+  const edit = jeAdmin() || smiZobrazit('kalk.pridatPolozku');
+  const p = vlastniPolozkyArr(r.sekce)[r.idx];
+  if (!p) return '';
+  const sek = escJs(r.sekce), i = r.idx, klic = r.sekce + ':' + i;
+  const jed = rpJednotka(p);
+  const dis = edit ? '' : ' disabled';
+  const sel = `<select class="rp-jednotka"${dis} onchange="vlastniSet('${sek}', ${i}, 'jednotka', this.value)">${
+    RP_JEDNOTKY.map(j => `<option value="${esc(j)}"${j === jed ? ' selected' : ''}>${esc(j)}</option>`).join('')}</select>`;
+  const pocet = p.jazyky ? ['en', 'de', 'fr'].filter(j => p.jazyky[j] && (p.jazyky[j].nazev || p.jazyky[j].dodatek)).length : 0;
+  const otevreno = RP_UI.preklad.has(klic);
+  const jaz = otevreno ? `<div class="rp-jazyky">${['en', 'de', 'fr'].map(j => {
+    const v = (p.jazyky && p.jazyky[j]) || {};
+    return `<div class="rp-jazyk"><b>${j.toUpperCase()}</b>
+      <input type="text" class="rp-j-nazev" maxlength="500" placeholder="název ${j.toUpperCase()}" value="${esc(v.nazev || '')}"${dis} onchange="rpJazykSet('${sek}', ${i}, '${j}', 'nazev', this.value)">
+      <input type="text" class="rp-j-dodatek" maxlength="2000" placeholder="dodatkový text ${j.toUpperCase()}" value="${esc(v.dodatek || '')}"${dis} onchange="rpJazykSet('${sek}', ${i}, '${j}', 'dodatek', this.value)"></div>`;
+  }).join('')}</div>` : '';
+  return `<tr class="rp-pod noprint"><td colspan="${NC}"><div class="rp-pod-in">
+    <label class="rp-jed">jednotka ${sel}</label>
+    <label class="rp-dodatek">Dodatkový text do cenové nabídky (nepovinné)
+      <input type="text" class="rp-dodatek-in" maxlength="2000" value="${esc(p.dodatek || '')}"${dis} onchange="vlastniSet('${sek}', ${i}, 'dodatek', this.value)"></label>
+    <span class="note rp-sekce" title="ruční položka se vytiskne vždy, do sekce technické specifikace podle sekce kalkulace">v nabídce: ${esc(RP_SEKCE_TS[r.sekce])}</span>
+    <button class="mini rp-preklad" onclick="rpPrekladToggle('${escJs(klic)}')">překlad EN/DE/FR${pocet ? ' (' + pocet + ')' : ''} ${otevreno ? '▴' : '▾'}</button>
+  </div>${jaz}</td></tr>`;
 }
 
 /* ---- zaškrtnutí volitelné položky do základní ceny ---- */
@@ -2157,7 +2214,7 @@ function radekKalk(r, sekceKey) {
   if (showCost) c += `<td>${fmt(r.naklad)}</td><td>${fmt(r.marze)}</td>`;
   c += `<td>${fmt(r.sMarzi)}</td>`;
   if (admin) c += adminKoncBunky(r, sekceKey);
-  return `<tr${dz} class="${vypnutoTrida(r).trim()}">${c}</tr>` + rcRadekPod(r, kalkSloupce().NC);
+  return `<tr${dz} class="${vypnutoTrida(r).trim()}">${c}</tr>` + rpPodRadek(r, kalkSloupce().NC) + rcRadekPod(r, kalkSloupce().NC);
 }
 function radekPridat(sekceKey, popis) {
   const { NC } = kalkSloupce();
@@ -2318,7 +2375,7 @@ function tblVolitelne(katalog, sum) {
       /* Dodatkový text i u volitelných položek (#267) — zadání J. V. mluví
        * o „příplatkových a volitelných položkách“, takže obojí. */
       return `<tr${dz}${tridy.trim() ? ` class="${tridy.trim()}"` : ''}>${c}</tr>`
-        + popisRadekVol(r, NC);
+        + rpPodRadek(r, NC) + popisRadekVol(r, NC);
     }).join('') +
     (sbalenoV ? '' : radekPridatSekce('volitelne')) +
     sumRadek('sectot', 'VOLITELNÉ CELKEM (jen zaškrtnuté)', sum, rows);
