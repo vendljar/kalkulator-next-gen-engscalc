@@ -8,6 +8,19 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## (bez verze) — R3: zákaz dalších polí Wordu v šablonách (#751), větev claude/r3-pole-wordu
+
+Nad integrací `3cab0c5` (v24.11.2). **Cenu ani text dokumentů nemění** (firemní šablony mají jen pole `PAGE`).
+
+- **#751 (revize SA R3, rozhodnutí J. V. 24. 11. 2026):** kontrola nahrávané šablony Wordu (server, průvodce) i kontrola
+  při vyplňování nabídky (`docxObsahZkontroluj`) odmítne vedle `FILENAME`, `USERNAME`, `AUTHOR` (B271, #720) i pole
+  `USERINITIALS`, `USERADDRESS`, `LASTSAVEDBY`, `TEMPLATE`, `INFO` a `DOCPROPERTY` — vkládají jméno a iniciály uživatele,
+  kdo naposledy uložil, cestu k šabloně a vlastnosti dokumentu (`INFO Author` dřív obešlo zákaz `AUTHOR`). Ve `fldSimple`,
+  ve složeném poli i s kódem rozděleným do běhů, malými písmeny, v uvozovkách, s přepínači; hláška „pole <TYP> (část)“.
+  Test `src/test_sa_sablony.js` (36 tvarů + 6 × generátor; PAGE, REF a slova v textu projdou), pojistka: před opravou
+  70 OK / 42 FAIL, po 112 / 0. V `src/test_sablona_obsah.js` legitimní případ `slovaPodobna` místo `DOCPROPERTY` nese
+  `REF DatabaseVerze`. Mutace jádra `[R3]` (6), mutace `[SA] B271` přepsaná na nový řádek.
+
 ## v24.11.2 — UT: texty v aplikaci (#741 nápověda Opláštění, #742 popisek práva Pipedrive), test šablon (#743), větev claude/ut-texty
 
 Nad integrací `0fd6410` (v24.11.1). **Cenu ani text dokumentů nemění** (porovnání sestavení proti `origin/test`: viz zpráva koordinaci).
