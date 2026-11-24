@@ -120,6 +120,11 @@ for (const fixes of [true, false]) {
     && Math.abs(rz[0].naklad - r.priplatky.reduce((a, p) => a + p.rezervaNaklad, 0)) < 1e-6, rz);
   test('controlling: prodej příplatků celkem = součet cen položek (bez dvojího započtení)',
     Math.abs(sumProdej - r.priplatky.reduce((a, p) => a + p.sMarzi, 0)) < 1e-6, sumProdej);
+  const r1 = V(nove({ rezervaPriplatkyPct: 0.1 }), false);
+  const rz1 = ctrlRozvrhOck(r1, { fixes: false, rezervaPriplatkyPct: 0.1, marze: ZC.zkusebniCenik().marze }).filter(x => x.klic === 'R.rezervaPriplatky');
+  test('controlling Model 1: rezerva z položek (ne z procenta zaokrouhlených cen)', rz1.length === 1
+    && Math.abs(rz1[0].naklad - r1.priplatky.reduce((a, p) => a + p.rezervaNaklad, 0)) < 1e-6
+    && Math.abs(rz1[0].prodej - r1.priplatky.reduce((a, p) => a + p.rezervaSMarzi, 0)) < 1e-6, rz1);
   const so = ctrlRozvrhOck(V(stare({ rezervaPriplatkyPct: 0.1 })), { fixes: true, rezervaPriplatkyPct: 0.1, marze: 0.2 });
   const soR = so.filter(x => x.klic === 'R.rezervaPriplatky');
   test('controlling staré kalkulace: rezerva jako dosud (z procenta)', soR.length === 1 && Math.abs(soR[0].naklad - V(stare()).priplatky.reduce((a, p) => a + p.naklad, 0) * 0.1) < 1e-6, soR);

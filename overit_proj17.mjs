@@ -37,7 +37,9 @@ const ZC = (await import('module')).createRequire(import.meta.url)(KOREN + 'src/
 await p.evaluate(([c, cp]) => {
   Object.assign(DEFAULT_CENIK, c); delete DEFAULT_CENIK.prazdny;
   Object.assign(DEFAULT_CENIK_PROJ, cp); delete DEFAULT_CENIK_PROJ.prazdny;
-  ZAK = novaZakazka(); syncVarianta(); render();
+  ZAK = novaZakazka(); syncVarianta();
+  /* Přepínače Engineering a Výstup ze zaměření má jen kalkulace před ER (#757, #759). */
+  delete Z.kalkVerze; render();
 }, [ZC.zkusebniCenik(), ZC.zkusebniCenikProj()]);
 await p.waitForTimeout(300);
 

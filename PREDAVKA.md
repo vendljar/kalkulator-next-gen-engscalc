@@ -42,6 +42,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/pv-pipedrive` | (tato dávka) | v23.11.7 | PV #597 zápis prodeje do dealu + #734 autor = vlastník dealu nad 1280831; revize Fable; verzi přidělí koordinace |
 | `claude/ut-texty` | (tato dávka) | — | UT #741 #742 #743 (#744 čeká na J. V.) nad 0fd6410; verzi přidělí koordinace |
 | `claude/r3-pole-wordu` | (tato dávka) | — | R3 #751 zákaz dalších polí Wordu nad 3cab0c5 (v24.11.2); verzi přidělí koordinace |
+| `claude/er-engineering-rezerva` | (tato dávka) | — | ER #757–#759 nová kalkulace (`kalkVerze 2`) nad c89e872; verzi přidělí koordinace |
 
 Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontrola: `python3 nastroje/release_odkaz.py --chybejici`
 (22. 11.: žádná — main v19.11.11, tag vydán).
@@ -49,6 +50,20 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 ## Běžící dávky
 
 24. 11. 2026 odpoledne: RP (#736/#740, opravy po revizi Fable). Sloučené dávky PV, MT2, UT (v24.11.2), R3 (v24.11.3), DT (v24.11.4) a K54-N1 (v24.11.5, rychlou cestou v test 6722ad9) — předávky v `podklady/predavky/2026-11.md`. Kokpit koordinace: https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2
+
+### Dávka ER (`claude/er-engineering-rezerva`, 24. 11. 2026)
+
+- Nad integrací c89e872 (v24.11.5); RP (v24.11.6) ještě nesloučená — po sloučení do integrace ji sloučit sem.
+- Hotovo: příznak nové kalkulace `kalkVerze: 2` (ZADANI_NOVA, `kalkNova` v engine.js). Jen nová kalkulace:
+  #757 engineering = příplatek mimo nabídku; #758 rezerva příplatků v cenách položek (controlling bez dvojího
+  započtení); #759 bez přepínačů Výstup ze zaměření (1 ×) a Statika opláštění (podle opláštění). Pro všechny:
+  automat ATYP nepřepíše ruční pole. Rozhodnutí v ROZHODNUTI_LOG, svěřené ER-1 (zlaté sady).
+- Testy: `src/test_er_nova_kalkulace.js` 84 OK, mutace jádra [ER] 22/22; porovnání: fixtury + fuzz SHODA,
+  60 očekávaných (`podklady/porovnani/ocekavane_er_2026-11-24.txt`).
+- Čeká: J. V. — engineering u víc šachet jednou za variantu, nebo za kus (doporučeno jednou; dnes za kus);
+  znění EN/DE/FR. Koordinace — nová revize Fable celého rozdílu (první revize byla jen pro #757,
+  N2/N3 opravené), pak sloučení do integrace.
+- Diagnostika rezervy (příčiny A/B) poslána koordinaci 24. 11.; podrobnosti v #758.
 
 ## Čeká na J. V.
 
