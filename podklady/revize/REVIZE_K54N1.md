@@ -108,7 +108,7 @@ Pojistka pozná jen tělo, které nese razítko **a** `ocekavanySoubor` rovný c
 Úložiště běží s `consistency: 'strong'` (`sdilene.mjs`), takže zpožděné čtení Blobs pojistku neobejde ani
 falešně nespustí.
 
-Návrh: doplnit do `podklady/BEZPECNOST_MEZE.md` odstavec „K54-N1 chrání přímé uložení z okna, které kalkulaci
+Návrh: doplnit do `BEZPECNOST_MEZE.md` odstavec „K54-N1 chrání přímé uložení z okna, které kalkulaci
 načetlo; vědomé kroky (přečíslování, import, duplikát) starou kopii založit umí“. Robustní varianta pro
 roadmapu: náhrobek smazané kalkulace na serveru (razítko poslední verze při DELETE; POST na neexistující
 cíl, jehož `zakazka.uloRazitko` sedí na náhrobek, → 409) — pokryl by N1, N2 i přečíslování, ale zavřel by
