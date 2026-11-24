@@ -73,14 +73,15 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 
 ## Rychlá oprava K54-N1 (`claude/rychla-K54-N1`, 24. 11. 2026)
 
-- Nad integrací `0fd6410` (= test, v24.11.1), #750, verzi přidělí koordinace. Nález kola 54 (CN-432): smazaná
+- Nad integrací `0fd6410` (= test, v24.11.1), #750, předběžně v24.11.2 (verzi přidělí koordinace). Nález kola 54 (CN-432): smazaná
   otevřená kalkulace zůstala otevřená, první uložení ji založilo znovu ze staré kopie, webhook ji jen aktualizoval.
 - Klient (J. V. 24. 11.): `onlineSmazVybrane` zavře opravdu smazanou otevřenou kalkulaci (`zakNovaZakazkaProved`,
   vyňato z `novaZakazkaUI`), hláška „Kalkulace <číslo> byla smazána.“; `onlineUloz` posílá `ocekavanySoubor`.
 - Server `zakazky.mjs`: záznam pod jménem neleží + tělo nese razítko a `ocekavanySoubor` = cílové jméno → 409
   `smazana` (bez `kolize`, `prepsat` neobchází). Nová zakázka, přečíslování, tělo bez pole, obnova, webhook beze změny.
 - Testy: `netlify/test_k54n1_smazana.mjs` (před 6 FAIL / po 17 OK), `src/test_k54n1_smazani_ui.js` (8 FAIL / 12 OK),
-  mutace [K54N1] 8/8. Výsledek kola a SHA ve zprávě koordinaci. Před sloučením revize Fable.
+  mutace [K54N1] 8/8. Kolo `--bez-mutaci --proti origin/test`: sady 536/1, hodiny 435/1 (obojí jen
+  test_roadmapa — #750 bez verze, opraveno, 26/0), staticke 12/12, S3 SHODA 367/367. Před sloučením revize Fable.
 - Po nasazení do testu: J. V. ověří — smazat otevřenou → prázdná Nová zakázka; druhá karta se smazanou → „byla
   mezitím smazána“; webhook po smazání založí novou čerstvou kalkulaci.
 
