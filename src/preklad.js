@@ -300,6 +300,9 @@ const PREKLAD = {
   "nadzemní patro": ["upper floor", "Obergeschoss (OG)", "étage supérieur"],
   "NAPÁJENÍ VÝTAHU VČET. REVIZNÍ ZPRÁVY": ["INSPECTED EL. POWER SUPPLY FOR LIFT", "GEPRÜFTE STROMVERSORGUNG FÜR DEN AUFZUG (inkl. Revisionsbericht)", "ALIMENTATION ÉLECTRIQUE DE L’ASCENSEUR CONTRÔLÉE (rapport de révision incl.)"],
   "NEREZOVÁ MADLA NA BOČNÍCH STĚNÁCH OCK": ["STAINLESS STEEL HANDLE ON THE SIDE OF SHAFT STRUCTURE", "EDELSTAHLGRIFF AN DER SEITE DER SCHACHTSTAHLKONSTRUKTION", "MAINS COURANTES EN INOX SUR LES PAROIS LATÉRALES DE LA GAINE"],
+  /* PT-ZAB (#759, J. V. 24. 11. 2026): hodnota pole ZÁBRADLÍ NA PODESTÁCH
+   * (interiérová šachta se zábradlím) ve slovníku chyběla od srpna. */
+  "úpravy a napojení stávajícího zábradlí na podestách": ["modification and connection of the existing railing at the landings", "Anpassung und Anschluss des bestehenden Geländers an den Podesten", "adaptation et raccordement du garde-corps existant sur les paliers"],
   "nerezový plech dle zaměření ve všech nástupištích": ["Stainless steel metal sheet in each floor (based on site survey)","Edelstahlbleche in jedem Stockwerk (auf der Grundlage der Vermessung vor Ort)","Tôle inox selon relevé, à tous les arrêts"],
   "Nerezový plech ve tvaru dle individuálního zaměření spojující podestu nástupiště s prahem šachetních dveří v šířce vstupu": ["Stainless steel plate connecting the platform with landing door sill. Designed according to site survey.", "Edelstahlplatte, die die Plattform mit der Schwelle der Schachttür verbindet. Entworfen nach ordnungsgemäßer Standortvermessung.", "Tôle en inox reliant le palier au seuil des portes palières, réalisée selon le relevé sur site."],
   "Nosnost": ["load", "Tragkraft", "charge utile"],
