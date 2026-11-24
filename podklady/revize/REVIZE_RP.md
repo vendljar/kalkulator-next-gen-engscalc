@@ -242,3 +242,27 @@ a zároveň s přepisem souhrnného řádku. *Návrh:* podíl na řádku — `rs
 
 R1 Word na skutečných šablonách CN v18 CZ/EN/DE/FR a SoD před `main` (včetně N3 prázdných odstavců);
 N1 krycí list × ks (J. V.); N7 nástroj porovnání nevidí krycí list ani náhled; N8, N9, N11, N12 informace.
+
+## Dodatek dorevize: N1 — commit e1fe98f (krycí list × ks, rozhodnutí J. V. 24. 11.)
+
+Rozdíl `ed622f4..e1fe98f`: v `src` jen `kryci.js` (1 řádek), `rucni_polozky.js` (`rpKryciText`) a test. **Verdikt
+se nemění: SLOUČIT** (rozdíl k dorevizi celkem `b36b97a..e1fe98f`).
+
+Ověřeno vlastní zkouškou (šachta B 3 ks, ruční položka 2 × 12 345,67 Kč):
+
+- **Částka = o kolik položka zvedla cenu.** Cena šachty B před zaokrouhlením stoupla o 88 888,82 Kč; krycí list
+  píše „29 629,61 Kč/ks × 3 ks = 88 888,82 Kč (Opláštění, Výtah B)“ — shoda na haléř.
+- **Kusy ze zmrazeného výsledku.** U odeslané nabídky po podvrhu `ks = 7` a ceny v zadání zůstává text stejný
+  (× 3 ks, ceny ze zámku). `ks` se bere z `rOck.sachty[i].ks`, tedy z výsledku strany OCK.
+- Jedna varianta s `ks = 3` (bez dalších šachet): „1 200 Kč/ks × 3 ks = 3 600 Kč“. Šachta s 1 ks: jen cena.
+- `test_rp_rucni_polozky` 66/0, `test_kryci` 129/0.
+
+Kolo jsem po tomto commitu znovu nepouštěl: mění jen text jednoho pole krycího listu, který porovnání
+sestavení neměří (N7), a cenu, nabídku ani zámek se netýká. Kolo nad zkušebním sloučením výš platí pro ed622f4.
+
+**D2 (N, test) — kusy ze zadání místo ze zámku test nepozná.** Mutace `ks: +s.ks` → `ks: +(zad[i] || {}).ks`
+v `kryci.js` projde; test H podvrhuje po odeslání jen cenu, ne počet kusů. Zámek změnu `ks` nepustí, takže jde
+jen o pojistku. *Návrh:* do testu H přidat `v2.data.ock.dalsi[0].ks = 7` před tisk krycího listu.
+
+**D3 (I, text KL)** — „Jen u B, 2 ks, 29 629,61 Kč/ks × 3 ks“: „ks“ znamená jednou množství položky, podruhé
+kusy šachty. Znění je rozhodnutí J. V.; jen ať se ví, že se může číst dvojznačně.
