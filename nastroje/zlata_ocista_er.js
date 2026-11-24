@@ -9,7 +9,7 @@
  * výsledek nemění ani o bit. Tahle očista vrátí zadání do tvaru bez příznaku
  * (= kalkulace založená před #757). Na stromu před #757 nedělá nic (příznak
  * ani klíč 'engineering' tam nejsou). Nové chování hlídá
- * src/test_engineering_priplatek.js. Vrátit: smazat soubor a dvě volání. */
+ * src/test_er_nova_kalkulace.js. Vrátit: smazat soubor a dvě volání. */
 'use strict';
 function predEr(zadani) {
   if (!zadani || typeof zadani !== 'object') return zadani;

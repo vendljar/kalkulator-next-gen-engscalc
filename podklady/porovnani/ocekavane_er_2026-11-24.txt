@@ -1,4 +1,4 @@
-# Očekávané rozdíly ER (#757, #758, #761) × integrace c89e872 (v24.11.5) — 24. 11. 2026
+# Očekávané rozdíly ER (#757, #758, #761) × integrace 7339a9e (v24.11.6; původně c89e872) — 24. 11. 2026
 # Formát: <vzor případu> <pole,pole|*>  # důvod   (popis v nastroje/porovnani_sada.js)
 #
 # Rozhodnutí J. V. 24. 11. 2026: NOVÁ kalkulace (příznak kalkVerze 2 ze ZADANI_NOVA) má

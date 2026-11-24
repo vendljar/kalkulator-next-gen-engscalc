@@ -132,7 +132,7 @@ await page.evaluate(([c, cp]) => {
 test('prohlížeč je v roli obchodníka', await page.evaluate(() => NAST.jeAdmin === false && zobrazeniRole() === 'Obchodník'));
 const cenaOck = () => page.evaluate(() => vypocetAkt().souhrn.zakladCena);
 const cenaPred = await cenaOck();
-/* 986 000 od ER (#759): nová kalkulace účtuje výstup ze zaměření vždy 1 × (dřív 980 000). */
+/* 986 000 od ER (#761): nová kalkulace účtuje výstup ze zaměření vždy 1 × (dřív 980 000). */
 test('výchozí cena OCK zkušební zakázky je 986 000 Kč', cenaPred === 986000, cenaPred);
 
 /* ---------- OCK: „+ přidat položku" a záporná cena ---------- */

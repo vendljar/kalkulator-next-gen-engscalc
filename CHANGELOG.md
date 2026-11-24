@@ -16,15 +16,21 @@ kopírují zdroj, import ani stará data ho nedostanou).
 
 - **#757 Engineering** je u nové kalkulace příplatková položka (C.engineeringKc × 1), ve výchozím stavu **mimo nabídku**
   (obchodník ho zaškrtne ve sloupci Nabídka; administrátor může výchozí stav změnit ve sloupci Výchozí), v Režii není.
-  U víc šachet a kusů **jednou za variantu** (i v objednaných příplatcích). Tiskne se jako ostatní příplatky
+  U víc šachet a kusů **jednou za variantu** — z první šachty, která ho má ve sloupci Nabídka (jinak z první,
+  která ho má), stejně v kalkulaci, nabídce i objednaných příplatcích (SoD, krycí list po prodeji). Tiskne se jako ostatní příplatky
   (EN „TECHNICAL ENGINEERING“, DE „TECHNISCHES ENGINEERING“, FR „INGÉNIERIE TECHNIQUE“ — schváleno J. V.); krycí list, Pipedrive a controlling ho berou jako ostatní příplatky.
 - **#758 Rezerva příplatků:** u nové kalkulace se přičte do ceny každého příplatku (před zaokrouhlením na tisíce), takže ji
   nese nabídka, krycí list, SoD i Pipedrive; controlling ji vede řádkem REZERVA PŘÍPLATKY bez dvojího započtení. Starší
-  kalkulace dál jen v součtu „Příplatky celkem (pokud vše)“. **Automat ATYP** (všechny kalkulace) už nepřepíše ručně
+  kalkulace dál jen v součtu „Příplatky celkem (pokud vše)“. **Pozor (revize N2, k vědomí J. V.):** u nové kalkulace
+  s rezervou se „Příplatky celkem“ liší od dřívějšího výpočtu o zaokrouhlení — dřív se rezerva přičetla k součtu
+  a zaokrouhlil se celek, nově se zaokrouhluje každá položka i s rezervou; na zkušebních případech řádově tisíce Kč
+  oběma směry (−6 000 až +4 000, průměr −407 Kč). **Automat ATYP** (všechny kalkulace) už nepřepíše ručně
   zadaná pole (rezervy, zámečník, hodiny); ruční klik na ATYP dosadí předlohu z ceníku jako dosud.
 - **#761 Režie:** nová kalkulace nemá přepínače „Výstup ze zaměření pro zákazníka“ (řádek vždy 1 × C.vystupZamereniKc,
   specifikace „ano“) a „Statické posouzení opláštění“ (řádek jen u šachty s opláštěním). Starší kalkulace přepínače mají dál.
-- Server hlídá tvar příznaku (i u šachet 2+). Příručka výpočtu doplněna.
+- Server hlídá tvar příznaku (i u šachet 2+) a **odmítne změnu příznaku uložené varianty nebo šachty** (revize N3,
+  doporučení — potvrdí J. V.; výjimka obnova ze zálohy a první uložení čerstvé kalkulace z Pipedrive). Příručka výpočtu doplněna.
+- Roadmapa: #766 ruční značky ATYP po šachtách (nízká), #767 víc šachet — výběr příplatků nabídka × krycí list (mimo ER).
 - Testy: `src/test_er_nova_kalkulace.js` (89 OK; proti c89e872 padá), mutace jádra [ER] 25/25 chycené; porovnání sestavení
   proti integraci: fixtury 7/7 a fuzz 300/300 SHODA, 60 očekávaných rozdílů jen u případů z `novaZakazka()`
   (`podklady/porovnani/ocekavane_er_2026-11-24.txt`); zlaté sady #560/VS očištěny o příznak (svěřené rozhodnutí ER-1).

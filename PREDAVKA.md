@@ -60,8 +60,10 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
   automat ATYP nepřepíše ruční pole. Rozhodnutí v ROZHODNUTI_LOG, svěřené ER-1 (zlaté sady).
 - Testy: `src/test_er_nova_kalkulace.js` 89 OK, mutace jádra [ER] 25/25; porovnání: fixtury + fuzz SHODA,
   60 očekávaných (`podklady/porovnani/ocekavane_er_2026-11-24.txt`).
-- J. V. 24. 11.: engineering jednou za variantu (hotovo, i objednané příplatky), překlad schválen. Čeká:
-  koordinace — nová revize Fable celého rozdílu, pak sloučení do integrace. Položka přepínačů přečíslována #759 → #761.
+- J. V. 24. 11.: engineering jednou za variantu, překlad schválen. Revize Fable celého rozdílu (REVIZE_ER.md,
+  větev claude/revize-er): opraveno N1 (jedno pravidlo vsPriplatekJednou), N3 (server odmítne změnu kalkVerze —
+  doporučení, potvrdí J. V.), N5 (mutace), N6 (texty); N4 → #766, mimo rozsah → #767; N2 jen CHANGELOG (J. V.).
+  Čeká: koordinace — dorevize a sloučení. #759 přečíslováno na #761.
 - Diagnostika rezervy (příčiny A/B) poslána koordinaci 24. 11.; podrobnosti v #758.
 
 ## Čeká na J. V.
