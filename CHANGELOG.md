@@ -8,6 +8,20 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v24.11.1 — MT2: zpevnění testů kola (#737 mutace #553 kontakt, #738 sady kolem půlnoci), větev claude/mt2-testy
+
+Nad integrací `db1e9e7` (v23.11.7). **Aplikace beze změny, cenu ani dokumenty nemění** (porovnání sestavení proti
+integraci: SHODA). Jen testy a nástroje kola (svěřená rozhodnutí MT2-1, MT2-2).
+
+- **#737 — nechycená mutace „#553: kontakt v odpovědi“** (Actions 45263862973, část serveru 3/24): test zeslábl po
+  PD #729 (kontakt = jen jméno osoby dealu), hlídal jen e-mail a telefon. `test_553_webhook.mjs` teď hlídá i jména
+  kontaktních osob a pole `kontakt` v odpovědích. Pojistka: mutace před 0 z 1, po 1 z 1 chycená.
+- **#738 — sady červené mezi 00:00 a 01:00 Praha:** `test_bz_bezpecnost`, `test_cn_cislo_nabidky`, `test_nn_nizke`,
+  `test_ra_rozhodnuti` braly datum prodeje v UTC, server razí odeslání v pražském dni. Sdílený pomocník
+  `netlify/pomoc_den.mjs`, falešné hodiny `netlify/pomoc_falesne_hodiny.mjs`, hlídka `netlify/test_mt2_pulnoc.mjs`
+  (zima 23:30 UTC, léto 22:30 UTC, poledne). Pojistka: před 8 FAIL, po 16 OK. Klient bere datum prodeje
+  z `objDnes()` (Praha) — v aplikaci vada není.
+
 ## v23.11.7 — PV: zápis prodeje do dealu v Pipedrive (#597), autor kalkulace z webhooku = vlastník dealu (#734), větev claude/pv-pipedrive
 
 Nad integrací `1280831` (v23.11.5), sloučeno s `9f2445a` (v23.11.6 SA). Verze v23.11.7 (koordinace; v23.11.6 je SA). **Cenu kalkulací nemění**
