@@ -79,9 +79,9 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
   Zpět/Znovu a zálohu smazané (`historieZapomen`, revize N1/N2), předem to řekne v potvrzení (N6), zruší autosave
   a počká na uložení (N7); `onlineUloz` posílá `ocekavanySoubor`, po 409 `smazana`/`pdCerstvaJina` neukládá (N5).
 - Server `zakazky.mjs`: neleží-li nic pod jménem a tělo nese razítko + `ocekavanySoubor` = jméno → 409 `smazana`.
-  N3 (J. V. 24. 11.): záznam s `pdCerstva` uloží jen okno s jeho razítkem v datech; jinak / `prepsat` → 409.
-- Testy: `netlify/test_k54n1_smazana.mjs` 25 OK, `src/test_k54n1_smazani_ui.js` 30 OK (pojistky v CHANGELOG),
-  mutace [K54N1] 24/24, kolo VŠE ZELENÉ (S3 SHODA 367/367). N4 v BEZPECNOST_MEZE. Revize Fable `claude/revize-k54n1` (SLOUČIT PO OPRAVÁCH) → čeká dorevize.
+  N3 (J. V. 24. 11.): záznam s `pdCerstva` uloží jen okno s toutéž `pdVazbaWebhook.kdy` (dorevize D1/D2); jinak → 409.
+- Testy: `netlify/test_k54n1_smazana.mjs` 30 OK, `src/test_k54n1_smazani_ui.js` 34 OK (pojistky v CHANGELOG),
+  mutace [K54N1] a kolo viz zpráva koordinaci. N4 v BEZPECNOST_MEZE. Revize i dorevize Fable `claude/revize-k54n1` (D1–D4 opraveny) → čeká druhá dorevize.
 - Po nasazení do testu J. V.: smazat otevřenou → prázdná Nová zakázka, Ctrl+Z nic nevrátí; druhá karta → „byla
   mezitím smazána“; webhook po smazání → nová čerstvá; stará kopie nad ní → „znovu založil Pipedrive“.
 

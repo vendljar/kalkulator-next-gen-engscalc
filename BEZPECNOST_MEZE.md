@@ -2522,8 +2522,12 @@ PO OPRAVÁCH — N1, N2, N3 (rozhodnutí J. V.), N5–N8 opraveny, N4 zapsáno s
   přípon a ukázková data (těla bez `ocekavanySoubor`) beze změny. Souběh DELETE × POST ve dvou instancích funkce —
   známá mez Blobs bez podmíněného zápisu (viz K7-S1). Robustní varianta (náhrobek smazané kalkulace / totožnost
   záznamu) mění formát dat a zavřela by i záchranu importem — rozhodnutí J. V., samostatná položka roadmapy.
-- **OPRAVENO (revize N3, J. V. 24. 11. 2026):** čerstvou kalkulaci z webhooku (`pdCerstva` na serveru) smí uložit jen
-  okno, které ji načetlo — razítko v datech těla = razítko záznamu (server ho píše, prohlížeč převezme při otevření).
-  Stará kopie, nová zakázka pod týmž číslem i `prepsat: true` → 409 `pdCerstvaJina` („Kalkulaci mezitím znovu založil
-  Pipedrive …“), bez kolize, takže se „Přepsat serverovou verzi“ nenabídne. Po prvním řádném uložení (příznak zmizí)
-  platí zase běžná kolize B10 s možností vědomého přepsání.
+- **OPRAVENO (revize N3, J. V. 24. 11. 2026; dorevize D1/D2):** čerstvou kalkulaci z webhooku (`pdCerstva` na
+  serveru) uloží jen okno s toutéž kalkulací — totožnost nese čas založení vazby `pdVazbaWebhook.kdy` (webhook ho při
+  aktualizaci drží, nově založená kalkulace má jiný; razítko verze ne — mění ho aktualizace webhookem i zápis do
+  složky). Jiná nebo žádná vazba (stará kopie smazané kalkulace, nová zakázka pod týmž číslem) → 409 `pdCerstvaJina`
+  („Kalkulaci mezitím znovu založil Pipedrive …“) i s `prepsat`, bez kolize, takže se „Přepsat serverovou verzi“
+  nenabídne. Stejná vazba → běžná cesta včetně kolize B10 s „Načíst znovu / Přepsat“.
+- **PŘIJATO (dorevize D3): pojistka N3 je ochrana proti omylu, ne bezpečnostní mez.** Čas vazby je v načtené zakázce
+  (kdo smí zakázku načíst, smí ji i uložit — NN B237); úmyslně sestavený požadavek ji obejde. Chrání před starou
+  kopií v okně, ne před útočníkem.

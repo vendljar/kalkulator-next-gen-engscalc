@@ -15,6 +15,7 @@ import { funkceCti } from '../lib/funkce.mjs';
 import { pdPoznamkyUlozeni } from '../lib/pd_poznamka.mjs';
 import { pdPoleMapa } from './pd_pole.mjs';
 import { pdWebhookOdkaz } from '../lib/pd_webhook.mjs';
+import { pdVazbaNorm } from '../lib/pd_vazba.mjs';   // K54-N1 N3: totožnost čerstvé kalkulace
 
 /* Jméno k e-mailu z účtů (P7 / K16-N87) — jen pro hlášku o kolizi verzí
  * u zakázek uložených dřív, než se jméno začalo zapisovat. Jedno čtení,
@@ -176,16 +177,22 @@ export default async (req) => {
    * kdo ji smí načíst (mez v BEZPECNOST_MEZE, NN B237). */
   /* K54-N1 N3 (J. V. 24. 11. 2026): ČERSTVOU KALKULACI Z PIPEDRIVE NEPŘEPÍŠE
    * STARÁ KOPIE. Leží-li pod jménem kalkulace, kterou webhook založil a člověk
-   * ji ještě neuložil (`pdCerstva`), smí ji uložit jen okno, které ji načetlo:
-   * jeho tělo nese razítko TÉTO kalkulace (`zakazka.uloRazitko`, server ho píše
-   * při zápisu, prohlížeč ho převezme při otevření). Stará kopie (smazaná
-   * kalkulace v jiné kartě, nová zakázka pod týmž číslem) nese razítko jiné
-   * nebo žádné — „Přepsat serverovou verzi“ jí podstrčí jen očekávané razítko
-   * (ONLINE_STAV), ne razítko v datech; `prepsat: true` neprojde nikdy. */
-  if (stara && stara.pdCerstva === true
-      && (t.prepsat === true || ULO.uloRazitko(zak) !== ULO.uloRazitko(stara))) {
-    return { odpoved: json({ ok: false, pdCerstvaJina: true, soubor: jmeno,
-      chyba: 'Kalkulaci mezitím znovu založil Pipedrive — otevřete ji ze Seznamu / odkazem z dealu; vaše kopie se neuložila.' }, 409) };
+   * ji ještě neuložil (`pdCerstva`), uloží ji jen okno s TOUTÉŽ kalkulací:
+   * totožnost nese čas založení vazby z webhooku (`pdVazbaWebhook.kdy` — webhook
+   * ho při aktualizaci drží, nově založená kalkulace má jiný, okno ho dostane
+   * při načtení a nic jiného ho nepíše). Dorevize D1/D2: razítko verze v datech
+   * se na to nehodí — mění ho aktualizace webhookem i zápis do složky.
+   * Jiná vazba nebo žádná (stará kopie smazané kalkulace, nová zakázka pod
+   * týmž číslem) → 409 i s `prepsat`; stejná → běžná cesta včetně kolize B10
+   * s „Načíst znovu / Přepsat“. Čte se z těla PŘED pdVazbaDrz (ta vazbu
+   * v těle přepíše uloženou). Ochrana proti omylu, ne bezpečnostní mez
+   * (dorevize D3, BEZPECNOST_MEZE). */
+  if (stara && stara.pdCerstva === true) {
+    const kdyUlozene = (pdVazbaNorm(stara.pdVazbaWebhook) || {}).kdy || '';
+    const kdyTelo = (pdVazbaNorm(zak.pdVazbaWebhook) || {}).kdy || '';
+    if (kdyUlozene && kdyTelo !== kdyUlozene)
+      return { odpoved: json({ ok: false, pdCerstvaJina: true, soubor: jmeno,
+        chyba: 'Kalkulaci mezitím znovu založil Pipedrive — otevřete ji ze Seznamu / odkazem z dealu; vaše kopie se neuložila.' }, 409) };
   }
 
   if (stara && t.prepsat !== true) {

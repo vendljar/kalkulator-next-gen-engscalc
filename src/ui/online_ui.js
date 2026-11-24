@@ -493,6 +493,7 @@ function onlineOdhlas() {
     onlineZobrazeniHesloZapomen();                 // B168: heslo k matici jen v rámci přihlášení
     if (typeof NAST !== 'undefined') NAST.nahledRole = '';
     ONLINE_STAV.rejstrik = []; ONLINE_STAV.soubor = ''; ONLINE_STAV.razitko = ''; ONLINE_STAV.posledni = '';
+    ONLINE_STAV.smazana = ''; ONLINE_STAV.smazanaText = '';   // K54-N1 dorevize D4
     onlinePoslednizapamatuj('');   // po odhlášení se nikam nevracíme
     ONLINE_STAV.kdyUlozeno = null;
     ONLINE_STAV.uzivatele = []; ONLINE_STAV.uzivateleNacteno = false; ONLINE_STAV.formHeslo = '';
@@ -1486,7 +1487,10 @@ function onlineUloz(opts) {
   /* K54-N1 (#750, revize Fable N5): kalkulace mezitím smazaná na serveru
    * (409 smazana) se už neukládá — žádné opakování, autosave stojí, hláška
    * drží. Značku ruší jen jiná zakázka (otevření, Nová zakázka, duplikát). */
-  if (ONLINE_STAV.smazana && ONLINE_STAV.smazana === ONLINE_STAV.soubor) {
+  /* Dorevize D4: okno bez jména záznamu (nová zakázka pod číslem čerstvé) se
+   * porovnává se jménem, které by uložení dalo. */
+  if (ONLINE_STAV.smazana && ONLINE_STAV.smazana === (ONLINE_STAV.soubor
+      || (typeof uloJmenoSouboru === 'function' ? uloJmenoSouboru(ZAK) : ''))) {
     if (!opts.tiche) { onlineZprava(onlineSmazanaText(), 'varovani'); render(); }
     if (opts.fronta) onlineTiskNeulozenDialog(onlineSmazanaText());
     return Promise.resolve(false);
@@ -1563,6 +1567,7 @@ function onlineUloz(opts) {
     /* VZ T1 (N3): skutečnou organizaci dealu píše jen server — převzít, ať hlavička a náhled poznámky sedí na zápis. */
     if (Object.prototype.hasOwnProperty.call(o, 'pdOrgDealu')) { if (o.pdOrgDealu) ZAK.pdOrgDealu = o.pdOrgDealu; else delete ZAK.pdOrgDealu; }
     ONLINE_STAV.kolize = null;
+    ONLINE_STAV.smazana = ''; ONLINE_STAV.smazanaText = '';   // dorevize D4: uloženo = značka neplatí
     onlinePoslednizapamatuj(o.soubor);   // po refreshi se sem vrátíme
     ONLINE_STAV.posledni = zmenaBehem ? onlineOdeslanoSRazitkem(odeslanoText, o.razitko, o.zamkyPrijato) : JSON.stringify(ZAK);
     ONLINE_STAV.kdyUlozeno = new Date();
@@ -1612,7 +1617,8 @@ function onlineUloz(opts) {
      * N3 (J. V. 24. 11.): totéž, když pod jménem mezitím leží čerstvá kalkulace
      * z Pipedrive (pdCerstvaJina) — hláška je pak ta ze serveru. */
     if (e && e.data && (e.data.smazana || e.data.pdCerstvaJina)) {
-      ONLINE_STAV.smazana = ONLINE_STAV.soubor || String(e.data.soubor || '');
+      ONLINE_STAV.smazana = ONLINE_STAV.soubor || String(e.data.soubor || '')
+        || (typeof uloJmenoSouboru === 'function' ? uloJmenoSouboru(ZAK) : '');
       ONLINE_STAV.smazanaText = e.data.pdCerstvaJina ? String(e.data.chyba || '') : '';
       if (ONLINE_STAV.timer) { clearTimeout(ONLINE_STAV.timer); ONLINE_STAV.timer = null; }
       onlineZprava(onlineSmazanaText(), 'varovani');

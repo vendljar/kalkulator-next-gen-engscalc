@@ -11,6 +11,8 @@
  *   – N5: odpověď 409 smazana = trvalý stav: autosave stojí, další uložení
  *     nic neodešle, hláška radí duplikovat nebo zavřít;
  *   – N3: odpověď pdCerstvaJina (čerstvá kalkulace z Pipedrive) totéž s hláškou serveru;
+ *   – dorevize D4: značka platí i u okna bez jména (podle jména, které by uložení
+ *     dalo); ruší ji úspěšné uložení a odhlášení;
  *   – N6: potvrzení předem řekne, že se otevřená zavře (i neuložené změny);
  *   – N7: naplánovaný autosave se zruší, rozběhnuté uložení doběhne před DELETE;
  *   – smazání jiné zakázky, nepovedené smazání a mezitím otevřená jiná
@@ -36,7 +38,7 @@ const ON = vyjmiZ(fs.readFileSync(__dirname + '/ui/online_ui.js', 'utf8'));
 const ZU = vyjmiZ(fs.readFileSync(__dirname + '/ui/zakazka_ui.js', 'utf8'));
 const UL = vyjmiZ(fs.readFileSync(__dirname + '/ui/zakulozeni_ui.js', 'utf8'));
 const HI = vyjmiZ(fs.readFileSync(__dirname + '/ui/historie.js', 'utf8'));
-const JMENA = { ON: ['onlineSmazVybrane', 'onlineUloz', 'onlineSmazanaText'], ZU: ['novaZakazkaUI', 'zakNovaZakazkaProved'],
+const JMENA = { ON: ['onlineSmazVybrane', 'onlineUloz', 'onlineSmazanaText', 'onlineOdhlas'], ZU: ['novaZakazkaUI', 'zakNovaZakazkaProved'],
   UL: ['zakOdpojUlozeni'], HI: ['historieTik', 'historieObnov', 'historieZpet', 'historieZalohaZapis', 'historieZalohaCti',
     'historieZalohaHotovo', 'historieZapomen'] };
 const KOD = [].concat(JMENA.ON.map(ON), JMENA.ZU.map(ZU), JMENA.UL.map(UL), JMENA.HI.map(HI));
@@ -77,6 +79,7 @@ function pripravit(volby) {
     onlineNactiRejstrik: () => Promise.resolve(),
     onlineSlevyOtisk: () => '', onlineSlevyZeServeru: () => {}, onlineChybaText: (e) => e.message,
     onlineZamekNesouhlasi: () => false,
+    onlineZobrazeniNasad: () => {}, onlineZobrazeniHesloZapomen: () => {}, nastaveniVyprazdni: () => {}, firmaDefault: () => ({}),
     uloJmenoSouboru: (z) => (z && z.cislo ? z.cislo + '.json' : 'bez-cisla.json'),
     uloZalohaSmiPrepsat: (s, c) => { const p = !c.cislo && !c.nazevAkce; return !p || !(s && s.zakazka && (s.cislo || s.nazevAkce)); },
     onlineApi: (url, telo, metoda) => {
@@ -86,12 +89,13 @@ function pripravit(volby) {
         if (volby.priMazani) volby.priMazani(ctx);
         return volby.selze ? Promise.reject(new Error('nepovedlo')) : Promise.resolve({ ok: true });
       }
+      if (url === '/api/odhlaseni') return Promise.resolve({ ok: true });
       odeslano.push(JSON.parse(JSON.stringify(telo)));
       log.push('post');
       if (volby.odpovedSmazana) return Promise.reject(Object.assign(new Error('Kalkulace byla mezitím smazána'),
         { stav: 409, data: { ok: false, smazana: true, soubor: ctx.ONLINE_STAV.soubor } }));
       if (volby.odpovedCerstva) return Promise.reject(Object.assign(new Error('x'), { stav: 409,
-        data: { ok: false, pdCerstvaJina: true, soubor: ctx.ONLINE_STAV.soubor, chyba: HLASKA_N3 } }));
+        data: { ok: false, pdCerstvaJina: true, soubor: ctx.ONLINE_STAV.soubor || ctx.uloJmenoSouboru(ctx.ZAK), chyba: HLASKA_N3 } }));
       return Promise.resolve({ ok: true, soubor: 'X.json', razitko: 'R2' });
     },
   };
@@ -197,6 +201,25 @@ const zaloha = (c) => JSON.parse(c.sklad.kng_rozpracovano_v1 || 'null');
   test('N3: další uložení nic neodešle', c.odeslano.length === posty3);
   vm.runInContext('zakOdpojUlozeni()', c);
   test('N3: Nová zakázka značku i hlášku zruší', c.ONLINE_STAV.smazana === '' && c.ONLINE_STAV.smazanaText === '');
+
+  /* Dorevize D4: okno bez jména záznamu, úspěšné uložení, odhlášení */
+  c = pripravit({ odpovedCerstva: true });
+  c.ONLINE_STAV.soubor = ''; c.ONLINE_STAV.razitko = '';   // nová zakázka pod číslem čerstvé (CN-432)
+  await vm.runInContext('onlineUloz({})', c);
+  const postyD4 = c.odeslano.length;
+  test('D4: okno bez jména po 409 dostane značku podle jména, které by uložení dalo', c.ONLINE_STAV.smazana === 'CN-432.json', c.ONLINE_STAV.smazana);
+  await vm.runInContext('onlineUloz({ tiche: true })', c);
+  await vm.runInContext('onlineUloz({})', c);
+  test('D4: … a 409 se neopakuje (další uložení nic neodešle)', c.odeslano.length === postyD4, c.odeslano.length);
+  c = pripravit({});
+  c.ONLINE_STAV.smazana = 'CN-999.json'; c.ONLINE_STAV.smazanaText = 'x';
+  await vm.runInContext('onlineUloz({})', c);
+  test('D4: úspěšné uložení značku zruší', c.ONLINE_STAV.smazana === '' && c.ONLINE_STAV.smazanaText === '', c.ONLINE_STAV.smazana);
+  c = pripravit({});
+  c.ONLINE_STAV.smazana = 'CN-432.json'; c.ONLINE_STAV.smazanaText = 'x';
+  await vm.runInContext('onlineOdhlas()', c);
+  await new Promise(r => setTimeout(r, 10));
+  test('D4: odhlášení značku zruší', c.ONLINE_STAV.smazana === '' && c.ONLINE_STAV.smazanaText === '', c.ONLINE_STAV.smazana);
 
   /* 4. smazání jiné zakázky / nepovedené smazání / mezitím jiná zakázka */
   c = pripravit({ vybrane: ['CN-500.json'] });

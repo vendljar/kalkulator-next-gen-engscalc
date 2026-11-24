@@ -165,16 +165,47 @@ test('N3: ani nová zakázka pod týmž číslem s vědomým přepsáním', r.st
 test('N3: čerstvá kalkulace zůstala (pdCerstva, razítko, adresa z dealu)', zakazka(W2).pdCerstva === true && G.uloRazitko(zakazka(W2)) === razCerstve
   && zakazka(W2).adresa !== 'STARÁ KOPIE 1, Vzorov');
 o = await nacti(W2, cA);
-const sPrepsat = G.importZakazka(o.zakazka); delete sPrepsat.pdCerstva;
+const sPrepsat = G.importZakazka(o.zakazka); delete sPrepsat.pdCerstva; delete sPrepsat.pdVazbaWebhook;
 r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: sPrepsat, ocekavaneRazitko: G.uloRazitko(sPrepsat), ocekavanySoubor: W2, prepsat: true }, cA);
-test('N3: prepsat: true neprojde ani s razítkem čerstvé (vědomé přepsání čerstvé nejde)', r.status === 409 && r.pdCerstvaJina === true
+test('N3: prepsat: true bez vazby čerstvé neprojde ani s jejím razítkem', r.status === 409 && r.pdCerstvaJina === true
   && zakazka(W2).pdCerstva === true, [r.status, r.chyba]);
+test('N3: stará kopie nesla jinou vazbu (jiný čas založení) — test není prázdný',
+  !!(stareOkno.pdVazbaWebhook && stareOkno.pdVazbaWebhook.kdy) && stareOkno.pdVazbaWebhook.kdy !== zakazka(W2).pdVazbaWebhook.kdy);
 o = await nacti(W2, cA);
 const radne = G.importZakazka(o.zakazka);
 delete radne.pdCerstva; radne.adresa = 'Řádně otevřená 1, Vzorov';   // jako po pdCerstvaPriprav a úpravě
 r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: radne, ocekavaneRazitko: G.uloRazitko(radne), ocekavanySoubor: W2 }, cA);
 test('N3: řádné první uložení čerstvé (načtená v okně) projde 200 a příznak zmizí', r.status === 200 && zakazka(W2).pdCerstva === undefined
   && zakazka(W2).adresa === 'Řádně otevřená 1, Vzorov', [r.status, r.chyba]);
+/* ---------- 6. dorevize D1/D2: totožnost čerstvé = vazba z webhooku, ne razítko ---------- */
+console.log('\n===== 6. dorevize D1/D2: aktualizace webhookem, cizí razítko v datech =====\n');
+const deal3 = D.dealy.find((x) => x.status === 'open' && x.org_id && x.person_id && /^CN-\d+ /.test(x.title) && x.id !== deal.id && x.id !== deal2.id);
+r = await volej(deal3.id);
+const W3 = r.soubor;
+o = await nacti(W3, cA);
+const okno3 = G.importZakazka(o.zakazka); const raz3 = G.uloRazitko(okno3);
+delete okno3.pdCerstva; okno3.adresa = 'Rozpracováno v okně 3, Vzorov';   // řádně otevřená, ještě neuložená
+const osoba3 = D.osoby.find((x) => x.id === deal3.person_id);
+osoba3.first_name = String(osoba3.first_name || '') + 'X';   // změna v dealu → webhook kalkulaci aktualizuje
+r = await volej(deal3.id);
+test('příprava D1: webhook otevřenou čerstvou aktualizoval (nové razítko, pdCerstva drží, vazba týž čas)',
+  r.akce === 'aktualizovano' && zakazka(W3).pdCerstva === true && G.uloRazitko(zakazka(W3)) !== raz3
+  && zakazka(W3).pdVazbaWebhook.kdy === okno3.pdVazbaWebhook.kdy, [r.akce, r.zmeneno]);
+r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: okno3, ocekavaneRazitko: raz3, ocekavanySoubor: W3 }, cA);
+test('D1: první uložení okna, které ji řádně otevřelo → běžná kolize s tlačítky, ne pdCerstvaJina',
+  r.status === 409 && r.kolize === true && r.pdCerstvaJina !== true, [r.status, r.chyba]);
+r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: okno3, ocekavaneRazitko: r.naDisku, ocekavanySoubor: W3 }, cA);
+test('D1: „Přepsat serverovou verzi“ vlastní připravenou kopií téže kalkulace projde', r.status === 200
+  && zakazka(W3).adresa === 'Rozpracováno v okně 3, Vzorov' && zakazka(W3).pdCerstva === undefined, [r.status, r.chyba]);
+const deal4 = D.dealy.find((x) => x.status === 'open' && x.org_id && x.person_id && /^CN-\d+ /.test(x.title) && ![deal.id, deal2.id, deal3.id].includes(x.id));
+r = await volej(deal4.id);
+const W4 = r.soubor;
+o = await nacti(W4, cA);
+const okno4 = G.importZakazka(o.zakazka); const raz4 = G.uloRazitko(okno4);
+delete okno4.pdCerstva; okno4.uloRazitko = '2026-11-24T09:09:09.000Z';   // razítko přepsal zápis do složky
+r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: okno4, ocekavaneRazitko: raz4, ocekavanySoubor: W4 }, cA);
+test('D2: jiné razítko v datech (zápis do složky), správná vazba a očekávané razítko → 200', r.status === 200 && zakazka(W4).pdCerstva === undefined,
+  [r.status, r.chyba]);
 test('do sítě nic', venku.length === 0, venku);
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
