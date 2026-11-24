@@ -428,5 +428,62 @@ console.log('\n===== ZK: dvojčata, tvar IČO karty, strop karet (R4) =====\n');
   vyplne.forEach(k => pamet.delete(k));
 }
 
+console.log('\n===== ZK: dorevize D4 (autor přerušené karty, paměť 30 dní, smazání z paměti, přerušen, rozpočet ARES) =====\n');
+{
+  const memo = () => JSON.parse(pamet.get('zakaznici_hromadne/zk-nesedi') || '{}');
+  /* (5) první dotaz do ARES jen, když zbývá čas */
+  const IQ = ico(1000061);
+  ARES_DATA[IQ] = { obchodniJmeno: 'Kvé Rozpočet s.r.o.', sidlo: { textovaAdresa: 'Časová 1, 58601 Jihlava' } };
+  zak('zk-q', '2026-11-24T10:00:00.000Z', { objednatel: 'Kvé Rozpočet s.r.o.', adresa: 'Časová 1, 586 01 Jihlava', ico: IQ });
+  const puvRozpocet = ZZ_NASTAVENI.rozpocetMs;
+  ZZ_NASTAVENI.rozpocetMs = 0;
+  const pred = aresDotazy.length;
+  let r0 = await zz({ akce: 'nahled' }, cA);
+  for (let k = 0; k < 200 && r0.navrh.faze === 'cteni'; k++) r0 = await zz({ akce: 'nahled', id: r0.navrh.id }, cA);
+  r0 = await zz({ akce: 'nahled', id: r0.navrh.id }, cA);
+  test('bez zbývajícího času se do ARES neptá (náhled pokračuje dalším voláním)', aresDotazy.length === pred && r0.navrh.faze === 'ares', (aresDotazy.length - pred) + ' ' + r0.navrh.faze);
+  ZZ_NASTAVENI.rozpocetMs = puvRozpocet;
+  /* (3) IČO, které začne sedět, zmizí z paměti „nesedí“ */
+  test('C je v paměti „nesedí“', !!memo()[I.C]);
+  zak('zk-c', '2026-11-24T10:30:00.000Z', { objednatel: 'Gama Byty s.r.o.', adresa: 'Vzorová 7, 602 00 Brno', ico: I.C });
+  const r1 = await nahledCely(cA);
+  test('opravená zakázka C sedí a C zmizí z paměti', r1.navrh.polozky.find(p => p.ico === I.C).stav === 'zalozit' && !memo()[I.C], JSON.stringify(memo()[I.C] || null));
+  /* (1) karta jiného autora s toutéž poznámkou se nepočítá jako „naše“ */
+  ZZ_NASTAVENI.zapisNaVolani = 1;
+  const zz1 = await zz({ akce: 'zalozit', id: r1.navrh.id }, cA);
+  const zbyvaIco = r1.navrh.polozky.filter(p => p.stav === 'zalozit').map(p => p.ico).sort().slice(1);
+  const poznamka = 'Založeno hromadně ze zakázek, údaje ověřené v ARES ' + new Date().toISOString().slice(0, 10) + '.';
+  const ciziIco = zbyvaIco[0];
+  const ciziNazev = ARES_DATA[ciziIco].obchodniJmeno;
+  const rc = await (await post(zakaznici, 'http://x/api/zakaznici', { zakaznik: { nazev: ciziNazev, ico: ciziIco, poznamka } }, cO)).json();
+  ZZ_NASTAVENI.zapisNaVolani = 100;
+  const zz2 = await zalozitCely(r1.navrh.id, cA);
+  test('karta jiného autora s toutéž poznámkou = „už existovalo“, ne „založeno“', zz1.ok && rc.ok && zz2.hotovo
+    && zz2.vysledek.uzExistovalo === 1 && zz2.vysledek.zalozeno === zbyvaIco.length, JSON.stringify(zz2.vysledek));
+  /* (4) zahození rozpracovaného zápisu → protokol „přerušen“ */
+  const IR = ico(1000062), IV = ico(1000063);
+  for (const [i, jm] of [[IR, 'Ró Přerušení'], [IV, 'Vé Přerušení']]) {
+    ARES_DATA[i] = { obchodniJmeno: jm + ' s.r.o.', sidlo: { textovaAdresa: 'Zahozená 1, 79601 Prostějov' } };
+    zak('zk-' + i, '2026-11-24T11:00:00.000Z', { objednatel: jm + ' s.r.o.', adresa: 'Zahozená 1, 796 01 Prostějov', ico: i });
+  }
+  const r2 = await nahledCely(cA);
+  ZZ_NASTAVENI.zapisNaVolani = 1;
+  await zz({ akce: 'zalozit', id: r2.navrh.id }, cA);
+  ZZ_NASTAVENI.zapisNaVolani = 100;
+  await zz({ akce: 'zrusit' }, cA);
+  const pz = JSON.parse(pamet.get('zakaznici_hromadne/zk-protokol')).find(x => x.id === r2.navrh.id);
+  test('zahozený rozpracovaný zápis: protokol „přerušen“ s počtem založených', pz && /přerušen/.test(pz.stav) && pz.zalozeno === 1, JSON.stringify(pz));
+  /* (2) paměť „nesedí“ platí nejvýš 30 dní */
+  test('D, E jsou v paměti „nesedí“', !!memo()[I.D] && !!memo()[I.E]);
+  const puvTed = ZZ_NASTAVENI.ted;
+  ZZ_NASTAVENI.ted = () => Date.now() + 31 * 24 * 3600 * 1000;
+  const pred3 = aresDotazy.length;
+  await nahledCely(cA);
+  ZZ_NASTAVENI.ted = puvTed;
+  const nove3 = aresDotazy.slice(pred3);
+  test('po 30 dnech paměť neplatí — nesedící IČO se dotážou znovu', nove3.includes(I.D) && nove3.includes(I.E), nove3.join(','));
+  await zz({ akce: 'zrusit' }, cA);
+}
+
 console.log('\n' + (fail ? 'FAIL' : 'OK') + ' — ' + ok + ' prošlo, ' + fail + ' selhalo');
 process.exit(fail ? 1 : 0);

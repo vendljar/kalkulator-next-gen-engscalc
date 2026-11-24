@@ -33,7 +33,9 @@ Podnět J. V. 24. 11.: v databázi zákazníků na ostrém webu jsou 2 karty —
   souběžně (`ctiVsechny`) (R2); strop 600 platí na kolo, „Zkusit znovu“ pokračuje, IČO, které nesedělo, se znovu
   neptá, dokud se nezmění jeho zakázka (paměť `zk-nesedi`, 30 dní) (R3); testy R4; propadlý náhled se nevydá
   a smaže (R5); R6 zapsáno do `BEZPECNOST_MEZE.md`. R7 (banka a účet do karty) a R9 (mimo zálohu): J. V. 24. 11. ponechat.
-- Testy s pojistkou: `netlify/test_zk_zakaznici_ze_zakazek.mjs` (před ZK import selže; 74 OK, po revizi 95 OK), harness
+- **Dorevize (SLOUČIT):** D1 přijato jako mez, D2 věta do příručky správce, D3 změna meze zapsána, D4 testy na 5 přeživších
+  mutací (mutace [ZK] 42).
+- Testy s pojistkou: `netlify/test_zk_zakaznici_ze_zakazek.mjs` (před ZK import selže; 74 OK, po revizi 95 OK, po dorevizi 102 OK), harness
   `overit_zk_zakaznici.mjs` (15 OK; před opravou panelu po přepnutí účtu 1 FAIL), matice práv `test_prava.mjs`,
   úplnost zálohy `test_zalohy.mjs` N4; mutace [ZK] 37/37 (po revizi); kolo `--bez-mutaci --proti origin/claude/integrace-16-10` (7339a9e) VŠE ZELENÉ (544 sad, 12/12 statických), porovnání sestavení SHODA 367/367.
 

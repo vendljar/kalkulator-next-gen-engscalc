@@ -103,7 +103,7 @@ Větev `claude/zk-zakaznici-ze-zakazek` nad `c89e872`. Nic na weby, do Pipedrive
   a `test_zalohy.mjs` N4 doplněny; mutace [ZK] 24/24; kolo `--bez-mutaci --proti origin/claude/integrace-16-10` (7339a9e) VŠE ZELENÉ, SHODA 367/367; po revizi testy 95 OK, mutace [ZK] 37/37, kolo znovu VŠE ZELENÉ (544 sad), SHODA 367/367.
 - **Rozhodnutí J. V. 24. 11.:** vše ponechat — mimo zálohu, diakritika přísně, DIČ jen z ARES, banka a účet do karty (R7/R9); `podklady/ROZHODNUTI_LOG.md`.
 - **Revize Fable** (`claude/revize-zk`, SLOUČIT PO OPRAVÁCH): R0 sloučena integrace 7339a9e, R1–R5 a R10 opraveny,
-  R6 jako mez; R7 a R9 J. V. ponechal.
+  R6 jako mez; R7 a R9 J. V. ponechal. Dorevize: SLOUČIT; D1 mez, D2 příručka, D3 mez, D4 testy (102 OK).
 - **Další krok:** dorevize Fable → sloučení koordinací; na testu změřit dobu seznamu Zákazníci po naplnění (R2);
   spuštění na testu testovací sezení, na ostrém J. V.
 

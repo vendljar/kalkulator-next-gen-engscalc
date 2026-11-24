@@ -2574,6 +2574,13 @@ Větev `claude/zk-zakaznici-ze-zakazek` nad `c89e872`. Testy `netlify/test_zk_za
 - **Čtení karet (revize R2):** náhled ani zápis karty nečtou — existenci pozná z klíčů úložiště (klíč = IČO, bez
   IČO `n-<název>`); čte se jen karta téhož klíče těsně před zápisem. `GET /api/zakaznici` čte karty souběžně po 16
   (`ctiVsechny`). Skutečnou dobu seznamu po naplnění změří testovací sezení na testu.
+- **D3 — změna meze (dorevize, k vědomí koordinace):** strop 600 dotazů platí na jedno KOLO náhledu, ne na celý
+  náhled; „Zkusit znovu“ začne další kolo, takže jeden náhled se dá doklikat až do denního stropu 1 500. Denní mez drží.
+- **D1 — karta s neplatným IČO a stejným názvem — PŘIJATO (dorevize):** existence se pozná z klíčů; karta, jejíž IČO
+  neprojde kontrolní číslicí (překlep, klíč = číslice), se nehledá podle názvu, takže vedle ní vznikne karta z ARES
+  (ta je správná). Hledat ji podle názvu by znamenalo číst karty (proti R2). Duplicitu správce smaže ručně.
+- **D2 — paměť „nesedí“ nejde ručně obejít:** po opravě firmy v ARES je potřeba zakázku znovu uložit, jinak IČO vyjde
+  „nesedí“ (s datem ověření) nejvýš 30 dní. Uvedeno v příručce správce.
 - **R6 — novější zakázka mezi náhledem a zápisem — VĚDOMÁ MEZ:** zápis znovu ověří zakázku z náhledu proti subjektu
   ARES z náhledu (nejvýš 24 h starému), ale neověří, že je pořád nejnovější. Uloží-li mezitím někdo novější zakázku
   téže firmy s jiným kontaktem, karta dostane kontakt ze starší. Okno nejvýš 24 h; kontakt jde v kartě opravit (autor
