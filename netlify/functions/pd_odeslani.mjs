@@ -101,16 +101,17 @@ export default async (req) => {
   const otiskKlienta = typeof telo.otisk === 'string' ? telo.otisk : '';
   if (akce === 'zapis' && !OTISK_TVAR.test(otiskKlienta))
     return json({ ok: false, chyba: 'Chybí potvrzení náhledu — nejdřív zobrazte, co se zapíše.' }, 400);
-  let docx = null;
-  if (akce === 'soubor') {
-    docx = await pdOdeslaniDocx(telo.obsah);
-    if (docx.chyba) return json({ ok: false, chyba: docx.chyba }, docx.status);
-  }
   const zdroje = {};
   for (const k of ['ock', 'proj']) zdroje[k] = (pdNanecistoStrana({ hodnoty: telo.zdroje && telo.zdroje[k] }) || {}).hodnoty || {};
 
   let ULO, JEKLY;
   try { ({ ULO, JEKLY } = await jadro()); await jadroPd(); } catch (e) { PD_JADRO = null; return jadroChyba(e); }
+  /* Word se kontroluje až s načteným jádrem (čtení ZIP sablonaZipPolozky, revize PO R5). */
+  let docx = null;
+  if (akce === 'soubor') {
+    docx = await pdOdeslaniDocx(telo.obsah);
+    if (docx.chyba) return json({ ok: false, chyba: docx.chyba }, docx.status);
+  }
   const G = globalThis;
   const s = await uloziste('zakazky');
   const prvni = await s.cti('z/' + soubor);

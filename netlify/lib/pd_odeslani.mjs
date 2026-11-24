@@ -20,7 +20,6 @@
  * functions/pd_odeslani.mjs.
  * ============================================================ */
 import { createHash } from 'node:crypto';
-import { createRequire } from 'node:module';
 
 export const PD_ODESLANI_POLE = 'pdOdeslani';
 /* Dokumenty, jejichž PRVNÍ tisk = odeslání nabídky (ZAMEK_DOKUMENTY v zamek.js). */
@@ -170,12 +169,7 @@ export function pdOdeslaniOtisk(dealId, updateTime, patch, zamekKdy, poznamka) {
  * Vrací { data: Buffer } nebo { chyba, status }. */
 const DOCX_ZAKAZANE_CASTI = [/(^|\/)vbaproject/, /(^|\/)vbadata/, /(^|\/)embeddings\//, /(^|\/)oleobject[^/]*$/, /activex/];
 const DOCX_ZAKAZANE_TYPY = /macroEnabled|vbaProject|oleObject|activeX/i;
-let ZIP_CTI = null;
-function zipCti() {
-  if (!ZIP_CTI) ZIP_CTI = createRequire(import.meta.url)('../../src/docxgen.js').zipPrecti;
-  return ZIP_CTI;
-}
-export async function pdOdeslaniDocx(b64) {
+export async function pdOdeslaniDocx(b64, G = globalThis) {
   if (typeof b64 !== 'string' || !b64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(b64))
     return { chyba: 'Soubor nabídky chybí nebo není v pořádku.', status: 400 };
   if (Math.floor(b64.length * 3 / 4) > PD_ODESLANI_SOUBOR_MAX + 3)
@@ -186,7 +180,8 @@ export async function pdOdeslaniDocx(b64) {
   const neniWord = { chyba: 'Soubor není dokument Wordu (.docx) — do Pipedrive se nepřiloží.', status: 400 };
   if (data.length < 30 || data.readUInt32LE(0) !== 0x04034b50) return neniWord;
   let polozky;
-  try { polozky = await zipCti()(new Uint8Array(data.buffer, data.byteOffset, data.length), { xmlCastMax: 8 * 1024 * 1024 }); }
+  if (typeof G.sablonaZipPolozky !== 'function') return { chyba: 'Kontrola Wordu se na serveru nenačetla — soubor se nepřiložil.', status: 503 };
+  try { polozky = await G.sablonaZipPolozky(new Uint8Array(data.buffer, data.byteOffset, data.length)); }
   catch (e) { return neniWord; }
   const jmena = (Array.isArray(polozky) ? polozky : []).map((p) => String((p && p.nazev) || '').replace(/\\/g, '/'));
   const male = jmena.map((n) => n.toLowerCase());

@@ -527,6 +527,14 @@ async function sablonaObsahVady(vstup) {
   try { polozky = await cti(u8, { xmlCastMax: SABLONA_XML_CAST_MAX }); } /* B272 */ catch (e) { return ['soubor nejde rozbalit jako .docx (' + e.message + ')']; }
   return sablonaObsahVadyZipu(polozky);
 }
+/* Části ZIPu (Word) jako [{ nazev, data }] — týž čtecí kód a strop XML části
+ * jako kontrola šablon; nečitelný ZIP vyhodí výjimku. Pro kontrolu Wordu
+ * přikládaného k dealu (PO #116, revize R5: lib/pd_odeslani.mjs). */
+async function sablonaZipPolozky(u8) {
+  const cti = sablonaZipCtecka();
+  if (!cti) throw new Error('chybí čtení ZIP');
+  return cti(u8, { xmlCastMax: SABLONA_XML_CAST_MAX });
+}
 /* Odstavce textu šablony (base64 / ArrayBuffer / Uint8Array) pro kontrolu
  * češtiny v jazykové verzi (C7, K48-N1). Tentýž výčet odstavců jako průvodce
  * v prohlížeči (docxTextSablony z docxgen.js); nečitelný soubor → []. */
@@ -548,4 +556,4 @@ function sablonaObsahVadyText(vady) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { SABLONA_VZTAHY_ZAKAZANE, sablonaObsahVadyZipu, sablonaObsahVady, sablonaObsahVadyText, sablonaOdstavce, sablonaB64NaBajty, sablonaXmlUnesc, sablonaNazevVada, sablonaNazevDekoduj, sablonaNazevKlic, sablonaJeXmlBajty, sablonaObsahText, SABLONA_POLE_ZAKAZANA, SABLONA_XML_CAST_MAX };
+  module.exports = { SABLONA_VZTAHY_ZAKAZANE, sablonaObsahVadyZipu, sablonaObsahVady, sablonaZipPolozky, sablonaObsahVadyText, sablonaOdstavce, sablonaB64NaBajty, sablonaXmlUnesc, sablonaNazevVada, sablonaNazevDekoduj, sablonaNazevKlic, sablonaJeXmlBajty, sablonaObsahText, SABLONA_POLE_ZAKAZANA, SABLONA_XML_CAST_MAX };
