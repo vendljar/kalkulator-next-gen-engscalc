@@ -63,6 +63,14 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
   zápisu; N3 deal se čte dvakrát (vrátit ho z `pdDealPatriZakazce`); N4 neúspěch kvůli vypnutému zápisu / vazbě nemá psát
   zakázku ani přepsat „zapsano“; N5 řádek logu `pd_prodej` bez osobních údajů; N6 komentář `icoShoda` v `pd_vazba.mjs:53`.
 
+## Dávka MT2 (`claude/mt2-testy`, 24. 11. 2026)
+
+- Nad integrací db1e9e7 (v23.11.7), v24.11.1. Jen testy a nástroje kola (svěřená MT2-1, MT2-2); aplikace beze změny.
+- **#737:** mutace „#553: kontakt v odpovědi“ nechycená — test zeslábl po #729 (kontakt = jméno). `test_553_webhook.mjs`
+  hlídá jména kontaktů a pole `kontakt` v odpovědích; mutace před 0/1, po 1/1.
+- **#738:** sady bz/cn/nn/ra červené 00–01 Praha (datum prodeje v UTC). `netlify/pomoc_den.mjs` (dnesPraha),
+  `netlify/pomoc_falesne_hodiny.mjs`, hlídka `test_mt2_pulnoc.mjs`; před 8 FAIL, po 16 OK. Klient bere `objDnes()` — v aplikaci vada není.
+
 ## Čeká na J. V.
 
 Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.). Od S6 je zdrojem evidence
