@@ -43,7 +43,8 @@ Pipedrive jen simulátor — zkouška na dealu TEST až v testovacím sezení se
   zákazníkovi se do dealu řídícího nezapisuje (R4, J. V. #762); Word kontrolován jako ZIP bez maker, OLE a ActiveX
   a přijat až po zapsaných údajích (R5); Word v paměti přežije opětovné načtení zakázky (R6); hláška fáze jmenuje
   PIPEDRIVE_FAZE_ODESLANO (R7); deal bez stavu fázi neposouvá (R8); bez zapsaného „zahájeno“ se nenahrává (R9);
-  testy přeživších mutací revize (R12). Testy: server 85/85, karta 23/23.
+  testy přeživších mutací revize (R12). Testy: server 85/85, karta 23/23, mutace [PO] 44/44; kolo `--bez-mutaci`
+  VŠE ZELENÉ, S3 SHODA 367/367.
 
 ## v24.11.6 — RP: ruční položky kalkulace OCK v nabídce CN a krycím listu (#736, #740), větev claude/rp-rucni-polozky
 
