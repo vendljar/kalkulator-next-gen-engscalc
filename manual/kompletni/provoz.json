@@ -606,6 +606,12 @@
        "dokud je administrátor nesmaže"
       ],
       [
+       "zakaznici_hromadne",
+       "naplnění zákazníků ze zakázek podle ARES: náhled (`zk-navrh`, platí 24 h; IČO, název a sídlo firmy, subjekt z ARES, bez kontaktů), denní počítadlo dotazů do ARES (`zk-den`) a protokol hromadných zápisů (`zk-protokol`: kdo, kdy, počty); mimo zálohu",
+       "e-mail správce v protokolu a v náhledu",
+       "náhled do zápisu nebo 24 h, protokol posledních 100 běhů"
+      ],
+      [
        "pripominky",
        "připomínky z aplikace (`p/P-…`: typ, text, autor, stav, odpověď, kontext obrazovky), nastavení funkce, počítadlo čísel; snímky obrazovky zvlášť v `pripominky_snimky` (mimo zálohu), limity a záznam klíče koordinace v `pripominky_limit` (mimo zálohu), otisk klíče koordinace v `program/pripominky_klic` (mimo zálohu)",
        "jméno a e-mail autora, text psaný obchodníkem, číslo zakázky; snímek může nést ceny (vidí jen správce)",
@@ -1521,6 +1527,12 @@
        "GET, POST, DELETE",
        "GET a POST přihlášený; DELETE jen administrátor",
        "karty zákazníků"
+      ],
+      [
+       "/api/zakaznici-ze-zakazek",
+       "GET, POST",
+       "jen administrátor",
+       "naplnění databáze zákazníků ze zakázek podle ARES: náhled po kouscích, zápis karet po potvrzení, protokol"
       ],
       [
        "/api/pripominky",
