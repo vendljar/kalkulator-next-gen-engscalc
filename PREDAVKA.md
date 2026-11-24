@@ -42,6 +42,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/pv-pipedrive` | (tato dávka) | v23.11.7 | PV #597 zápis prodeje do dealu + #734 autor = vlastník dealu nad 1280831; revize Fable; verzi přidělí koordinace |
 | `claude/ut-texty` | (tato dávka) | — | UT #741 #742 #743 (#744 čeká na J. V.) nad 0fd6410; verzi přidělí koordinace |
 | `claude/r3-pole-wordu` | (tato dávka) | — | R3 #751 zákaz dalších polí Wordu nad 3cab0c5 (v24.11.2); verzi přidělí koordinace |
+| `claude/zk-zakaznici-ze-zakazek` | (tato dávka) | — | ZK #755 zákazníci ze zakázek podle ARES (nástroj správce) nad c89e872 (v24.11.5); revize Fable; verzi přidělí koordinace |
 
 Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontrola: `python3 nastroje/release_odkaz.py --chybejici`
 (22. 11.: žádná — main v19.11.11, tag vydán).
@@ -90,6 +91,22 @@ Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.)
   vypnuto). Stabilní API jádra VZ: `src/vice_zakazniku.js` a předávka VZ-E0 v `podklady/predavky/2026-11.md`.
 - **Číslování:** roadmapa a meze B — další volná čísla podle `roadmapa/roadmap.json` a `BEZPECNOST_MEZE.md`
   (koordinace drží rezervu, např. B229). Roadmapa obsazená do #643 (#609/#610 `claude/sl-sod-sleva`, #613–#643 S6).
+
+## Dávka ZK (24. 11. 2026) — #755 zákazníci ze zakázek podle ARES
+
+Větev `claude/zk-zakaznici-ze-zakazek` nad `c89e872`. Nic na weby, do Pipedrive ani na Disk; ARES jen zástupný fetch.
+- **Hotovo:** Zákazníci → „Naplnit ze zakázek (ARES)…“ (jen admin). Server `/api/zakaznici-ze-zakazek`
+  (`functions/zakaznici_ze_zakazek.mjs`, logika `lib/zakaznici_ze_zakazek.mjs`): náhled po kouscích (zakázky →
+  seskupení podle IČO → ARES jen pro IČO bez karty, 10/volání, pauza 400 ms, 600/náhled, 1 500/den), zápis po
+  potvrzení ze serverového náhledu s novým ověřením zakázky, protokol bez osobních údajů. UI `src/ui/zakaznici_ui.js`.
+- **Testy:** `netlify/test_zk_zakaznici_ze_zakazek.mjs` 73 OK, `overit_zk_zakaznici.mjs` 15 OK, `test_prava.mjs`
+  a `test_zalohy.mjs` N4 doplněny; mutace [ZK] MUTACE_PREDAVKA; kolo `--bez-mutaci --proti origin/claude/integrace-16-10` KOLO_PREDAVKA.
+- **Pro J. V. (k vědomí / rozhodnutí):** (1) úložiště `zakaznici_hromadne` (náhled, denní počítadlo, protokol) je
+  **výjimka ze zálohy** — doporučení: ponechat (karty samy se zálohují); (2) diakritika v názvu se při shodě
+  s ARES **nezahazuje** („Novy dum“ ≠ „Nový dům“ → nesedí) — doporučení: ponechat přísně, takové položky založit ručně;
+  (3) DIČ karty je výhradně z ARES (neplátce = prázdné, i když zakázka DIČ má) — doporučení: ponechat.
+- **Další krok:** revize Fable (bezpečnost: role, únik dat, meze ARES — `BEZPECNOST_MEZE.md` oddíl ZK) → sloučení
+  koordinací; spuštění na testu testovací sezení, na ostrém J. V.
 
 ## Další krok
 

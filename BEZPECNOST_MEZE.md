@@ -2551,3 +2551,22 @@ PO OPRAVÁCH — N1, N2, N3 (rozhodnutí J. V.), N5–N8 opraveny, N4 zapsáno s
 - **PŘIJATO (dorevize D3): pojistka N3 je ochrana proti omylu, ne bezpečnostní mez.** Čas vazby je v načtené zakázce
   (kdo smí zakázku načíst, smí ji i uložit — NN B237); úmyslně sestavený požadavek ji obejde. Chrání před starou
   kopií v okně, ne před útočníkem.
+
+## ZK — zákazníci ze zakázek podle ARES (#755, dávka ZK, 24. 11. 2026)
+
+Větev `claude/zk-zakaznici-ze-zakazek` nad `c89e872`. Testy `netlify/test_zk_zakaznici_ze_zakazek.mjs`,
+`overit_zk_zakaznici.mjs`, matice `test_prava.mjs`, mutace [ZK]. Před sloučením revize Fable.
+
+- **Jen administrátor:** `/api/zakaznici-ze-zakazek` volá `vyzadujRoli(req, 'Administrátor')` pro GET i POST (roli
+  určuje účet, ne cookie; původ požadavku hlídá `prihlaseny`). Náhled nese název, sídlo a IČO firem ze všech zakázek —
+  proto žádná jiná role, ani pro čtení. Kontakty ani jména souborů zakázek klient nedostane; čtou se až při zápisu.
+- **Zápis nevěří klientovi:** karty se zakládají z náhledu uloženého na serveru (`zakaznici_hromadne/zk-navrh`,
+  platí 24 h, id musí souhlasit), u každé položky se znovu přečte zakázka a ověří shoda s uloženým subjektem ARES;
+  existující karta (klíč IČO, nebo karta bez IČO se stejným názvem) se nepřepíše. Strop `ZAKAZNICI_MAX` platí.
+- **ARES:** jen platné IČO (kontrolní číslice), jen IČO bez karty; `aresNacti` (pevná adresa, 3 s, bez přesměrování,
+  strop odpovědi). Nejvýš 10 dotazů na volání s pauzou 400 ms, 600 na náhled, 1 500 za den (počítadlo `zk-den`).
+- **Mez (vědomá):** výhradní úsek `vyhradne('zakaznici/hromadne')` a počítadlo dne jsou čtení–změna–zápis bez
+  podmíněného zápisu — dvě instance funkce (dva správci naráz) se nevidí: náhled jednoho může přepsat náhled druhého
+  (zápis pak skončí 409 a spustí se znovu) a denní strop může přetéct o jedno volání (≤ 10 dotazů). Karty chrání
+  `vyhradne('zakaznici/<klíč>')` a kontrola existence těsně před zápisem (mez jako K7-S1).
+- **Výjimka ze zálohy (k vědomí J. V.):** úložiště `zakaznici_hromadne` (náhled, počítadlo, protokol) se nezálohuje.

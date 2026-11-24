@@ -8,6 +8,29 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## (verzi přidělí koordinace) — ZK #755: zákazníci ze zakázek podle ARES (nástroj správce), větev claude/zk-zakaznici-ze-zakazek
+
+Nad integrací `c89e872` (v24.11.5). **Cenu, ceník ani text dokumentů nemění** (porovnání sestavení: SHODA).
+Podnět J. V. 24. 11.: v databázi zákazníků na ostrém webu jsou 2 karty — vznikaly jen ručně.
+
+- **Zákazníci → „Naplnit ze zakázek (ARES)…“ (jen administrátor):** náhled projde uložené zakázky (řídící i další
+  zákazníci), seskupí je podle IČO (normalizace, kontrolní číslice; bez IČO / s neplatným IČO jen počet) a pro IČO bez
+  karty ověří ARES. Kartu navrhne jen když subjekt existuje, nezanikl a **název i sídlo z ARES sedí s hlavičkou
+  nejnovější zakázky** (velikost písmen, mezery, „s.r.o. / spol. s r.o.“, PSČ s mezerou; část obce smí chybět;
+  diakritika názvu se nezahazuje). Tabulka založit / už existuje / nesedí s ARES (důvod) / ARES nedostupný (zkusit znovu).
+- **Karta** = ARES (název, sídlo, IČO, DIČ) + z nejnovější zakázky jen pole, která ARES nemá (kontaktní osoba,
+  zástupci, banka, účet, zápis). Autor = správce, poznámka s datem ověření.
+- **Zápis až po potvrzení**, ze serverového náhledu (platí 24 h; klient nic nedodává), u každé položky znovu ověří
+  zakázku; nic existujícího nepřepíše, druhý běh nic nezaloží. Protokol kdo / kdy / počty bez osobních údajů.
+- **Server** `/api/zakaznici-ze-zakazek` (`functions/zakaznici_ze_zakazek.mjs`, logika `lib/zakaznici_ze_zakazek.mjs`):
+  roli ověřuje účet (ne-admin 403), ARES přes `aresNacti` (jen platné IČO bez karty; nejvýš 10 dotazů za volání
+  s pauzou 400 ms, strop 600 na náhled a 1 500 za den; výpadek = „zkusit znovu“, nic se nezapíše). Náhled nenese
+  kontakty, odpověď nenese jména souborů zakázek. Náhled, denní počítadlo a protokol jsou ve vlastním úložišti
+  `zakaznici_hromadne` — **výjimka ze zálohy** (provozní stopa, k vědomí J. V.); karty jsou v zálohovaném `zakaznici`.
+- Testy s pojistkou: `netlify/test_zk_zakaznici_ze_zakazek.mjs` (před ZK import selže; 73 OK), harness
+  `overit_zk_zakaznici.mjs` (15 OK; před opravou panelu po přepnutí účtu 1 FAIL), matice práv `test_prava.mjs`,
+  úplnost zálohy `test_zalohy.mjs` N4; mutace [ZK] MUTACE_VYSLEDEK.
+
 ## v24.11.5 — K54-N1 #750: smazaná otevřená kalkulace se zavře a uložením nevzkřísí, větev claude/rychla-K54-N1
 
 Rychlá cesta nad integrací `0fd6410` (= test, v24.11.1). **Ceník ani sazby nemění** (porovnání sestavení: SHODA);
