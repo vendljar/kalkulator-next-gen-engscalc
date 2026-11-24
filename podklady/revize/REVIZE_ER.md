@@ -107,4 +107,26 @@ rozhodnutí (jen testy, vratné jedním commitem). Texty záznamu → N6.
 
 `bash nastroje/testovaci_kolo.sh --bez-mutaci --proti origin/claude/integrace-16-10 --ocekavane podklady/porovnani/ocekavane_er_2026-11-24.txt`
 
-VYSLEDEK_KOLA
+Výsledek: **VŠE ZELENÉ** (37 min 8 s; kroky build, sady, hodiny, statické, porovnání; mutace vynechány podle zadání).
+Přeskočené sady: `test.js` (shoda s Excelem — není v exportu) a pět `overit_*.mjs` bez firemních podkladů.
+
+Porovnání: **367 kalkulací, 307 shodných, 60 rozdílných — 60 očekávaných, 0 neočekávaných.**
+Fixtury 7/7 a fuzz 300/300 SHODA; všech 60 rozdílů je ve skupinách stavěných přes `novaZakazka()`.
+
+```
+  A = origin/claude/integrace-16-10 (7339a9e, v24.11.6)   B = . (db501ab+pracovní kopie, v24.11.6)
+  ceník: zkušební (src/zkusebni_cenik.js)   fuzz: 300 (semínko 20261110)   očekávané: ocekavane_er_2026-11-24.txt
+
+  skupina                  kalkulací  shodné  rozdílné  očekávané  neočekávané
+  fixtury                          7       7         0          0            0
+  scénáře #560 + můstky           12       0        12         12            0
+  K29-N1 / #451                   14       0        14         14            0
+  K36-N2 / #550                    8       0         8          8            0
+  K50-N1                           6       0         6          6            0
+  K40-N1 / #614                    8       0         8          8            0
+  ukázkové zakázky                12       0        12         12            0
+  fuzz (semínko)                 300     300         0          0            0
+  CELKEM                         367     307        60         60            0
+
+  Rozdílné případy podle pole: cena celkem 60, text dokumentu 300, ostatní 180, řádky 60, symboly CN 120, výsled
+```
