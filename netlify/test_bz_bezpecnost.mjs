@@ -28,6 +28,7 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
 });
 
 import './pomoc_test_admin.mjs';
+import { dnesPraha } from './pomoc_den.mjs'; // MT2: den prodeje v pražském čase jako server
 import prihlaseni from './functions/prihlaseni.mjs';
 import program from './functions/program.mjs';
 import zakazky from './functions/zakazky.mjs';
@@ -94,7 +95,7 @@ const zamkni = (z, v, typ) => {
   zam.zamkniVariantu(v, { typ: typ || 'nabidka', kdy: new Date().toISOString(), kdo: 'Obch Jedna',
     cislo: zam.variantaCislo(z, v), vysledek, snimek: zam.zamekSnimekSpocti(v) });
 };
-const dnes = new Date().toISOString().slice(0, 10);
+const dnes = dnesPraha();
 const imp = z => G.importZakazka(kopie(z));
 const strany = (g) => { const z = imp(g); const v = z.varianty[0];
   const pd = G.prodPdZapis(z, v, JEKLY); const ce = G.ctrlExportVarianty(z, v, { jekly: JEKLY });
