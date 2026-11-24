@@ -40,55 +40,14 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/lak-lakovani` | (tato dávka) | v22.11.8 | LAK #666 lakování z nabídky lakovny nad 05a496d, s integrací 36e2681 |
 | `claude/pv-pipedrive` | (tato dávka) | v23.11.7 | PV #597 zápis prodeje do dealu + #734 autor = vlastník dealu nad 1280831; revize Fable; verzi přidělí koordinace |
 | `claude/ut-texty` | (tato dávka) | — | UT #741 #742 #743 (#744 čeká na J. V.) nad 0fd6410; verzi přidělí koordinace |
+| `claude/r3-pole-wordu` | (tato dávka) | — | R3 #751 zákaz dalších polí Wordu nad 3cab0c5 (v24.11.2); verzi přidělí koordinace |
 
 Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontrola: `python3 nastroje/release_odkaz.py --chybejici`
 (22. 11.: žádná — main v19.11.11, tag vydán).
 
 ## Běžící dávky
 
-- Sloučené dávky (SA, PD, CN, RA, LAK, JT, NN, PR, BZ, HN, RJ, VZD, MT) — oddíly přesunuty do `podklady/predavky/2026-11.md` (23. 11. 2026). Běží: PV (#734 + #597), RP (prototyp ručních položek, čeká na J. V.).
-
-## Dávka PV (`claude/pv-pipedrive`, 23. 11. 2026)
-
-- Nad integrací 1280831 (v23.11.5), v23.11.7. **#734:** webhook při založení dohledá vlastníka dealu
-  (owner_id → GET /api/v1/users → e-mail → aktivní účet) = autor; jinak technický účet + varování a `autor` v logu.
-  Vazba nese `zalozil` (pdVazbaDokladaZapis). **#597:** POST `/api/pd/prodej` náhled/zápis (functions/pd_prodej.mjs,
-  lib/pd_prodej.mjs, lib/jadro_pd.cjs), karta Prodej v `src/ui/sod_ui.js`; stav `v.prodano.pipedrive` zapsano/chyba.
-- Testy: test_pv_597_zapis 57/0, test_pv_734_autor 51/0, overit_pv_prodej 19/0, mutace [PV] 18/18 chycených,
-  kolo `--bez-mutaci --proti origin/claude/integrace-16-10` VŠE ZELENÉ (534/0, hodiny 433/0, S3 SHODA 367/367); sloučeno s 9f2445a.
-- Do živého Pipedrive nic. Po nasazení do testu: testovací sezení zkušební zápis na deal TEST (PIPEDRIVE_SPUSTENI A6b, A9).
-- Revize Fable (`podklady/revize/REVIZE_PV.md`): V1 (texty krycího listu ze serveru), S1 (převzetí: úmysl před PATCH,
-  poznámka při opakování), S2 (výhradní úsek na deal), S3 (limit `/users` ve webhooku), S4 (pevné věty chyb) opraveny;
-  mez okna GET–PATCH = B277. Otázky pro J. V.: O1 práva vlastníka-autora, O2 právo pro zápis prodeje (kód podle doporučení).
-- Návrhy do roadmapy (revize N1–N6): N1 vypnutý uživatel PD (`active_flag`) jako autor; N2 `pdPoleMapa` v časovém rozpočtu
-  zápisu; N3 deal se čte dvakrát (vrátit ho z `pdDealPatriZakazce`); N4 neúspěch kvůli vypnutému zápisu / vazbě nemá psát
-  zakázku ani přepsat „zapsano“; N5 řádek logu `pd_prodej` bez osobních údajů; N6 komentář `icoShoda` v `pd_vazba.mjs:53`.
-
-## Dávka MT2 (`claude/mt2-testy`, 24. 11. 2026)
-
-- Nad integrací db1e9e7 (v23.11.7), v24.11.1. Jen testy a nástroje kola (svěřená MT2-1, MT2-2); aplikace beze změny.
-- **#737:** mutace „#553: kontakt v odpovědi“ nechycená — test zeslábl po #729 (kontakt = jméno). `test_553_webhook.mjs`
-  hlídá jména kontaktů a pole `kontakt` v odpovědích; mutace před 0/1, po 1/1.
-- **#738:** sady bz/cn/nn/ra červené 00–01 Praha (datum prodeje v UTC). `netlify/pomoc_den.mjs` (dnesPraha),
-  `netlify/pomoc_falesne_hodiny.mjs`, hlídka `test_mt2_pulnoc.mjs`; před 8 FAIL, po 16 OK. Klient bere `objDnes()` — v aplikaci vada není.
-
-## Dávka UT (`claude/ut-texty`, 24. 11. 2026)
-
-- Nad integrací 0fd6410 (v24.11.1); verzi přidělí koordinace. Cenu ani dokumenty nemění.
-- **#741** (J. V. varianta A): title volby Opláštění = `oplasteniNapoveda(Z, oplPoStenach())` v `src/ui/kalk_ock.js` —
-  po stěnách „Jiný typ zasklení viz níže.“, standard ze `skloVolba`: exteriér „Zasklení VSG 4.4.1 + Izolační dvojsklo“,
-  interiér mezi příčníky „Zasklení VSG 4.4.1“, na terče „Zasklení VSG 4.4.2“. **Ponecháno:** `SKLO_JINE_NAPOVEDA`
-  u řádku skla v tabulce (ř. ~1756) a v Detailu výpočtu — jiné prvky, text „jiné sklo = po stěnách“ tam dál platí.
-- **#742** (O2 varianta a): popisek `crm.pipedrive` „Pipedrive: čtení a zápis do vlastních obchodních případů“ v matici,
-  hláškách (sod_ui, pipedrive, pd_org_vitez), příručkách, NASAZENI, BEZPECNOST_MEZE; klíč beze změny.
-- **#743** (K54-I1, svěřené UT-3): `test_sablona_obsah.js` kontroluje všechny `Sablona_*.docx` z `KNG_PODKLADY`.
-  **#744** (K54-I2, jazykové SoD projekce na testu) čeká na J. V. (data).
-- Testy: `test_ut_741_napoveda_opl` 14/0 (před 15 FAIL), `test_ut_742_popisek_pd` 20/0 (před 18 FAIL), K54 pojistka
-  (stará sada s vadnou CN v18 zelená, nová 1 FAIL); `overit_oplasteni.mjs` 93/0 s krokem #741. Mutace `[UT] #741/#742`
-  8/8 + B80 1/1 chycené (sady UT nově v SADY `netlify/mutace.mjs`). Kolo `--bez-mutaci --proti origin/test`: viz zpráva
-  koordinaci (S3 SHODA 367/367 už v prvním běhu).
-- Poučení: commit z pracovní kopie pod běžící mutací vzal zmutovaný soubor (pd_org_vitez, opraveno v 6d0c220) — během
-  mutací commitovat jen z jiného `git worktree`.
+24. 11. 2026 odpoledne: RP (#736/#740, opravy po revizi Fable), DT (#745/#746, opravy po revizi), RYCHLÁ K54-N1 (#750, opravy po dorevizi). Sloučené dávky PV, MT2, UT (v24.11.2) a R3 (v24.11.3) — předávky v `podklady/predavky/2026-11.md`. Kokpit koordinace: https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2
 
 ## Čeká na J. V.
 

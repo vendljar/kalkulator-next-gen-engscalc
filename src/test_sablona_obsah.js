@@ -315,7 +315,9 @@ const enc = new TextEncoder(), dec = new TextDecoder();
       fldCharAtributy: await sestav(p => doDoc(p, '<w:p><w:r><w:fldChar w:fldCharType="begin" w:dirty="true"/></w:r><w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r>'
         + '<w:r><w:fldChar w:fldCharType="separate" w:fldLock="0"/></w:r><w:r><w:t>1</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>')),
       simpleAtributy: await sestav(p => doDoc(p, '<w:fldSimple w:instr=" NUMPAGES " w:dirty="true"><w:r><w:t>1</w:t></w:r></w:fldSimple>')),
-      slovaPodobna: await sestav(p => doDoc(p, pole(' REF RDX \\h ') + pole(' DOCPROPERTY "DatabaseVerze" '))),
+      /* R3 (J. V. 24. 11. 2026, #751): DOCPROPERTY je zakázané — slovo
+       * podobné DATABASE nese teď záložka v poli REF. */
+      slovaPodobna: await sestav(p => doDoc(p, pole(' REF RDX \\h ') + pole(' REF DatabaseVerze \\h '))),
     };
     for (const k of Object.keys(bCiste)) {
       const v = await SO.sablonaObsahVady(bCiste[k]);

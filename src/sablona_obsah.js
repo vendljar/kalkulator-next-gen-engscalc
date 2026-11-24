@@ -30,7 +30,9 @@
  *     v [Content_Types].xml;
  *   – prvky OLEObject, altChunk a subDoc (s jakýmkoli prefixem);
  *   – pole INCLUDETEXT, INCLUDEPICTURE, INCLUDE, IMPORT, LINK, DDE, DDEAUTO,
- *     DATABASE, RD (složené pole fldChar/instrText i s kódem rozděleným do
+ *     DATABASE, RD, pole s údaji počítače a autora FILENAME, USERNAME,
+ *     AUTHOR (B271), USERINITIALS, USERADDRESS, LASTSAVEDBY, TEMPLATE, INFO,
+ *     DOCPROPERTY (R3) (složené pole fldChar/instrText i s kódem rozděleným do
  *     více běhů, fldSimple) a pole, jehož typ dodá teprve vnořené pole;
  *   – hromadná korespondence s připojením k datům (connectString, query);
  *   – deklarace DOCTYPE / ENTITY (vlastní entity by zakázaný text skryly);
@@ -73,7 +75,13 @@ const SABLONA_POLE_ZAKAZANA = ['INCLUDETEXT', 'INCLUDEPICTURE', 'INCLUDE', 'IMPO
   /* B271 (audit 20. 11. 2026): při aktualizaci polí (F9, tisk) vloží Word
    * cestu k souboru (FILENAME \p) a jméno uživatele počítače (USERNAME,
    * AUTHOR) do dokumentu, který jde zákazníkovi. */
-  'FILENAME', 'USERNAME', 'AUTHOR'];
+  'FILENAME', 'USERNAME', 'AUTHOR',
+  /* R3 revize SA (rozhodnutí J. V. 24. 11. 2026, #751): rovnocenná pole —
+   * iniciály a adresa uživatele, kdo naposledy uložil, cesta k šabloně
+   * (TEMPLATE \p = profil uživatele) a vlastnosti dokumentu (INFO,
+   * DOCPROPERTY: autor, firma, správce, název souboru). Firemní šablony test
+   * i main (kolo 54, 31 šablon) mají jen pole PAGE. */
+  'USERINITIALS', 'USERADDRESS', 'LASTSAVEDBY', 'TEMPLATE', 'INFO', 'DOCPROPERTY'];
 /* B272 (audit 20. 11. 2026): strop jedné XML části šablony. Strop rozbalení
  * celé šablony je 64 MB (ZIP_ROZBALENO_MAX); jedna XML část těsně pod ním
  * zaměstnala server rozborem asi 1,9 s. Firemní šablony mají zabalené
