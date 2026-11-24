@@ -26,6 +26,7 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
 });
 
 import './pomoc_test_admin.mjs';
+import { dnesPraha } from './pomoc_den.mjs'; // MT2: den prodeje v pražském čase jako server
 import prihlaseni from './functions/prihlaseni.mjs';
 import program from './functions/program.mjs';
 import zakazky from './functions/zakazky.mjs';
@@ -110,7 +111,7 @@ console.log('\n===== B238 (revize Fable R2): ZÁMEK + PRODÁNO BEZ SNÍMKU LHŮT
 /* Pojistka: před opravou zámek a Prodáno jedním uložením bez snímku lhůt → 200
  * a prodaná varianta s PROJ bez zmrazených lhůt. */
 {
-  const dnes = new Date().toISOString().slice(0, 10);
+  const dnes = dnesPraha();
   const pripravit = (sSnimkem, podvrh) => {
     const z = nova('B238 R2'); const v = z.varianty[0];
     v.prodano = { datum: dnes };

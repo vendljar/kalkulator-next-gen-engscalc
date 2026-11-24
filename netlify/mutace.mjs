@@ -1825,7 +1825,7 @@ const MUTACE = [
   { nazev: '#553: kontakt v odpovědi', soubor: 'functions/pd_webhook.mjs',
     hledej: '    zmeneno: z.zmeneno, ponechano: z.ponechano,',
     nahrad: '    zmeneno: z.zmeneno, ponechano: z.ponechano, kontakt: zadani.pole.kontakt,',
-    proc: 'e-mail a telefon z CRM by odcházely volajícímu (K8-S3)' },
+    proc: 'jméno kontaktní osoby z CRM (od #729 jen jméno) by odcházelo volajícímu (K8-S3)' },
   { nazev: '#553: duplikát zakázky nese otisky zadání', soubor: '../src/zakazka.js',
     hledej: '  delete nova.pdZadani; // otisky zadání z webhooku patří dealu (#553)\n',
     nahrad: '',
