@@ -27,8 +27,8 @@ Nad integrací `0fd6410` (v24.11.1). Rozhodnutí J. V. 24. 11. 2026. **Cenu, č�
 - Tiskový náhled OCK i PROJ předá zámku den, který vytiskl (symbol DATUM), takže náhled otevřený přes půlnoc
   a jeho dotisk se shodují (revize N1). Krycí list „Dne“ se při zámku dál zmrazí na den zámku (J. V., N4);
   mez data vůči `zamek.kdy` = B278 v BEZPECNOST_MEZE (N5).
-- Testy: `src/test_dt_datum_tisku.js` (pojistka: nad 0fd6410 53 FAIL a pád, po 76 OK), `netlify/test_dt_datum_tisku.mjs`
-  (nad 0fd6410 12 FAIL, po 17 OK); mutace `[DT]` 16/16 chycených. Zlatá sada VS přegenerovaná (jen DATUM 4 neodeslaných
+- Testy: `src/test_dt_datum_tisku.js` (pojistka: nad 0fd6410 53 FAIL a pád, po 84 OK), `netlify/test_dt_datum_tisku.mjs`
+  (nad 0fd6410 12 FAIL, po 17 OK); mutace `[DT]` 18/18 chycených. Zlatá sada VS přegenerovaná (jen DATUM 4 neodeslaných
   variant, svěřené DT-2), harness `overit_vz_tisk.mjs` (DT-1). Kolo `--bez-mutaci`: sady 537/0, hodiny 436/0, statické 12/12.
 
 ## v24.11.1 — MT2: zpevnění testů kola (#737 mutace #553 kontakt, #738 sady kolem půlnoci), větev claude/mt2-testy

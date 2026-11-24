@@ -300,6 +300,18 @@ const den = posunDni => ZM.zamekDenPraha(Date.now() + posunDni * 86400000);
       vzTiskZamekNavic: () => null, zamekDatumZeSymbolu: ZM.zamekDatumZeSymbolu, nabidkaDatum, nabidkaProjDatumIso: NP.nabidkaProjDatumIso }) : null; } catch (x) { z = { chyba: x.message }; }
     test('N1 náhled ' + jm + ': zámek skriptu nese den z DATUM dokumentu (24. 11.)', !!z && z.datumNabidky === '2026-11-24' && p.DATUM === '24.11.2026', [z, p.DATUM]);
   });
+  /* dorevize D1: týž řetěz ve všech jazycích tisku — formát DATUM jiný v jednom jazyce
+   * by zámek tiše shodil na dnešek a dotisk přes půlnoc by se lišil od papíru. */
+  ['cz', 'en', 'de', 'fr'].forEach(L => {
+    [['OCK', UI('zakazka_ui.js'), 'nabidkaTisk', NO.nabidkaData(zak, v, JEKLY, L, undefined, { ted: TISK }).placeholders],
+     ['PROJ', UI('nabidka_proj_ui.js'), 'nabidkaProjTisk', NP.nabidkaProjData(zak, v, L, { ted: TISK }).placeholders]].forEach(([jm, zdroj, typ, p]) => {
+      const e = vyraz(zdroj, typ);
+      let z = null;
+      try { z = e ? vm.runInNewContext('(' + e + ')', { Object, p, varianta: v, akt: v, vt: { zak, varianta: v },
+        vzTiskZamekNavic: () => null, zamekDatumZeSymbolu: ZM.zamekDatumZeSymbolu }) : null; } catch (x) { z = { chyba: x.message }; }
+      test('D1 náhled ' + jm + ' ' + L + ': zámek skriptu nese den z DATUM (2026-11-24)', !!z && z.datumNabidky === '2026-11-24', [z, p.DATUM]);
+    });
+  });
   test('N1 zamekDatumZeSymbolu: 24.11.2026 → 2026-11-24, nesmysl → prázdné', ZM.zamekDatumZeSymbolu('24.11.2026') === '2026-11-24'
     && ZM.zamekDatumZeSymbolu('31.02.2026') === '' && ZM.zamekDatumZeSymbolu('') === '' && ZM.zamekDatumZeSymbolu('2026-11-24') === '');
 }

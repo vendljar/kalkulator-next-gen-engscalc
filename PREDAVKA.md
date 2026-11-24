@@ -78,7 +78,7 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
   odeslaná drží `zamek.datumNabidky` (mimo klíč zámku, drží server, nový zámek ověří `zakazka_kontrola.mjs`),
   zámky před DT beze změny (`variantaDatum`). Krycí list „Dne“, objednávka PROJ a **SoD „ze dne“ (#746, J. V.)**
   = datum nabídky; plná moc a `v.datum`/`zak.datum` beze změny.
-- Testy: `src/test_dt_datum_tisku.js` nad 0fd6410 53 FAIL + pád → 76 OK, `netlify/test_dt_datum_tisku.mjs` 12 FAIL → 17 OK; mutace [DT] 16/16.
+- Testy: `src/test_dt_datum_tisku.js` nad 0fd6410 53 FAIL + pád → 84 OK, `netlify/test_dt_datum_tisku.mjs` 12 FAIL → 17 OK; mutace [DT] 18/18.
 - Revize Fable (`claude/revize-dt`, REVIZE_DT.md) SLOUČIT PO OPRAVÁCH: N1 (řetěz náhled → zámek: `tiskListaSkript`,
   `zamekPoTisku`, náhled OCK/PROJ bere den ze symbolu DATUM `zamekDatumZeSymbolu`), N2 (obnova), N3 (KL PROJ) — testy
   + 6 mutací. N4 nechat, N5 B278 (J. V.). Známé chování: N6 náhled starší 7 dní → zámek dnešek, dotisk ≠ papír;
