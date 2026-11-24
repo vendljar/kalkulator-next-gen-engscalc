@@ -8,6 +8,24 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## (bez verze) — ER #757: engineering jako příplatková položka; diagnostika rezervy #758, větev claude/er-engineering-rezerva
+
+Nad integrací `c89e872` (v24.11.5). **Mění cenu nových kalkulací** (rozhodnutí J. V. 24. 11.); staré beze změny.
+
+- **Nová kalkulace:** ENGINEERING je příplatková položka (cena C.engineeringKc × 1), ve výchozím stavu **mimo nabídku**
+  (obchodník ho zaškrtne ve sloupci Nabídka; administrátor může výchozí stav změnit ve sloupci Výchozí). V sekci Režie
+  už není; pole „Engineering“ Ano/Ne v Práce a režie nahradila poznámka. Tiskne se jako ostatní příplatky
+  (EN „TECHNICAL ENGINEERING“, DE „TECHNISCHES ENGINEERING“, FR „INGÉNIERIE TECHNIQUE“ — znění potvrdí J. V.);
+  krycí list, Pipedrive (výčet příplatků) a controlling ho berou jako ostatní příplatky.
+- **Existující kalkulace** (rozpracované i odeslané, klon, duplikát, import): beze změny — engineering v Režii podle
+  pole Ano/Ne, výsledek jádra bajt po bajtu shodný. Rozlišení příznakem zadání `engineeringPriplatek` (jen nová kalkulace);
+  server hlídá jeho tvar.
+- **Rezerva (#758, čeká na J. V.):** REZERVA příplatky se nepromítá do cen jednotlivých příplatků (nabídka, krycí list,
+  SoD, Pipedrive), jen do součtu „Příplatky celkem (pokud vše)“; REZERVA základ funguje, ale automat ATYP při prvním
+  zapnutí přepíše právě zadanou hodnotu předlohou z ceníku. Oprava po rozhodnutí J. V.
+- Testy: `src/test_engineering_priplatek.js` (42 OK; pojistka proti c89e872 padá), mutace jádra [ER] 10/10 chycené;
+  zlaté sady #560/VS očištěny o nový příznak (svěřené rozhodnutí ER-1).
+
 ## v24.11.5 — K54-N1 #750: smazaná otevřená kalkulace se zavře a uložením nevzkřísí, větev claude/rychla-K54-N1
 
 Rychlá cesta nad integrací `0fd6410` (= test, v24.11.1). **Ceník ani sazby nemění** (porovnání sestavení: SHODA);
