@@ -1,0 +1,10 @@
+# Očekávané rozdíly PT-ZAB (#759): origin/test 6722ad9 × claude/rychla-PT-ZAB — 24. 11. 2026
+# Formát: <vzor případu> <pole,pole|*>  # důvod   (popis v nastroje/porovnani_sada.js)
+#
+# Scénář skladebne-2 (dvě skupiny můstků, ceník #354, Model 1 i 2): symbol TS_MUSTKY a online
+# náhled EN nesou výčet skupin („1 ks 1200 × 900 mm, 3 ks 1400 × 1500 mm (šířka × délka), …").
+# Nový vzor (J. V. 24. 11.) ho překládá stejnými slovy jako větu pro jednu skupinu:
+# „1 pcs 1200 × 900 mm, 3 pcs 1400 × 1500 mm (width × length), steel structure incl. railing and installation".
+# Cena, CZ dokumenty a ostatní pole beze změny. Ověřeno přímo (TS_MUSTKY en, oba stromy).
+# Heslo zábradlí na podestách se v pevné sadě neprojeví (žádná EN specifikace interiéru se zábradlím).
+scenar:skladebne-2:*  ph-en,nahled-en   # PT-ZAB #759: výčet víc skupin můstků v EN přeložen
