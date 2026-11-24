@@ -33,9 +33,9 @@ Podnět J. V. 24. 11.: v databázi zákazníků na ostrém webu jsou 2 karty —
   souběžně (`ctiVsechny`) (R2); strop 600 platí na kolo, „Zkusit znovu“ pokračuje, IČO, které nesedělo, se znovu
   neptá, dokud se nezmění jeho zakázka (paměť `zk-nesedi`, 30 dní) (R3); testy R4; propadlý náhled se nevydá
   a smaže (R5); R6 zapsáno do `BEZPECNOST_MEZE.md`. R7 (banka a účet do karty) a R9 (mimo zálohu) čekají na J. V.
-- Testy s pojistkou: `netlify/test_zk_zakaznici_ze_zakazek.mjs` (před ZK import selže; 74 OK, po revizi 94 OK), harness
+- Testy s pojistkou: `netlify/test_zk_zakaznici_ze_zakazek.mjs` (před ZK import selže; 74 OK, po revizi 95 OK), harness
   `overit_zk_zakaznici.mjs` (15 OK; před opravou panelu po přepnutí účtu 1 FAIL), matice práv `test_prava.mjs`,
-  úplnost zálohy `test_zalohy.mjs` N4; mutace [ZK] 24/24; kolo `--bez-mutaci` VŠE ZELENÉ (543 + 441 sad, 12/12 statických), porovnání sestavení SHODA 367/367.
+  úplnost zálohy `test_zalohy.mjs` N4; mutace [ZK] 37/37 (po revizi); kolo `--bez-mutaci --proti origin/claude/integrace-16-10` (7339a9e) VŠE ZELENÉ (544 sad, 12/12 statických), porovnání sestavení SHODA 367/367.
 
 ## v24.11.6 — RP: ruční položky kalkulace OCK v nabídce CN a krycím listu (#736, #740), větev claude/rp-rucni-polozky
 
