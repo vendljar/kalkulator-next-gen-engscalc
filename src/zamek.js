@@ -922,6 +922,13 @@ function zamekDatumNabidkyProblem(d, kdy) {
     + ZAMEK_DATUM_NABIDKY_ZPET_DNI + ' dní starší než odeslání';
   return '';
 }
+/* ISO den ze symbolu DATUM dokumentu („24.11.2026“ → „2026-11-24“), nebo ''.
+ * Tiskový náhled předá zámku přesně den, který vytiskl (revize DT, N1). */
+function zamekDatumZeSymbolu(s) {
+  const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(String(s == null ? '' : s).trim());
+  const iso = m ? m[3] + '-' + m[2] + '-' + m[1] : '';
+  return zamekDatumPlatne(iso) ? iso : '';
+}
 /* ISO den, který nese cenová nabídka (OCK i PROJ, všechny jazyky, náhled,
  * krycí list „Dne" a „nabídka ze dne" v objednávce PROJ). */
 function nabidkaDatum(zak, v, ted) {
@@ -1532,7 +1539,7 @@ function listaZakazkyRozhodni(zak, zaloha, ja, prava, ctx) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { nabidkaDatum, zamekDenPraha, zamekDatumPlatne, zamekDatumNabidkyProblem, ZAMEK_DATUM_NABIDKY_ZPET_DNI, zamekNesouhlasiText, zamekZpracovatelSnimek, zamekZakVzOdeslano, variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, ZAMEK_PRODANO_TERMINY, zamekProdanoTerminVolny, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
+  module.exports = { nabidkaDatum, zamekDatumZeSymbolu, zamekDenPraha, zamekDatumPlatne, zamekDatumNabidkyProblem, ZAMEK_DATUM_NABIDKY_ZPET_DNI, zamekNesouhlasiText, zamekZpracovatelSnimek, zamekZakVzOdeslano, variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, ZAMEK_PRODANO_TERMINY, zamekProdanoTerminVolny, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
                      zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, ZAMEK_OVERENI_JADRO, ZAMEK_OVERENI_JADRO_PRISNE, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
                      zamekCteniSmiOdemknout, zamekCteniDuvod, priponaPrvniNalez, priponaPrvniOprav,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,

@@ -28,6 +28,8 @@ import { dnesPraha } from './pomoc_den.mjs'; // MT2: den prodeje v pražském č
 import prihlaseni from './functions/prihlaseni.mjs';
 import program from './functions/program.mjs';
 import zakazky from './functions/zakazky.mjs';
+import zaloha from './functions/zaloha.mjs';
+import obnova from './functions/obnova.mjs';
 import uzivatele from './functions/uzivatele.mjs';
 import { ADMIN_EMAIL } from './lib/sdilene.mjs';
 import { jadro } from './lib/jadro.mjs';
@@ -137,6 +139,26 @@ console.log('\n===== DT #745: DATUM NABÍDKY V ZÁMKU =====\n');
   const x = await uloz(a, cO, g.uloRazitko);
   const g2 = await nacti(r.soubor, cO);
   test('… a klient ho dodatečně nedopíše', x.status === 200 && g2.varianty[0].zamek.datumNabidky === undefined, x.status + ' ' + g2.varianty[0].zamek.datumNabidky);
+}
+
+/* revize N2: obnova ze souboru (zálohy) — datum v mezi vůči `kdy` zůstane, mimo mez se zahodí. */
+{
+  const { r, g } = await ulozNovy('DT obnova', dnes);
+  const k = 'zakazky/z/' + r.soubor;
+  test('obnova příprava: zámek s datem uložen', r.status === 200 && g.varianty[0].zamek.datumNabidky === dnes, r.status);
+  const soubor = (await (await get(zaloha, 'http://x/api/zaloha', cA)).json()).zaloha;
+  test('obnova příprava: záloha nese zakázku', !!(soubor && soubor.zakazky && soubor.zakazky[r.soubor]));
+  const obnov = async sb => { pamet.delete(k);
+    const o = await (await post(obnova, 'http://x/api/obnova', { zdroj: { soubor: sb }, rezim: 'doplnit', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cA)).json();
+    return { o, z: pamet.has(k) ? JSON.parse(pamet.get(k)) : null }; };
+  let x = await obnov(soubor);
+  test('obnova: platné datum nabídky zůstane', x.o.ok && x.z && x.z.varianty[0].zamek.datumNabidky === dnes, [x.o.ok, x.o.chyba, x.z && x.z.varianty[0].zamek.datumNabidky]);
+  const spatny = kopie(soubor); spatny.zakazky[r.soubor].varianty[0].zamek.datumNabidky = posun(dnes, 5);
+  x = await obnov(spatny);
+  test('obnova: datum po odeslání se zahodí (dotisk = datum založení)', x.o.ok && x.z && x.z.varianty[0].zamek.zamceno && !('datumNabidky' in x.z.varianty[0].zamek), [x.o.ok, x.o.chyba, x.z && x.z.varianty[0].zamek.datumNabidky]);
+  const stary = kopie(soubor); stary.zakazky[r.soubor].varianty[0].zamek.datumNabidky = posun(dnes, -30);
+  x = await obnov(stary);
+  test('obnova: datum o měsíc starší než odeslání se zahodí', x.o.ok && x.z && !('datumNabidky' in x.z.varianty[0].zamek), [x.o.ok, x.o.chyba, x.z && x.z.varianty[0].zamek.datumNabidky]);
 }
 
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo' + (fail ? ': ' + selhalo.join('; ') : ''));

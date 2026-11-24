@@ -2506,3 +2506,19 @@ Testy `netlify/test_pv_597_zapis.mjs`, `netlify/test_pv_734_autor.mjs`, `overit_
   opravit firmu; dřív u webhookové kalkulace jen administrátor); O2 — zápis prodeje hlídá právo `crm.pipedrive`
   („Čtení obchodních případů z Pipedrive“) + autor / kdo prodal / vedoucí / administrátor. Kód je zatím podle
   doporučení revize (O1 ano, O2 zatím stačí).
+
+## DT — datum cenové nabídky = den tisku (#745, #746, dávka DT, 24. 11. 2026)
+
+Větev `claude/dt-datum-tisku` nad `0fd6410`. Testy `src/test_dt_datum_tisku.js`, `netlify/test_dt_datum_tisku.mjs`,
+mutace [DT]. Číslo B278 je pracovní (přidělí koordinace).
+
+- **`zamek.datumNabidky`** (den na papíře odeslané nabídky) je **mimo klíč zámku** (`uloZamekKlic`) — cenu, číslo,
+  otisk ani kontrolu shody (B59, B232) nemění. U uloženého zámku ho drží server (`uloZamekRazitkaDrz`: nepřepíše,
+  nesmaže, nedopíše starému zámku). Nový zámek: server přijme jen platný den ≤ den `kdy` v Praze a nejvýš 7 dní před
+  ním, jinak dosadí den `kdy`; obnova (otisk i soubor) datum mimo mez zahodí (dotisk pak tiskne datum založení).
+- **B278 — mez data nabídky se měří od `zamek.kdy`, které určuje prohlížeč — VĚDOMÁ MEZ (rozhodnutí J. V.
+  24. 11. 2026, revize DT N5: ponechat).** `kdy` smí být až 400 dní staré (tisk bez sítě, `zamekKdyProblem`), takže
+  upravený klient s právem odeslat nabídku může nový zámek opatřit datem nabídky až ~407 dní zpět (do budoucnosti
+  ne). Není to zhoršení proti stavu před DT: dřív nabídka tiskla `v.datum`, které klient psal bez jakékoli meze.
+  Přísnější varianta (datum nejvýš N dní před časem přijetí serverem, `prijato`) by zpřísnila i tisk bez sítě —
+  neprogramováno. Stopa: `zamek.prijato` (čas přijetí serverem) a `kdo` zámku.

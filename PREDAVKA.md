@@ -78,7 +78,11 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
   odeslaná drží `zamek.datumNabidky` (mimo klíč zámku, drží server, nový zámek ověří `zakazka_kontrola.mjs`),
   zámky před DT beze změny (`variantaDatum`). Krycí list „Dne“, objednávka PROJ a **SoD „ze dne“ (#746, J. V.)**
   = datum nabídky; plná moc a `v.datum`/`zak.datum` beze změny.
-- Testy: `src/test_dt_datum_tisku.js` 49 FAIL → 60 OK, `netlify/test_dt_datum_tisku.mjs` 6 → 12 OK; mutace [DT] 10/10.
+- Testy: `src/test_dt_datum_tisku.js` nad 0fd6410 53 FAIL + pád → 76 OK, `netlify/test_dt_datum_tisku.mjs` 12 FAIL → 17 OK; mutace [DT] 16/16.
+- Revize Fable (`claude/revize-dt`, REVIZE_DT.md) SLOUČIT PO OPRAVÁCH: N1 (řetěz náhled → zámek: `tiskListaSkript`,
+  `zamekPoTisku`, náhled OCK/PROJ bere den ze symbolu DATUM `zamekDatumZeSymbolu`), N2 (obnova), N3 (KL PROJ) — testy
+  + 6 mutací. N4 nechat, N5 B278 (J. V.). Známé chování: N6 náhled starší 7 dní → zámek dnešek, dotisk ≠ papír;
+  N7 víc zákazníků — datum jedno na variantu (den prvního odeslání).
 - Kolo `--bez-mutaci --proti origin/test`: sady 537/0, hodiny 436/0, statické 12/12, S3 s
   `--ocekavane podklady/porovnani/ocekavane_dt_2026-11-24.txt` 363 shodných + 4 očekávané (jen DATUM), cena SHODA.
 - Svěřené DT-1 (harness `overit_vz_tisk`, mutace se seznamem razítek), DT-2 (zlatá sada VS). Před sloučením revize Fable.

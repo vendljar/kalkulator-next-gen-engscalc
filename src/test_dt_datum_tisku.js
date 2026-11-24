@@ -174,6 +174,10 @@ test('nabidkaDatum je exportovaná', typeof ZM.nabidkaDatum === 'function');
   odesli(v, '2026-11-10T09:00:00.000Z', '2026-11-10');
   test('KL: odeslaná → den odeslání', kd({ zak, varianta: v }) === '2026-11-10', kd({ zak, varianta: v }));
   test('KL OCK: prefill odeslané = den odeslání', pv.prefill({ zak, varianta: v }) === '2026-11-10');
+  /* revize N3: krycí list PROJ po odeslání — prefill i řádek „Dne“ (bez zmrazení podmínek) */
+  test('KL PROJ: prefill odeslané = den odeslání', ppv.prefill({ zak, varianta: v }) === '2026-11-10', ppv.prefill({ zak, varianta: v }));
+  const rpz = radek(KP.kryciProjData(zak, v, JEKLY, 'bo'), 'Dne');
+  test('KL PROJ: řádek „Dne“ odeslané = den odeslání', !!rpz && (rpz[1] === '2026-11-10' || kl(rpz[1]) === '10.11.2026'), rpz);
   const w = zakazka();
   odesli(w.v, '2026-11-10T09:00:00.000Z');
   test('KL: zámek před DT → beze změny (dnešek, kryciDnesIso)', kd({ zak: w.zak, varianta: w.v }) === K.kryciDnesIso());
@@ -217,6 +221,87 @@ if (OBJ && typeof OBJ.objednavkaProjData === 'function') {
   test('kontrola: o víc než týden starší neprojde', P('2026-11-16', kdy) !== '');
   test('kontrola: týden starší projde', P('2026-11-17', kdy) === '');
   test('kontrola: nesmysl neprojde', P('2026-02-30', kdy) !== '' && P('', kdy) !== '' && P(null, kdy) !== '');
+}
+
+/* ---------- 7) revize N1: řetěz „datum z náhledu → zámek“ ----------
+ * Náhled otevřený před půlnocí a vytištěný po ní: papír nese den náhledu
+ * a zámek ho musí převzít (jinak dotisk ≠ papír). Skutečný kód z ui/ se
+ * spouští ve vm nad náhradním prostředím. */
+const vm = require('vm');
+const UI = f => fs.readFileSync(__dirname + '/ui/' + f, 'utf8');
+const vyrizni = (zdroj, zacatek) => { const i = zdroj.indexOf(zacatek); return i < 0 ? '' : zdroj.slice(i, zdroj.indexOf('\n}\n', i) + 2); };
+const den = posunDni => ZM.zamekDenPraha(Date.now() + posunDni * 86400000);
+{
+  /* 7a) tiskListaSkript předá datum do zamekPoTisku */
+  const kod = vyrizni(UI('common.js'), 'function tiskListaSkript(');
+  const gen = kod ? vm.runInNewContext(kod + '; tiskListaSkript', { dokumentZamyka: t => /^nabidka/.test(t), JSON }) : null;
+  const tisk = zamek => {
+    const volani = [], udalosti = {};
+    const js = gen({}, zamek).replace(/^<script>/, '').replace(/<\/script>$/, '');
+    const ctx = { document: { getElementById: () => null, querySelectorAll: () => [] }, Date, JSON,
+      window: { addEventListener: (k, f) => { udalosti[k] = f; }, opener: { closed: false, zamekPoTisku: (...a) => { volani.push(a); } } } };
+    ctx.window.document = ctx.document;
+    vm.createContext(ctx); vm.runInContext(js, ctx);
+    if (udalosti.beforeprint) udalosti.beforeprint();
+    return volani[0] || null;
+  };
+  test('N1 skript náhledu je ve zdroji', typeof gen === 'function');
+  if (gen) {
+    let a = tisk({ typ: 'nabidkaTisk', varId: 'v1', datumNabidky: '2026-11-24' });
+    test('N1 skript: datum náhledu jde do zamekPoTisku', !!a && a[0] === 'nabidkaTisk' && a[1] === 'v1' && a[3] && a[3].datumNabidky === '2026-11-24', a);
+    a = tisk({ typ: 'nabidkaProjTisk', varId: 'v1', datumNabidky: '2026-11-24', zakaznik: 'z2' });
+    test('N1 skript: se zákazníkem jde datum i adresát', !!a && a[3] && a[3].datumNabidky === '2026-11-24' && a[3].zakaznik === 'z2', a);
+    a = tisk({ typ: 'nabidkaTisk', varId: 'v1' });
+    test('N1 skript: bez data volání jako před DT (2 argumenty)', !!a && a.length === 2, a);
+    a = tisk({ typ: 'nabidkaTisk', varId: 'v1', datumNabidky: 'nesmysl' });
+    test('N1 skript: neplatné datum se nepředá', !!a && a.length === 2, a);
+  }
+}
+{
+  /* 7b) zamekPoTisku převezme datum z náhledu (jen při prvním zamčení, v mezi) */
+  const kod = vyrizni(UI('zamek_ui.js'), 'function zamekPoTisku(');
+  test('N1 zamekPoTisku je ve zdroji', !!kod);
+  const spust = (v, navic) => {
+    const ctx = Object.assign({}, ZM, {
+      ZAK: { varianty: [v] }, aktivniVarianta: z => z.varianty[0], JEKLY, ZAMEK_SNIMEK_NEULOZENY: new Set(),
+      zamekPrvniSmlouva: () => false, zamekOtiskZPorovnani: () => null, porovnaniData: () => null,
+      zamekVysledekSpocti: () => null, zamekKdo: () => 'TEST', variantaCislo: () => '2026-OPR-CN-0745',
+      zamekSlovnikTed: () => null, render: () => {}, zamekPoTiskuUloz: () => {},
+      Date, JSON, Object, Array, Set, String });
+    delete ctx.zamekSnimekSpocti; delete ctx.zamekZpracovatelSnimek;
+    vm.createContext(ctx); vm.runInContext(kod, ctx);
+    return ctx.zamekPoTisku('nabidkaTisk', v.id, null, navic);
+  };
+  if (kod) {
+    const nova = () => zakazka().v;
+    let v = nova(); spust(v, { datumNabidky: den(-1) });
+    test('N1 zamekPoTisku: náhled ze včerejška → zámek nese včerejšek', v.zamek && v.zamek.datumNabidky === den(-1), v.zamek && v.zamek.datumNabidky);
+    v = nova(); spust(v, null);
+    test('N1 zamekPoTisku: bez data (Word) → dnešek v Praze', v.zamek && v.zamek.datumNabidky === den(0), v.zamek && v.zamek.datumNabidky);
+    v = nova(); spust(v, { datumNabidky: den(-8) });
+    test('N1 zamekPoTisku: náhled starší než 7 dní → dnešek', v.zamek && v.zamek.datumNabidky === den(0), v.zamek && v.zamek.datumNabidky);
+    v = nova(); spust(v, { datumNabidky: '2026-02-30' });
+    test('N1 zamekPoTisku: neplatné datum → dnešek', v.zamek && v.zamek.datumNabidky === den(0));
+    v = nova(); spust(v, { datumNabidky: den(-1) }); spust(v, { datumNabidky: den(0) });
+    test('N1 zamekPoTisku: dotisk datum nezmění', v.zamek.datumNabidky === den(-1) && v.zamek.tisky.length === 2, v.zamek.datumNabidky);
+  }
+}
+{
+  /* 7c) náhled OCK a PROJ vloží do skriptu den, který tiskne symbol DATUM */
+  const vyraz = (zdroj, typ) => { const i = zdroj.indexOf("Object.assign({ typ: '" + typ + "'");
+    const k = 'vzTiskZamekNavic(vt))'; const j = i < 0 ? -1 : zdroj.indexOf(k, i); return j < 0 ? '' : zdroj.slice(i, j + k.length); };
+  const { zak, v } = zakazka();
+  const pO = NO.nabidkaData(zak, v, JEKLY, 'cz', undefined, { ted: TISK }).placeholders;
+  const pP = NP.nabidkaProjData(zak, v, 'cz', { ted: TISK }).placeholders;
+  [['OCK', UI('zakazka_ui.js'), 'nabidkaTisk', pO], ['PROJ', UI('nabidka_proj_ui.js'), 'nabidkaProjTisk', pP]].forEach(([jm, zdroj, typ, p]) => {
+    const e = vyraz(zdroj, typ);
+    let z = null;
+    try { z = e ? vm.runInNewContext('(' + e + ')', { Object, p, varianta: v, akt: v, vt: { zak, varianta: v },
+      vzTiskZamekNavic: () => null, zamekDatumZeSymbolu: ZM.zamekDatumZeSymbolu, nabidkaDatum, nabidkaProjDatumIso: NP.nabidkaProjDatumIso }) : null; } catch (x) { z = { chyba: x.message }; }
+    test('N1 náhled ' + jm + ': zámek skriptu nese den z DATUM dokumentu (24. 11.)', !!z && z.datumNabidky === '2026-11-24' && p.DATUM === '24.11.2026', [z, p.DATUM]);
+  });
+  test('N1 zamekDatumZeSymbolu: 24.11.2026 → 2026-11-24, nesmysl → prázdné', ZM.zamekDatumZeSymbolu('24.11.2026') === '2026-11-24'
+    && ZM.zamekDatumZeSymbolu('31.02.2026') === '' && ZM.zamekDatumZeSymbolu('') === '' && ZM.zamekDatumZeSymbolu('2026-11-24') === '');
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);

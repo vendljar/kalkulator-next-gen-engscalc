@@ -401,7 +401,7 @@ async function nabidkaProjNahled() {
       vraceno: P('Vráceno původní znění z kalkulace.'),
       zamceno: P('Varianta byla uzamčena jako odeslaná nabídka. Další úpravy provádějte v jejím klonu.'),
     }, Object.assign({ typ: 'nabidkaProjTisk', varId: akt && akt.id,
-      datumNabidky: typeof nabidkaProjDatumIso === 'function' ? nabidkaProjDatumIso(vt.zak, vt.varianta, {}) : '' }, vzTiskZamekNavic(vt)))}`);
+      datumNabidky: typeof zamekDatumZeSymbolu === 'function' ? zamekDatumZeSymbolu(p.DATUM) : '' }, vzTiskZamekNavic(vt)))}`);
   w.document.write((sleduj ? neprelozenoSkript(L, neprelozenoKonec(), neprelozenoRucne([
     p.OBJEDNATEL, p.OBJEDNATEL_KONTAKT, p.NAZEV_AKCE, p.ADRESA, p.POPIS_ZAMERU])) : '')
     + '</body></html>');

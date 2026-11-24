@@ -11,6 +11,8 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
 | 24. 11. 2026 | DT: datum cenové nabídky = den tisku (Europe/Prague); odeslaná (zamčená) drží den odeslání/zámku — i když se zamkla tiskem SoD; staré zámky beze změny. Rozsah CN OCK i PROJ všech jazyků a krycí list; plná moc a datum založení zakázky/varianty beze změny. | #745 |
+| 24. 11. 2026 | DT revize N4: krycí list „Dne“ dál zmrazí při prvním zámku den zámku — nesjednocovat se `zamek.datumNabidky` (rozejde se jen u tisku z náhledu otevřeného přes půlnoc). | #745, src/kryci.js |
+| 24. 11. 2026 | DT revize N5: mez data nabídky měřená od `zamek.kdy` (čas prohlížeče, až ~407 dní zpět u upraveného klienta) ponechat; zapsáno v BEZPECNOST_MEZE (B278, pracovní). | #745, BEZPECNOST_MEZE oddíl DT |
 | 24. 11. 2026 | DT (#746): smlouva o dílo cituje „nabídku ze dne“ STEJNÝM datem jako nabídka (nabidkaDatum), OCK i PROJ; ostatní text a data SoD (datum podpisu apod.) beze změny. | #746, src/sod.js |
 | 24. 11. 2026 | PV O1: vlastník dealu jako autor kalkulace založené webhookem má práva autora (zrušit vazbu na deal, změnit deal zakázky, opravit firmu); „V pořádku“ dál jen administrátor. O2 (právo pro zápis prodeje) — vysvětlení vyžádáno. | #597, #734; BEZPECNOST_MEZE oddíl PV |
 | 23. 11. 2026 | CN-O2: číslo nabídky PRODANÉ zakázky nezmění nikdo ani administrátor; cesta = odemknout prodej (vedoucí/admin, protokol), změnit s potvrzením, znovu Prodáno. B3: na main s Pipedrive zapnout poznámku šachet hned; „Víc zákazníků“ (poznámka zákazníků + organizace = vítěz) až po plném průchodu A9 na testu. | #727 (dávka CN), #730 |
