@@ -96,6 +96,8 @@ for (const [email, jmeno] of [[PETRA, 'Petra Ukázková'], ['obch.cizi116@prikla
 const cP = await login(PETRA, 'Heslo12345x');
 const cC = await login('obch.cizi116@priklad.cz', 'Heslo12345x');
 const platny = () => JSON.parse(pamet.get('program/db')).platny;
+const DEN = zam.zamekDenPraha();   // den zámku (běží i s posunutými hodinami kola)
+const DEN_TEXT = DEN.split('-').reverse().map((x) => String(+x)).join('. ');
 
 /* Deal Petry ve fázi `faze` → webhook založí kalkulaci (autor Petra) → doplní
  * a vytiskne cenovou nabídku (první zámek = odeslání) → uloží. */
@@ -118,7 +120,7 @@ async function odeslanaZakazka({ faze = 22, typ = 'nabidka' } = {}) {
   Object.assign(v.data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2, nastupiste: 4 });
   v.data.kryci = { hodnoty: { jmenoPrijmeni: 'Zkušební Kontakt' } };
   zam.zamkniVariantu(v, { typ, kdy: new Date().toISOString(), kdo: 'Test PO', cislo: zam.variantaCislo(z, v),
-    vysledek: zam.zamekVysledekSpocti(v, JEKLY, 'v-po116'), snimek: zam.zamekSnimekSpocti(v), datumNabidky: '2026-11-24' });
+    vysledek: zam.zamekVysledekSpocti(v, JEKLY, 'v-po116'), snimek: zam.zamekSnimekSpocti(v), datumNabidky: DEN });
   const r = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: z, ocekavaneRazitko: g.uloRazitko }, cP)).json();
   if (!r.ok) throw new Error('uložení ' + JSON.stringify(r));
   const u = zakazka(soubor);
@@ -159,7 +161,7 @@ test('hodnota dealu = cena odeslané varianty ze serveru', Math.abs(((radek(n, '
 test('fáze 22 → 23 „Nabídka odeslána“', radek(n, 'fazeDealu').hodnota === 23 && radek(n, 'fazeDealu').posle === true, radek(n, 'fazeDealu'));
 test('pole smlouvy o dílo v tabulce nejsou', !(n.radky || []).some((r) => PO.PD_ODESLANI_BEZ_SOD.includes(r.klic)), (n.radky || []).map((r) => r.klic));
 test('Číslo nabídky (CN) mezi zapisovanými poli', radek(n, 'cisloNabidky').posle === true, radek(n, 'cisloNabidky'));
-test('datum nabídky = datum zámku (24. 11. 2026) v náhledu i poznámce', n.datum === '2026-11-24' && /ze dne 24\. 11\. 2026/.test(n.poznamka), [n.datum, n.poznamka]);
+test('datum nabídky = datum zámku v náhledu i poznámce', n.datum === DEN && n.poznamka.includes('ze dne ' + DEN_TEXT), [n.datum, DEN, n.poznamka]);
 test('poznámka: číslo, cena, Vypracoval (jméno), odkaz, značka zakázky', n.poznamka.startsWith('Nabídka odeslána: ') && /Vypracoval: .*Petra Ukázková/.test(n.poznamka)
   && /Kalkulace: https?:\/\/.*zakazka=/.test(n.poznamka) && /OCK [\d ]+ Kč bez DPH/.test(n.poznamka)
   && n.poznamka.endsWith('\n— nabídka ' + zakazka(A.soubor).cislo) && n.poznamka.includes(zakazka(A.soubor).varianty[0].zamek.cislo), n.poznamka);
@@ -275,7 +277,7 @@ puvodniLog('\n===== 5. SOUBOR =====\n');
 r = await odesl({ ...zaklad(A), akce: 'soubor', obsah: docx(), nazev: '../podvrh.exe' }, cP);
 const sA = souboryDealu(A.deal.id);
 test('soubor → 200, u dealu jeden soubor .docx, název ze serveru (ne od klienta)', r.status === 200 && r.stav === 'zapsano' && sA.length === 1
-  && /^CN_[A-Za-z0-9._-]+_2026-11-24\.docx$/.test(sA[0].name) && sA[0].file_type.includes('wordprocessingml'), [r, sA]);
+  && /^CN_[A-Za-z0-9._-]+_\d{4}-\d{2}-\d{2}\.docx$/.test(sA[0].name) && sA[0].name.endsWith('_' + DEN + '.docx') && sA[0].file_type.includes('wordprocessingml'), [r, sA]);
 test('zak.pdOdeslani.soubor = zapsano s názvem a velikostí; protokol', stav(A.soubor).soubor.stav === 'zapsano' && stav(A.soubor).soubor.nazev === sA[0].name
   && stav(A.soubor).soubor.velikost === sA[0].file_size && (zakazka(A.soubor).protokol || []).some((p) => /Soubor nabídky .* přiložen k dealu/.test(p.co)), stav(A.soubor));
 r = await odesl({ ...zaklad(A), akce: 'soubor', obsah: docx() }, cP);
