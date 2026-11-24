@@ -42,11 +42,14 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/pv-pipedrive` | (tato dávka) | v23.11.7 | PV #597 zápis prodeje do dealu + #734 autor = vlastník dealu nad 1280831; revize Fable; verzi přidělí koordinace |
 | `claude/ut-texty` | (tato dávka) | — | UT #741 #742 #743 (#744 čeká na J. V.) nad 0fd6410; verzi přidělí koordinace |
 | `claude/r3-pole-wordu` | (tato dávka) | — | R3 #751 zákaz dalších polí Wordu nad 3cab0c5 (v24.11.2); verzi přidělí koordinace |
+| `claude/zk-zakaznici-ze-zakazek` | (tato dávka) | v24.11.8 | ZK #755 zákazníci ze zakázek podle ARES (nástroj správce) nad c89e872, sloučeno s integrací d3d449b (v24.11.7); revize Fable SLOUČIT |
 
 Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontrola: `python3 nastroje/release_odkaz.py --chybejici`
 (22. 11.: žádná — main v19.11.11, tag vydán).
 
 ## Běžící dávky
+
+ZK #755 (v24.11.8, `claude/zk-zakaznici-ze-zakazek`): předávka dávky v `podklady/predavky/2026-11.md` (nahoře).
 
 Stav 24. 11. 2026 21:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74 % → doporučeno nové sezení; kokpit https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2):
 - **main** v19.11.11 (cda289e). **test** v24.11.5 (6722ad9). **integrace** v24.11.6 (7339a9e) = UT, R3, DT, RP. Celé kolo Actions nad c89e872 (v24.11.5) ZELENÉ 36/36.
