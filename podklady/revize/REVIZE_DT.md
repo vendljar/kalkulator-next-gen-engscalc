@@ -16,7 +16,7 @@ malé doplňky testů téhož druhu. N4 a N5 jsou otázky pro J. V., sloučení 
 
 | Co | Výsledek |
 |---|---|
-| `bash nastroje/testovaci_kolo.sh --bez-mutaci --proti origin/test --ocekavane podklady/porovnani/ocekavane_dt_2026-11-24.txt` nad fe95509 | KOLO_VYSLEDEK |
+| `bash nastroje/testovaci_kolo.sh --bez-mutaci --proti origin/test --ocekavane podklady/porovnani/ocekavane_dt_2026-11-24.txt` nad fe95509 | VŠE ZELENÉ, kód 0 (40 min): sady 537 prošlo, 0 selhalo, 6 přeskočeno (chybí firemní podklady a `test.js`); sady s hodinami +400 dní 436 prošlo, 0 selhalo, 1 přeskočeno; statické 12 z 12; porovnání 367 kalkulací, 363 shodných, 4 rozdílné (4 očekávané, 0 neočekávaných). Upozornění kroku statické: `PREHLED.md` neodpovídá stavu (věc koordinace) |
 | `src/test_dt_datum_tisku.js` nad fe95509 | 60 prošlo, 0 selhalo |
 | `netlify/test_dt_datum_tisku.mjs` nad fe95509 | 12 prošlo, 0 selhalo |
 | Pojistka: tytéž dvě sady nad 0fd6410 | 49 z 60 selže; 8 z 12 selže (souhlasí s předávkou; u serveru předávka uvádí „6 → 12“, naměřeno 4 → 12) |
