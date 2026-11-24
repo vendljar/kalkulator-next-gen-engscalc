@@ -40,6 +40,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/lak-lakovani` | (tato dávka) | v22.11.8 | LAK #666 lakování z nabídky lakovny nad 05a496d, s integrací 36e2681 |
 | `claude/pv-pipedrive` | (tato dávka) | v23.11.7 | PV #597 zápis prodeje do dealu + #734 autor = vlastník dealu nad 1280831; revize Fable; verzi přidělí koordinace |
 | `claude/ut-texty` | (tato dávka) | — | UT #741 #742 #743 (#744 čeká na J. V.) nad 0fd6410; verzi přidělí koordinace |
+| `claude/r3-pole-wordu` | (tato dávka) | — | R3 #751 zákaz dalších polí Wordu nad 3cab0c5 (v24.11.2); verzi přidělí koordinace |
 
 Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontrola: `python3 nastroje/release_odkaz.py --chybejici`
 (22. 11.: žádná — main v19.11.11, tag vydán).
@@ -89,6 +90,17 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
   koordinaci (S3 SHODA 367/367 už v prvním běhu).
 - Poučení: commit z pracovní kopie pod běžící mutací vzal zmutovaný soubor (pd_org_vitez, opraveno v 6d0c220) — během
   mutací commitovat jen z jiného `git worktree`.
+
+## Dávka R3 (`claude/r3-pole-wordu`, 24. 11. 2026)
+
+- Nad integrací 3cab0c5 (v24.11.2); verzi přidělí koordinace. Cenu ani dokumenty nemění.
+- **#751** (revize SA R3, J. V. 24. 11. ano): `SABLONA_POLE_ZAKAZANA` (`src/sablona_obsah.js`) + USERINITIALS,
+  USERADDRESS, LASTSAVEDBY, TEMPLATE, INFO, DOCPROPERTY (celý typ) — nahrání šablony i vyplňování nabídky
+  (`docxObsahZkontroluj`). Hláška „pole <TYP> (část)“.
+- Testy: `test_sa_sablony` 112/0 (před 70 OK / 42 FAIL), `test_sablona_obsah` 105/0 (legitimní `slovaPodobna`
+  bez DOCPROPERTY → REF). Mutace jádra `[R3]` 6/6, `[SA]` 23/23. Kolo `--bez-mutaci --proti origin/claude/integrace-16-10`
+  VŠE ZELENÉ (537/0, hodiny 436/0, statické 12/12, S3 SHODA 367/367).
+- Před nasazením: `test_sablona_obsah.js` s `KNG_PODKLADY` (kolo 54 už ověřilo 31 šablon — jen PAGE).
 
 ## Čeká na J. V.
 
