@@ -156,6 +156,9 @@ export async function pdZavolej(cesta, volby = {}) {
     hlavicky['Content-Type'] = 'application/json';
     init.body = JSON.stringify(volby.telo);
   }
+  /* PO #116: soubor k dealu (POST /api/v1/files) jde jako multipart — FormData
+   * bez ručního Content-Type (hranici částí doplní fetch). */
+  if (volby.formular !== undefined && volby.telo === undefined) init.body = volby.formular;
 
   /* `volby.pokusu` (VSD, 11. 11. 2026): méně pokusů tam, kde se nesmí čekat
    * sekundy (zápis poznámky při uložení zakázky); nikdy víc než POKUSU. */

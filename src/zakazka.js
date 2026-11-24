@@ -1906,6 +1906,7 @@ function zakazkaDuplikuj(zak, noveCislo) {
   delete nova.dalsiZakaznici;
   delete nova.pdPoznamkaZakaznici;
   delete nova.pdOrgVitez;
+  delete nova.pdOdeslani;   // PO #116: stav zápisu odeslání do dealu patří původní zakázce
   delete nova.pdOrgDealu;   // VZ T1 (N3): skutečná organizace dealu patří dealu
 
   /* Zápisy o jednání patří k původní akci, ne sem. */
