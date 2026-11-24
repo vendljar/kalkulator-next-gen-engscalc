@@ -977,9 +977,9 @@ const ULO_CISLA_NAVIC = ['ock.zadani.mustekHloubkaMm', 'ock.zadani.mustekSirkaMm
  * NAD_DVERMI_VOLBY z engine.js (shodu hlídá test_svetliky_boky.js). */
 const ULO_VYPLN_DVERI = ['bez', 'sklo', 'plech', 'material', 'stavba'];
 /* Zaškrtnutí statiky opláštění (#667): jen true / false; chybí = výchozí stav. */
-/* Příznak „engineering jako příplatek" (#757): jen true / false; chybí = stará kalkulace. */
+/* Příznak nové kalkulace (ER #757–#759): jen 2; chybí = stará kalkulace. */
 const ULO_VYCTY_MIMO_VZOR = { nadDvermi: ULO_VYPLN_DVERI, bokyDveri: ULO_VYPLN_DVERI, statikaOpl: [true, false],
-  engineeringPriplatek: [true, false] };
+  kalkVerze: [2] };
 /* ZRUŠENÁ VOLBA „ZAJISTÍ STAVBA" (#560, rozhodnutí J. V. 4. 11. 2026: „stavba"
  * = „bez"). Ve výčtu výš zůstává, protože ji nesou STARÁ data — odeslaná
  * nabídka i rozpracovaná varianta, kterou ještě nikdo neotevřel novou verzí.
@@ -1184,6 +1184,13 @@ function uloTypyProblemy(zak, stara, opts) {
         uloTypyOplasteni(z.oplasteni, 'ock.zadani.oplasteni.steny', vlastni);
         uloTypyProfily(z.profily, 'ock.zadani.profily', vlastni);
       }
+      /* Příznak nové kalkulace i u šachet 2+ (ER, revize Fable N3): jádro
+       * počítá každou šachtu podle jejího zadání. */
+      (Array.isArray(d.ock.dalsi) ? d.ock.dalsi : []).forEach((s, i) => {
+        const x = s && s.zadani && typeof s.zadani === 'object' ? s.zadani.kalkVerze : undefined;
+        if (x !== undefined && x !== null && x !== '' && ULO_VYCTY_MIMO_VZOR.kalkVerze.indexOf(x) < 0)
+          vlastni.push({ kde: 'ock.dalsi.' + i + '.zadani.kalkVerze', duvod: 'typ' });
+      });
     }
     /* Ceník varianty je celý vstup jádra — čísla jen ve tvaru, který jádro
      * čte jako člověk (B135). */

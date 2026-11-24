@@ -748,7 +748,8 @@ const TECHSPEC_DEF = [
       odvozenePopis: 'Řídí se cenou: „ano", když je v Kalkulaci OCK (sekce Režie) položka '
         + 'ZAMĚŘENÍ 3D SKENEREM s nenulovým množstvím. Zaměření vypnete tam — množstvím 0.' },
     { id: 'vystupZamereni', label: 'VÝSTUP ZE ZAMĚŘENÍ PRO OBJEDNATELE', ciselnik: TS_C.anoNe,
-      prefill: (r, Z) => Z.vystupZamereni ? 'ano' : 'ne' },
+      /* #759: nová kalkulace (kalkVerze ≥ 2) přepínač nemá — výstup vždy. */
+      prefill: (r, Z) => (Z.vystupZamereni || (Number.isInteger(Z.kalkVerze) && Z.kalkVerze >= 2)) ? 'ano' : 'ne' },
     { id: 'dilenskaDok', label: 'ZPRACOVÁNÍ DÍLENSKÉ DOKUMENTACE', ciselnik: TS_C.anoNe,
       prefill: (r) => tsRadekVCene(r, 'rezie', 'C.projekceHodKc') === false ? 'ne' : 'ano' },   // N48
     /* STATIKA SE ŘÍDÍ CENOU (P8/6, pokyn J. V. 22. 9. 2026: „statiku nastav

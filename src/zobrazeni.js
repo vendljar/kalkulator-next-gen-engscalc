@@ -774,10 +774,10 @@ function zobrazeniVychoziAplikuj(mat, zadaniOck, zadaniProj) {
       .map(k => k.slice(ZOBRAZENI_PRIPLATEK.length));
     /* #757: příplatek se základem „mimo nabídku" zůstane mimo, dokud ho
      * matice výslovně nezapne — ale jen v zadání, které ho z kódu nese
-     * (nová kalkulace s příznakem engineeringPriplatek). */
+     * (nová kalkulace s příznakem kalkVerze ≥ 2, viz kalkNova v engine.js). */
     ZOBRAZENI_PRIPLATEK_ZAKLAD_MIMO.forEach(k => {
       if (mv[ZOBRAZENI_PRIPLATEK + k] === true || vynechane.indexOf(k) >= 0) return;
-      if (k === 'engineering' && zadaniOck.engineeringPriplatek !== true) return;
+      if (k === 'engineering' && !(Number.isInteger(zadaniOck.kalkVerze) && zadaniOck.kalkVerze >= 2)) return;
       vynechane.push(k);
     });
     const dnesP = Array.isArray(zadaniOck.priplatkyVynechat) ? zadaniOck.priplatkyVynechat : [];

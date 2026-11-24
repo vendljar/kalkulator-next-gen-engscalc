@@ -115,13 +115,18 @@ function dnesIso() { return new Date().toISOString().slice(0, 10); }
  *
  * `predloha` = { klíč: hodnota } z ceníku. `data` je varianta.data kvůli
  * ručním značkám. Mutuje `Z` a nic nevrací — volající beztak překresluje. */
-function atypHodnoty(Z, data, zap, predloha) {
+function atypHodnoty(Z, data, zap, predloha, opts) {
   if (!Z) return;
   const rucniJe = (k) => (typeof zadaniRucniJe === 'function') && zadaniRucniJe(data, k);
   if (zap) {
     Z.atypPredchozi = {};
     ATYP_POLE.forEach(k => { Z.atypPredchozi[k] = Z[k]; });
-    ATYP_POLE.forEach(k => { Z[k] = (predloha || {})[k]; });
+    /* ZAPNUTÍ AUTOMATEM RUČNÍ POLE NECHÁ (#758, J. V. 24. 11. 2026). Automat
+     * (standardAtypAutomat) zapíná ATYP i v témže kroku, kdy obchodník právě
+     * napsal svou rezervu — a předloha ji přepsala (10 % → 30 %). Ruční klik
+     * na ATYP dosadí předlohu do všech polí jako dosud (16. 9. 2026). */
+    const automat = !!(opts && opts.automat);
+    ATYP_POLE.forEach(k => { if (!(automat && rucniJe(k))) Z[k] = (predloha || {})[k]; });
     return;
   }
   /* RUČNĚ PŘEPSANÁ HODNOTA VYPNUTÍ ATYP PŘEŽIJE (16. 9. 2026, vyjádření J. V.
@@ -181,11 +186,12 @@ const ZADANI_NOVA = {
    * Je-li vedle dveří mezera, upozorní na ni kontrola před nabídkou. Počet
    * světlíků zůstává prázdný = automaticky nástupiště × 2, až se zvolí výplň. */
   bokyDveri: 'bez',
-  /* ENGINEERING JAKO PŘÍPLATEK (#757, rozhodnutí J. V. 24. 11. 2026): nová
-   * kalkulace má engineering v příplatcích, ne v Režii, a ve výchozím stavu
-   * MIMO nabídku (obchodník ho zaškrtne). Stará data příznak nemají a počítají
-   * postaru (engine.js, engPrip). Import ani klon příznak nedoplňují. */
-  engineeringPriplatek: true,
+  /* NOVÁ KALKULACE (ER, rozhodnutí J. V. 24. 11. 2026): engineering jako
+   * příplatek mimo nabídku (#757), rezerva příplatků v cenách položek (#758),
+   * výstup ze zaměření vždy a statika opláštění podle opláštění (#759).
+   * Stará data příznak nemají a počítají postaru (engine.js, kalkNova).
+   * Import ani klon příznak nedoplňují. */
+  kalkVerze: 2,
   priplatkyVynechat: ['vsgFolie', 'skn', 'engineering'],
 };
 

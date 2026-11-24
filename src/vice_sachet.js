@@ -121,7 +121,7 @@ function rozpocetSachet(T, castky) {
  * ceník → stejná položka se sloučí; vlastní položka s jinou cenou zůstane
  * zvlášť. Popisná pole (název, jednotka, poznámka) ze šachty, kde se řádek
  * objevil poprvé; `vsSachty` = [{ i, ks }] šachty, kterých se řádek týká. */
-const VS_SCITANA_POLE = ['mnozstvi', 'mnozstviAuto', 'naklad', 'marze', 'sMarzi'];
+const VS_SCITANA_POLE = ['mnozstvi', 'mnozstviAuto', 'naklad', 'marze', 'sMarzi', 'rezervaNaklad', 'rezervaSMarzi'];   // rezerva*: #758, jen nová kalkulace
 
 function vsNormNazev(t) { return String(t == null ? '' : t).replace(/\s+/g, ' ').trim().toLowerCase(); }
 
