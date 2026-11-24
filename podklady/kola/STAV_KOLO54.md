@@ -36,6 +36,20 @@ Rozdíl dat test × main (jen informace): test nemá jazykové verze SoD projekc
 R3 (rozhodnutí J. V.): firemní šablony žádné z polí USERINITIALS, USERADDRESS, LASTSAVEDBY, TEMPLATE, INFO, DOCPROPERTY
 nepoužívají — jejich zákaz by žádnou dnešní šablonu nerozbil.
 
+## Doplněk 24. 11. (~11:25 UTC) — CN-432 „po smazání“ zase s marží 0 (jen čtení)
+
+Zjištěno čtením `GET /api/zakazky?soubor=CN-432.json`: záznam na serveru existuje s celou historií od 23. 11. (prodaná
+a zamčená Varianta 1, ceník s marží 0), 24. 11. 11:19 přidána Varianta 2, 11:21:08 webhook „Aktualizace z dealu 432“
+(ne „Založeno“), vazba nově „ceka“ (uložený záznam vazbu neměl → byl zapsán bez serverových polí).
+Výklad: J. V. CN-432 smazal, ale zakázka zůstala otevřená v prohlížeči (`onlineSmazVybrane` ji v paměti drží), další
+uložení (Varianta 2) ji zapsalo znovu ze staré kopie; webhook pak jen aktualizoval → oprava #733 se neuplatnila.
+
+- **K54-N1** (vada, střední, dopad na cenu: nepřímo ano): smazanou otevřenou zakázku jde dál upravovat a uložit — uložení
+  ji „vzkřísí“ se starými cenami, prodanou variantou a protokolem, bez serverových polí. Návrh: po smazání otevřené
+  zakázky ji zavřít nebo přepnout na „smazaná, jen ke čtení“ a uložení pod týmž číslem bez potvrzení odmítnout; test s pojistkou.
+- Doporučení J. V.: smazat CN-432 v Seznamu zakázek, hned Ctrl+F5 (smazanou neupravovat), ověřit, že v Seznamu není,
+  pak v dealu 432 „Vygenerovat nabídku“ = Ano.
+
 ## Úklid
 
 Nic — na test se nezapisovalo. Harnessy kola v kontejneru sezení (`scratchpad/h/k54_word.js`, `sa_kontrola.js`, `pole_scan.py`), do repa se nedávají.
