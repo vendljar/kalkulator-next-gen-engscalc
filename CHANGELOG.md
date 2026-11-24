@@ -8,18 +8,25 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## (verzi přidělí koordinace) — UT: texty v aplikaci (#742 popisek práva Pipedrive; #741 čeká), větev claude/ut-texty
+## (verzi přidělí koordinace) — UT: texty v aplikaci (#741 nápověda Opláštění, #742 popisek práva Pipedrive), test šablon (#743), větev claude/ut-texty
 
-Nad integrací `0fd6410` (v24.11.1). **Cenu ani text dokumentů nemění** (porovnání sestavení proti `origin/test`: SHODA).
+Nad integrací `0fd6410` (v24.11.1). **Cenu ani text dokumentů nemění** (porovnání sestavení proti `origin/test`: viz zpráva koordinaci).
 
+- **#741 — nápověda u volby Opláštění podle zvolené hodnoty (J. V. 24. 11. 2026, varianta A):** po stěnách
+  „Jiný typ zasklení viz níže.“; standard podle toho, co se počítá (`skloVolba`): exteriér „Zasklení VSG 4.4.1 +
+  Izolační dvojsklo“, interiér mezi příčníky „Zasklení VSG 4.4.1“, interiér na terče „Zasklení VSG 4.4.2“. Title se
+  mění se změnou typu šachty a zasklení. Řádek skla v tabulce a Detail výpočtu mají dál nápovědu „Jiné sklo…“.
+  Test `src/test_ut_741_napoveda_opl.js`, pojistka: před 15 FAIL, po 14 OK; mutace `[UT] #741` (4).
 - **#742 — O2, rozhodnutí J. V. 24. 11. 2026 (varianta a):** právo `crm.pipedrive` zůstává (klíč beze změny), popisek
   v Nastavení → Zobrazení je nově „Pipedrive: čtení a zápis do vlastních obchodních případů“ (hlídá i zápis prodeje
   do dealu, #597). Tentýž název citují karta Prodej, chyba 403 z `/api/pd/*`, hláška výběru organizace dealu,
   příručka administrátora a kompletní příručka, `NASAZENI_NETLIFY.md`, `BEZPECNOST_MEZE.md` (O2 rozhodnuto).
   Mutace B80 přepsaná na nový řádek, nové mutace `[UT] #742` (4). Test `src/test_ut_742_popisek_pd.js`,
   pojistka: před opravou 18 FAIL, po 20 OK.
-- **#741 — nápověda u volby Opláštění (čeká):** standardní zasklení je „VSG 4.4.1 + izolační dvojsklo“ jen
-  u exteriérové šachty; interiér mezi příčníky = VSG 4.4.1, na terče = VSG 4.4.2. Dotaz koordinaci / J. V.
+- **#743 (K54-I1) — test šablon:** `src/test_sablona_obsah.js` kontroluje všechny `Sablona_*.docx` z `KNG_PODKLADY`
+  (dřív pevný seznam CN v14 / PROJ v4 → CN v18 a PROJ v9 se přeskočily). Pojistka: stará sada s podklady jen s vadnou
+  CN v18 zelená, nová 1 FAIL. Svěřené rozhodnutí UT-3. **#744 (K54-I2)** — jazykové SoD projekce na testu: čeká na J. V.
+- Mutační harness: obě nové sady UT v `SADY` (dřív tam `test_ut_742` chyběl a mutace `[UT] #742` ho nepouštěly).
 
 ## v24.11.1 — MT2: zpevnění testů kola (#737 mutace #553 kontakt, #738 sady kolem půlnoci), větev claude/mt2-testy
 

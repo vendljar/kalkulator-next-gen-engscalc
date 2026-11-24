@@ -47,7 +47,9 @@ if (!process.env.ADMIN_EMAIL) process.env.ADMIN_EMAIL = 'spravce@priklad.cz';
  * je soubor zmutovaný. Běžný běh ji nenastavuje. */
 const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
-  : [/* NN (22. 11. 2026): nízké nálezy auditu 20. 11. a revize BZ / PR (rychlé sady). */
+  : [/* UT (24. 11. 2026): #741 nápověda u Opláštění, #742 popisek práva Pipedrive (rychlé sady). */
+     '../src/test_ut_741_napoveda_opl.js', '../src/test_ut_742_popisek_pd.js',
+     /* NN (22. 11. 2026): nízké nálezy auditu 20. 11. a revize BZ / PR (rychlé sady). */
      'test_nn_nizke.mjs', '../src/test_nn_nizke.js',
      /* RJ (22. 11. 2026): rozhodnutí J. V. — zámek „nesouhlasi“ 409, strana, podpis původního zpracovatele (rychlá sada). */
      'test_rj_rozhodnuti.mjs',
@@ -5632,22 +5634,40 @@ const MUTACE = [
     proc: 'obchodníci by přišli o čtení z CRM, které jim J. V. 15. 10. 2026 přidělil' },
   /* [UT] #742 (O2, J. V. 24. 11. 2026): popisek práva crm.pipedrive a hlášky,
    * které ho citují. Hlídá src/test_ut_742_popisek_pd.js. */
-  { nazev: '[UT] #742: popisek práva crm.pipedrive zpět na starý', soubor: '../src/zobrazeni.js',
+  { nazev: '[UT] #742: popisek práva crm.pipedrive zpět na starý', sady: ['../src/test_ut_742_popisek_pd.js'], soubor: '../src/zobrazeni.js',
     hledej: "klic: 'crm.pipedrive', skupina: 'data', nazev: 'Pipedrive: čtení a zápis do vlastních obchodních případů',",
     nahrad: "klic: 'crm.pipedrive', skupina: 'data', nazev: 'Čtení obchodních případů z Pipedrive',",
     proc: 'matice by nazývala právo jen čtením, i když od #597 hlídá i zápis prodeje do dealu' },
-  { nazev: '[UT] #742: 403 z /api/pd cituje starý popisek práva', soubor: 'lib/pipedrive.mjs',
+  { nazev: '[UT] #742: 403 z /api/pd cituje starý popisek práva', sady: ['../src/test_ut_742_popisek_pd.js'], soubor: 'lib/pipedrive.mjs',
     hledej: "+ '(Nastavení → Zobrazení → „Pipedrive: čtení a zápis do vlastních obchodních případů\").' }, 403)",
     nahrad: "+ '(Nastavení → Zobrazení → „Čtení obchodních případů z Pipedrive\").' }, 403)",
     proc: 'hláška by posílala administrátora hledat v matici právo, které tam pod tím jménem není' },
-  { nazev: '[UT] #742: výběr organizace dealu cituje starý popisek práva', soubor: 'lib/pd_org_vitez.mjs',
+  { nazev: '[UT] #742: výběr organizace dealu cituje starý popisek práva', sady: ['../src/test_ut_742_popisek_pd.js'], soubor: 'lib/pd_org_vitez.mjs',
     hledej: "kolega s právem „Pipedrive: čtení a zápis do vlastních obchodních případů“.',",
     nahrad: "kolega s právem „Čtení obchodních případů z Pipedrive“.',",
     proc: 'hláška by citovala právo, které v matici pod tím jménem není' },
-  { nazev: '[UT] #742: karta Prodej cituje starý popisek práva', soubor: '../src/ui/sod_ui.js',
+  { nazev: '[UT] #742: karta Prodej cituje starý popisek práva', sady: ['../src/test_ut_742_popisek_pd.js'], soubor: '../src/ui/sod_ui.js',
     hledej: "Zápis do Pipedrive jde online s právem „Pipedrive: čtení a zápis do vlastních obchodních případů“.",
     nahrad: "Zápis do Pipedrive jde online s právem „Čtení obchodních případů z Pipedrive“.",
     proc: 'karta Prodej by citovala právo, které v matici pod tím jménem není' },
+  /* [UT] #741 (J. V. 24. 11. 2026, varianta A): nápověda u volby Opláštění
+   * podle zvolené hodnoty. Hlídá src/test_ut_741_napoveda_opl.js. */
+  { nazev: '[UT] #741: dvojsklo v nápovědě i u interiérové šachty', sady: ['../src/test_ut_741_napoveda_opl.js'], soubor: '../src/ui/kalk_ock.js',
+    hledej: "(sv.boky.cesta === 'C.skloBokyKc' ? ' + Izolační dvojsklo' : '')",
+    nahrad: "' + Izolační dvojsklo'",
+    proc: 'nápověda by u interiérové šachty slibovala dvojsklo, které v ceně není' },
+  { nazev: '[UT] #741: typ skla v nápovědě pevně VSG 4.4.1', sady: ['../src/test_ut_741_napoveda_opl.js'], soubor: '../src/ui/kalk_ock.js',
+    hledej: "const typ = String(sv.celni.nazev).replace(/^MATERIÁL\\s+/, '');",
+    nahrad: "const typ = 'VSG 4.4.1';",
+    proc: 'interiér na terče (VSG 4.4.2) by v nápovědě nesl jiné sklo, než se počítá' },
+  { nazev: '[UT] #741: po stěnách nápověda jako standard', sady: ['../src/test_ut_741_napoveda_opl.js'], soubor: '../src/ui/kalk_ock.js',
+    hledej: "  if (poStenach) return 'Jiný typ zasklení viz níže.';",
+    nahrad: "  if (false) return 'Jiný typ zasklení viz níže.';",
+    proc: 'po stěnách by nápověda tvrdila standardní zasklení, i když stěny mají jiné sklo' },
+  { nazev: '[UT] #741: select opláštění zpět na pevnou nápovědu', sady: ['../src/test_ut_741_napoveda_opl.js'], soubor: '../src/ui/kalk_ock.js',
+    hledej: 'title="${esc(oplasteniNapoveda(Z, oplPoStenach()))}"',
+    nahrad: 'title="${esc(SKLO_JINE_NAPOVEDA)}"',
+    proc: 'title by nezávisel na zvolené hodnotě (zadání J. V. 24. 11. 2026)' },
   { nazev: 'B80: GET na /api/pd/* z cizího původu projde', soubor: 'lib/pipedrive.mjs',
     hledej: "  if (cizihoPuvodu(req))\n    return { chyba: json({ ok: false, chyba: 'Požadavek z cizí stránky se odmítá.' }, 403) };",
     nahrad: "  if (false)\n    return { chyba: json({ ok: false, chyba: 'Požadavek z cizí stránky se odmítá.' }, 403) };",

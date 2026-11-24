@@ -248,7 +248,7 @@ function renderInputs() {
          * Vlastní stěny jsou ve zvláštní kartě, která se kreslí až po
          * přepnutí — ve standardním režimu o nich obchodník nemá vědět. */
         + `<div class="row"><label>Opláštění</label>
-            <select style="width:150px" onchange="oplRezimSet(this.value)" title="${esc(SKLO_JINE_NAPOVEDA)}">
+            <select style="width:150px" onchange="oplRezimSet(this.value)" title="${esc(oplasteniNapoveda(Z, oplPoStenach()))}">
               <option value="standard" ${oplPoStenach() ? '' : 'selected'}>jednotné (standard)</option>
               <option value="poStenach" ${oplPoStenach() ? 'selected' : ''}>po stěnách A–D</option>
             </select><span class="u"></span></div>`
@@ -1765,6 +1765,23 @@ function bunkaNazev(r, sekceKey) {
 const SKLO_JINE_NAPOVEDA = 'Jiné sklo, než dává typ šachty a způsob zasklení: v zadání šachty zvolte '
   + 'Opláštění „po stěnách A–D" a u stěn typ skla z ceníku, nebo „jiné" s vlastním názvem a sazbou '
   + '(stejné sklo pro všechny stěny = stejný typ u všech čtyř).';
+/* NÁPOVĚDA U VOLBY OPLÁŠTĚNÍ PODLE ZVOLENÉ HODNOTY (#741, rozhodnutí J. V.
+ * 24. 11. 2026, varianta A). Po stěnách: „Jiný typ zasklení viz níže."
+ * Standard: zasklení, které se opravdu počítá — typ skla ze skloVolba (čelní
+ * sklo), u exteriérové šachty (boky a zadní stěna = položka ceníku „Izolační
+ * dvojsklo – typ", C.skloBokyKc) „+ Izolační dvojsklo". Vychází tak:
+ * exteriér „Zasklení VSG 4.4.1 + Izolační dvojsklo", interiér mezi příčníky
+ * „Zasklení VSG 4.4.1", interiér na terče „Zasklení VSG 4.4.2". Zadání se po
+ * změně typu šachty i zasklení překreslí (set → render), title tedy sleduje
+ * volbu. Řádek skla v tabulce a Detail výpočtu dál nesou SKLO_JINE_NAPOVEDA.
+ * Hlídá src/test_ut_741_napoveda_opl.js. */
+function oplasteniNapoveda(z, poStenach) {
+  if (poStenach) return 'Jiný typ zasklení viz níže.';
+  if (typeof skloVolba !== 'function') return SKLO_JINE_NAPOVEDA;
+  const sv = skloVolba(z, {});
+  const typ = String(sv.celni.nazev).replace(/^MATERIÁL\s+/, '');
+  return 'Zasklení ' + typ + (sv.boky.cesta === 'C.skloBokyKc' ? ' + Izolační dvojsklo' : '');
+}
 function jeRadekSkla(r) {
   if (!r || r.vlastni || oplPoStenach() || typeof skloVolba !== 'function') return false;
   const v = aktivniVarianta(ZAK);

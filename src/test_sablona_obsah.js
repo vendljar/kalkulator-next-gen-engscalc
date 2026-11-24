@@ -393,23 +393,52 @@ const enc = new TextEncoder(), dec = new TextDecoder();
   }
 
   /* Firemní šablony (jen s KNG_PODKLADY, mimo repozitář) — kontrola je nesmí
-   * odmítnout: CN v14 + EN/DE/FR, CN v11, PROJ v3, PROJ v4 + EN/DE/FR, SoD
-   * realizace a projekce, plná moc. */
-  {
+   * odmítnout. K54-I1 (24. 11. 2026, svěřené rozhodnutí UT-3): dřív se
+   * kontroloval jen pevný seznam (CN v14, CN v11, PROJ v4 …), takže novější
+   * šablona (CN v18, PROJ v9) se potichu přeskočila a sada byla zelená.
+   * Teď se kontroluje KAŽDÁ Sablona_*.docx ve složce; u nejnovější verze CN
+   * a PROJ se navíc vypíše, které jazykové varianty ve složce jsou (jen INFO —
+   * chybějící šablona je datová věc, ne vada kódu). Bez KNG_PODKLADY jako dřív. */
+  const firemniSablony = async (slozka) => {
     const fs = require('fs'), path = require('path');
-    const slozka = String(process.env.KNG_PODKLADY || '').trim();
     const sablony = slozka && fs.existsSync(slozka) ? fs.readdirSync(slozka).filter(f => /^Sablona_.*\.docx$/i.test(f)).sort() : [];
-    if (!sablony.length) console.log('–    firemní šablony (KNG_PODKLADY) nejsou po ruce — přeskočeno');
-    else {
-      const pozadovane = [/CN_v14\.docx$/i, /CN_v14.*_EN/i, /CN_v14.*_DE/i, /CN_v14.*_FR/i, /CN_v11\.docx$/i, /^Sablona_NABIDKA_PROJ\.docx$/i,
-        /PROJ_v4\.docx$/i, /PROJ_v4.*_EN/i, /PROJ_v4.*_DE/i, /PROJ_v4.*_FR/i, /SOD_REALIZACE/i, /SOD_PROJEKCE/i, /PLNA_MOC/i];
-      for (const vz of pozadovane) {
-        const f = sablony.find(x => vz.test(x));
-        if (!f) { console.log('–    firemní šablona ' + vz + ' v KNG_PODKLADY chybí'); continue; }
-        const v = await SO.sablonaObsahVady(new Uint8Array(fs.readFileSync(path.join(slozka, f))));
-        test('B115: firemní šablona ' + f + ' projde', v.length === 0, v);
-      }
+    const vysl = [];
+    for (const f of sablony)
+      vysl.push({ f, v: await SO.sablonaObsahVady(new Uint8Array(fs.readFileSync(path.join(slozka, f)))) });
+    const info = [];
+    for (const rada of ['CN', 'PROJ']) {
+      const re = new RegExp('_' + rada + '_v(\\d+)', 'i');
+      const verze = sablony.map(f => (re.exec(f) || [])[1]).filter(Boolean).map(Number);
+      if (!verze.length) continue;
+      const max = Math.max(...verze);
+      const jazyky = ['EN', 'DE', 'FR'].filter(j => sablony.some(f => re.test(f) && +re.exec(f)[1] === max && new RegExp('_' + j + '(?:[_.]|$)', 'i').test(f)));
+      info.push(rada + ' v' + max + ' (jazyky: ' + (jazyky.join(', ') || 'žádné') + ')');
     }
+    return { vysl, info };
+  };
+  {
+    const slozka = String(process.env.KNG_PODKLADY || '').trim();
+    const { vysl, info } = await firemniSablony(slozka);
+    if (!vysl.length) console.log('–    firemní šablony (KNG_PODKLADY) nejsou po ruce — přeskočeno');
+    else {
+      info.forEach(t => console.log('INFO nejnovější firemní šablona ' + t));
+      for (const { f, v } of vysl) test('B115: firemní šablona ' + f + ' projde', v.length === 0, v);
+    }
+  }
+  /* Pojistka K54-I1 bez firemních podkladů: složka jen s „CN v18" (vadná
+   * šablona s INCLUDETEXT) — kontrola ji musí najít a odmítnout, ne přeskočit. */
+  {
+    const fs = require('fs'), os = require('os'), path = require('path');
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'kng-k54-'));
+    try {
+      fs.writeFileSync(path.join(tmp, 'Sablona_NABIDKA_CN_v18.docx'), s.includeText);
+      fs.writeFileSync(path.join(tmp, 'Sablona_NABIDKA_PROJ_v9_EN.docx'), s.cista);
+      const { vysl, info } = await firemniSablony(tmp);
+      const cn = vysl.find(x => /CN_v18/.test(x.f)), pr = vysl.find(x => /PROJ_v9/.test(x.f));
+      test('K54-I1: šablona CN v18 se nepřeskočí a vadná se odmítne', !!cn && cn.v.length > 0, vysl.map(x => x.f));
+      test('K54-I1: šablona PROJ v9 se zkontroluje a čistá projde', !!pr && pr.v.length === 0, vysl.map(x => x.f));
+      test('K54-I1: INFO hlásí nejnovější verze CN v18 a PROJ v9', info.join('|') === 'CN v18 (jazyky: žádné)|PROJ v9 (jazyky: EN)', info);
+    } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
   }
 
   console.log(`\n${ok} prošlo, ${fail} selhalo`);
