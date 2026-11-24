@@ -10,7 +10,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## (bez verze) — ER #757, #758, #761: nová kalkulace (engineering jako příplatek, rezerva příplatků v položkách, Režie bez přepínačů); automat ATYP, větev claude/er-engineering-rezerva
 
-Nad integrací `c89e872` (v24.11.5). **Mění cenu NOVÝCH kalkulací** (rozhodnutí J. V. 24. 11.); existující beze změny.
+Nad integrací `c89e872` (v24.11.5), sloučeno s v24.11.6 (RP). **Mění cenu NOVÝCH kalkulací** (rozhodnutí J. V. 24. 11.); existující beze změny.
 Nová kalkulace nese příznak zadání `kalkVerze: 2` (jen založení nové kalkulace a čerstvá z Pipedrive; klon a duplikát
 kopírují zdroj, import ani stará data ho nedostanou).
 
@@ -28,6 +28,41 @@ kopírují zdroj, import ani stará data ho nedostanou).
 - Testy: `src/test_er_nova_kalkulace.js` (89 OK; proti c89e872 padá), mutace jádra [ER] 25/25 chycené; porovnání sestavení
   proti integraci: fixtury 7/7 a fuzz 300/300 SHODA, 60 očekávaných rozdílů jen u případů z `novaZakazka()`
   (`podklady/porovnani/ocekavane_er_2026-11-24.txt`); zlaté sady #560/VS očištěny o příznak (svěřené rozhodnutí ER-1).
+- Sloučeno s integrací v24.11.6 (RP).
+
+## v24.11.6 — RP: ruční položky kalkulace OCK v nabídce CN a krycím listu (#736, #740), větev claude/rp-rucni-polozky
+
+Nad integrací `d655295`, sloučeno s `0fd6410` (v24.11.1) a `c89e872` (v24.11.5). Rozhodnutí J. V. 23. 11. 2026 (podnět CN-431), prototyp
+a doporučení odsouhlaseny 24. 11. **Cenu kalkulací nemění** (jádro výpočtu beze změny); mění se text nabídky
+a krycího listu jen u zakázek, které ruční položku mají.
+
+- **Ruční položka se tiskne vždy (#736).** Řádek, který obchodník přidá tlačítkem „+ přidat položku“ (bez vazby na
+  ceník, množství > 0), jde do technické specifikace do sekce podle sekce kalkulace: Hrubá OCK, ATYP, Spojovací
+  materiál, Lakování → KONSTRUKČNÍ ŘEŠENÍ ŠACHTY; Opláštění → OPLÁŠTĚNÍ ŠACHTY; Volitelné → DOPLŇKOVÉ KONSTRUKCE;
+  Můstky → MŮSTKY MEZI BUDOVOU A OCK; Režie → PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE. Řádek NÁZEV | „množství jednotka“
+  a pod tím dodatkový text (Word klon řádku poslední pozice sekce šablony CN v18, online Kompletní náhled podkladů).
+  Víc šachet: u své šachty, Režie s názvem šachty.
+- **Cena ruční položky v cenovém bloku** jako u můstků: VÝTAHOVÁ ŠACHTA / položka / (Cena před slevou / Sleva) /
+  CENA CELKEM; součet řádků = cena před slevou na korunu i na euro (cena s marží). Ruční položka Můstků se odečte
+  z řádku můstků, položka s cenou 0 jde jen do specifikace. CENA CELKEM bez podtitulu „výtahová šachta a můstky“.
+- **Krycí list OCK (BO i Tech):** řádek „Ruční položky v ceně“ (počet – název, množství jednotka, cena s marží,
+  sekce) jen u zakázky s ruční položkou; do Pipedrive se nepíše.
+- **Jednotka, dodatkový text a překlad (#740):** pod ruční položkou jednotka ks / bm / m² / kpl (výchozí ks, starý
+  soubor = ks), „Dodatkový text do cenové nabídky (nepovinné)“, cílová sekce a překlad EN/DE/FR. Slovník: bm → lm /
+  lfm / ml, kpl → set / Kpl. / ens. Kontrola před tiskem „Ruční položka zůstane v cizojazyčné nabídce česky“.
+- **Odeslaná nabídka** se při dotisku vytiskne s ručními položkami ze zmrazeného výsledku; čísla zámku, ověření
+  serveru (B59/B232) ani otisk se nemění.
+- Testy: `src/test_rp_rucni_polozky.js` (41), `src/test_np_nahled_word.js` oddíl G (náhled = Word s ručními
+  položkami); pojistka nad d655295 selže. Mutace [RP] 18. Vědomě upravené: test_kontroly (54 pravidel), test_kryci,
+  test_platby_ock, zlatá sada VS (jen texty dokumentů u 25 scénářů s ruční položkou), cisla_vydani.json,
+  tabulka zmrazení KL (nové pole jako Příplatky v nabídce — potvrdil J. V. 24. 11.). Příručka kap. 18.
+- **Opravy revize Fable (24. 11.):** kontrola před tiskem „Ruční položka se ve Wordu nevytiskne“ (šablona bez řádku
+  cílové sekce nebo bez řádku pro cenu, S1); ruční položka Spojovacího materiálu a Lakování (jen z importu) se tiskne
+  v KONSTRUKČNÍM ŘEŠENÍ (N2); stará šablona v15: ruční Můstky v sekci MŮSTKY (N4); trvalá položka i podle zadání (N5);
+  server hlídá typ a délku jednotky, dodatkového textu a překladu (N6); testy eur (T1), dotisku a krycího listu ze
+  zámku (T2). Pravidel kontrol 55.
+- **Krycí list u šachty s víc kusy (N1, J. V. 24. 11.):** u ruční položky cena za kus a celkem, např. „12 000 Kč/ks ×
+  2 ks = 24 000 Kč“ (BO i Tech, i odeslaná nabídka); u 1 ks jen cena.
 
 ## v24.11.5 — K54-N1 #750: smazaná otevřená kalkulace se zavře a uložením nevzkřísí, větev claude/rychla-K54-N1
 

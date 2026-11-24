@@ -608,6 +608,10 @@ const PREKLAD = {
   "do sloupů (na terén)": ["onto columns (to the ground)", "auf Stützen (auf das Gelände)", "sur poteaux (au sol)"],
   "konzolově jen z OCK": ["cantilevered from the steel structure only", "auskragend nur von der Stahlkonstruktion", "en porte-à-faux depuis la structure uniquement"],
   "ks": ["pcs", "Stk.", "pcs"],
+  /* RP (23. 11. 2026): jednotky ruční položky — NÁVRH překladu, k potvrzení J. V. */
+  "bm": ["lm", "lfm", "ml"],
+  "kpl": ["set", "Kpl.", "ens."],
+  "m²": ["m²", "m²", "m²"],
   "šířka × délka": ["width × length", "Breite × Länge", "largeur × longueur"],
   "výška": ["height", "Höhe", "hauteur"],
   "skupina": ["group", "Gruppe", "groupe"],
