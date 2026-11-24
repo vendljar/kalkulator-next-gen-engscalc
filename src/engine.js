@@ -2453,7 +2453,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * `kalkVerze: 2` (ZADANI_NOVA, viz kalkNova). Jen ona:
    *   #757 engineering je příplatková položka (C.engineeringKc × 1, ve
    *        výchozím stavu mimo nabídku), v Režii není;
-   *   #759 VÝSTUP ZE ZAMĚŘENÍ vždy 1 × (přepínač zrušen), statika opláštění
+   *   #761 VÝSTUP ZE ZAMĚŘENÍ vždy 1 × (přepínač zrušen), statika opláštění
    *        jen podle opláštění (statikaOplZahrnuta);
    *   #758 rezerva příplatků v cenách jednotlivých příplatků (mkPrip).
    * Stará data příznak nemají a počítají postaru, cena beze změny.
@@ -2955,7 +2955,7 @@ function cenikDoplnKlice(cenik, vzor) {
  * (DEFAULT_ZADANI), import ho tedy nedoplní. Jiná hodnota než true/false
  * = výchozí stav (tvar hlídá server, ULO_VYCTY_MIMO_VZOR). */
 function statikaOplZahrnuta(z, oplPlocha) {
-  /* #759 (J. V. 24. 11. 2026): nová kalkulace přepínač nemá — jen opláštění. */
+  /* #761 (J. V. 24. 11. 2026): nová kalkulace přepínač nemá — jen opláštění. */
   if (kalkNova(z)) return (+oplPlocha || 0) > 0;
   const v = z ? z.statikaOpl : undefined;
   if (v === true) return true;

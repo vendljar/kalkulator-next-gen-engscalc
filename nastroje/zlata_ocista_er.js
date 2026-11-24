@@ -1,4 +1,4 @@
-/* OČISTA ZLATÝCH SCÉNÁŘŮ O PŘÍZNAK NOVÉ KALKULACE (ER #757–#759, 24. 11. 2026,
+/* OČISTA ZLATÝCH SCÉNÁŘŮ O PŘÍZNAK NOVÉ KALKULACE (ER #757, #758, #761, 24. 11. 2026,
  * svěřené rozhodnutí ER-1).
  *
  * Od ER dostává NOVÁ kalkulace (`novaZakazka()`, ZADANI_NOVA) příznak

@@ -188,7 +188,7 @@ const ZADANI_NOVA = {
   bokyDveri: 'bez',
   /* NOVÁ KALKULACE (ER, rozhodnutí J. V. 24. 11. 2026): engineering jako
    * příplatek mimo nabídku (#757), rezerva příplatků v cenách položek (#758),
-   * výstup ze zaměření vždy a statika opláštění podle opláštění (#759).
+   * výstup ze zaměření vždy a statika opláštění podle opláštění (#761).
    * Stará data příznak nemají a počítají postaru (engine.js, kalkNova).
    * Import ani klon příznak nedoplňují. */
   kalkVerze: 2,

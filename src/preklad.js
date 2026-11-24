@@ -795,7 +795,7 @@ const PREKLAD = {
   "LEŠENÍ - dokončení hlavy šachty": ["SCAFFOLDING – shaft head completion","GERÜST – Fertigstellung des Schachtkopfes","ÉCHAFAUDAGE – finition de la tête de gaine"],
   "LEŠENÍ - vnější": ["SCAFFOLDING – external","GERÜST – außen","ÉCHAFAUDAGE – extérieur"],
   /* #757 (24. 11. 2026): ENGINEERING jako příplatek nové kalkulace. Znění
-   * odlišené od inženýrské činnosti (IČ = ENGINEERING SERVICES); potvrdí J. V. */
+   * odlišené od inženýrské činnosti (IČ = ENGINEERING SERVICES); schválil J. V. 24. 11. 2026. */
   "ENGINEERING": ["TECHNICAL ENGINEERING","TECHNISCHES ENGINEERING","INGÉNIERIE TECHNIQUE"],
   /* PŘÍPLATKY BEZ PŘEKLADU (#335, nález K10-N38 z 10. kola, 24. 9. 2026).
    * V cizojazyčné nabídce se tiskly česky — „LEŠENÍ - vnitřní" stálo vedle

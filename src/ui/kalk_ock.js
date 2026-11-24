@@ -331,7 +331,7 @@ function renderInputs() {
       inp('Z.zamecnikAtypKc', { l: 'Zámečník atyp (prázdné = žádný)', step: 1000, u: 'Kč', klic: 'Z.zamecnikAtypKc ← C.atypZamecnikKc (sazba: C.zamecnikAtypKc)' }) +
       /* NOVÁ KALKULACE (ER, J. V. 24. 11. 2026, kalkNova): engineering je
        * v příplatcích (#757), výstup ze zaměření vždy a statika opláštění podle
-       * opláštění (#759) — přepínače tu zůstávají jen u starých kalkulací. */
+       * opláštění (#761) — přepínače tu zůstávají jen u starých kalkulací. */
       (kalkNova(Z)
         ? '<div class="row"><label>Engineering</label><span class="note">v příplatkových položkách (sloupec Nabídka)</span></div>'
         : inp('Z.engineeringKs', { type: 'anone', l: 'Engineering' }) +

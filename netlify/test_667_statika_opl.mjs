@@ -80,7 +80,7 @@ let n = 9646;
 function nova(nazev) {
   const z = zk.novaZakazka(); z.cislo = '2026 - OPR - CN - ' + (n++); z.nazevAkce = 'TEST statika ' + nazev;
   Object.assign(z.varianty[0].data.ock.zadani, ROZMERY);
-  /* Přepínač statiky má jen kalkulace před ER (#759: nová ho nemá, kalkVerze 2). */
+  /* Přepínač statiky má jen kalkulace před ER (#761: nová ho nemá, kalkVerze 2). */
   delete z.varianty[0].data.ock.zadani.kalkVerze;
   z.varianty[0].data.cenik = kopie(platny().cenik);
   z.varianty[0].data.proj.cenik = kopie(platny().cenikProj);

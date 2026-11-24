@@ -86,6 +86,9 @@ function objNabidnute(v, jekly) {
         const k = String(p.key);
         if (!mapa.has(k)) mapa.set(k, { key: k, nazev: String(p.nazev || p.key), sMarzi: 0, naklad: 0 });
         const x = mapa.get(k);
+        /* #757: engineering jednou za variantu (VS_PRIPLATKY_JEDNOU), ne × ks. */
+        const jednou = ['engineering'].indexOf(k) >= 0;
+        if (jednou) { if (!x.sMarzi && !x.naklad) { x.sMarzi = +p.sMarzi || 0; x.naklad = +p.naklad || 0; } return; }
         x.sMarzi += s.ks * (+p.sMarzi || 0); x.naklad += s.ks * (+p.naklad || 0);
       });
     });

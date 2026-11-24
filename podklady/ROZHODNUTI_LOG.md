@@ -10,7 +10,8 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
-| 24. 11. 2026 | ER: jen NOVÉ kalkulace (příznak nové kalkulace `kalkVerze: 2`; rozpracované i odeslané beze změny ceny): přepínač „Výstup ze zaměření pro zákazníka“ zrušen, řádek v Režii vždy 1 × C.vystupZamereniKc; přepínač „Statické posouzení opláštění“ zrušen, řádek v Režii jen u šachty s opláštěním | #759, Práce a režie / Režie |
+| 24. 11. 2026 | ER #757: engineering jako příplatek JEDNOU ZA VARIANTU (1 × C.engineeringKc bez ohledu na počet šachet a kusů); překlad názvu příplatku schválen: EN „TECHNICAL ENGINEERING“, DE „TECHNISCHES ENGINEERING“, FR „INGÉNIERIE TECHNIQUE“ | engineering, víc šachet, překlad |
+| 24. 11. 2026 | ER: jen NOVÉ kalkulace (příznak nové kalkulace `kalkVerze: 2`; rozpracované i odeslané beze změny ceny): přepínač „Výstup ze zaměření pro zákazníka“ zrušen, řádek v Režii vždy 1 × C.vystupZamereniKc; přepínač „Statické posouzení opláštění“ zrušen, řádek v Režii jen u šachty s opláštěním | #761, Práce a režie / Režie |
 | 24. 11. 2026 | ER #758: REZERVA příplatky se u NOVÝCH kalkulací rozpustí do cen jednotlivých příplatků (staré rozpracované dál bez rezervy v položkách, odeslané beze změny); controlling bez dvojího započtení. Automat ATYP ručně přepsaná pole (`zadaniRucni`) nepřepíše; ruční klik na ATYP dosadí předlohu jako dosud (16. 9.) | rezerva, ATYP |
 | 24. 11. 2026 | ER #757: engineering je příplatková položka (C.engineeringKc × 1), v nové kalkulaci nepředvybraná; existující kalkulace mají engineering dál v Režii, cena beze změny | engineering, příplatky |
 | 24. 11. 2026 | K54-N1 N3: zakázat přepsání čerstvé kalkulace z Pipedrive (`pdCerstva`) starou kopií — server odmítne 409 „Kalkulaci mezitím znovu založil Pipedrive — otevřete ji ze Seznamu / odkazem z dealu; vaše kopie se neuložila.“; řádné první uložení čerstvé projde | ukládání online, webhook Pipedrive |

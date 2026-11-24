@@ -977,7 +977,7 @@ const ULO_CISLA_NAVIC = ['ock.zadani.mustekHloubkaMm', 'ock.zadani.mustekSirkaMm
  * NAD_DVERMI_VOLBY z engine.js (shodu hlídá test_svetliky_boky.js). */
 const ULO_VYPLN_DVERI = ['bez', 'sklo', 'plech', 'material', 'stavba'];
 /* Zaškrtnutí statiky opláštění (#667): jen true / false; chybí = výchozí stav. */
-/* Příznak nové kalkulace (ER #757–#759): jen 2; chybí = stará kalkulace. */
+/* Příznak nové kalkulace (ER #757, #758, #761): jen 2; chybí = stará kalkulace. */
 const ULO_VYCTY_MIMO_VZOR = { nadDvermi: ULO_VYPLN_DVERI, bokyDveri: ULO_VYPLN_DVERI, statikaOpl: [true, false],
   kalkVerze: [2] };
 /* ZRUŠENÁ VOLBA „ZAJISTÍ STAVBA" (#560, rozhodnutí J. V. 4. 11. 2026: „stavba"

@@ -123,6 +123,12 @@ function rozpocetSachet(T, castky) {
  * objevil poprvé; `vsSachty` = [{ i, ks }] šachty, kterých se řádek týká. */
 const VS_SCITANA_POLE = ['mnozstvi', 'mnozstviAuto', 'naklad', 'marze', 'sMarzi', 'rezervaNaklad', 'rezervaSMarzi'];   // rezerva*: #758, jen nová kalkulace
 
+/* PŘÍPLATKY JEDNOU ZA VARIANTU (#757, J. V. 24. 11. 2026): engineering se
+ * u víc šachet a kusů účtuje jednou (1 × C.engineeringKc), ne × ks. Sloučený
+ * řádek nese hodnoty první šachty, která ho má; součet příplatků se o rozdíl
+ * opraví (vsSoucet). Starší kalkulace engineering mezi příplatky nemají. */
+const VS_PRIPLATKY_JEDNOU = ['engineering'];
+
 function vsNormNazev(t) { return String(t == null ? '' : t).replace(/\s+/g, ' ').trim().toLowerCase(); }
 
 /* Klíč příplatku (5.1.1): klíč příplatku; vlastní z katalogu podle `kid`,
@@ -163,14 +169,14 @@ function priplatkySloucene(vysl) {
 }
 
 /* ---------- součet výsledků šachet ---------- */
-function vsSoucetSouhrnu(vys, ksy, cenik) {
+function vsSoucetSouhrnu(vys, ksy, cenik, priplatkyKorekce) {
   const dph = +(cenik && cenik.dph) || 0;
   const S = (fn) => vys.reduce((a, r, i) => a + ksy[i] * (+fn(r) || 0), 0);
   const pred = (r, k, z) => { const x = r.souhrn[k]; return typeof x === 'number' ? x : z(r); };
   const U = S(r => pred(r, 'zakladCenaPredZaokr', x => x.souhrn.zakladNaklad + x.souhrn.zakladMarze));
   const N = S(r => r.souhrn.zakladNaklad);
   const Z = VS_CEIL(U, 1000);                                     // R3: jen na součtu
-  const Pp = S(r => pred(r, 'priplatkyCenaPredZaokr', x => x.souhrn.priplatkyCena));
+  const Pp = S(r => pred(r, 'priplatkyCenaPredZaokr', x => x.souhrn.priplatkyCena)) + (+priplatkyKorekce || 0);
   const P = VS_CEIL(Pp, 1000);
   const souhrn = { zakladNaklad: N, zakladMarze: U - N, zakladCena: Z, zakladDph: Z * dph, zakladSDph: Z * (1 + dph),
     priplatkyCena: P, priplatkyDph: P * dph, priplatkySDph: P * (1 + dph) };
@@ -202,6 +208,16 @@ function vsSoucet(vys, ksy, cenik) {
   klSek.forEach(k => { r.sekce[k] = vsSlucRadky(vys.map(x => (x.sekce || {})[k]), ksy, vsKlicRadku); });
   r.volitelneKatalog = vsSlucRadky(vys.map(x => x.volitelneKatalog), ksy, vsKlicRadku);
   r.priplatky = vsSlucRadky(vys.map(x => x.priplatky), ksy, vsKlicPriplatku);
+  /* #757: příplatek „jednou za variantu" — hodnoty jedné šachty, korekce součtu. */
+  let priplatkyKorekce = 0;
+  r.priplatky.forEach(x => {
+    if (VS_PRIPLATKY_JEDNOU.indexOf(String(x.key)) < 0) return;
+    let jeden = null;
+    vys.some(v => (jeden = (v.priplatky || []).find(p => p && p.key === x.key) || null));
+    if (!jeden) return;
+    priplatkyKorekce += (+jeden.sMarzi || 0) - (+x.sMarzi || 0);
+    VS_SCITANA_POLE.forEach(f => { if (typeof jeden[f] === 'number') x[f] = jeden[f]; });
+  });
   const klSou = [];
   vys.forEach(x => Object.keys(x.souctySekci || {}).forEach(k => { if (klSou.indexOf(k) < 0) klSou.push(k); }));
   r.souctySekci = {};
@@ -216,7 +232,7 @@ function vsSoucet(vys, ksy, cenik) {
   ['hodinyNavicCelkem', 'hod1osoba', 'hodCelkem', 'dni'].forEach(f => {
     r.montaz[f] = vys.reduce((a, x, i) => a + ksy[i] * (+(x.montaz || {})[f] || 0), 0);
   });
-  r.souhrn = vsSoucetSouhrnu(vys, ksy, cenik);
+  r.souhrn = vsSoucetSouhrnu(vys, ksy, cenik, priplatkyKorekce);
   return r;
 }
 

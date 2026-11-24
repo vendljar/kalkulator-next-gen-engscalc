@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## (bez verze) — ER #757–#759: nová kalkulace (engineering jako příplatek, rezerva příplatků v položkách, Režie bez přepínačů); automat ATYP, větev claude/er-engineering-rezerva
+## (bez verze) — ER #757, #758, #761: nová kalkulace (engineering jako příplatek, rezerva příplatků v položkách, Režie bez přepínačů); automat ATYP, větev claude/er-engineering-rezerva
 
 Nad integrací `c89e872` (v24.11.5). **Mění cenu NOVÝCH kalkulací** (rozhodnutí J. V. 24. 11.); existující beze změny.
 Nová kalkulace nese příznak zadání `kalkVerze: 2` (jen založení nové kalkulace a čerstvá z Pipedrive; klon a duplikát
@@ -16,16 +16,16 @@ kopírují zdroj, import ani stará data ho nedostanou).
 
 - **#757 Engineering** je u nové kalkulace příplatková položka (C.engineeringKc × 1), ve výchozím stavu **mimo nabídku**
   (obchodník ho zaškrtne ve sloupci Nabídka; administrátor může výchozí stav změnit ve sloupci Výchozí), v Režii není.
-  Tiskne se jako ostatní příplatky (EN „TECHNICAL ENGINEERING“, DE „TECHNISCHES ENGINEERING“, FR „INGÉNIERIE TECHNIQUE“ —
-  znění potvrdí J. V.); krycí list, Pipedrive a controlling ho berou jako ostatní příplatky.
+  U víc šachet a kusů **jednou za variantu** (i v objednaných příplatcích). Tiskne se jako ostatní příplatky
+  (EN „TECHNICAL ENGINEERING“, DE „TECHNISCHES ENGINEERING“, FR „INGÉNIERIE TECHNIQUE“ — schváleno J. V.); krycí list, Pipedrive a controlling ho berou jako ostatní příplatky.
 - **#758 Rezerva příplatků:** u nové kalkulace se přičte do ceny každého příplatku (před zaokrouhlením na tisíce), takže ji
   nese nabídka, krycí list, SoD i Pipedrive; controlling ji vede řádkem REZERVA PŘÍPLATKY bez dvojího započtení. Starší
   kalkulace dál jen v součtu „Příplatky celkem (pokud vše)“. **Automat ATYP** (všechny kalkulace) už nepřepíše ručně
   zadaná pole (rezervy, zámečník, hodiny); ruční klik na ATYP dosadí předlohu z ceníku jako dosud.
-- **#759 Režie:** nová kalkulace nemá přepínače „Výstup ze zaměření pro zákazníka“ (řádek vždy 1 × C.vystupZamereniKc,
+- **#761 Režie:** nová kalkulace nemá přepínače „Výstup ze zaměření pro zákazníka“ (řádek vždy 1 × C.vystupZamereniKc,
   specifikace „ano“) a „Statické posouzení opláštění“ (řádek jen u šachty s opláštěním). Starší kalkulace přepínače mají dál.
 - Server hlídá tvar příznaku (i u šachet 2+). Příručka výpočtu doplněna.
-- Testy: `src/test_er_nova_kalkulace.js` (84 OK; proti c89e872 padá), mutace jádra [ER] 22/22 chycené; porovnání sestavení
+- Testy: `src/test_er_nova_kalkulace.js` (88 OK; proti c89e872 padá), mutace jádra [ER] 25 (výsledek v předávce); porovnání sestavení
   proti integraci: fixtury 7/7 a fuzz 300/300 SHODA, 60 očekávaných rozdílů jen u případů z `novaZakazka()`
   (`podklady/porovnani/ocekavane_er_2026-11-24.txt`); zlaté sady #560/VS očištěny o příznak (svěřené rozhodnutí ER-1).
 

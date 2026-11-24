@@ -5,7 +5,7 @@
  *        stavu MIMO nabídku; v Režii není;
  *   #758 REZERVA příplatky v cenách jednotlivých příplatků (nabídka, krycí
  *        list, SoD, Pipedrive je tisknou), controlling bez dvojího započtení;
- *   #759 VÝSTUP ZE ZAMĚŘENÍ vždy 1 ×, STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ jen podle
+ *   #761 VÝSTUP ZE ZAMĚŘENÍ vždy 1 ×, STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ jen podle
  *        opláštění (přepínače zrušeny).
  * Stará data příznak nemají a počítají postaru — cena beze změny.
  * Pro všechny: automat ATYP ručně přepsaná pole nepřepíše (#758 B).
@@ -25,7 +25,7 @@ nacti('./engine.js'); nacti('./engine_proj.js'); nacti('./techspec.js'); nacti('
 nacti('./poznamky.js'); nacti('./zakazka.js'); nacti('./zobrazeni.js'); nacti('./sleva.js');
 nacti('./schvalovani.js'); nacti('./kontroly.js'); nacti('./vyjimky.js'); nacti('./program.js');
 nacti('./uloziste.js'); nacti('./rucni_ceny.js'); nacti('./vice_sachet.js');
-nacti('./controlling.js'); nacti('./kryci.js');
+nacti('./controlling.js'); nacti('./kryci.js'); nacti('./objednane.js');
 const VJ = require('./vyjimky.js'); global.vyjimkyObsah = VJ.vyjimkyObsah;
 const U = require('./uloziste.js');
 const P = require('./preklad.js');
@@ -130,7 +130,7 @@ for (const fixes of [true, false]) {
   test('controlling staré kalkulace: rezerva jako dosud (z procenta)', soR.length === 1 && Math.abs(soR[0].naklad - V(stare()).priplatky.reduce((a, p) => a + p.naklad, 0) * 0.1) < 1e-6, soR);
 }
 
-console.log('===== 4. #759 výstup ze zaměření a statika opláštění =====');
+console.log('===== 4. #761 výstup ze zaměření a statika opláštění =====');
 {
   const c = Object.assign(ZC.zkusebniCenik(), { statikaOplHod: 6, statikaKc: 1000 });
   const r = V(nove({ vystupZamereni: false }), true, c);
@@ -183,14 +183,31 @@ console.log('===== 6. stará data se nepřevádějí =====');
   test('import nové zakázky příznak zachová', importZakazka(kopie(novaZakazka())).varianty[0].data.ock.zadani.kalkVerze === 2);
 }
 
-console.log('===== 7. víc šachet =====');
+console.log('===== 7. víc šachet: engineering JEDNOU za variantu (J. V. 24. 11.) =====');
 {
   const z1 = nove({ rezervaPriplatkyPct: 0.1 });
-  const r = vypocetZakazkyOck({ zadani: z1, fixes: true, dalsi: [{ id: 's2', zadani: kopie(z1) }] }, ZC.zkusebniCenik(), JEKLY);
-  test('víc šachet: rozpoznáno', Array.isArray(r.sachty) && r.sachty.length === 2);
-  const e = eng(r);
-  test('víc šachet: engineering sloučen z obou šachet', e.length === 1 && e[0].naklad === 20000, e);
-  test('víc šachet: rezerva položky sečtena', e.length === 1 && Math.abs(e[0].rezervaNaklad - 2000) < 1e-6, e[0] && e[0].rezervaNaklad);
+  const ock = { zadani: z1, fixes: true, ks: 3, dalsi: [{ id: 's2', ks: 2, zadani: kopie(z1) }] };
+  const r = vypocetZakazkyOck(ock, ZC.zkusebniCenik(), JEKLY);
+  test('víc šachet: rozpoznáno (3 + 2 ks)', Array.isArray(r.sachty) && r.sachty.length === 2 && r.sachty[0].ks === 3 && r.sachty[1].ks === 2,
+    r.sachty && r.sachty.map(s => s.ks));
+  const e = eng(r), e1 = eng(r.sachty[0].vysl)[0];
+  test('engineering 1 × (ne 5 ×): množství 1, náklad 10 000', e.length === 1 && e[0].mnozstvi === 1 && e[0].naklad === 10000, e);
+  test('cena sloučeného řádku = cena jedné šachty (i s rezervou)', e.length === 1 && e[0].sMarzi === e1.sMarzi
+    && Math.abs(e[0].rezervaNaklad - e1.rezervaNaklad) < 1e-6, [e[0] && e[0].sMarzi, e1.sMarzi]);
+  const ven = r.priplatky.find(p => p.key === 'ventilator') || r.priplatky.find(p => p.key !== 'engineering');
+  const ven1 = r.sachty[0].vysl.priplatky.find(p => p.key === ven.key);
+  test('ostatní příplatky dál × ks (5 ×)', Math.abs(ven.naklad - 5 * ven1.naklad) < 1e-6, [ven.key, ven.naklad, ven1.naklad]);
+  const soucet = r.priplatky.reduce((a, p) => a + p.sMarzi, 0);
+  test('„Příplatky celkem" = součet sloučených řádků (engineering jednou)', r.souhrn.priplatkyCena === Math.ceil(soucet / 1000) * 1000,
+    [r.souhrn.priplatkyCena, soucet]);
+  /* objednané příplatky zamčené varianty (SoD, krycí list po prodeji) */
+  const zak = novaZakazka(); const v = zak.varianty[0];
+  v.data.ock = kopie(ock); v.data.ock.zadani.priplatkyVynechat = []; v.data.ock.dalsi[0].zadani.priplatkyVynechat = [];
+  v.data.cenik = ZC.zkusebniCenik(); v.zamek = { zamceno: true, typ: 'nabidka', kdy: '2026-11-24T10:00:00.000Z' };
+  const ob = objNabidnute(v, JEKLY);
+  const oe = ob.filter(p => p.key === 'engineering'), ov = ob.find(p => p.key === ven.key);
+  test('objednané příplatky: engineering jednou', oe.length === 1 && oe[0].naklad === 10000 && oe[0].sMarzi === e1.sMarzi, oe);
+  test('objednané příplatky: ostatní × ks', ov && Math.abs(ov.naklad - 5 * ven1.naklad) < 1e-6, ov);
 }
 
 console.log('===== 8. server: tvar příznaku =====');
