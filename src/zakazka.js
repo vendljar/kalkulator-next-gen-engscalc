@@ -181,6 +181,12 @@ const ZADANI_NOVA = {
    * Je-li vedle dveří mezera, upozorní na ni kontrola před nabídkou. Počet
    * světlíků zůstává prázdný = automaticky nástupiště × 2, až se zvolí výplň. */
   bokyDveri: 'bez',
+  /* ENGINEERING JAKO PŘÍPLATEK (#757, rozhodnutí J. V. 24. 11. 2026): nová
+   * kalkulace má engineering v příplatcích, ne v Režii, a ve výchozím stavu
+   * MIMO nabídku (obchodník ho zaškrtne). Stará data příznak nemají a počítají
+   * postaru (engine.js, engPrip). Import ani klon příznak nedoplňují. */
+  engineeringPriplatek: true,
+  priplatkyVynechat: ['vsgFolie', 'skn', 'engineering'],
 };
 
 /* ZÁKLAD PRO SLOUPEC VÝCHOZÍ (16. 9. 2026, nález J. V.: „stále nám nefunguje
@@ -251,7 +257,7 @@ function zadaniZCeniku(data) {
 function novaVariantaData() {
   const cenik = JSON.parse(JSON.stringify(DEFAULT_CENIK));
   const zadani = JSON.parse(JSON.stringify(DEFAULT_ZADANI));
-  Object.assign(zadani, ZADANI_NOVA);   // předvolby nové nabídky (9. 9. 2026)
+  Object.assign(zadani, JSON.parse(JSON.stringify(ZADANI_NOVA)));   // předvolby nové nabídky (9. 9. 2026)
   const data = {
     /* VÝCHOZÍ JE MODEL 2 (17. 9. 2026, rozhodnutí J. V. po rozboru nálezu V9:
      * „souhlas s modelem 2, nově v aplikaci už nastav jako výchozí model 2").

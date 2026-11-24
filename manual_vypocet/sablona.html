@@ -917,6 +917,7 @@ Technická specifikace má řádky <b>LEŠENÍ VNITŘNÍ PRO STAVBU OCK</b> a LE
 <tr><td>LEŠENÍ - dokončení hlavy šachty</td><td>přejezd, bez fixu</td><td>m</td><td class="n">{{e.pp.leseniHlava}}</td><td class="n">{{i.pp.leseniHlava}}</td></tr>
 <tr><td>LEŠENÍ - vnější</td><td>U + fixní část</td><td>m²</td><td class="n">{{e.pp.leseniVnejsi}}</td><td class="n">{{i.pp.leseniVnejsi}}</td></tr>
 <tr><td>OPLECHOVÁNÍ SOKLU PROHLUBNĚ (EXT)</td><td>š + 2 × hl (jen ext)</td><td>bm</td><td class="n">{{e.pp.sokl}}</td><td class="n">—</td></tr>
+<tr><td>ENGINEERING</td><td>1 — jen nové kalkulace; ve výchozím stavu mimo nabídku, obchodník ho zaškrtne ve sloupci Nabídka</td><td>ks</td><td class="n">—</td><td class="n">—</td></tr>
 </table>
 <div class="dvoj">
 <div class="ram novy"><h4>★ Cena dle nabídky</h4>Osm nabídkových položek „za akci" (★) nese v ceníku příznak <b>„cena dle nabídky"</b>: ceník má jen orientační cenu, skutečnou zadá obchodník podle nabídky dodavatele. Ruční cena u takové položky <b>není odchylka od ceníku</b> — nevznikne cenová výjimka, schválení ani zábrana tisku a automatický přepočet ji nepřepíše. V Příplatcích svítí štítek „cena dle nabídky" a po přepsání „vlastní cena" (netisknou se). Příznak nastavuje správce v Nastavení → Ceník, jen u příplatků, a bere se vždy z <b>platného</b> ceníku. Zkušební ceník tyto položky nenaceňuje (0 Kč).</div>
@@ -931,7 +932,7 @@ Technická specifikace má řádky <b>LEŠENÍ VNITŘNÍ PRO STAVBU OCK</b> a LE
 <tr><th>Řádek REŽIE</th><th>Množství</th><th class="n">Vzor</th></tr>
 <tr><td>ZAMĚŘENÍ 3D SKENEREM</td><td>1</td><td class="n">1</td></tr>
 <tr><td>VÝSTUP ZE ZAMĚŘENÍ PRO ZÁKAZNÍKA</td><td>1 když je zaškrtnutý, jinak 0,5</td><td class="n">0,5</td></tr>
-<tr><td>ENGINEERING</td><td>počet ze zadání (0 = řádek není)</td><td class="n">—</td></tr>
+<tr><td>ENGINEERING</td><td>jen starší kalkulace bez příznaku „engineering v příplatcích": počet ze zadání (0 = řádek není); nové kalkulace ho mají v příplatcích</td><td class="n">—</td></tr>
 <tr><td>DÍLENSKÁ DOKUMENTACE</td><td>projekce základ + ATYP (+ {{c.listyProj}} h lišty)</td><td class="n">{{e.projekce}} h</td></tr>
 <tr><td>STATICKÉ POSOUZENÍ</td><td>hodin z ceníku × sazba z ceníku</td><td class="n">{{e.statika}} h</td></tr>
 <tr><td>STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ</td><td>hodin z ceníku × sazba statiky; jen s opláštěním a z ceníku hodinami &gt; 0</td><td class="n">{{e.statikaOpl}} h</td></tr>

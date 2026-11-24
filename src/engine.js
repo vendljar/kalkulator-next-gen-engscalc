@@ -2449,10 +2449,18 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     return out;
   })();
 
+  /* ENGINEERING JAKO PŘÍPLATEK (#757, rozhodnutí J. V. 24. 11. 2026).
+   * Nová kalkulace nese v zadání příznak `engineeringPriplatek: true`
+   * (ZADANI_NOVA) — engineering je pak příplatková položka (C.engineeringKc
+   * × 1, ve výchozím stavu mimo nabídku) a v Režii není. Stará data příznak
+   * nemají a počítají postaru: řádek ENGINEERING v Režii podle
+   * `engineeringKs`, cena beze změny. DEFAULT_ZADANI příznak schválně nenese
+   * (fixtury, fuzz, porovnání sestavení zůstávají na staré cestě). */
+  const engPrip = z.engineeringPriplatek === true;
   const rezie = [
     mkItem('ZAMĚŘENÍ 3D SKENEREM', 1, c.sken3dKc, { cenaPath: 'C.sken3dKc' }),
     mkItem('VÝSTUP ZE ZAMĚŘENÍ PRO ZÁKAZNÍKA', z.vystupZamereni ? 1 : 0.5, c.vystupZamereniKc, { cenaPath: 'C.vystupZamereniKc' }),
-    z.engineeringKs ? mkItem('ENGINEERING', z.engineeringKs, c.engineeringKc, { cenaPath: 'C.engineeringKc' }) : null,
+    (!engPrip && z.engineeringKs) ? mkItem('ENGINEERING', z.engineeringKs, c.engineeringKc, { cenaPath: 'C.engineeringKc' }) : null,
     /* Poznámka u hodin navíc: obchodník musí vidět, proč je řádek vyšší,
      * než co má v poli „Projekce – základ" (9. 9. 2026). */
     mkItem('DÍLENSKÁ DOKUMENTACE', projekceHod, c.projekceHodKc,
@@ -2724,6 +2732,9 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
       { cenaPath: 'C.zabradliKc' }) : null,
     (ext && !v.sokl) ? mkPrip('sokl', 'OPLECHOVÁNÍ SOKLU PROHLUBNĚ (EXT)', z.sirka + 2 * z.hloubka, c.soklBmKc,
       { cenaPath: 'C.soklBmKc' }) : null,
+    /* #757: engineering jako příplatek jen u kalkulace s příznakem (viz engPrip). */
+    engPrip ? mkPrip('engineering', 'ENGINEERING', 1, +c.engineeringKc || 0,
+      { cenaPath: 'C.engineeringKc' }) : null,
     ...(Array.isArray(z.priplatkyVlastni) ? z.priplatkyVlastni : []).map((vl, i) =>
       ({ ...mkPrip('vlastni:' + i, vl.nazev, +vl.mnozstvi || 0, +vl.cena || 0,
         { vlastni: true, pozn: vl.kid ? 'trvalá položka z ceníku' : 'ruční položka' }), kid: vl.kid || null })),
