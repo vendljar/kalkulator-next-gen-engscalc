@@ -174,6 +174,20 @@ export default async (req) => {
    * propadla: všichni klienti od B10 pole posílají. `prepsat: true` zůstává
    * (vědomé přepsání po dotazu) — práva nerozšiřuje, zakázku smí uložit každý,
    * kdo ji smí načíst (mez v BEZPECNOST_MEZE, NN B237). */
+  /* K54-N1 N3 (J. V. 24. 11. 2026): ČERSTVOU KALKULACI Z PIPEDRIVE NEPŘEPÍŠE
+   * STARÁ KOPIE. Leží-li pod jménem kalkulace, kterou webhook založil a člověk
+   * ji ještě neuložil (`pdCerstva`), smí ji uložit jen okno, které ji načetlo:
+   * jeho tělo nese razítko TÉTO kalkulace (`zakazka.uloRazitko`, server ho píše
+   * při zápisu, prohlížeč ho převezme při otevření). Stará kopie (smazaná
+   * kalkulace v jiné kartě, nová zakázka pod týmž číslem) nese razítko jiné
+   * nebo žádné — „Přepsat serverovou verzi“ jí podstrčí jen očekávané razítko
+   * (ONLINE_STAV), ne razítko v datech; `prepsat: true` neprojde nikdy. */
+  if (stara && stara.pdCerstva === true
+      && (t.prepsat === true || ULO.uloRazitko(zak) !== ULO.uloRazitko(stara))) {
+    return { odpoved: json({ ok: false, pdCerstvaJina: true, soubor: jmeno,
+      chyba: 'Kalkulaci mezitím znovu založil Pipedrive — otevřete ji ze Seznamu / odkazem z dealu; vaše kopie se neuložila.' }, 409) };
+  }
+
   if (stara && t.prepsat !== true) {
     const kol = ULO.uloKolize(stara, typeof t.ocekavaneRazitko === 'string' ? t.ocekavaneRazitko : '');
     if (kol.kolize) {

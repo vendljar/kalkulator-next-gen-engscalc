@@ -22,8 +22,16 @@ dopad na cenu byl nepřímý — vzkříšená stará data smazané kalkulace (n
   `POST /api/zakazky` odmítne 409 `smazana` s vysvětlením — smazanou kalkulaci nevzkřísí ani jiná karta nebo kolega
   (ani „Přepsat serverovou verzi“). Nová zakázka (i pod číslem smazané), přečíslování, obnova ze zálohy a webhook
   (nová čerstvá kalkulace s `pdCerstva`) beze změny; formát dat beze změny.
-- Testy s pojistkou: `netlify/test_k54n1_smazana.mjs` (před 6 FAIL, po 17 OK), `src/test_k54n1_smazani_ui.js`
-  (před 8 FAIL, po 12 OK); mutace [K54N1] 8/8 chycených.
+- **Revize Fable (`podklady/revize/REVIZE_K54N1.md`):** po smazání se zahodí kroky Zpět/Znovu a záloha smazané
+  kalkulace v prohlížeči (N1, N2 — Ctrl+Z ji dřív vrátil a autosave založil znovu); odpověď 409 `smazana` zastaví
+  ukládání a radí duplikovat nebo zavřít (N5); potvrzení mazání předem řekne, že se otevřená kalkulace zavře,
+  karta se nepřepíná (N6); mazání zruší naplánovaný autosave a počká na rozběhnuté uložení (N7); zbylé vědomé cesty
+  zapsány do `BEZPECNOST_MEZE.md` (N4).
+- **N3 (rozhodnutí J. V. 24. 11.):** čerstvou kalkulaci z Pipedrive (`pdCerstva`) nepřepíše stará kopie ani
+  „Přepsat serverovou verzi“ — 409 „Kalkulaci mezitím znovu založil Pipedrive — otevřete ji ze Seznamu / odkazem
+  z dealu; vaše kopie se neuložila.“ Řádné první uložení načtené čerstvé kalkulace projde.
+- Testy s pojistkou: `netlify/test_k54n1_smazana.mjs` (před 6 FAIL, po N3 dalších 5 FAIL; po 24 OK),
+  `src/test_k54n1_smazani_ui.js` (na `0fd6410` 21 FAIL, na `b23e832` 15 FAIL; po 30 OK); mutace [K54N1].
 
 ## v24.11.1 — MT2: zpevnění testů kola (#737 mutace #553 kontakt, #738 sady kolem půlnoci), větev claude/mt2-testy
 

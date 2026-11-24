@@ -2510,7 +2510,7 @@ Testy `netlify/test_pv_597_zapis.mjs`, `netlify/test_pv_734_autor.mjs`, `overit_
 ## K54-N1 — smazaná kalkulace se uložením nevzkřísí (#750, rychlá cesta, 24. 11. 2026)
 
 Větev `claude/rychla-K54-N1`, revize Fable `podklady/revize/REVIZE_K54N1.md` (větev `claude/revize-k54n1`; SLOUČIT
-PO OPRAVÁCH — N1, N2, N5–N8 opraveny, N4 zapsáno sem, N3 čeká na J. V.). Testy `netlify/test_k54n1_smazana.mjs`,
+PO OPRAVÁCH — N1, N2, N3 (rozhodnutí J. V.), N5–N8 opraveny, N4 zapsáno sem). Testy `netlify/test_k54n1_smazana.mjs`,
 `src/test_k54n1_smazani_ui.js`, mutace [K54N1].
 
 - **Pojistka serveru chrání přímé uložení z okna, které kalkulaci načetlo.** `POST /api/zakazky` odmítne 409 `smazana`
@@ -2522,6 +2522,8 @@ PO OPRAVÁCH — N1, N2, N5–N8 opraveny, N4 zapsáno sem, N3 čeká na J. V.).
   přípon a ukázková data (těla bez `ocekavanySoubor`) beze změny. Souběh DELETE × POST ve dvou instancích funkce —
   známá mez Blobs bez podmíněného zápisu (viz K7-S1). Robustní varianta (náhrobek smazané kalkulace / totožnost
   záznamu) mění formát dat a zavřela by i záchranu importem — rozhodnutí J. V., samostatná položka roadmapy.
-- **OTEVŘENO (revize N3, čeká na J. V.):** po smazání a založení čerstvé kalkulace webhookem pod týmž číslem dostane
-  staré okno běžnou kolizi B10 a „Přepsat serverovou verzi“ čerstvou kalkulaci přepíše starou kopií (stejné jako
-  před opravou).
+- **OPRAVENO (revize N3, J. V. 24. 11. 2026):** čerstvou kalkulaci z webhooku (`pdCerstva` na serveru) smí uložit jen
+  okno, které ji načetlo — razítko v datech těla = razítko záznamu (server ho píše, prohlížeč převezme při otevření).
+  Stará kopie, nová zakázka pod týmž číslem i `prepsat: true` → 409 `pdCerstvaJina` („Kalkulaci mezitím znovu založil
+  Pipedrive …“), bez kolize, takže se „Přepsat serverovou verzi“ nenabídne. Po prvním řádném uložení (příznak zmizí)
+  platí zase běžná kolize B10 s možností vědomého přepsání.

@@ -10,6 +10,7 @@
  *   – uložení otevřené zakázky posílá `ocekavanySoubor`;
  *   – N5: odpověď 409 smazana = trvalý stav: autosave stojí, další uložení
  *     nic neodešle, hláška radí duplikovat nebo zavřít;
+ *   – N3: odpověď pdCerstvaJina (čerstvá kalkulace z Pipedrive) totéž s hláškou serveru;
  *   – N6: potvrzení předem řekne, že se otevřená zavře (i neuložené změny);
  *   – N7: naplánovaný autosave se zruší, rozběhnuté uložení doběhne před DELETE;
  *   – smazání jiné zakázky, nepovedené smazání a mezitím otevřená jiná
@@ -42,6 +43,7 @@ const KOD = [].concat(JMENA.ON.map(ON), JMENA.ZU.map(ZU), JMENA.UL.map(UL), JMEN
 const chybi = [].concat(...Object.values(JMENA)).filter((j, i) => !KOD[i]);
 test('funkce jsou ve zdrojích (online_ui, zakazka_ui, zakulozeni_ui, historie)', chybi.length === 0, chybi);
 
+const HLASKA_N3 = 'Kalkulaci mezitím znovu založil Pipedrive — otevřete ji ze Seznamu / odkazem z dealu; vaše kopie se neuložila.';
 const STARA = () => ({ cislo: 'CN-432', nazevAkce: 'Akce', uloRazitko: '2026-11-24T08:00:00.000Z',
   varianty: [{ id: 'v1', zamek: { zamceno: true } }], protokol: ['stary'] });
 function pripravit(volby) {
@@ -88,6 +90,8 @@ function pripravit(volby) {
       log.push('post');
       if (volby.odpovedSmazana) return Promise.reject(Object.assign(new Error('Kalkulace byla mezitím smazána'),
         { stav: 409, data: { ok: false, smazana: true, soubor: ctx.ONLINE_STAV.soubor } }));
+      if (volby.odpovedCerstva) return Promise.reject(Object.assign(new Error('x'), { stav: 409,
+        data: { ok: false, pdCerstvaJina: true, soubor: ctx.ONLINE_STAV.soubor, chyba: HLASKA_N3 } }));
       return Promise.resolve({ ok: true, soubor: 'X.json', razitko: 'R2' });
     },
   };
@@ -181,6 +185,18 @@ const zaloha = (c) => JSON.parse(c.sklad.kng_rozpracovano_v1 || 'null');
   test('N5: další (i automatické) uložení už nic neodešle', c.odeslano.length === posty, c.odeslano.length);
   vm.runInContext('zakOdpojUlozeni()', c);
   test('N5: Nová zakázka / duplikát značku zruší', c.ONLINE_STAV.smazana === '', c.ONLINE_STAV.smazana);
+
+  /* N3 (J. V. 24. 11.): pod jménem leží čerstvá kalkulace z Pipedrive */
+  c = pripravit({ odpovedCerstva: true });
+  const v3 = await vm.runInContext('onlineUloz({})', c);
+  test('N3: odpověď pdCerstvaJina → neuloženo, hláška serveru, žádná kolize (bez Přepsat)', v3 === false
+    && c.log.includes('zprava:' + HLASKA_N3) && c.ONLINE_STAV.kolize === null && c.ONLINE_STAV.smazana === 'CN-432.json',
+    c.log.filter(x => x.startsWith('zprava')));
+  const posty3 = c.odeslano.length;
+  await vm.runInContext('onlineUloz({ tiche: true })', c);
+  test('N3: další uložení nic neodešle', c.odeslano.length === posty3);
+  vm.runInContext('zakOdpojUlozeni()', c);
+  test('N3: Nová zakázka značku i hlášku zruší', c.ONLINE_STAV.smazana === '' && c.ONLINE_STAV.smazanaText === '');
 
   /* 4. smazání jiné zakázky / nepovedené smazání / mezitím jiná zakázka */
   c = pripravit({ vybrane: ['CN-500.json'] });

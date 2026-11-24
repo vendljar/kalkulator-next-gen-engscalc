@@ -73,17 +73,17 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 
 ## Rychlá oprava K54-N1 (`claude/rychla-K54-N1`, 24. 11. 2026)
 
-- Nad integrací `0fd6410` (= test, v24.11.1), #750, předběžně v24.11.2 (verzi přidělí koordinace). Nález kola 54 (CN-432): smazaná
-  otevřená kalkulace zůstala otevřená, první uložení ji založilo znovu ze staré kopie, webhook ji jen aktualizoval.
-- Klient (J. V. 24. 11.): `onlineSmazVybrane` zavře opravdu smazanou otevřenou kalkulaci (`zakNovaZakazkaProved`,
-  vyňato z `novaZakazkaUI`), hláška „Kalkulace <číslo> byla smazána.“; `onlineUloz` posílá `ocekavanySoubor`.
-- Server `zakazky.mjs`: záznam pod jménem neleží + tělo nese razítko a `ocekavanySoubor` = cílové jméno → 409
-  `smazana` (bez `kolize`, `prepsat` neobchází). Nová zakázka, přečíslování, tělo bez pole, obnova, webhook beze změny.
-- Testy: `netlify/test_k54n1_smazana.mjs` (před 6 FAIL / po 17 OK), `src/test_k54n1_smazani_ui.js` (8 FAIL / 12 OK),
-  mutace [K54N1] 8/8. Kolo `--bez-mutaci --proti origin/test`: sady 536/1, hodiny 435/1 (obojí jen
-  test_roadmapa — #750 bez verze, opraveno, 26/0), staticke 12/12, S3 SHODA 367/367. Před sloučením revize Fable.
-- Po nasazení do testu: J. V. ověří — smazat otevřenou → prázdná Nová zakázka; druhá karta se smazanou → „byla
-  mezitím smazána“; webhook po smazání založí novou čerstvou kalkulaci.
+- Nad integrací `0fd6410` (= test, v24.11.1), #750, předběžně v24.11.2 (verzi přidělí koordinace). Nález kola 54
+  (CN-432): smazaná otevřená kalkulace zůstala otevřená, první uložení ji založilo znovu, webhook ji jen aktualizoval.
+- Klient: `onlineSmazVybrane` zavře opravdu smazanou otevřenou (`zakNovaZakazkaProved({bezPrepnuti})`), zahodí
+  Zpět/Znovu a zálohu smazané (`historieZapomen`, revize N1/N2), předem to řekne v potvrzení (N6), zruší autosave
+  a počká na uložení (N7); `onlineUloz` posílá `ocekavanySoubor`, po 409 `smazana`/`pdCerstvaJina` neukládá (N5).
+- Server `zakazky.mjs`: neleží-li nic pod jménem a tělo nese razítko + `ocekavanySoubor` = jméno → 409 `smazana`.
+  N3 (J. V. 24. 11.): záznam s `pdCerstva` uloží jen okno s jeho razítkem v datech; jinak / `prepsat` → 409.
+- Testy: `netlify/test_k54n1_smazana.mjs` 24 OK, `src/test_k54n1_smazani_ui.js` 30 OK (pojistky v CHANGELOG),
+  mutace [K54N1]. N4 v BEZPECNOST_MEZE. Revize Fable `claude/revize-k54n1` (SLOUČIT PO OPRAVÁCH) → čeká dorevize.
+- Po nasazení do testu J. V.: smazat otevřenou → prázdná Nová zakázka, Ctrl+Z nic nevrátí; druhá karta → „byla
+  mezitím smazána“; webhook po smazání → nová čerstvá; stará kopie nad ní → „znovu založil Pipedrive“.
 
 ## Čeká na J. V.
 

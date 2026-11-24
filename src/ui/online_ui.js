@@ -1608,9 +1608,12 @@ function onlineUloz(opts) {
     /* Server odmítá i pokus přepsat odeslanou (uzamčenou) nabídku – jeho
      * zdůvodnění se ukáže doslova, je z téhož kódu jako hláška u složky.
      * Selhání zápisu nikdy nekončí tichem. */
-    /* K54-N1 (N5): kalkulace byla mezitím smazána — trvalý stav, ne chyba k opakování. */
-    if (e && e.data && e.data.smazana) {
+    /* K54-N1 (N5): kalkulace byla mezitím smazána — trvalý stav, ne chyba k opakování.
+     * N3 (J. V. 24. 11.): totéž, když pod jménem mezitím leží čerstvá kalkulace
+     * z Pipedrive (pdCerstvaJina) — hláška je pak ta ze serveru. */
+    if (e && e.data && (e.data.smazana || e.data.pdCerstvaJina)) {
       ONLINE_STAV.smazana = ONLINE_STAV.soubor || String(e.data.soubor || '');
+      ONLINE_STAV.smazanaText = e.data.pdCerstvaJina ? String(e.data.chyba || '') : '';
       if (ONLINE_STAV.timer) { clearTimeout(ONLINE_STAV.timer); ONLINE_STAV.timer = null; }
       onlineZprava(onlineSmazanaText(), 'varovani');
       if (opts.fronta) onlineTiskNeulozenDialog(onlineSmazanaText());
@@ -1636,6 +1639,7 @@ function onlineUloz(opts) {
 
 /* K54-N1 (N5): text pro okno, jehož kalkulaci mezitím někdo smazal. */
 function onlineSmazanaText() {
+  if (ONLINE_STAV.smazanaText) return ONLINE_STAV.smazanaText;   // N3: hláška serveru
   const c = String((typeof ZAK !== 'undefined' && ZAK && ZAK.cislo) || '').trim();
   return 'Kalkulace ' + (c ? c + ' ' : '') + 'byla mezitím smazána — neuloženo. Chcete-li práci zachovat, '
     + 'uložte ji jako novou zakázku (Duplikovat zakázku), jinak ji zavřete (Nová zakázka).';
@@ -1926,7 +1930,7 @@ async function onlineOtevri(soubor, volby) {
     syncVarianta();
     ONLINE_STAV.soubor = soubor;
     ONLINE_STAV.kolize = null;
-    ONLINE_STAV.smazana = '';   // K54-N1 (N5): načtená zakázka na serveru leží
+    ONLINE_STAV.smazana = ''; ONLINE_STAV.smazanaText = '';   // K54-N1 (N5): načtená zakázka na serveru leží
     onlinePoslednizapamatuj(soubor);
     ONLINE_STAV.razitko = (typeof uloRazitko === 'function') ? uloRazitko(ZAK) : '';
     ONLINE_STAV.posledni = JSON.stringify(ZAK);

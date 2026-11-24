@@ -10,6 +10,7 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
+| 24. 11. 2026 | K54-N1 N3: zakázat přepsání čerstvé kalkulace z Pipedrive (`pdCerstva`) starou kopií — server odmítne 409 „Kalkulaci mezitím znovu založil Pipedrive — otevřete ji ze Seznamu / odkazem z dealu; vaše kopie se neuložila.“; řádné první uložení čerstvé projde | ukládání online, webhook Pipedrive |
 | 24. 11. 2026 | K54-N1 (#750): smazaná otevřená kalkulace se hned zavře (prázdná Nová zakázka) s hláškou „Kalkulace <číslo> byla smazána.“; server odmítne (409) uložení kalkulace, která na serveru už neexistuje | Seznam zakázek, ukládání online |
 | 24. 11. 2026 | PV O1: vlastník dealu jako autor kalkulace založené webhookem má práva autora (zrušit vazbu na deal, změnit deal zakázky, opravit firmu); „V pořádku“ dál jen administrátor. O2 (právo pro zápis prodeje) — vysvětlení vyžádáno. | #597, #734; BEZPECNOST_MEZE oddíl PV |
 | 23. 11. 2026 | CN-O2: číslo nabídky PRODANÉ zakázky nezmění nikdo ani administrátor; cesta = odemknout prodej (vedoucí/admin, protokol), změnit s potvrzením, znovu Prodáno. B3: na main s Pipedrive zapnout poznámku šachet hned; „Víc zákazníků“ (poznámka zákazníků + organizace = vítěz) až po plném průchodu A9 na testu. | #727 (dávka CN), #730 |

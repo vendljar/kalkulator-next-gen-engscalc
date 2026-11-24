@@ -10,7 +10,9 @@
  * server odmítne 409 `smazana` (ani `prepsat` to neobejde). Dál funguje:
  * nová zakázka (i pod číslem smazané), přečíslování načtené zakázky,
  * starší tělo bez `ocekavanySoubor`, a webhook založí novou čerstvou
- * kalkulaci s `pdCerstva`.
+ * kalkulaci s `pdCerstva`. N3 (J. V. 24. 11.): čerstvou kalkulaci z webhooku
+ * (`pdCerstva`) smí uložit jen okno, které ji načetlo (razítko v těle = razítko
+ * záznamu); „Přepsat serverovou verzi“ ze staré kopie ani `prepsat` → 409.
  * Klient (zavření smazané otevřené kalkulace) hlídá src/test_k54n1_smazani_ui.js.
  * Pojistka: na 0fd6410 (před opravou) padají testy „409 smazana“.
  * Spuštění: node netlify/test_k54n1_smazana.mjs
@@ -137,6 +139,37 @@ r = await volej(deal.id);
 test('další webhook dealu založí NOVOU čerstvou kalkulaci (zalozeno, pdCerstva, bez staré kopie)',
   r.status === 200 && r.akce === 'zalozeno' && zakazka(r.soubor) && zakazka(r.soubor).pdCerstva === true
   && zakazka(r.soubor).adresa !== 'Stará kopie v okně 1, Vzorov', r);
+/* ---------- 5. N3 (J. V. 24. 11.): čerstvou kalkulaci z Pipedrive nepřepíše stará kopie ---------- */
+console.log('\n===== 5. N3: Přepsat serverovou verzi nad čerstvou kalkulací z webhooku =====\n');
+const deal2 = D.dealy.find((x) => x.status === 'open' && x.org_id && x.person_id && /^CN-\d+ /.test(x.title) && x.id !== deal.id);
+r = await volej(deal2.id);
+const W2 = r.soubor;
+o = await nacti(W2, cA);
+const stareOkno = G.importZakazka(o.zakazka); const razStare = G.uloRazitko(stareOkno);
+delete stareOkno.pdCerstva; stareOkno.adresa = 'STARÁ KOPIE 1, Vzorov';
+await smaz(W2, cA);
+r = await volej(deal2.id);
+const razCerstve = G.uloRazitko(zakazka(W2));
+test('příprava: po smazání webhook založil čerstvou kalkulaci pod týmž jménem', r.akce === 'zalozeno' && zakazka(W2).pdCerstva === true && razCerstve !== razStare, r.akce);
+r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: stareOkno, ocekavaneRazitko: razStare, ocekavanySoubor: W2 }, cA);
+test('N3: staré okno uloží → 409 „znovu založil Pipedrive“ bez kolize (tlačítko Přepsat se nenabídne)',
+  r.status === 409 && r.pdCerstvaJina === true && r.kolize !== true, [r.status, r.chyba]);
+r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: stareOkno, ocekavaneRazitko: razCerstve, ocekavanySoubor: W2 }, cA);
+test('N3: „Přepsat serverovou verzi“ (razítko z disku) čerstvou kalkulaci nepřepíše — 409 s hláškou',
+  r.status === 409 && r.pdCerstvaJina === true && /znovu založil Pipedrive/.test(r.chyba || ''), [r.status, r.chyba]);
+r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: stareOkno, ocekavaneRazitko: razCerstve, ocekavanySoubor: W2, prepsat: true }, cA);
+test('N3: ani prepsat: true', r.status === 409 && r.pdCerstvaJina === true, [r.status, r.chyba]);
+const stejneCislo = G.novaZakazka(); stejneCislo.cislo = zakazka(W2).cislo;
+r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: G.importZakazka(kopie(stejneCislo)), ocekavaneRazitko: '', ocekavanySoubor: '', prepsat: true }, cA);
+test('N3: ani nová zakázka pod týmž číslem s vědomým přepsáním', r.status === 409 && r.pdCerstvaJina === true, [r.status, r.chyba]);
+test('N3: čerstvá kalkulace zůstala (pdCerstva, razítko, adresa z dealu)', zakazka(W2).pdCerstva === true && G.uloRazitko(zakazka(W2)) === razCerstve
+  && zakazka(W2).adresa !== 'STARÁ KOPIE 1, Vzorov');
+o = await nacti(W2, cA);
+const radne = G.importZakazka(o.zakazka);
+delete radne.pdCerstva; radne.adresa = 'Řádně otevřená 1, Vzorov';   // jako po pdCerstvaPriprav a úpravě
+r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: radne, ocekavaneRazitko: G.uloRazitko(radne), ocekavanySoubor: W2 }, cA);
+test('N3: řádné první uložení čerstvé (načtená v okně) projde 200 a příznak zmizí', r.status === 200 && zakazka(W2).pdCerstva === undefined
+  && zakazka(W2).adresa === 'Řádně otevřená 1, Vzorov', [r.status, r.chyba]);
 test('do sítě nic', venku.length === 0, venku);
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
