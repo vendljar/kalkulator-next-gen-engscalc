@@ -95,7 +95,8 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
   můstky) × EN/DE/FR; sledování `tr` hlídá i části polí `jazykSam`. Pojistka: bez hesla 4 FAIL, po 8 OK.
 - Čeká na J. V. (výjimka v testu): výčet víc skupin můstků, Model 2 + ceník #354 (`techspec.js` prefill `mustky`).
 - Porovnání sestavení proti origin/test: SHODA 367/367 (pevná sada nemá EN specifikaci se zábradlím) → seznam
-  očekávaných rozdílů není potřeba. Mutace [PTZAB] chycena 1/1. Výsledek kola ve zprávě koordinaci.
+  očekávaných rozdílů není potřeba. Mutace [PTZAB] chycena 1/1. Kolo `--bez-mutaci --proti origin/test`
+  VŠE ZELENÉ (sady 538/0, hodiny 437/0, statické 12/12).
 
 ## Čeká na J. V.
 
