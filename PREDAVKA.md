@@ -38,6 +38,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/mt-mutace-2311` | (tato dávka) | v23.11.3 | MT #735: 4 nechycené mutace kola 45162888071 — jen testy, nad c8d3d9d |
 | `claude/sa-sablony` | (tato dávka) | v23.11.6 | SA #719–#721 kontrola šablon nad 133a8f5; verzi přečísluje koordinace |
 | `claude/lak-lakovani` | (tato dávka) | v22.11.8 | LAK #666 lakování z nabídky lakovny nad 05a496d, s integrací 36e2681 |
+| `claude/dt-datum-tisku` | (tato dávka) | — | DT #745 #746 datum nabídky = den tisku nad 0fd6410; verzi přidělí koordinace |
 | `claude/pv-pipedrive` | (tato dávka) | v23.11.7 | PV #597 zápis prodeje do dealu + #734 autor = vlastník dealu nad 1280831; revize Fable; verzi přidělí koordinace |
 
 Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontrola: `python3 nastroje/release_odkaz.py --chybejici`
@@ -70,6 +71,17 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
   hlídá jména kontaktů a pole `kontakt` v odpovědích; mutace před 0/1, po 1/1.
 - **#738:** sady bz/cn/nn/ra červené 00–01 Praha (datum prodeje v UTC). `netlify/pomoc_den.mjs` (dnesPraha),
   `netlify/pomoc_falesne_hodiny.mjs`, hlídka `test_mt2_pulnoc.mjs`; před 8 FAIL, po 16 OK. Klient bere `objDnes()` — v aplikaci vada není.
+
+## Dávka DT (`claude/dt-datum-tisku`, 24. 11. 2026)
+
+- Nad integrací 0fd6410 (v24.11.1); verzi přidělí koordinace. **#745:** datum CN OCK i PROJ = den tisku (Praha),
+  odeslaná drží `zamek.datumNabidky` (mimo klíč zámku, drží server, nový zámek ověří `zakazka_kontrola.mjs`),
+  zámky před DT beze změny (`variantaDatum`). Krycí list „Dne“, objednávka PROJ a **SoD „ze dne“ (#746, J. V.)**
+  = datum nabídky; plná moc a `v.datum`/`zak.datum` beze změny.
+- Testy: `src/test_dt_datum_tisku.js` 49 FAIL → 60 OK, `netlify/test_dt_datum_tisku.mjs` 6 → 12 OK; mutace [DT] 10/10.
+- Kolo `--bez-mutaci --proti origin/test`: sady 537/0, hodiny 436/0, statické 12/12, S3 s
+  `--ocekavane podklady/porovnani/ocekavane_dt_2026-11-24.txt` 363 shodných + 4 očekávané (jen DATUM), cena SHODA.
+- Svěřené DT-1 (harness `overit_vz_tisk`, mutace se seznamem razítek), DT-2 (zlatá sada VS). Před sloučením revize Fable.
 
 ## Čeká na J. V.
 

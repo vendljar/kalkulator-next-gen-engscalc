@@ -11,7 +11,8 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 ## (verzi přidělí koordinace) — DT: datum cenové nabídky = den tisku (#745, #746), větev claude/dt-datum-tisku
 
 Nad integrací `0fd6410` (v24.11.1). Rozhodnutí J. V. 24. 11. 2026. **Cenu, číslo nabídky ani otisk zámku nemění**
-(datum není v klíči zámku ani v otisku; porovnání sestavení proti `origin/test`: viz zpráva koordinaci).
+(datum není v klíči zámku ani v otisku). Porovnání sestavení proti `origin/test`: cena SHODA, 363/367 shodných,
+4 očekávané rozdíly jen v DATUM neodeslaných variant fixtur (`podklady/porovnani/ocekavane_dt_2026-11-24.txt`).
 
 - **Nabídka OCK i PROJ (všechny jazyky) nese den tisku** v Europe/Prague, ne datum založení kalkulace
   (`nabidkaDatum` v `src/zamek.js`). Online náhled ukazuje datum, jaké dostane tisk dnes.
@@ -24,7 +25,8 @@ Nad integrací `0fd6410` (v24.11.1). Rozhodnutí J. V. 24. 11. 2026. **Cenu, č�
   ostatní text a data SoD beze změny. Zámek vzniklý tiskem SoD = den odeslání nabídky.
 - **Beze změny:** plná moc, `v.datum`/`zak.datum` (stáří ceníku, controlling, seznamy).
 - Testy: `src/test_dt_datum_tisku.js` (pojistka: před 49 FAIL, po 60 OK), `netlify/test_dt_datum_tisku.mjs`
-  (před 6 FAIL, po 12 OK); mutace `[DT]` v `netlify/mutace.mjs`.
+  (před 6 FAIL, po 12 OK); mutace `[DT]` 10/10 chycených. Zlatá sada VS přegenerovaná (jen DATUM 4 neodeslaných
+  variant, svěřené DT-2), harness `overit_vz_tisk.mjs` (DT-1). Kolo `--bez-mutaci`: sady 537/0, hodiny 436/0, statické 12/12.
 
 ## v24.11.1 — MT2: zpevnění testů kola (#737 mutace #553 kontakt, #738 sady kolem půlnoci), větev claude/mt2-testy
 
