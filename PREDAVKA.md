@@ -39,6 +39,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/sa-sablony` | (tato dávka) | v23.11.6 | SA #719–#721 kontrola šablon nad 133a8f5; verzi přečísluje koordinace |
 | `claude/lak-lakovani` | (tato dávka) | v22.11.8 | LAK #666 lakování z nabídky lakovny nad 05a496d, s integrací 36e2681 |
 | `claude/pv-pipedrive` | (tato dávka) | v23.11.7 | PV #597 zápis prodeje do dealu + #734 autor = vlastník dealu nad 1280831; revize Fable; verzi přidělí koordinace |
+| `claude/ut-texty` | (tato dávka) | — | UT #741 #742 #743 (#744 čeká na J. V.) nad 0fd6410; verzi přidělí koordinace |
 
 Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontrola: `python3 nastroje/release_odkaz.py --chybejici`
 (22. 11.: žádná — main v19.11.11, tag vydán).
@@ -70,6 +71,24 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
   hlídá jména kontaktů a pole `kontakt` v odpovědích; mutace před 0/1, po 1/1.
 - **#738:** sady bz/cn/nn/ra červené 00–01 Praha (datum prodeje v UTC). `netlify/pomoc_den.mjs` (dnesPraha),
   `netlify/pomoc_falesne_hodiny.mjs`, hlídka `test_mt2_pulnoc.mjs`; před 8 FAIL, po 16 OK. Klient bere `objDnes()` — v aplikaci vada není.
+
+## Dávka UT (`claude/ut-texty`, 24. 11. 2026)
+
+- Nad integrací 0fd6410 (v24.11.1); verzi přidělí koordinace. Cenu ani dokumenty nemění.
+- **#741** (J. V. varianta A): title volby Opláštění = `oplasteniNapoveda(Z, oplPoStenach())` v `src/ui/kalk_ock.js` —
+  po stěnách „Jiný typ zasklení viz níže.“, standard ze `skloVolba`: exteriér „Zasklení VSG 4.4.1 + Izolační dvojsklo“,
+  interiér mezi příčníky „Zasklení VSG 4.4.1“, na terče „Zasklení VSG 4.4.2“. **Ponecháno:** `SKLO_JINE_NAPOVEDA`
+  u řádku skla v tabulce (ř. ~1756) a v Detailu výpočtu — jiné prvky, text „jiné sklo = po stěnách“ tam dál platí.
+- **#742** (O2 varianta a): popisek `crm.pipedrive` „Pipedrive: čtení a zápis do vlastních obchodních případů“ v matici,
+  hláškách (sod_ui, pipedrive, pd_org_vitez), příručkách, NASAZENI, BEZPECNOST_MEZE; klíč beze změny.
+- **#743** (K54-I1, svěřené UT-3): `test_sablona_obsah.js` kontroluje všechny `Sablona_*.docx` z `KNG_PODKLADY`.
+  **#744** (K54-I2, jazykové SoD projekce na testu) čeká na J. V. (data).
+- Testy: `test_ut_741_napoveda_opl` 14/0 (před 15 FAIL), `test_ut_742_popisek_pd` 20/0 (před 18 FAIL), K54 pojistka
+  (stará sada s vadnou CN v18 zelená, nová 1 FAIL); `overit_oplasteni.mjs` 93/0 s krokem #741. Mutace `[UT] #741/#742`
+  8/8 + B80 1/1 chycené (sady UT nově v SADY `netlify/mutace.mjs`). Kolo `--bez-mutaci --proti origin/test`: viz zpráva
+  koordinaci (S3 SHODA 367/367 už v prvním běhu).
+- Poučení: commit z pracovní kopie pod běžící mutací vzal zmutovaný soubor (pd_org_vitez, opraveno v 6d0c220) — během
+  mutací commitovat jen z jiného `git worktree`.
 
 ## Čeká na J. V.
 
