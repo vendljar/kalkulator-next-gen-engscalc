@@ -130,3 +130,40 @@ Fixtury 7/7 a fuzz 300/300 SHODA; všech 60 rozdílů je ve skupinách stavěný
 
   Rozdílné případy podle pole: cena celkem 60, text dokumentu 300, ostatní 180, řádky 60, symboly CN 120, výsled
 ```
+
+---
+
+## Dorevize oprav (24. 11. 2026) — rozdíl `3f3162f..56cda50`
+
+Rozsah: 15 souborů, +170 / −28; kód `src/vice_sachet.js`, `src/objednane.js`, `src/uloziste.js`, test, mutace, texty.
+
+### Verdikt dorevize: VERDIKT_DOREVIZE
+
+### Stav nálezů
+
+| # | Stav | Ověření |
+|---|------|---------|
+| N1 | **opraveno** | `vsPriplatekJednou` (první šachta s příplatkem v nabídce, jinak první, která ho má) volá `vsSoucet` i `objNabidnute`; `objednane.js` už vlastní seznam nemá. Vlastní běh: 300 náhodných variant se 2–3 různými šachtami (výběr, rezerva 0/10/30 %, přepis množství 0/3, ks) — součet × objednané/SoD **0 neshod** (181 variant s engineeringem v objednaných), „Příplatky celkem“ = součet řádků vždy, cena v nabídce = cena v objednaných, kdykoli ho nabídka tiskne. Krycí list bere výčet podle sjednocení šachet jako dřív. Zbývá jen #767 (nabídka tiskne podle výběru šachty 1 — 83 z 300 případů: v objednaných ano, v nabídce ne), což je starší chování mimo ER. |
+| N2 | **uzavřeno** | Rozhodnutí J. V. v `ROZHODNUTI_LOG.md` (24. 11.) a věta v CHANGELOG. Kód beze změny. |
+| N3 | **opraveno s výhradou D1** | Změna příznaku u uložené nezamčené varianty a u šachty 2+ (párování podle id) je odmítnuta, s větou pro obchodníka. `stara.pdCerstva` podvrhnout nejde — `stara` čte server z úložiště, ne z požadavku. Obnova: režim nastavuje jen koncový bod obnovy (`ctx.rezim`), ten je pro administrátora. Výhrada viz D1. |
+| N4 | přesunuto | Roadmapa #766. |
+| N5 | **opraveno** | +8 mutací (šachty 2+, změna příznaku varianty a šachty, obnova, výběr šachty 2 ×, objednané 2 ×); `[ER]` celkem 33. Revize mutace znovu nepouštěla. |
+| N6 | opraveno až na jedno místo | Zbylo `hotovoKdyz` u #757 v `roadmapa/roadmap.json` („test_engineering_priplatek.js zelený“). |
+
+### Nový nález dorevize
+
+| # | Závažnost | Nález | Návrh |
+|---|-----------|-------|-------|
+| D1 | nízká | **Odemčení + změna příznaku v jednom uložení projde.** Kontrola N3 stojí až za řádkem, který variantu zamčenou v uložené verzi celou přeskakuje (`uloziste.js`, „doklad — nesahat“). Když ale požadavek variantu řádně odemyká (přibude `odemceni[]`), `uloKontrolaZamku` přepsání dat povolí a příznak nikdo neporovná — odeslaná nabídka se po odemčení tiše přepne na jiná pravidla ceny. Ověřeno: uložená zamčená bez příznaku → odemčená s `kalkVerze: 2` = bez problému `kalkVerze` (test dávky to dokonce očekává: „zamčená uložená varianta se neposuzuje“). Potřebuje právo odemknout a upravený klient; běžná aplikace to neudělá. | Porovnání příznaku přesunout **před** přeskočení zamčené varianty (pro variantu, která zůstává zamčená, je neškodné — data se měnit nesmějí). Test: uložená zamčená → odemčená se změněným příznakem = odmítnuto. Může jít hned i následnou drobnou opravou. |
+
+### Meze opravy N3 (k zápisu do BEZPECNOST_MEZE, ne k opravě)
+
+Kontrola chrání uloženou variantu před přepnutím na místě. Nechrání — a z principu nemůže — proti:
+variantě nebo šachtě s **novým id** (nová varianta s libovolným příznakem je platná nová kalkulace; ověřeno,
+že projde), nové zakázce a obnově ze souboru administrátorem. Je to pojistka proti omylu a prosté úpravě
+klienta, ne bezpečnostní hranice; doporučuji to tak v mezích popsat.
+
+### Běh dorevize
+
+- `src/test_er_nova_kalkulace.js` 111 OK, `src/test_atyp_idempotence.js` 37 OK (na 56cda50).
+KOLO_DOREVIZE
