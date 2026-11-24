@@ -533,7 +533,9 @@ async function sablonaObsahVady(vstup) {
 async function sablonaZipPolozky(u8) {
   const cti = sablonaZipCtecka();
   if (!cti) throw new Error('chybí čtení ZIP');
-  return cti(u8, { xmlCastMax: SABLONA_XML_CAST_MAX });
+  const volby = {};
+  volby.xmlCastMax = SABLONA_XML_CAST_MAX;   // B272: týž strop XML části
+  return cti(u8, volby);
 }
 /* Odstavce textu šablony (base64 / ArrayBuffer / Uint8Array) pro kontrolu
  * češtiny v jazykové verzi (C7, K48-N1). Tentýž výčet odstavců jako průvodce
