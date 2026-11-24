@@ -1191,8 +1191,8 @@ function uloTypyProblemy(zak, stara, opts) {
         if (x !== undefined && x !== null && x !== '' && ULO_VYCTY_MIMO_VZOR.kalkVerze.indexOf(x) < 0)
           vlastni.push({ kde: 'ock.dalsi.' + i + '.zadani.kalkVerze', duvod: 'typ' });
       });
-      /* PŘÍZNAK NOVÉ KALKULACE SE NEMĚNÍ (revize ER N3, doporučení; potvrdí
-       * J. V.). Přidat nebo ubrat `kalkVerze` u uložené varianty / šachty by
+      /* PŘÍZNAK NOVÉ KALKULACE SE NEMĚNÍ (revize ER N3, schválil J. V. 24. 11. 2026).
+       * Přidat nebo ubrat `kalkVerze` u uložené varianty / šachty by
        * tiše přepnulo pravidla ceny. Běžná cesta příznak nemění nikdy (klon,
        * duplikát, šachta 2+ = kopie). Výjimky: obnova ze zálohy a první
        * uložení čerstvé kalkulace z Pipedrive (pdCerstvaPriprav ji skládá

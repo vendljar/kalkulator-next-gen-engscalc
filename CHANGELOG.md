@@ -31,7 +31,7 @@ kopírují zdroj, import ani stará data ho nedostanou).
 - Server hlídá tvar příznaku (i u šachet 2+) a **odmítne změnu příznaku uložené varianty nebo šachty** (revize N3,
   schváleno J. V. 24. 11.; výjimka obnova ze zálohy a první uložení čerstvé kalkulace z Pipedrive). Příručka výpočtu doplněna.
 - Roadmapa: #766 ruční značky ATYP po šachtách (nízká), #767 víc šachet — výběr příplatků nabídka × krycí list (mimo ER).
-- Testy: `src/test_er_nova_kalkulace.js` (89 OK; proti c89e872 padá), mutace jádra [ER] 25/25 chycené; porovnání sestavení
+- Testy: `src/test_er_nova_kalkulace.js` (111 OK; proti c89e872 padá), mutace jádra [ER] 33/33 chycené; porovnání sestavení
   proti integraci: fixtury 7/7 a fuzz 300/300 SHODA, 60 očekávaných rozdílů jen u případů z `novaZakazka()`
   (`podklady/porovnani/ocekavane_er_2026-11-24.txt`); zlaté sady #560/VS očištěny o příznak (svěřené rozhodnutí ER-1).
 - Sloučeno s integrací v24.11.6 (RP).

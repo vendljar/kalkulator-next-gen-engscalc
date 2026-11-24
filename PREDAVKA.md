@@ -58,7 +58,7 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
   #757 engineering = příplatek mimo nabídku; #758 rezerva příplatků v cenách položek (controlling bez dvojího
   započtení); #761 bez přepínačů Výstup ze zaměření (1 ×) a Statika opláštění (podle opláštění). Pro všechny:
   automat ATYP nepřepíše ruční pole. Rozhodnutí v ROZHODNUTI_LOG, svěřené ER-1 (zlaté sady).
-- Testy: `src/test_er_nova_kalkulace.js` 89 OK, mutace jádra [ER] 25/25; porovnání: fixtury + fuzz SHODA,
+- Testy: `src/test_er_nova_kalkulace.js` 111 OK, mutace jádra [ER] 33/33; porovnání: fixtury + fuzz SHODA,
   60 očekávaných (`podklady/porovnani/ocekavane_er_2026-11-24.txt`).
 - J. V. 24. 11.: engineering jednou za variantu, překlad schválen. Revize Fable celého rozdílu (REVIZE_ER.md,
   větev claude/revize-er): opraveno N1 (jedno pravidlo vsPriplatekJednou), N3 (server odmítne změnu kalkVerze —
