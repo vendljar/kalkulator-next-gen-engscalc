@@ -49,6 +49,8 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 
 ## Běžící dávky
 
+ZK #755 (v24.11.8, `claude/zk-zakaznici-ze-zakazek`): předávka dávky v `podklady/predavky/2026-11.md` (nahoře).
+
 Stav 24. 11. 2026 21:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74 % → doporučeno nové sezení; kokpit https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2):
 - **main** v19.11.11 (cda289e). **test** v24.11.5 (6722ad9). **integrace** v24.11.6 (7339a9e) = UT, R3, DT, RP. Celé kolo Actions nad c89e872 (v24.11.5) ZELENÉ 36/36.
 - **v24.11.7 pro test** (lokálně v pracovní kopii koordinace, NEpushnuto): test 6722ad9 + claude/rychla-PT-ZAB (7d1b3d1, #759 překlad zábradlí + výčet víc skupin můstků) + claude/rychla-K56-I2 (7ddb87f, #760 SoD a objednávka PROJ = kdo tiskne, CN snímek zámku). Postup: sloučit obě větve nad origin/test (konflikty jen přidané řádky — sjednotit), verze 24.11.7, kolo `--bez-mutaci --proti origin/test --ocekavane podklady/porovnani/ocekavane_pt-zab_2026-11-24.txt`, push do test, /api/zdravi, pak test sloučit do integrace.
@@ -124,21 +126,6 @@ Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.)
   vypnuto). Stabilní API jádra VZ: `src/vice_zakazniku.js` a předávka VZ-E0 v `podklady/predavky/2026-11.md`.
 - **Číslování:** roadmapa a meze B — další volná čísla podle `roadmapa/roadmap.json` a `BEZPECNOST_MEZE.md`
   (koordinace drží rezervu, např. B229). Roadmapa obsazená do #643 (#609/#610 `claude/sl-sod-sleva`, #613–#643 S6).
-
-## Dávka ZK (24. 11. 2026) — #755 zákazníci ze zakázek podle ARES
-
-Větev `claude/zk-zakaznici-ze-zakazek` nad `c89e872`. Nic na weby, do Pipedrive ani na Disk; ARES jen zástupný fetch.
-- **Hotovo:** Zákazníci → „Naplnit ze zakázek (ARES)…“ (jen admin). Server `/api/zakaznici-ze-zakazek`
-  (`functions/zakaznici_ze_zakazek.mjs`, logika `lib/zakaznici_ze_zakazek.mjs`): náhled po kouscích (zakázky →
-  seskupení podle IČO → ARES jen pro IČO bez karty, 10/volání, pauza 400 ms, 600/náhled, 1 500/den), zápis po
-  potvrzení ze serverového náhledu s novým ověřením zakázky, protokol bez osobních údajů. UI `src/ui/zakaznici_ui.js`.
-- **Testy:** `netlify/test_zk_zakaznici_ze_zakazek.mjs` 74 OK, `overit_zk_zakaznici.mjs` 15 OK, `test_prava.mjs`
-  a `test_zalohy.mjs` N4 doplněny; mutace [ZK] 24/24; kolo `--bez-mutaci --proti origin/claude/integrace-16-10` (7339a9e) VŠE ZELENÉ, SHODA 367/367; po revizi testy 95 OK, mutace [ZK] 37/37, kolo znovu VŠE ZELENÉ (544 sad), SHODA 367/367.
-- **Rozhodnutí J. V. 24. 11.:** vše ponechat — mimo zálohu, diakritika přísně, DIČ jen z ARES, banka a účet do karty (R7/R9); `podklady/ROZHODNUTI_LOG.md`.
-- **Revize Fable** (`claude/revize-zk`, SLOUČIT PO OPRAVÁCH): R0 sloučena integrace 7339a9e, R1–R5 a R10 opraveny,
-  R6 jako mez; R7 a R9 J. V. ponechal. Dorevize: SLOUČIT; D1 mez, D2 příručka, D3 mez, D4 testy (102 OK).
-- **Další krok:** dorevize Fable → sloučení koordinací; na testu změřit dobu seznamu Zákazníci po naplnění (R2);
-  spuštění na testu testovací sezení, na ostrém J. V.
 
 ## Další krok
 
