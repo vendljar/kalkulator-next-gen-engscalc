@@ -178,20 +178,20 @@ function odeslPdKarta() {
   const hlava = `<div class="note" id="odeslPdStav"><b>Odeslání do Pipedrive</b> (údaje krycího listu, číslo nabídky, hodnota dealu,
     fáze „Nabídka odeslána“ jen dopředu, poznámka${odeslPdBlob(v) ? ', Word' : ''}): ${kroky.length ? esc(kroky.join(' · ')) : 'nezapsáno'}</div>`;
   const info = ODESL_PD.info ? `<div class="note" id="odeslPdInfo"><b>${esc(ODESL_PD.info)}</b></div>` : '';
-  const chyba = ODESL_PD.chyba ? `<div class="note" id="odeslPdChyba" style="color:var(--red, #c0392b)">${esc(ODESL_PD.chyba)}</div>` : '';
+  const chybaBlok = ODESL_PD.chyba ? `<div class="note" id="odeslPdChyba" style="color:var(--red, #c0392b)">${esc(ODESL_PD.chyba)}</div>` : '';
   if (!ZAK.pdDealId || !odeslPdMuze()) return `<div class="zamek-lista zamek-odeslpd" id="odeslPdKarta">${hlava}${info}</div>`;
   const d = ODESL_PD.data;
   const souborBtn = odeslPdBlob(v) && !(rec && rec.soubor && rec.soubor.stav === 'zapsano')
     ? ` <button class="mini" id="odeslPdPriloz" onclick="odeslPdPrilozUI()" ${ODESL_PD.nacita ? 'disabled' : ''}>Přiložit Word k dealu</button>` : '';
   const btnNahled = `<button class="mini" id="odeslPdNahled" onclick="odeslPdNahled(0)" ${ODESL_PD.nacita ? 'disabled' : ''}>${ODESL_PD.nacita ? '⏳ Pracuji…'
     : d ? 'Načíst znovu' : rec && rec.pole && rec.pole.stav === 'zapsano' ? 'Porovnat s Pipedrive znovu' : rec ? 'Zkusit zápis znovu' : 'Ukázat, co se zapíše do Pipedrive'}</button>`;
-  if (!d) return `<div class="zamek-lista zamek-odeslpd" id="odeslPdKarta"><span>${hlava}${info}${chyba}</span><span class="sp"></span>${btnNahled}${souborBtn}</div>`;
+  if (!d) return `<div class="zamek-lista zamek-odeslpd" id="odeslPdKarta"><span>${hlava}${info}${chybaBlok}</span><span class="sp"></span>${btnNahled}${souborBtn}</div>`;
   const nelze = d.zastaveno ? 'Zápis se neprovede: ' + d.zastaveno : !d.zapisPovolen ? 'Zápis do Pipedrive je na serveru vypnutý (PIPEDRIVE_ZAPIS) — nic se neodešle.' : '';
   return `<div class="zamek-odeslpd prod-karta" id="odeslPdKarta">${hlava}
     <div class="note">Deal ${esc(d.deal.id)} „${esc(d.deal.nazev)}“ · ${esc((typeof PDN_REZIM !== 'undefined' && PDN_REZIM[d.rezim]) || d.rezim || '')}.
       Zapíšou se jen pole označená „zapíše se“; nic se nemaže.</div>
     ${d.rezim === 'simulator' ? '<div class="note" style="color:var(--red, #c0392b)"><b>SIMULÁTOR PIPEDRIVE</b> — smyšlená data.</div>' : ''}
-    ${nelze ? `<div class="note" id="odeslPdNelze" style="color:var(--red, #c0392b)"><b>${esc(nelze)}</b></div>` : ''}${info}${chyba}
+    ${nelze ? `<div class="note" id="odeslPdNelze" style="color:var(--red, #c0392b)"><b>${esc(nelze)}</b></div>` : ''}${info}${chybaBlok}
     ${odeslPdTabulka(d)}
     <div class="btns" style="margin:6px 0"><button class="primary" id="odeslPdZapsat" onclick="odeslPdZapis()" ${nelze || ODESL_PD.nacita ? 'disabled' : ''}>Potvrdit a zapsat do Pipedrive</button>
       ${btnNahled}${souborBtn}</div></div>`;

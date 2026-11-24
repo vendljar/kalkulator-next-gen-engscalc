@@ -205,6 +205,17 @@ n = await odesl({ ...zaklad(A), akce: 'nahled' }, cP);
 r = await odesl({ ...zaklad(A), akce: 'zapis', otisk: n.otisk }, cP);
 test('bez uloženého id: poznámka se dohledá a upraví, ne založí druhá', r.status === 200 && r.poznamka === 'upraveno' && pozn().length === 1, [r, pozn().length]);
 
+/* Poznámku obchodník v Pipedrive ručně přepsal (úvod i značka pryč): zápis ji najde podle uloženého id a upraví. */
+{ const pz = pozn()[0]; const id = pz.id;
+  pz.content = 'Ručně upraveno obchodníkem';
+  const z = zakazka(A.soubor); z.pdOdeslani.poznamka.otisk = '0'.repeat(16); zapisZakazku(A.soubor, z);
+  n = await odesl({ ...zaklad(A), akce: 'nahled' }, cP);
+  r = await odesl({ ...zaklad(A), akce: 'zapis', otisk: n.otisk }, cP);
+  const vsechny = (D().poznamky || []).filter((p) => p.deal_id === A.deal.id && p.active_flag !== false);
+  test('ručně přepsaná poznámka: upraví se podle uloženého id, druhá nevznikne', r.status === 200 && r.poznamka === 'upraveno'
+    && vsechny.filter((p) => p.id === id && /^Nabídka odeslána/.test(p.content)).length === 1 && pozn().length === 1, [r, vsechny.map((p) => p.id)]);
+}
+
 /* ---------- 3. FÁZE JEN DOPŘEDU ---------- */
 puvodniLog('\n===== 3. FÁZE JEN DOPŘEDU =====\n');
 for (const f of [24, 25, 26]) {
