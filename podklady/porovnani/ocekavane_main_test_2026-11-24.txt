@@ -2,8 +2,10 @@
 # Rozšířená sada (svěřené K56-1): krycí list s verzí, PROJ, Kompletní náhled podkladů, cizí jazyky SoD,
 # smyčka šachet Wordu, scénáře lak:*, vs:*, dotisk:*, proj:*. Vše ostatní je nález.
 #
-# NPT-N1 #690 + NPT-N3 #691 (v21.11.4 DOS): náhled podkladů bez řádku SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ,
-# EN/DE/FR nadpisy s dvojtečkou jako šablona — týká se každé kalkulace se světlíky / každé EN.
+# NPT-N1 #690, NPT-N2 a NPT-N3 #691 (v21.11.4 DOS) + PG-N1 (v21.11.2): náhled podkladů bez řádku SVĚTLÍKY
+# U ŠACHETNÍCH DVEŘÍ, popisky specifikace bez CSS verzálek, EN/DE/FR nadpisy s dvojtečkou, vlastní řádek
+# SOUČÁSTÍ DODÁVKY NENÍ skrytý — týká se téměř každé kalkulace. Pravidlo je hrubé (celé pole); surové
+# výstupy kola 56 prošly ručně a jiný rozdíl v náhledu podkladů nenesly (STAV_KOLO56, K56-I3).
 *                     nahled-np-cz,nahled-np-en      # NPT-N1, NPT-N3 (v21.11.4)
 # LAK #666 (v22.11.8): cena lakování z nabídky lakovny — main klíč C.lak.nabidkaKc nezná a počítá z ceníku.
 lak:*                 *                              # LAK #666: nová funkce, v main data s částkou nevzniknou
