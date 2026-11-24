@@ -144,6 +144,25 @@ export default async (req) => {
   const vysledek = await vyhradne('zakazky/z/' + jmeno, async () => {
   const stara = await s.cti('z/' + jmeno);
 
+  /* K54-N1 (#750, J. V. 24. 11. 2026): SMAZANÁ KALKULACE SE ULOŽENÍM NEVZKŘÍSÍ.
+   * Prohlížeč, který kalkulaci načetl ze serveru, posílá razítko verze
+   * (`ocekavaneRazitko`) i jméno záznamu, ze kterého vyšel (`ocekavanySoubor`).
+   * Když pod tím jménem na serveru nic neleží, kalkulaci mezitím někdo smazal
+   * (Seznam zakázek, jiná karta, kolega) — zápis by ji založil znovu ze staré
+   * kopie v paměti (zamčené varianty, ceník, protokol, bez serverových polí)
+   * a webhook Pipedrive by ji pak bral jako existující. 409 bez `kolize`
+   * (tlačítko „Přepsat serverovou verzi“ tu nemá co přepsat) a `prepsat`
+   * to neobchází. Nová zakázka razítko nemá, přečíslovaná míří na jiné jméno,
+   * obnova ze zálohy jde jinou cestou (obnova.mjs) — těch se to netýká. */
+  if (!stara && typeof t.ocekavaneRazitko === 'string' && t.ocekavaneRazitko
+      && typeof t.ocekavanySoubor === 'string' && t.ocekavanySoubor === jmeno) {
+    const cislo = String(zak.cislo || '').trim() || jmeno;
+    return { odpoved: json({ ok: false, smazana: true, soubor: jmeno,
+      chyba: 'Kalkulace ' + cislo + ' byla mezitím smazána z databáze — neuloženo. '
+        + 'Z této kopie ji znovu založit nejde; zavřete ji (Nová zakázka). '
+        + 'Vrátit smazanou kalkulaci jde jen ze zálohy databáze.' }, 409) };
+  }
+
   /* Razítko verze (audit 22. 8. 2026, B10). Klient posílá razítko verze, ze
    * které vyšel (`ocekavaneRazitko`). Když v databázi leží jiná verze —
    * kolega mezitím uložil, nebo jde o cizí zakázku pod stejným číslem — server

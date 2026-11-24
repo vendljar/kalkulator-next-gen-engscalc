@@ -119,6 +119,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      'test_553_webhook.mjs',
      /* PD #733/#728/#729 (23. 11. 2026): kalkulace z webhooku jako Nová zakázka, odkaz z dealu odemčený, kontakt jen jméno. */
      'test_pd_cerstva.mjs', '../src/test_pd_cerstva_ui.js',
+     /* [K54N1] #750 (24. 11. 2026): smazaná otevřená kalkulace se zavře a uložením nevzkřísí (rychlé sady). */
+     'test_k54n1_smazana.mjs', '../src/test_k54n1_smazani_ui.js',
      /* PV #734 / #597 (23. 11. 2026): autor = vlastník dealu, zápis prodeje do dealu (simulátor, rychlé sady). */
      'test_pv_734_autor.mjs', 'test_pv_597_zapis.mjs',
      /* #542 O-SECM (1. 11. 2026): nálezy security testu SEC-M M2–M9 — rychlá sada (< 1 s). */
@@ -282,6 +284,42 @@ const filtr = filtrZArgv(process.argv.slice(2));
  * čím se nahradí, a proč nás zajímá — co by se v praxi stalo, kdyby tuhle
  * chybu někdo udělal doopravdy. */
 const MUTACE = [
+  /* K54-N1 (#750, 24. 11. 2026): smazaná kalkulace — server ji uložením nevzkřísí
+   * (functions/zakazky.mjs), Seznam zakázek smazanou otevřenou zavře
+   * (ui/online_ui.js, ui/zakazka_ui.js). Hlídají netlify/test_k54n1_smazana.mjs
+   * a src/test_k54n1_smazani_ui.js. [K54N1] */
+  { nazev: "K54-N1: pojistka smazané kalkulace vypnutá [K54N1]", soubor: "functions/zakazky.mjs",
+    hledej: "  if (!stara && typeof t.ocekavaneRazitko === 'string' && t.ocekavaneRazitko\n",
+    nahrad: "  if (false && !stara && typeof t.ocekavaneRazitko === 'string' && t.ocekavaneRazitko\n",
+    proc: "okno se smazanou kalkulací by ji prvním uložením založilo znovu ze staré kopie (K54-N1)", sady: ["test_k54n1_smazana.mjs"] },
+  { nazev: "K54-N1: pojistka bez kontroly jména záznamu [K54N1]", soubor: "functions/zakazky.mjs",
+    hledej: "      && typeof t.ocekavanySoubor === 'string' && t.ocekavanySoubor === jmeno) {",
+    nahrad: "      ) {",
+    proc: "přečíslování načtené zakázky by server odmítl jako smazanou", sady: ["test_k54n1_smazana.mjs"] },
+  { nazev: "K54-N1: prázdné razítko bere jako smazanou [K54N1]", soubor: "functions/zakazky.mjs",
+    hledej: "  if (!stara && typeof t.ocekavaneRazitko === 'string' && t.ocekavaneRazitko\n",
+    nahrad: "  if (!stara && typeof t.ocekavaneRazitko === 'string'\n",
+    proc: "novou zakázku by server odmítl jako smazanou", sady: ["test_k54n1_smazana.mjs"] },
+  { nazev: "K54-N1: 409 smazana nabízí Přepsat (kolize) [K54N1]", soubor: "functions/zakazky.mjs",
+    hledej: "    return { odpoved: json({ ok: false, smazana: true, soubor: jmeno,",
+    nahrad: "    return { odpoved: json({ ok: false, smazana: true, kolize: true, soubor: jmeno,",
+    proc: "okno by nabídlo „Přepsat serverovou verzi“ nad smazanou kalkulací", sady: ["test_k54n1_smazana.mjs"] },
+  { nazev: "K54-N1: klient neposílá jméno záznamu [K54N1]", soubor: "../src/ui/online_ui.js",
+    hledej: "ocekavaneRazitko: ONLINE_STAV.razitko || '', ocekavanySoubor: ONLINE_STAV.soubor || '' };",
+    nahrad: "ocekavaneRazitko: ONLINE_STAV.razitko || '' };",
+    proc: "jiná karta se smazanou kalkulací by ji uložením vzkřísila (server by ji nepoznal)", sady: ["../src/test_k54n1_smazani_ui.js"] },
+  { nazev: "K54-N1: smazaná otevřená kalkulace se nezavře [K54N1]", soubor: "../src/ui/online_ui.js",
+    hledej: "    if (otevrenaSmazana && ONLINE_STAV.soubor === otevrena && typeof zakNovaZakazkaProved === 'function')\n      zakNovaZakazkaProved();",
+    nahrad: "    if (false) zakNovaZakazkaProved();",
+    proc: "smazaná kalkulace by zůstala otevřená a upravitelná (K54-N1)", sady: ["../src/test_k54n1_smazani_ui.js"] },
+  { nazev: "K54-N1: zavře i při nepovedeném smazání [K54N1]", soubor: "../src/ui/online_ui.js",
+    hledej: "      .then(() => { hotovo++; if (otevrena && s === otevrena) otevrenaSmazana = true; })",
+    nahrad: "      .then(() => { hotovo++; }).then(() => { if (otevrena && s === otevrena) otevrenaSmazana = true; }, () => { if (otevrena && s === otevrena) otevrenaSmazana = true; })",
+    proc: "otevřená kalkulace by se zavřela, i když na serveru zůstala", sady: ["../src/test_k54n1_smazani_ui.js"] },
+  { nazev: "K54-N1: Nová zakázka po smazání drží jméno záznamu [K54N1]", soubor: "../src/ui/zakazka_ui.js",
+    hledej: "  if (typeof zakOdpojUlozeni === 'function') zakOdpojUlozeni();\n  if (typeof seznamReset === 'function') seznamReset();   // #18 – viz nactiZakazku",
+    nahrad: "  if (typeof seznamReset === 'function') seznamReset();   // #18 – viz nactiZakazku",
+    proc: "nová zakázka by se uložila pod jménem a razítkem smazané", sady: ["../src/test_k54n1_smazani_ui.js"] },
   /* NN (22. 11. 2026): nízké nálezy auditu 20. 11. 2026 (B237–B246), revize BZ (#705)
    * a PR (#711, zbytek N1). Hlídají netlify/test_nn_nizke.mjs, test_nn_pipedrive.mjs,
    * test_nn_poc.mjs, test_pripominky.mjs a src/test_pripominky.js, src/test_nn_nizke.js. [NN]

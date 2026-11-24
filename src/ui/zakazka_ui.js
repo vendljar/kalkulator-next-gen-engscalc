@@ -124,6 +124,12 @@ async function novaZakazkaUI() {
   if (!await potvrd('Založit novou prázdnou zakázku?'
     + (neulozene ? ' Neuložené změny aktuální zakázky se ztratí.' : ''),
     { nadpis: 'Nová zakázka' })) return;
+  zakNovaZakazkaProved();
+}
+/* Samotné založení prázdné zakázky bez dotazu (K54-N1, #750): volá ho
+ * tlačítko Nová zakázka po potvrzení a Seznam zakázek po smazání právě
+ * otevřené kalkulace (J. V. 24. 11. 2026: „zavřít jako Nová zakázka“). */
+function zakNovaZakazkaProved() {
   ZAK = novaZakazka(); syncVarianta();
   /* Výchozí zaškrtnutí položek (20. 8. 2026): sloupec Výchozí v kalkulaci
    * OCK i PROJ platí právě a jen tady — na ČERSTVÉM zadání, kde jsou ještě

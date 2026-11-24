@@ -8,6 +8,23 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## (verzi přidělí koordinace) — K54-N1 #750: smazaná otevřená kalkulace se zavře a uložením nevzkřísí, větev claude/rychla-K54-N1
+
+Rychlá cesta nad integrací `0fd6410` (= test, v24.11.1). **Ceník ani sazby nemění** (porovnání sestavení: SHODA);
+dopad na cenu byl nepřímý — vzkříšená stará data smazané kalkulace (nález kola 54, CN-432 na testu).
+
+- **Klient (rozhodnutí J. V. 24. 11.):** smaže-li administrátor v Seznamu zakázek kalkulaci, kterou má otevřenou,
+  okno ji hned zavře (prázdná Nová zakázka, jako tlačítko Nová zakázka) s hláškou „Kalkulace <číslo> byla smazána.“
+  Dřív zůstala otevřená a upravitelná a první uložení ji na serveru založilo znovu ze staré kopie (zamčená varianta,
+  ceník s marží 0, protokol) — webhook Pipedrive ji pak jen aktualizoval. Nepovedené smazání ani smazání jiné
+  zakázky otevřenou nezavře.
+- **Server (pojistka):** uložení, které nese razítko a jméno záznamu (`ocekavanySoubor`), pod nímž už nic neleží,
+  `POST /api/zakazky` odmítne 409 `smazana` s vysvětlením — smazanou kalkulaci nevzkřísí ani jiná karta nebo kolega
+  (ani „Přepsat serverovou verzi“). Nová zakázka (i pod číslem smazané), přečíslování, obnova ze zálohy a webhook
+  (nová čerstvá kalkulace s `pdCerstva`) beze změny; formát dat beze změny.
+- Testy s pojistkou: `netlify/test_k54n1_smazana.mjs` (před 6 FAIL, po 17 OK), `src/test_k54n1_smazani_ui.js`
+  (před 8 FAIL, po 12 OK); mutace [K54N1] 8/8 chycených.
+
 ## v24.11.1 — MT2: zpevnění testů kola (#737 mutace #553 kontakt, #738 sady kolem půlnoci), větev claude/mt2-testy
 
 Nad integrací `db1e9e7` (v23.11.7). **Aplikace beze změny, cenu ani dokumenty nemění** (porovnání sestavení proti

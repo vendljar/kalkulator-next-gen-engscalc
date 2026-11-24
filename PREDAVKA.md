@@ -71,6 +71,19 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 - **#738:** sady bz/cn/nn/ra červené 00–01 Praha (datum prodeje v UTC). `netlify/pomoc_den.mjs` (dnesPraha),
   `netlify/pomoc_falesne_hodiny.mjs`, hlídka `test_mt2_pulnoc.mjs`; před 8 FAIL, po 16 OK. Klient bere `objDnes()` — v aplikaci vada není.
 
+## Rychlá oprava K54-N1 (`claude/rychla-K54-N1`, 24. 11. 2026)
+
+- Nad integrací `0fd6410` (= test, v24.11.1), #750, verzi přidělí koordinace. Nález kola 54 (CN-432): smazaná
+  otevřená kalkulace zůstala otevřená, první uložení ji založilo znovu ze staré kopie, webhook ji jen aktualizoval.
+- Klient (J. V. 24. 11.): `onlineSmazVybrane` zavře opravdu smazanou otevřenou kalkulaci (`zakNovaZakazkaProved`,
+  vyňato z `novaZakazkaUI`), hláška „Kalkulace <číslo> byla smazána.“; `onlineUloz` posílá `ocekavanySoubor`.
+- Server `zakazky.mjs`: záznam pod jménem neleží + tělo nese razítko a `ocekavanySoubor` = cílové jméno → 409
+  `smazana` (bez `kolize`, `prepsat` neobchází). Nová zakázka, přečíslování, tělo bez pole, obnova, webhook beze změny.
+- Testy: `netlify/test_k54n1_smazana.mjs` (před 6 FAIL / po 17 OK), `src/test_k54n1_smazani_ui.js` (8 FAIL / 12 OK),
+  mutace [K54N1] 8/8. Výsledek kola a SHA ve zprávě koordinaci. Před sloučením revize Fable.
+- Po nasazení do testu: J. V. ověří — smazat otevřenou → prázdná Nová zakázka; druhá karta se smazanou → „byla
+  mezitím smazána“; webhook po smazání založí novou čerstvou kalkulaci.
+
 ## Čeká na J. V.
 
 Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.). Od S6 je zdrojem evidence

@@ -1534,7 +1534,9 @@ function onlineUloz(opts) {
    * verzi, ze které jsme nevyšli. Kolizi řeší hláška s dvěma tlačítky (V27);
    * `prepsat: true` zůstává jako výslovná cesta pro volajícího. */
   const snimkyNove = (typeof zamekSnimkyVrat === 'function') ? zamekSnimkyVrat() : [];   // Z1, K7-K2
-  const telo = { zakazka: ZAK, ocekavaneRazitko: ONLINE_STAV.razitko || '' };
+  /* K54-N1 (#750): i jméno záznamu, ze kterého okno vyšlo — server podle něj
+   * pozná kalkulaci mezitím smazanou a nezaloží ji znovu (409 smazana). */
+  const telo = { zakazka: ZAK, ocekavaneRazitko: ONLINE_STAV.razitko || '', ocekavanySoubor: ONLINE_STAV.soubor || '' };
   /* CO SE SKUTEČNĚ ODESLALO (K7-K1). „Naposledy uloženo" se bere z tohohle
    * otisku, ne z ZAK v okamžiku odpovědi — změna provedená během letícího
    * zápisu (typicky zámek po tisku) by se jinak tvářila jako uložená. */
@@ -4491,28 +4493,41 @@ async function onlineSmazVybrane() {
   ONLINE_STAV.pracuje = true; render();
   const nepovedlo = [];
   let hotovo = 0;
+  /* K54-N1 (#750, J. V. 24. 11. 2026): otevřená kalkulace, která se právě
+   * smazala, se hned ZAVŘE (prázdná Nová zakázka, jako tlačítko Nová zakázka).
+   * Do v24.11.1 ji aplikace v paměti držela dál a jen „zapomněla“, kam patří —
+   * první uložení ji pak na serveru založilo znovu ze staré kopie. */
+  const otevrena = ONLINE_STAV.soubor;
+  const zaznamOtevrene = zaznamy.find(z => z.soubor === otevrena);
+  const cisloOtevrene = String((zaznamOtevrene && zaznamOtevrene.cislo) || (ZAK && ZAK.cislo) || otevrena || '').trim();
+  let otevrenaSmazana = false;
   const dalsi = (i) => {
     if (i >= vybrane.length) return Promise.resolve();
     const s = vybrane[i];
     return onlineApi('/api/zakazky?soubor=' + encodeURIComponent(s)
       + (iOdeslane ? '&ismazatOdeslane=1' : ''), null, 'DELETE')
-      .then(() => { hotovo++; })
+      .then(() => { hotovo++; if (otevrena && s === otevrena) otevrenaSmazana = true; })
       .catch(e => { nepovedlo.push(s + ' (' + e.message + ')'); })
       .then(() => dalsi(i + 1));
   };
   dalsi(0).then(() => {
     ONLINE_STAV.prehled.vybrane = [];
-    /* Když jsme smazali právě otevřenou zakázku, aplikace ji v paměti drží
-     * dál — to je v pořádku, jen se už nemá tvářit, že je uložená. */
-    if (vybrane.indexOf(ONLINE_STAV.soubor) >= 0 && typeof zakOdpojUlozeni === 'function')
+    /* Zavírá se jen opravdu smazaná a jen pokud je pořád otevřená ta, která
+     * byla otevřená při potvrzení. Bez dotazu na neuložené změny — kalkulace
+     * už v databázi není a uložit ji znovu nejde (server ji odmítne). */
+    if (otevrenaSmazana && ONLINE_STAV.soubor === otevrena && typeof zakNovaZakazkaProved === 'function')
+      zakNovaZakazkaProved();
+    else if (otevrenaSmazana && ONLINE_STAV.soubor === otevrena && typeof zakOdpojUlozeni === 'function')
       zakOdpojUlozeni();
     return onlineNactiRejstrik();
   }).then(() => {
-    onlineZprava(nepovedlo.length
+    const souhrn = nepovedlo.length
       ? ('Smazáno ' + hotovo + ', nepovedlo se: ' + nepovedlo.join('; '))
       : ('Smazáno ' + hotovo + ' '
-        + (hotovo === 1 ? 'zakázka' : (hotovo < 5 ? 'zakázky' : 'zakázek')) + '.'),
-    nepovedlo.length ? 'varovani' : '');
+        + (hotovo === 1 ? 'zakázka' : (hotovo < 5 ? 'zakázky' : 'zakázek')) + '.');
+    onlineZprava(otevrenaSmazana
+      ? ('Kalkulace ' + cisloOtevrene + ' byla smazána.' + (hotovo > 1 || nepovedlo.length ? ' ' + souhrn : ''))
+      : souhrn, nepovedlo.length ? 'varovani' : '');
   }).then(() => { ONLINE_STAV.pracuje = false; render(); });
 }
 
