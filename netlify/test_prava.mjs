@@ -77,6 +77,7 @@ import pdWebhookFn from './functions/pd_webhook.mjs';
 import pdVazbaFn from './functions/pd_vazba.mjs';
 import pdOrganizaceFn from './functions/pd_organizace.mjs';
 import pdProdejFn from './functions/pd_prodej.mjs';
+import pdOdeslaniFn from './functions/pd_odeslani.mjs';
 import zalohaDiskFn from './functions/zaloha_disk.mjs';
 import pdStavFn from './functions/pd_stav.mjs';
 import pripominkyFn from './functions/pripominky.mjs';
@@ -611,6 +612,14 @@ const MATICE = [
     metoda: 'POST', url: 'http://x/api/pd/prodej', telo: () => ({ soubor: ulozena.soubor, akce: 'nahled' }),
     proc: 'po Prodáno a potvrzení obchodníkem zapíše krycí list, hodnotu a fázi dealu — s právem Pipedrive',
     prava: { 'nepřihlášený': 401, 'Obchodník': 409, 'Vedoucí': 409, 'Administrátor': 409 } },
+  /* Zápis odeslání nabídky do dealu (PO #116): právo Pipedrive z matice (B80)
+   * a k tomu odeslaná varianta (autor, kdo odeslal, vedoucí, administrátor).
+   * Tady varianta v zakázce není → 404 všem přihlášeným s právem.
+   * Podrobnosti netlify/test_po_116_odeslani.mjs. */
+  { fn: pdOdeslaniFn, soubor: 'pd_odeslani.mjs', nazev: 'Pipedrive — zápis odeslání nabídky do dealu (POST /api/pd/odeslani)',
+    metoda: 'POST', url: 'http://x/api/pd/odeslani', telo: () => ({ soubor: ulozena.soubor, varianta: 'neni', zamekKdy: 'x', akce: 'nahled' }),
+    proc: 'po prvním tisku cenové nabídky a potvrzení obchodníkem zapíše krycí list, hodnotu, fázi, poznámku a Word k dealu — s právem Pipedrive',
+    prava: { 'nepřihlášený': 401, 'Obchodník': 404, 'Vedoucí': 404, 'Administrátor': 404 } },
 
   /* Noční kopie na Disk skriptem Apps Script (#577 AS, 10. 11. 2026): volá ji
    * skript v Google účtu správce s tokenem KNG_DISK_TOKEN v hlavičce

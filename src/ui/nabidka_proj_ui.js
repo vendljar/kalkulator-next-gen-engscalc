@@ -240,6 +240,7 @@ async function nabidkaProjWordGeneruj(srv) {
       a.click();
       // stažený .docx je hotová nabídka pro zákazníka → varianta se uzamyká
       let zamcenoText = '';
+      if (typeof odeslPdSoubor === 'function') odeslPdSoubor(varianta.id, res.blob);   // PO #116: Word k dealu po potvrzení
       if (typeof zamekPoTisku === 'function') {
         const z = zamekPoTisku('nabidkaProj', varianta.id, sablonaInfo, vzTiskZamekNavic(vt));   // VZ-E3
         if (z) zamcenoText = ' Varianta ' + (z.cislo || '') + ' je nyní uzamčená jako odeslaná nabídka; '

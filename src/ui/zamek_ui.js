@@ -528,7 +528,10 @@ function zamekPoTisku(typ, varId, sablona, navic) {
   zamkniVariantu(v, Object.assign({ typ, kdo: zamekKdo(), cislo: variantaCislo(ZAK, v), otisk, vysledek, snimek, zpracovatel, datumNabidky,
                       sablona: sablona || null, slovnik: zamekSlovnikTed(), sod: (navic && navic.sod) || null }, komu ? { zakaznik: komu } : {}));
   render();
-  zamekPoTiskuUloz();
+  const ulozeni = zamekPoTiskuUloz() ? globalThis.ZAMEK_ULOZ_SLIB : null;
+  /* PO #116: první zámek cenovou nabídkou = odeslání — karta „Odeslání do
+   * Pipedrive“ po uložení zámku ukáže, co se zapíše (tisk nikdy neblokuje). */
+  if (prvni && typeof odeslPdPoZamku === 'function') { try { odeslPdPoZamku(v, typ, ulozeni); } catch (e) { /* tisk pokračuje */ } }
   return v.zamek;
 }
 
@@ -542,7 +545,8 @@ function zamekPoTisku(typ, varId, sablona, navic) {
 function zamekPoTiskuUloz() {
   if (typeof onlineMozne !== 'function' || !onlineMozne()) return false;
   if (typeof ONLINE_STAV === 'undefined' || !ONLINE_STAV.ja || typeof onlineUloz !== 'function') return false;
-  try { onlineUloz({ tiche: true, fronta: true }); } catch (e) { return false; }
+  /* PO #116: slib uložení si bere karta odeslání do Pipedrive (čeká na zámek na serveru). */
+  try { globalThis.ZAMEK_ULOZ_SLIB = onlineUloz({ tiche: true, fronta: true }); } catch (e) { globalThis.ZAMEK_ULOZ_SLIB = null; return false; }
   return true;
 }
 
@@ -595,7 +599,7 @@ function zamekLista() {
 
 function renderZamekLista() {
   const el = document.getElementById('zamekLista');
-  if (el) el.innerHTML = zamekLista();
+  if (el) el.innerHTML = zamekLista() + ((typeof odeslPdKarta === 'function') ? odeslPdKarta() : '');   // PO #116
   renderListaZakazky();
 }
 
