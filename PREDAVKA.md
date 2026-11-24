@@ -94,7 +94,8 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 - Hlídač `src/test_759_pevne_texty_preklad.js`: specifikace (522 zadání) + nabídka OCK (21 zakázek, víc šachet,
   můstky) × EN/DE/FR; sledování `tr` hlídá i části polí `jazykSam`. Pojistka: bez hesla 4 FAIL, po 8 OK.
 - Čeká na J. V. (výjimka v testu): výčet víc skupin můstků, Model 2 + ceník #354 (`techspec.js` prefill `mustky`).
-- Kolo a očekávané rozdíly: `podklady/porovnani/ocekavane_pt-zab_2026-11-24.txt`, výsledek ve zprávě koordinaci.
+- Porovnání sestavení proti origin/test: SHODA 367/367 (pevná sada nemá EN specifikaci se zábradlím) → seznam
+  očekávaných rozdílů není potřeba. Mutace [PTZAB] chycena 1/1. Výsledek kola ve zprávě koordinaci.
 
 ## Čeká na J. V.
 
