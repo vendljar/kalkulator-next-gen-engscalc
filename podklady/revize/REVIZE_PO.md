@@ -179,3 +179,90 @@ Každý nový test s pojistkou podle CLAUDE.md.
 2. Doplnit testy podle R12.
 3. J. V.: R3 (doplnit #760), R4 (nová otázka), R5 (#759).
 4. Zkouška na deal TEST až po bodu 1 (strop těla Netlify, skutečné Files API).
+
+---
+
+# Dorevize oprav (24. 11. 2026, rozdíl `a605d5c..6ddd54e`)
+
+## Verdikt dorevize: SLOUČIT
+
+Všechny nálezy první revize jsou opravené a opravy drží. Zbývá jedno doporučení k R5 (**D1**), které
+sloučení nebrání, ale doporučuji ho dodělat před zapnutím zápisu do skutečného Pipedrive.
+
+## Co se spustilo
+
+| Co | Výsledek |
+|---|---|
+| `bash nastroje/testovaci_kolo.sh --bez-mutaci --proti origin/claude/integrace-16-10` nad `6ddd54e` | hodiny 443 / 0, statické 12 / 12, porovnání S3 **SHODA 367 / 367**; sady 543 / **1 selhala** (`overit_zobrazeni.mjs`, 2 kontroly skryté karty v prohlížeči). Sada se dávky netýká, souběžně s kolem běžely moje mutace a sondy; samostatně hned poté prošla 3× ze 3 (159 OK, 0 FAIL). Kolo jako celek tedy v tomto sezení zelené nebylo — beru to jako kolísavý test pod zátěží, ne jako nález dávky (kolo dávky hlásí VŠE ZELENÉ) |
+| `node netlify/test_po_116_odeslani.mjs` | 85 OK, 0 FAIL |
+| `node src/test_po_116_ui.js` | 23 OK, 0 FAIL |
+| Sondy proti simulátoru (Q1–Q9) a 15 podvržených ZIPů proti `pdOdeslaniDocx` | viz níže |
+| Vlastní mutace (18 ks: 10 původních přeživších + 8 nových na opravy) | 17 zabito, 1 přežila (D4) |
+
+44 mutací [PO] dávky jsem znovu nepouštěl.
+
+## Stav nálezů
+
+| Nález | Stav | Ověření |
+|---|---|---|
+| R1 soubor bez zastavení | opraveno | Q1: ztracený deal i cizí CN → 409 `zastaveno`, 0 souborů; mutace zabita |
+| R2 stav po variantách, duplicitní soubor | opraveno | Q3–Q5: dvě varianty naráz → 1 PATCH (druhý 409 `zmeneno`), 1 poznámka, 2 různé soubory, opakování „už je“; nový zámek → nejdřív zápis, pak shoda názvu a velikosti, žádná kopie; starý zámek 409 |
+| R3 prodaná / vyhraný deal | opraveno | Q6: deal `won` → 0 PATCH, hodnota beze změny, poznámka zapsána |
+| R4 další zákazník | opraveno | test + mutace; viz poznámka D2 |
+| R5 kontrola Wordu | zčásti | makra, OLE, ActiveX, neplatný ZIP odmítnuty; soubor až po zapsaných polích (Q2: 409 `nejdrivZapis`); zbývá D1 |
+| R6 Word po znovuotevření | opraveno | čtením kódu |
+| R7 jméno proměnné, R8 neznámý stav, R9 bez `zahajeno` | opraveno | čtením; mutace N7 zabita |
+| R10, R11 | přijato | zapsáno k mezím |
+| R12 testy | doplněno | všech 10 původních přeživších mutací teď zabito |
+
+## Nové poznámky
+
+### D1 — kontrola Wordu nehlídá vztahy; kontrola šablon je hlídá — STŘEDNÍ až NÍZKÁ, doporučuji dodělat
+
+`pdOdeslaniDocx` si vede vlastní kratší seznam (názvy částí a `[Content_Types].xml`). Podvržené soubory:
+
+| Soubor | `pdOdeslaniDocx` | kontrola šablon `sablonaObsahVady` |
+|---|---|---|
+| vztah `attachedTemplate` na vnější adresu (stažení cizí šablony s makry při otevření) | **projde** | odmítne |
+| vztah `aFChunk` (vložený cizí dokument) | **projde** | odmítne |
+| vnější odkaz `oleObject` | **projde** | odmítne |
+| typ obsahu `vbaProject` v `[Content_Types].xml` kódovaném UTF-16, část přejmenovaná | **projde** | odmítne |
+| název části `word/vba%50roject.bin` | **projde** | odmítne |
+| `word/vbaProject.bin`, `embeddings/oleObject1.bin`, typ obsahu maker v UTF-8 | odmítne | odmítne |
+| část bez přípony, vnořený ZIP v `word/media` | projde | projde (Word je nespouští) |
+
+Q9: Word s vnější šablonou se po zapsaných polích k dealu skutečně přiložil (simulátor).
+Vnější šablona je u `.docx` reálná cesta k makrům; ostatní řádky jsou spíš obcházení vlastního seznamu.
+Kdo to může zneužít: jen oprávněný uživatel u vlastního dealu (mez B279), proto to sloučení nebrání.
+
+Návrh: místo vlastního seznamu zavolat nad rozbalenými částmi `sablonaObsahVadyZipu` (týž kód jako
+u šablon) a při jakékoli vadě soubor odmítnout. Vygenerovaná nabídka vzniká ze šablon, které touto
+kontrolou prošly; doplnit test „vygenerovaný Word projde“ (v tomto sezení neověřeno — firemní šablony
+tu nejsou) a mutaci.
+
+### D2 — komu šel první tisk, říká prohlížeč — NÍZKÁ, přijatelné
+
+Razítko `zamek.tisky[0].zakaznik` skládá server (`vzServerRazitka`), ale z id, které pošle prohlížeč;
+tisk bez id = řídící. Upravený prohlížeč tak může tisk pro dalšího zákazníka vydávat za tisk řídícímu
+a zastavení R4 obejít. Dosah: jen vlastní deal oprávněného uživatele a jen jeho vlastní záznam o tisku —
+stejná třída jako B279 (obsah Wordu server také neověří). Id řídícího je stálé (`zak.vzRidici.id`),
+výměna řídícího stará razítka nepřepíše. Zapsat k mezi B279, bez opravy.
+
+### D3 — rozbalení až 64 MB před kontrolou práv k zakázce a stropem — NÍZKÁ
+
+`pdOdeslaniDocx` běží po `pdPristup`, ale před čtením zakázky, kontrolou „kdo smí“ a stropem pokusů.
+Strop rozbalení je sdílený se šablonami (B272: 64 MB celkem, 8 MB na část `.xml` / `.rels`); část bez
+přípony `.xml` má jen strop 64 MB. Změřeno: 82 kB ZIP → 60 MB, asi 0,7–0,8 s na požadavek. Kdokoli
+s právem `crm.pipedrive` to může opakovat bez stropu. Návrh: kontrolu Wordu přesunout za práva a strop
+(do `zpracuj`), nebo zapsat k B272.
+
+### D4 — test: nový zámek téže varianty = nový stav — NÍZKÁ
+
+Mutace `pdOdeslaniVariantaStav` („jiný `zamekKdy` vrátí starý stav“) přežila. Chování je správně
+(sonda Q4), chybí jen test s pojistkou.
+
+### D5 — Word z ještě neuložené zakázky se nezapamatuje — NÍZKÁ
+
+`odeslPdSoubor` Word zahodí, když zakázka ještě nemá `ONLINE_STAV.soubor`. U zakázky z webhooku to
+nenastane; u ručně založené a navázané až později se Word nepřiloží (karta tlačítko nenabídne, jde
+vygenerovat znovu). Bez opravy, stačí vědět.
