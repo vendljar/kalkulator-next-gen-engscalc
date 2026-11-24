@@ -113,4 +113,37 @@ r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: kopie(b), ocekavaneR
 console.log('   karta B:', r.status, 'kolize =', r.kolize, 'pdCerstvaJina =', r.pdCerstvaJina);
 r = await volej(dealy[1].id);
 console.log('   opakované doručení webhooku po uložení člověkem:', r.akce, '| pdCerstva =', zakazka(W2).pdCerstva, '| adresa =', zakazka(W2).adresa);
+
+// ---- druhá dorevize (7e13c08): totožnost podle pdVazbaWebhook.kdy ----
+// I) vazba je v rejstříku?
+{ const rej2 = await odpoved(await zakazky(new Request('http://x/api/zakazky', { headers: { cookie: cA } })));
+  const kdyW = zakazka(W) && zakazka(W).pdVazbaWebhook ? zakazka(W).pdVazbaWebhook.kdy : '';
+  console.log('I) čas vazby čerstvé je v odpovědi rejstříku:', !!kdyW && JSON.stringify(rej2).includes(kdyW)); }
+// J) nová čerstvá (třetí deal): stará kopie bez vazby / s cizí vazbou / s podvrženou vazbou
+r = await volej(dealy[2].id); const W3 = r.soubor; const cer = zakazka(W3);
+const cizi = G.novaZakazka(); cizi.cislo = cer.cislo; cizi.nazevAkce = 'STARA KOPIE';
+r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: G.importZakazka(kopie(cizi)), ocekavaneRazitko: '', ocekavanySoubor: '', prepsat: true }, cA);
+console.log('J) nová zakázka pod číslem čerstvé, prepsat:', r.status, 'pdCerstvaJina =', r.pdCerstvaJina);
+const sCizi = kopie(cizi); sCizi.pdDealId = cer.pdDealId; sCizi.pdVazbaWebhook = Object.assign({}, cer.pdVazbaWebhook, { kdy: '2026-01-01T00:00:00.000Z' });
+r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: G.importZakazka(kopie(sCizi)), ocekavaneRazitko: G.uloRazitko(cer), ocekavanySoubor: W3, prepsat: true }, cA);
+console.log('   stará kopie s vazbou z jiného založení (jiné kdy):', r.status, 'pdCerstvaJina =', r.pdCerstvaJina);
+const podvrh = kopie(cizi); podvrh.pdDealId = cer.pdDealId; podvrh.pdVazbaWebhook = kopie(cer.pdVazbaWebhook);
+r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: G.importZakazka(kopie(podvrh)), ocekavaneRazitko: G.uloRazitko(cer), ocekavanySoubor: W3 }, cA);
+console.log('   úmyslně podvržená vazba (kdy opsané z načtené čerstvé):', r.status, r.chyba || '', '| nazevAkce =', zakazka(W3).nazevAkce);
+// K) smazání → nové založení: čas vazby se liší, stará kopie neprojde ani s Přepsat
+r = await volej(dealy[3].id); const W4 = r.soubor;
+o = await nacti(W4, cA); const st = G.importZakazka(o.zakazka); delete st.pdCerstva; const kdy1 = zakazka(W4).pdVazbaWebhook.kdy;
+await smaz(W4, cA); await new Promise(x => setTimeout(x, 5)); r = await volej(dealy[3].id);
+console.log('K) po smazání webhook:', r.akce, '| čas vazby jiný:', zakazka(W4).pdVazbaWebhook.kdy !== kdy1);
+r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: kopie(st), ocekavaneRazitko: G.uloRazitko(zakazka(W4)), ocekavanySoubor: W4, prepsat: true }, cA);
+console.log('   stará kopie (razítko z disku + prepsat):', r.status, 'pdCerstvaJina =', r.pdCerstvaJina);
+// L) opakované doručení beze změny nad čerstvou + řádné uložení
+r = await volej(dealy[3].id); console.log('L) opakované doručení nad čerstvou:', r.akce, '| pdCerstva =', zakazka(W4).pdCerstva);
+o = await nacti(W4, cA); const ok4 = G.importZakazka(o.zakazka); delete ok4.pdCerstva; ok4.adresa = 'Radne ulozeni';
+r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: kopie(ok4), ocekavaneRazitko: G.uloRazitko(ok4), ocekavanySoubor: W4 }, cA);
+console.log('   řádné první uložení:', r.status, '| pdCerstva =', zakazka(W4).pdCerstva, '| vazba.kdy drží:', zakazka(W4).pdVazbaWebhook.kdy === o.zakazka.pdVazbaWebhook.kdy);
+// M) čerstvá BEZ vazby (uměle — webhook ji vždy píše): pojistka mlčí
+{ const key = 'zakazky/z/' + W3; const z = JSON.parse(pamet.get(key)); delete z.pdVazbaWebhook; pamet.set(key, JSON.stringify(z));
+  r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: G.importZakazka(kopie(cizi)), ocekavaneRazitko: '', ocekavanySoubor: '', prepsat: true }, cA);
+  console.log('M) čerstvá bez vazby (umělý stav) + nová zakázka s prepsat:', r.status, 'pdCerstvaJina =', r.pdCerstvaJina, r.chyba || ''); }
 process.exit(0);

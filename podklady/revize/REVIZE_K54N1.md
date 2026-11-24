@@ -323,3 +323,77 @@ jménem, které by uložení dalo (`uloJmenoSouboru(ZAK)`).
    s vazbou na #730 a opravit před spuštěním Pipedrive na `main`.
 3. Ruční zkouška na testu po nasazení: otevřít čerstvou z dealu → změnit pole v dealu (další webhook) →
    uložit v okně: očekává se kolize s tlačítky, ne „znovu založil Pipedrive“.
+
+---
+
+# Druhá dorevize (24. 11. 2026) — rozdíl `b6fb16b..7e13c08`
+
+## Verdikt: SLOUČIT
+
+D1–D4 jsou opravené podle návrhu a ověřené vlastním během; nové falešné odmítnutí ani nové obejití jsem nenašel.
+Zbývají jen přijaté meze (N4, D3) a dvě poznámky níž (P1, P2), které sloučení nebrání.
+
+## Co jsem ověřil (spuštěno nad `7e13c08`)
+
+| Kontrola | Výsledek |
+|---|---|
+| `netlify/test_k54n1_smazana.mjs` | 30 OK / 0 FAIL |
+| `src/test_k54n1_smazani_ui.js` | 34 OK / 0 FAIL |
+| Pojistka: tytéž sady nad `b6fb16b` | server 3 FAIL, UI 3 FAIL |
+| Porovnání sestavení `--proti origin/test` | SHODA 367/367 |
+| Mutace `node netlify/mutace.mjs K54N1` | 27 z 27 chycených (jen filtr K54N1, ne celý běh) |
+| `kontrola_udaju.py --rozsah b23e832..7e13c08` | čisté |
+| `PREDAVKA.md` | 13,2 kB (limit 15 kB) |
+
+Celé kolo jsem nepouštěl.
+
+## Reprodukce `repro_n3.mjs` nad `7e13c08` (rozšířená o oddíly I–M)
+
+| Případ | Výsledek | Hodnocení |
+|---|---|---|
+| E — webhook aktualizuje čerstvou, kterou má okno řádně otevřenou | 409 běžná kolize B10 („mezitím uložil(a) Pipedrive (webhook)“) s tlačítky | D1 opraveno |
+| F — razítko v datech přepsal zápis do složky | 200 | D2 opraveno |
+| H — dvě karty, opakování po ztracené odpovědi | první 200, další běžná kolize | beze změny, v pořádku |
+| J — nová zakázka pod číslem čerstvé s `prepsat` | 409 `pdCerstvaJina` | drží |
+| J — stará kopie s vazbou z jiného založení (jiné `kdy`) | 409 `pdCerstvaJina` | drží |
+| K — smazání → nové založení → stará kopie s razítkem z disku a `prepsat` | 409 `pdCerstvaJina`; nové založení má jiný čas vazby | N3 drží |
+| C (`repro_server.mjs`) — staré okno a „Přepsat“ | 409 `pdCerstvaJina`, čerstvá zůstala | N3 drží |
+| L — opakované doručení webhooku nad čerstvou | `bezeZmeny`, příznak i čas vazby zůstávají; řádné první uložení 200, příznak zmizí, čas vazby drží | v pořádku |
+| I — je čas vazby v rejstříku? | ne (odpověď `GET /api/zakazky` ho neobsahuje) | lepší než razítko (to tam je) |
+| J — úmyslně podvržená vazba (čas opsaný z načtené čerstvé) | 200 | přijatá mez D3: ochrana proti omylu; zapsáno v `BEZPECNOST_MEZE.md` |
+| M — čerstvá bez vazby (stav vyrobený uměle zásahem do úložiště) | pojistka mlčí → 200 s `prepsat` | viz P1 |
+
+Řádek G z první dorevize (razítko z rejstříku) už nic neukazuje — po F je kalkulace uložená člověkem a čerstvá není;
+nahrazují ho oddíly I a J.
+
+## Odpovědi na otázky koordinace
+
+- **Čerstvá bez vazby — pojistka mlčí, je to přijatelné?** Ano. Webhook při založení vazbu s časem píše vždy
+  (jediné místo, které nastavuje `pdCerstva`), zrušení vazby (`/api/pd/vazba`, akce `zrusit`) jen mění stav na
+  `zruseno` a záznam s časem ponechá, obnova z otisku bere příznak i vazbu společně. Stav „čerstvá bez vazby“
+  jsem uměl vyrobit jen přímým zásahem do úložiště. Mlčení je navíc bezpečnější směr než odmítat všechno
+  (řádné okno by jinak čerstvou neuložilo nikdy) — platí pak běžná B10.
+- **Podvržená vazba, je čas zjistitelný z rejstříku?** Z rejstříku ne, jen z načtené zakázky. Kdo ji načte, může
+  čas opsat do jiného těla a projde — ochrana proti omylu, ne bezpečnostní mez; v `BEZPECNOST_MEZE.md` je to
+  teď řečeno přesně.
+- **Opakované doručení webhooku.** Beze změny `bezeZmeny` (razítko i čas vazby drží); se změnou `aktualizovano`
+  a otevřené okno dostane běžnou kolizi s tlačítky; po uložení člověkem webhook práci nepřepisuje.
+
+## Poznámky (nebrání sloučení)
+
+- **P1 — INFO:** pojistka stojí na tom, že záznam s `pdCerstva` má vždy vazbu s časem. Dnes to platí; kdyby
+  budoucí změna webhooku nebo zrušení vazby čas z čerstvého záznamu odstranila, N3 se potichu vypne. Stačila
+  by věta u `pdCerstva` ve webhooku nebo test „čerstvá založená webhookem má `pdVazbaWebhook.kdy`“ (serverová
+  sada to dnes ověřuje jen nepřímo).
+- **P2 — INFO:** po kolizi z případu E smí řádné okno zvolit „Přepsat serverovou verzi“ — jeho připravená kopie
+  pak přepíše údaje, které webhook mezitím doplnil z dealu. Je to běžné chování B10 (vědomá volba) a další
+  doručení webhooku údaje znovu nabídne; jen ať se s tím počítá při ruční zkoušce.
+- Trvalý stav „smazána“ (D4): značku ruší úspěšné uložení i odhlášení, okno bez jména se porovnává se jménem
+  z čísla nabídky — po změně čísla se uložení zase pustí, což je správně (N4, vědomý krok).
+
+## Doporučení koordinaci
+
+Sloučit do integrace a testu rychlou cestou. Ruční zkoušky pro J. V. na testu: (1) smazat otevřenou → Ctrl+Z nic
+nevrátí; (2) druhá karta se smazanou → „byla mezitím smazána“, další uložení se neposílá; (3) smazání → webhook
+založí čerstvou → staré okno neuloží ani přes „Přepsat“; (4) čerstvá otevřená z dealu → změna v dealu → uložení
+v okně dá kolizi s tlačítky, ne „znovu založil Pipedrive“.
