@@ -1,12 +1,12 @@
 // Reprodukce: smazání otevřené → zavřeno → krok Zpět (Ctrl+Z) → uložení
 const fs = require('fs'), vm = require('vm');
 const R = process.argv[2];
-const vyjmi = (zdroj) => (jm) => { const m = new RegExp('^(async )?function ' + jm + '\\(', 'm').exec(zdroj); if (!m) throw new Error('chybi ' + jm);
+const vyjmi = (zdroj) => (jm) => { const m = new RegExp('^(async )?function ' + jm + '\\(', 'm').exec(zdroj); if (!m) return '';   // funkce z dorevize ve starší verzi chybí
   return zdroj.slice(m.index, zdroj.indexOf('\n}\n', m.index) + 2); };
 const ON = vyjmi(fs.readFileSync(R + '/src/ui/online_ui.js', 'utf8')), ZU = vyjmi(fs.readFileSync(R + '/src/ui/zakazka_ui.js', 'utf8')),
   UL = vyjmi(fs.readFileSync(R + '/src/ui/zakulozeni_ui.js', 'utf8')), HI = vyjmi(fs.readFileSync(R + '/src/ui/historie.js', 'utf8'));
 const KOD = [ON('onlineSmazVybrane'), ON('onlineUloz'), ZU('zakNovaZakazkaProved'), UL('zakOdpojUlozeni'),
-  HI('historieTik'), HI('historieObnov'), HI('historieZpet'), HI('historieZalohaZapis'), HI('historieZalohaCti')].join('\n');
+  HI('historieTik'), HI('historieObnov'), HI('historieZpet'), HI('historieZalohaZapis'), HI('historieZalohaCti'), HI('historieZapomen'), HI('historieZalohaHotovo'), HI('historieSkryjListu')].join('\n');
 const sklad = {}; const odeslano = [], zpravy = [];
 const ctx = { console, JSON, Promise, Object, Array, String, Date, setTimeout, clearTimeout,
   HIST: { posledni: null, zpet: [], znovu: [], probihaKrok: false, ulozenoJako: null, autoTimer: null, autoStav: '', nabidka: null },
@@ -22,6 +22,7 @@ const ctx = { console, JSON, Promise, Object, Array, String, Date, setTimeout, c
   historieNeulozeno: () => true, historieOznacUlozeno: () => {}, zamekCteniVypni: () => {}, onlinePoslednizapamatuj: () => {},
   zakUlozeniZprava: () => {}, seznamReset: () => {}, onlineZprava: t => zpravy.push(t), onlineNactiRejstrik: () => Promise.resolve(),
   onlineSlevyOtisk: () => '', onlineSlevyZeServeru: () => {}, onlineChybaText: e => e.message, onlineZamekNesouhlasi: () => false,
+  HIST_ODLOZENO_KLIC: 'o', uloJmenoSouboru: z => String((z && z.cislo) || '') + '.json',
   uloCisloVyplneno: x => !!String(x || '').trim(),
   uloZalohaSmiPrepsat: (s, c) => { const p = !c.cislo && !c.nazevAkce; if (!p) return true; return !(s && s.zakazka && (s.cislo || s.nazevAkce)); },
   onlineApi: (url, telo, m) => { if (m === 'DELETE') return Promise.resolve({ ok: true }); odeslano.push(JSON.parse(JSON.stringify(telo))); return Promise.resolve({ ok: true, soubor: 'CN-432.json', razitko: 'R2' }); },

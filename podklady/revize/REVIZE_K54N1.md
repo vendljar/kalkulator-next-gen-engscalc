@@ -185,3 +185,141 @@ Návrh: na začátku mazání zrušit časovač a počkat na `ukladaBeh`.
 2. N5–N7 lze přibalit (malé, klientské, bez dopadu na cenu), nebo zapsat do roadmapy.
 3. N3 a robustní varianta N4 (totožnost záznamu / náhrobek) → otázka pro J. V. a samostatná položka roadmapy.
 4. Po nasazení do testu zkusit ručně i: smazat otevřenou → Ctrl+Z → nic se nevrátí a neuloží.
+
+---
+
+# Dorevize oprav (24. 11. 2026) — rozdíl `b23e832..b6fb16b`
+
+Kód `189a334`, `b6fb16b` jen test a dokumentace. Reprodukce: `podklady/revize/k54n1/repro_n3.mjs` (nová pojistka N3),
+`repro_server.mjs` a `repro_ui.js` (původní nálezy; `repro_ui.js` upraveno, aby běželo nad starou i novou verzí).
+Reprodukce se pouštějí nad pracovní kopií revidované větve (do ní zkopírovat složku `podklady/revize/k54n1/`).
+
+## Verdikt dorevize: SLOUČIT PO OPRAVÁCH (D1, D2 — obě malé, týž řádek serveru)
+
+N1, N2, N5–N8 jsou opravené a ověřené. Nová pojistka N3 dělá, co J. V. rozhodl (stará kopie čerstvou kalkulaci
+z Pipedrive nepřepíše), ale jako totožnost záznamu bere razítko verze v datech těla — a to dává **dvě falešná
+odmítnutí řádného prvního uložení čerstvé kalkulace** (D1, D2). Obojí končí trvalým stavem okna bez možnosti
+uložit. Pipedrive na `main` ještě neběží (#730), takže dopad je teď jen na testu; přesto doporučuji opravit před
+sloučením — oprava je jedna podmínka na serveru a test.
+
+## Co jsem ověřil (spuštěno nad `b6fb16b`)
+
+| Kontrola | Výsledek |
+|---|---|
+| `netlify/test_k54n1_smazana.mjs` | 25 OK / 0 FAIL |
+| `src/test_k54n1_smazani_ui.js` | 30 OK / 0 FAIL |
+| Pojistka: tytéž sady nad `b23e832` (před opravami) | server 6 FAIL, UI 15 FAIL |
+| Porovnání sestavení `--proti origin/test` | SHODA 367/367 |
+| Mutace `node netlify/mutace.mjs K54N1` | 24 z 24 chycených (jen filtr K54N1, ne celý běh) |
+| Původní reprodukce N1/N2 (`repro_ui.js`) | po smazání 0 kroků Zpět, Ctrl+Z nic nevrátí, záloha smazané pryč |
+| Původní reprodukce N3 (`repro_server.mjs`, oddíl C) | staré okno i „Přepsat“ → 409 `pdCerstvaJina`, čerstvá zůstala |
+
+Celé kolo jsem nepouštěl (údaj dávky: SHODA 367/367 potvrzuji vlastním během porovnání).
+
+## Stav původních nálezů
+
+| Nález | Stav | Poznámka |
+|---|---|---|
+| N1 Zpět po zavření | opraveno | `historieZapomen` jen v cestě smazání; test i mutace |
+| N2 záloha v prohlížeči | opraveno | maže se jen záloha smazaného záznamu, cizí rozpracovaná zůstane (test) |
+| N3 Přepsat přes čerstvou | opraveno s výhradou | viz D1, D2 |
+| N4 vědomé kroky | přijato | zapsáno v `BEZPECNOST_MEZE.md` |
+| N5 opakované 409 | opraveno | trvalý stav okna; zbytek viz D4 |
+| N6 potvrzení, přepnutí karty | opraveno | text potvrzení = rozhodnutí J. V. |
+| N7 rozběhnuté uložení | opraveno | časovač zrušen, čeká se na `ukladaBeh` |
+| N8 drobnosti | vyřízeno | |
+
+## Nové nálezy dorevize
+
+### D1 — STŘEDNÍ: aktualizace čerstvé kalkulace webhookem zablokuje okno, které ji řádně otevřelo
+
+Webhook při změně v dealu čerstvou kalkulaci aktualizuje (`aktualizovano`): nové razítko, příznak `pdCerstva`
+zůstává. Okno, které ji mezitím řádně otevřelo a ještě neuložilo, pak nese razítko předchozí verze téže kalkulace:
+
+```
+E) webhook nad otevřenou čerstvou: aktualizovano | pdCerstva = true | razítko změněno: true
+   první uložení okna, které ji řádně načetlo: 409 pdCerstvaJina = true | Kalkulaci mezitím znovu založil Pipedrive …
+```
+
+Hláška je nepravdivá (nikdo ji znovu nezaložil), stav je trvalý (N5) a „Načíst znovu / Přepsat“ se nenabídne —
+rozpracovaná úprava v okně je ztracená. Před opravou tu byla běžná kolize s oběma tlačítky. Okno je krátké
+(od založení do prvního uložení člověkem), ale právě tehdy obchodník deal v Pipedrive dolaďuje a automatizace
+posílá další doručení. Opakované doručení beze změny razítko nemění (`bezeZmeny`) — to je v pořádku.
+
+### D2 — STŘEDNÍ (podmíněná): souběžné ukládání do složky přepíše razítko v datech a první uložení čerstvé neprojde
+
+`uloUlozDoSlozky` (`src/ui/uloziste_ui.js`, krok „vlastní zápis“) píše `ZAK.uloRazitko = razitko` — vlastní
+razítko souboru ve složce. `render()` volá `uloTik()` i `onlineTik()`, oba kanály ukládají nezávisle. Má-li
+přihlášený uživatel připojenou složku se zapnutým automatickým ukládáním, zápis do složky změní razítko v datech
+okna dřív, než odejde online uložení:
+
+```
+F) okno načetlo čerstvou, razítko v datech přepsal zápis do složky: 409 pdCerstvaJina = true
+```
+
+Výsledek: čerstvou kalkulaci z Pipedrive takové okno neuloží nikdy (po znovuotevření se totéž opakuje podle
+pořadí časovačů). Serverovou část jsem reprodukoval; že se oba kanály v jednom okně opravdu sejdou, plyne z kódu
+(`common.js` volá oba tiky, `uloTik` nehledí na přihlášení) — v prohlížeči jsem to nezkoušel. Jestli někdo
+složku vedle online databáze používá, ví J. V.; pokud ne, je dopad nulový, ale pojistka by na tom neměla stát.
+
+**Návrh společný pro D1 a D2:** totožnost čerstvého záznamu nebrat z razítka verze, ale z údaje, který se
+aktualizací nemění a který nepřepisuje žádná jiná cesta. Dvě možnosti:
+
+1. `pdVazbaWebhook.kdy` — čas založení vazby, webhook ho při aktualizaci drží (`vazbaPlati.kdy`), nově založená
+   kalkulace má jiný; okno ho dostane při načtení a klient ho nemění. Podmínka: `stara.pdCerstva === true` a
+   vazba v těle má jiné `kdy` (nebo žádnou) → 409 `pdCerstvaJina`; stejné `kdy` → běžná cesta (shoda razítka,
+   jinak kolize B10 s „Načíst znovu / Přepsat“ — přepsat aktualizaci webhooku vlastní připravenou kopií téže
+   kalkulace je legitimní). `prepsat: true` bez shodné vazby dál neprojde. Čte se z těla PŘED `pdVazbaDrz`.
+2. Zvláštní pole těla (např. `nactenoRazitko`), které klient nastaví jen při otevření a po úspěšném uložení
+   (ne v „Přepsat“, ne při zápisu do složky). Řeší D2, D1 jen s další podmínkou.
+
+Doporučuji 1. Test s pojistkou: (a) aktualizace webhookem nad otevřenou čerstvou → první uložení dá kolizi
+s tlačítky, ne `pdCerstvaJina`; (b) tělo s jiným `zakazka.uloRazitko`, ale se správnou vazbou a očekávaným
+razítkem → 200; (c) stará kopie smazané kalkulace z webhooku (jiné `kdy`) → 409 jako dnes.
+
+### D3 — INFO: razítko čerstvé kalkulace jde zjistit bez jejího načtení (rejstřík)
+
+Rejstřík (`GET /api/zakazky`, vidí ho každý přihlášený) nese razítko poslední verze v poli `upraveno`:
+
+```
+G) rejstřík nese razítko čerstvé (pole upraveno): true
+   cizí zakázka s razítkem z rejstříku (bez načtení čerstvé): 200 | nazevAkce = STARA KOPIE
+```
+
+Běžný klient to neudělá — razítko z rejstříku do dat zakázky nikde nepřebírá a „Přepsat serverovou verzi“ mění
+jen očekávané razítko. Pojistka je tedy ochrana proti omylu, ne bezpečnostní mez (kdo smí zakázku načíst, smí ji
+i uložit — stávající mez NN B237). Věta v `BEZPECNOST_MEZE.md` „smí uložit jen okno, které ji načetlo“ je
+silnější než skutečnost; navrhuji doplnit „ochrana proti omylu, ne proti úmyslně sestavenému požadavku“.
+Platí i pro variantu s `pdVazbaWebhook.kdy` (je v načtené zakázce, ne v rejstříku — o něco lepší).
+
+### D4 — NÍZKÁ: trvalý stav „smazána“ má dvě mezery
+
+- Nová zakázka pod číslem čerstvé kalkulace (okno bez jména záznamu): po 409 `pdCerstvaJina` se značka nastaví
+  na jméno z odpovědi, ale strážce porovnává s `ONLINE_STAV.soubor` (prázdné) → automatické ukládání se
+  nezastaví a 409 se opakuje při každé změně. Jen šum, nic se nezapíše.
+- Značku neruší odhlášení (`ONLINE_STAV.soubor = ''` v obsluze odhlášení) ani úspěšné uložení. Po odhlášení
+  a přihlášení v témž okně projde uložení staré kopie jako nové (prázdné razítko — cesta N4) a hned poté
+  značka znovu sedí na jméno → další uložení okno falešně odmítá jako „smazána“. Okrajové.
+
+Návrh: značku rušit i v `.then` úspěšného uložení a při odhlášení; strážce u okna bez jména porovnávat se
+jménem, které by uložení dalo (`uloJmenoSouboru(ZAK)`).
+
+### D5 — INFO: zbylé chování, které je v pořádku
+
+- Dvě karty s čerstvou: první uloží (200, příznak zmizí), druhá dostane běžnou kolizi s tlačítky (oddíl H).
+- Opakování uložení po ztracené odpovědi: běžná kolize, ne `pdCerstvaJina` (příznak už na serveru není).
+- Webhook po uložení člověkem: `bezeZmeny` / aktualizace bez `pdCerstva`, práce člověka zůstává.
+- Akce nad čerstvou, které píší na serveru (`/api/pd/vazba`, `/api/pd/organizace`), po sobě zakázku znovu
+  načtou (`onlineOtevri`), „vítěz“ přepíše obě razítka — razítko v datech se jimi nerozejde.
+- Ukázková data (`testDataSyp`, `prepsat: true`) čerstvou kalkulaci pod týmž číslem nepřepíšou (409) — jen test.
+- Po prvním uložení člověkem platí zase B10 včetně „Přepsat“ — stará kopie pak kalkulaci přepsat může;
+  rozhodnutí J. V. se týká jen čerstvé, zapsáno v `BEZPECNOST_MEZE.md`.
+
+## Doporučení koordinaci
+
+1. Do `claude/rychla-K54-N1` doplnit opravu D1 + D2 (totožnost čerstvé kalkulace podle `pdVazbaWebhook.kdy`,
+   testy a mutace), případně D4; D3 = jedna věta v `BEZPECNOST_MEZE.md`.
+2. Pokud koordinace rozhodne sloučit do testu hned (Pipedrive na `main` neběží): D1 a D2 zapsat jako nález
+   s vazbou na #730 a opravit před spuštěním Pipedrive na `main`.
+3. Ruční zkouška na testu po nasazení: otevřít čerstvou z dealu → změnit pole v dealu (další webhook) →
+   uložit v okně: očekává se kolize s tlačítky, ne „znovu založil Pipedrive“.
