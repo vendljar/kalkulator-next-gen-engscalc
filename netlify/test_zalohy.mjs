@@ -266,6 +266,7 @@ const KLICE = {
   'zk-navrh': ['zakaznici_hromadne', false],      // ZK #755: náhled hromadného naplnění (24 h), ne data
   'zk-den': ['zakaznici_hromadne', false],        // ZK #755: denní počítadlo dotazů do ARES, ne data
   'zk-protokol': ['zakaznici_hromadne', false],   // ZK #755: protokol hromadných zápisů (výjimka k vědomí J. V.)
+  'zk-nesedi': ['zakaznici_hromadne', false],     // ZK revize R3: paměť IČO, která nesedí s ARES (30 dní), ne data
   'a/': ['aktivita', false],                       // #ON: čas poslední aktivity, ne data
   'o/': ['aktivita', false],                       // #ON: čas odhlášení, ne data
 };

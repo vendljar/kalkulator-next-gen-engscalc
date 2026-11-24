@@ -524,7 +524,7 @@ function zakaznikKartaHtml() {
 const ZK_STAVY = [
   { stav: 'zalozit', popis: 'Založit' },
   { stav: 'nesedi', popis: 'Nesedí s ARES' },
-  { stav: 'vypadek', popis: 'ARES nedostupný — zkusit znovu' },
+  { stav: 'vypadek', popis: 'Zkusit znovu (ARES nedostupný / strop)' },
   { stav: 'existuje', popis: 'Už existuje' },
   { stav: 'zbyva', popis: 'Čeká na ověření' },
 ];
@@ -556,21 +556,38 @@ async function zakazniciHromadneNahled(znovu) {
 }
 async function zakazniciHromadneZalozit() {
   const h = ZAK_DB.hromadne;
-  if (!h || h.bezi || !h.navrh || h.navrh.faze !== 'hotovo') return false;
-  const n = h.navrh.pocty.zalozit;
-  if (!n) { h.hlaska = 'V náhledu není nic k založení.'; render(); return false; }
-  if (!await potvrd('Založit ' + n + ' karet zákazníků podle ARES?\n\nExistující karty se nemění. '
-      + 'Položky „nesedí s ARES“ a „ARES nedostupný“ se nezaloží.')) return false;
-  h.bezi = true; render();
+  if (!h || h.bezi || !h.navrh || (h.navrh.faze !== 'hotovo' && h.navrh.faze !== 'zapis')) return false;
+  /* Revize ZK R1: zápis běží po kouscích; rozpracovaný (faze 'zapis') se jen dokončí. */
+  if (h.navrh.faze === 'hotovo') {
+    const n = h.navrh.pocty.zalozit;
+    if (!n) { h.hlaska = 'V náhledu není nic k založení.'; render(); return false; }
+    if (!await potvrd('Založit ' + n + ' karet zákazníků podle ARES?\n\nExistující karty se nemění. '
+        + 'Položky „nesedí s ARES“ a „ARES nedostupný“ se nezaloží.')) return false;
+  }
+  h.bezi = true; h.hlaska = ''; render();
+  const id = h.navrh.id;
+  let v = null;
   try {
-    const o = await onlineApi('/api/zakaznici-ze-zakazek', { akce: 'zalozit', id: h.navrh.id });
-    const v = o.vysledek || {};
-    h.navrh = null;
-    h.protokol = (h.protokol || []).concat([v]);
-    h.hlaska = 'Založeno karet: ' + (v.zalozeno || 0) + '.' + (v.zmenenoMezitim ? ' Zakázka se mezitím změnila (nezaloženo): ' + v.zmenenoMezitim + '.' : '')
-      + (v.strop ? ' Nad strop počtu karet: ' + v.strop + '.' : '');
+    let o = await onlineApi('/api/zakaznici-ze-zakazek', { akce: 'zalozit', id });
+    for (let i = 0; i < 1000 && !o.hotovo && ZAK_DB.hromadne === h; i++) {
+      v = o.vysledek; h.navrh = o.navrh || h.navrh; render();
+      await new Promise(r => setTimeout(r, 200));
+      o = await onlineApi('/api/zakaznici-ze-zakazek', { akce: 'zalozit', id });
+    }
+    v = o.vysledek || {};
+    if (o.hotovo) {
+      h.navrh = null;
+      h.protokol = (h.protokol || []).filter(x => !(x && x.id === v.id)).concat([v]);
+      h.hlaska = 'Založeno karet: ' + (v.zalozeno || 0) + '.' + (v.zmenenoMezitim ? ' Zakázka se mezitím změnila (nezaloženo): ' + v.zmenenoMezitim + '.' : '')
+        + (v.uzExistovalo ? ' Karta mezitím vznikla jinak: ' + v.uzExistovalo + '.' : '') + (v.strop ? ' Nad strop počtu karet: ' + v.strop + '.' : '');
+    }
     ZAK_DB.nacteno = false;
-  } catch (e) { h.hlaska = 'Nezaloženo: ' + e.message; }
+  } catch (e) {
+    /* Část karet už mohla vzniknout — skutečný stav ukáže server (náhled + protokol). */
+    h.hlaska = 'Zápis se přerušil: ' + e.message + (v ? ' Zatím založeno: ' + (v.zalozeno || 0) + '.' : '') + ' Dejte „Dokončit zápis“.';
+    ZAK_DB.nacteno = false;
+    try { const o = await onlineApi('/api/zakaznici-ze-zakazek'); h.navrh = o.navrh || null; h.protokol = o.protokol || []; } catch (e2) { /* nic */ }
+  }
   h.bezi = false; render();
   return true;
 }
@@ -594,11 +611,13 @@ function zakazniciHromadneHtml() {
     + '<button ' + (h.bezi ? 'disabled ' : '') + 'onclick="zakazniciHromadneNahled(false)">' + (n ? 'Nový náhled' : 'Spustit náhled') + '</button>'
     + (n && n.faze === 'hotovo' && n.pocty.vypadek ? ' <button class="mini" ' + (h.bezi ? 'disabled ' : '') + 'onclick="zakazniciHromadneNahled(true)">Zkusit znovu ARES (' + zkN(n.pocty.vypadek) + ')</button>' : '')
     + (n && n.faze === 'hotovo' && n.pocty.zalozit ? ' <button class="primary" ' + (h.bezi ? 'disabled ' : '') + 'onclick="zakazniciHromadneZalozit()">Založit ' + zkN(n.pocty.zalozit) + ' karet…</button>' : '')
+    + (n && n.faze === 'zapis' ? ' <button class="primary" ' + (h.bezi ? 'disabled ' : '') + 'onclick="zakazniciHromadneZalozit()">Dokončit zápis (zbývá ' + zkN(n.zapis ? n.zapis.zbyva : 0) + ')</button>' : '')
     + (n ? ' <button class="mini" ' + (h.bezi ? 'disabled ' : '') + 'onclick="zakazniciHromadneZrus()">Zahodit náhled</button>' : '')
     + ' <button class="mini" onclick="zakazniciHromadneZavri()">Zavřít</button></div>';
   if (n) {
     const prubeh = n.faze === 'cteni' ? 'čtu zakázky ' + zkN(n.precteno) + ' / ' + zkN(n.zakazekCelkem)
-      : n.faze === 'ares' ? 'ověřuji v ARES, zbývá ' + zkN(n.pocty.zbyva) : 'hotovo';
+      : n.faze === 'ares' ? 'ověřuji v ARES, zbývá ' + zkN(n.pocty.zbyva)
+      : n.faze === 'zapis' ? 'zakládám karty: založeno ' + zkN(n.zapis ? n.zapis.zalozeno : 0) + ', zbývá ' + zkN(n.zapis ? n.zapis.zbyva : 0) : 'hotovo';
     html += '<div class="note" style="margin-top:6px">Stav: <b>' + esc(prubeh) + '</b> · zakázek ' + zkN(n.zakazek)
       + ' · dotazů do ARES ' + zkN(n.dotazuAres) + ' · bez IČO ' + zkN(n.bezIco) + ' · s neplatným IČO ' + zkN(n.neplatneIco)
       + ' (ty se neberou)</div>';
@@ -616,8 +635,9 @@ function zakazniciHromadneHtml() {
   }
   const prot = (h.protokol || []).slice(-5).reverse();
   if (prot.length) html += '<h3>Protokol</h3><ul style="margin:0;padding-left:20px;font-size:13px">' + prot.map(x =>
-    '<li>' + esc(String(x.kdy || '').slice(0, 16).replace('T', ' ')) + ' · ' + esc(x.kdo || '?') + ' — založeno ' + zkN(x.zalozeno || 0)
-    + ', už existovalo ' + zkN(x.uzExistovalo || 0) + ', nesedí ' + zkN(x.nesedi || 0) + ', ARES nedostupný ' + zkN(x.aresNedostupny || 0)
+    '<li>' + esc(String(x.kdy || '').slice(0, 16).replace('T', ' ')) + ' · ' + esc(x.kdo || '?') + ' · ' + esc(x.stav || '') + ' — založeno ' + zkN(x.zalozeno || 0)
+    + (x.zbyva ? ' (zbývá ' + zkN(x.zbyva) + ')' : '')
+    + ', už existovalo ' + zkN((x.existovalo || 0) + (x.uzExistovalo || 0)) + ', nesedí ' + zkN(x.nesedi || 0) + ', ARES nedostupný ' + zkN(x.aresNedostupny || 0)
     + ', zakázek ' + zkN(x.zakazek || 0) + '</li>').join('') + '</ul>';
   return html + '</div></div>';
 }

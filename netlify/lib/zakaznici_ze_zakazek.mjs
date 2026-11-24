@@ -23,9 +23,6 @@ import { aresIcoNorm, aresIcoPlatne } from './ares_server.mjs';
 const txt = (v) => (typeof v === 'string' ? v.trim() : (typeof v === 'number' && isFinite(v) ? String(v) : ''));
 const obj = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
 
-/* Pole karty, která ARES zná — z nich se do karty bere VÝHRADNĚ ARES. */
-export const ZZ_POLE_ARES = ['nazev', 'sidlo', 'ico', 'dic'];
-
 /* IČO strany: '' = bez IČO, null = neplatné (neprojde tvarem nebo číslicí). */
 export function zzIco(v) {
   const t = txt(v).replace(/[\s.]/g, '');
@@ -152,16 +149,18 @@ export function zzShoda(hl, ares) {
   return duvody.length ? { stav: 'nesedi', duvod: duvody.join('; ') } : { stav: 'zalozit', duvod: '' };
 }
 
-/* Existující karty → rychlé hledání podle IČO a podle klíče z názvu (karta
- * bez IČO se stejným názvem = táž firma, nezakládat dvojče; vzor dvojceKarty). */
-export function zzExistujici(karty) {
-  const ico = new Map(), nazev = new Map();
-  for (const k of karty || []) {
-    if (!obj(k)) continue;
-    const i = zzIco(k.ico);
-    if (i) ico.set(i, k);
-    const n = g.zakaznikKlic({ nazev: k.nazev });
-    if (n && !i) nazev.set(n, k);
+/* Existující karty → index podle IČO a podle klíče z názvu, JEN z klíčů
+ * úložiště (revize ZK R2: bez čtení karet). Klíč karty je `zakaznikKlic`:
+ * IČO bez mezer a teček (6–10 číslic), jinak `n-<název>` — karta bez platného
+ * IČO je tedy v indexu názvů (táž firma bez IČO = nezakládat dvojče; vzor
+ * dvojceKarty). IČO z klíče projde touž normalizací jako IČO zakázky
+ * (7místné „1234567“ = „01234567“). Vstup: klíče se `z/` i bez. */
+export function zzExistujiciZKlicu(klice) {
+  const ico = new Set(), nazev = new Set();
+  for (const k0 of klice || []) {
+    const k = String(k0).replace(/^z\//, '');
+    if (/^\d{6,10}$/.test(k)) { const i = zzIco(k); if (i) ico.add(i); }
+    else if (k.startsWith('n-')) nazev.add(k);
   }
   return { ico, nazev };
 }

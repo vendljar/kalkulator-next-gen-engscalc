@@ -16,9 +16,14 @@ process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
 process.env.ADMIN_INIT_HESLO = 'Docasne.Heslo.123';
 
 const pamet = new Map();
+/* Revize R2: počítadlo čtení podle úložiště; R1: jednorázový pád zápisu klíče. */
+const cteni = {};
+let padniPriZapisu = '';
 globalThis.__TEST_ULOZISTE = (nazev) => ({
-  async cti(k) { return pamet.has(nazev + '/' + k) ? JSON.parse(pamet.get(nazev + '/' + k)) : null; },
-  async zapis(k, v) { pamet.set(nazev + '/' + k, JSON.stringify(v)); },
+  async cti(k) { cteni[nazev] = (cteni[nazev] || 0) + 1; return pamet.has(nazev + '/' + k) ? JSON.parse(pamet.get(nazev + '/' + k)) : null; },
+  async zapis(k, v) {
+    if (padniPriZapisu && padniPriZapisu === nazev + '/' + k) { padniPriZapisu = ''; throw new Error('simulovaný pád funkce'); }
+    pamet.set(nazev + '/' + k, JSON.stringify(v)); },
   async seznam(prefix) { return [...pamet.keys()].filter(x => x.startsWith(nazev + '/' + (prefix || ''))).map(x => x.slice(nazev.length + 1)); },
   async smaz(k) { pamet.delete(nazev + '/' + k); },
 });
@@ -28,6 +33,7 @@ import prihlaseni from './functions/prihlaseni.mjs';
 import uzivatele from './functions/uzivatele.mjs';
 import zakaznici from './functions/zakaznici.mjs';
 import zzFn, { ZZ_NASTAVENI } from './functions/zakaznici_ze_zakazek.mjs';
+import { ZAKAZNICI_MAX } from './functions/zakaznici.mjs';
 import * as ZZ from './lib/zakaznici_ze_zakazek.mjs';
 import { ARES_SIT } from './lib/ares_server.mjs';
 import { ADMIN_EMAIL } from './lib/sdilene.mjs';
@@ -54,6 +60,12 @@ async function nahledCely(c, znovuId) {
   return { ...r, volani };
 }
 
+/* Celý zápis: volá, dokud server nehlásí hotovo (strop 50 volání). */
+async function zalozitCely(id, c) {
+  let r = await zz({ akce: 'zalozit', id }, c); let volani = 1;
+  while (r.ok && !r.hotovo && volani < 50) { r = await zz({ akce: 'zalozit', id }, c); volani++; }
+  return { ...r, volani };
+}
 /* IČO s platnou kontrolní číslicí ze 7 číslic. */
 function ico(base) {
   const s = String(base).padStart(7, '0'); let sum = 0;
@@ -221,7 +233,7 @@ let navrhId;
 console.log('\n===== ZK: zápis po potvrzení =====\n');
 {
   test('zápis se starým / cizím id → 409', (await zz({ akce: 'zalozit', id: 'jine-id' }, cA)).status === 409);
-  const r = await zz({ akce: 'zalozit', id: navrhId }, cA);
+  const r = await zalozitCely(navrhId, cA);
   test('zápis projde', r.ok && r.vysledek.zalozeno === 4, JSON.stringify(r).slice(0, 300));
   const kA = JSON.parse(pamet.get('zakaznici/z/' + I.A) || 'null');
   test('karta A: název, sídlo, IČO, DIČ z ARES', kA && kA.nazev === 'Alfa Stavby s.r.o.' && kA.sidlo === 'Zkušební 1522/53, Holešovice, 17000 Praha 7'
@@ -236,7 +248,7 @@ console.log('\n===== ZK: zápis po potvrzení =====\n');
   test('existující karta G se nepřepsala', pamet.get('zakaznici/z/' + I.G) === kartaGPred);
   const prot = JSON.parse(pamet.get('zakaznici_hromadne/zk-protokol'));
   const z = prot[prot.length - 1];
-  test('protokol: kdo, kdy, počty', z.kdo === ADMIN_EMAIL && !!z.kdy && z.zalozeno === 4 && z.nesedi === 4 && z.uzExistovalo === 1
+  test('protokol: kdo, kdy, počty', z.kdo === ADMIN_EMAIL && !!z.kdy && z.zalozeno === 4 && z.nesedi === 4 && z.existovalo === 1 && z.uzExistovalo === 0 && z.stav === 'dokončen'
     && z.bezIco === 1 && z.neplatneIco === 1 && z.zakazek === 12, JSON.stringify(z));
   test('protokol bez osobních údajů a názvů firem', !/Ada|Hana|Alfa|priklad\.cz.*priklad|smluvni/.test(JSON.stringify(prot).replace(ADMIN_EMAIL, '')));
   test('náhled se po zápisu smazal', !pamet.has('zakaznici_hromadne/zk-navrh'));
@@ -251,8 +263,9 @@ console.log('\n===== ZK: idempotence a změna mezi náhledem a zápisem =====\n'
   const r = await nahledCely(cA);
   const P = Object.fromEntries(r.navrh.polozky.map(p => [p.ico, p]));
   test('druhý běh: dříve založené jsou „už existuje“', [I.A, I.F, I.G, I.H, I.J].every(i => P[i].stav === 'existuje'), JSON.stringify(r.navrh.pocty));
-  test('druhý běh: ARES jen pro IČO bez karty (B, C, D, E)', aresDotazy.length - dotazyPred === 4, String(aresDotazy.length - dotazyPred));
-  const z = await zz({ akce: 'zalozit', id: r.navrh.id }, cA);
+  test('druhý běh: nesedící (B–E) se do ARES znovu neposílají, zakázka se nezměnila (R3)', aresDotazy.length - dotazyPred === 0
+    && [I.B, I.C, I.D, I.E].every(i => P[i].stav === 'nesedi' && /ověřeno v ARES/.test(P[i].duvod)), String(aresDotazy.length - dotazyPred));
+  const z = await zalozitCely(r.navrh.id, cA);
   test('druhý zápis nic nezaloží', z.ok && z.vysledek.zalozeno === 0 && karetPred() === karty1, JSON.stringify(z.vysledek));
 
   /* nová zakázka K sedí; mezi náhledem a zápisem se hlavička změní → nezaloží se */
@@ -262,7 +275,7 @@ console.log('\n===== ZK: idempotence a změna mezi náhledem a zápisem =====\n'
   const r3 = await nahledCely(cA);
   test('K v náhledu sedí', r3.navrh.polozky.find(p => p.ico === IK).stav === 'zalozit');
   zak('zk-k', '2026-11-21T08:00:00.000Z', { objednatel: 'Kapa Stavby s.r.o.', adresa: 'Úplně jinde 1, 779 00 Olomouc', ico: IK, kontakt: 'Karel Kapa' });
-  const z3 = await zz({ akce: 'zalozit', id: r3.navrh.id }, cA);
+  const z3 = await zalozitCely(r3.navrh.id, cA);
   test('zakázka změněná po náhledu → karta nevznikne (zmenenoMezitim)', z3.ok && z3.vysledek.zalozeno === 0 && z3.vysledek.zmenenoMezitim === 1
     && !pamet.has('zakaznici/z/' + IK), JSON.stringify(z3.vysledek));
 
@@ -271,39 +284,140 @@ console.log('\n===== ZK: idempotence a změna mezi náhledem a zápisem =====\n'
   const r4 = await nahledCely(cA);
   await post(zakaznici, 'http://x/api/zakaznici', { zakaznik: { nazev: 'Kapa Stavby s.r.o.', ico: IK, kontaktOsoba: 'Ručně Založil' } }, cO);
   const rucne = pamet.get('zakaznici/z/' + IK);
-  const z4 = await zz({ akce: 'zalozit', id: r4.navrh.id }, cA);
+  const z4 = await zalozitCely(r4.navrh.id, cA);
   test('ručně založená karta mezi náhledem a zápisem se nepřepíše', z4.ok && z4.vysledek.zalozeno === 0 && pamet.get('zakaznici/z/' + IK) === rucne, JSON.stringify(z4.vysledek));
 }
 
-console.log('\n===== ZK: stropy dotazů do ARES =====\n');
+console.log('\n===== ZK: stropy dotazů do ARES a kola (R3) =====\n');
 {
   const IL = ico(1000011), IM = ico(1000012);
   ARES_DATA[IL] = { obchodniJmeno: 'Lambda s.r.o.', sidlo: { textovaAdresa: 'Limitní 1, 50002 Hradec Králové' } };
   ARES_DATA[IM] = { obchodniJmeno: 'My s.r.o.', sidlo: { textovaAdresa: 'Limitní 2, 50002 Hradec Králové' } };
   zak('zk-l', '2026-11-23T08:00:00.000Z', { objednatel: 'Lambda s.r.o.', adresa: 'Limitní 1, 500 02 Hradec Králové', ico: IL });
   zak('zk-m', '2026-11-23T09:00:00.000Z', { objednatel: 'My s.r.o.', adresa: 'Limitní 2, 500 02 Hradec Králové', ico: IM });
+  /* změněná zakázka nesedící firmy B → do ARES znovu (paměť „nesedí“ platí jen pro touž zakázku) */
+  zak('zk-b', '2026-11-23T10:00:00.000Z', { objednatel: 'Beta Development s.r.o.', adresa: 'Pokusná 10, 110 00 Praha 1', ico: I.B, kontakt: 'Bára Betová' });
   const den = JSON.parse(pamet.get('zakaznici_hromadne/zk-den'));
-  ZZ_NASTAVENI.aresMaxDen = den.pocet + 2;
+  ZZ_NASTAVENI.aresMaxDen = den.pocet + 1;
   const pred = aresDotazy.length;
   const r = await nahledCely(cA);
   const zbyva = r.navrh.polozky.filter(p => p.stav === 'vypadek' && /denní strop/.test(p.duvod));
-  test('denní strop dotazů: nad strop se nedotazuje, položky „zkusit znovu“', aresDotazy.length - pred === 2 && zbyva.length === 4, (aresDotazy.length - pred) + ' / ' + zbyva.length);
+  test('denní strop: nad strop se nedotazuje, zbytek „zkusit znovu“', aresDotazy.length - pred === 1 && zbyva.length === 2, (aresDotazy.length - pred) + ' / ' + zbyva.length);
+  test('změněná zakázka nesedící firmy jde do ARES znovu (B první ve frontě)', aresDotazy[aresDotazy.length - 1] === I.B);
   ZZ_NASTAVENI.aresMaxDen = 1500;
   ZZ_NASTAVENI.aresMaxNavrh = 1;
   const pred2 = aresDotazy.length;
-  const r2 = await nahledCely(cA);
-  test('strop dotazů na jeden náhled', aresDotazy.length - pred2 === 1 && r2.navrh.polozky.filter(p => /jeden náhled/.test(p.duvod)).length === 5, String(aresDotazy.length - pred2));
+  const r2 = await nahledCely(cA, r.navrh.id);
+  test('„Zkusit znovu“ po denním stropu pokračuje, kde skončil (kolo 1 dotaz)', aresDotazy.length - pred2 === 1
+    && r2.navrh.polozky.filter(p => /jedno kolo/.test(p.duvod)).length === 1, String(aresDotazy.length - pred2));
+  const r3 = await nahledCely(cA, r.navrh.id);
+  test('další kolo dotáže zbytek a nic znovu', aresDotazy.length - pred2 === 2 && r3.navrh.pocty.vypadek === 0
+    && new Set(aresDotazy.slice(pred2)).size === 2, aresDotazy.slice(pred2).join(','));
   ZZ_NASTAVENI.aresMaxNavrh = 600;
-  const r3 = await zz({ akce: 'nahled' }, cA);
-  test('zápis nedokončeného náhledu → 409', r3.navrh.faze !== 'hotovo' && (await zz({ akce: 'zalozit', id: r3.navrh.id }, cA)).status === 409, r3.navrh.faze);
-  const r4 = await nahledCely(cA);
+  ZZ_NASTAVENI.aresNaVolani = 1;
+  const r4 = await zz({ akce: 'nahled' }, cA);
+  test('zápis nedokončeného náhledu → 409', r4.navrh.faze !== 'hotovo' && (await zz({ akce: 'zalozit', id: r4.navrh.id }, cA)).status === 409, r4.navrh.faze);
+  test('pokračování náhledu s cizím id → 409', (await zz({ akce: 'nahled', id: 'cizi-id' }, cA)).status === 409);
+  ZZ_NASTAVENI.aresNaVolani = 3;
+  const r5 = await nahledCely(cA);
   const puvodniTed = ZZ_NASTAVENI.ted;
   ZZ_NASTAVENI.ted = () => Date.now() + 25 * 3600 * 1000;
-  const z4 = await zz({ akce: 'zalozit', id: r4.navrh.id }, cA);
+  const z5 = await zz({ akce: 'zalozit', id: r5.navrh.id }, cA);
   ZZ_NASTAVENI.ted = puvodniTed;
-  test('propadlý náhled (po 24 h) se nezapíše → 409', z4.status === 409 && !pamet.has('zakaznici/z/' + IL), JSON.stringify(z4));
+  test('propadlý náhled (po 24 h) se nezapíše → 409', z5.status === 409 && !pamet.has('zakaznici/z/' + IL), JSON.stringify(z5));
+  const r6 = await nahledCely(cA);
+  ZZ_NASTAVENI.ted = () => Date.now() + 25 * 3600 * 1000;
+  const g6 = await (await get(zzFn, URL_ZZ, cA)).json();
+  ZZ_NASTAVENI.ted = puvodniTed;
+  test('R5: GET propadlý náhled nevydá a smaže', g6.navrh === null && !pamet.has('zakaznici_hromadne/zk-navrh') && !!r6.navrh, JSON.stringify(g6).slice(0, 120));
+  const r7 = await nahledCely(cA);
   const zr = await zz({ akce: 'zrusit' }, cA);
-  test('zrušení náhledu', zr.ok && !pamet.has('zakaznici_hromadne/zk-navrh'));
+  test('zrušení náhledu', r7.ok && zr.ok && !pamet.has('zakaznici_hromadne/zk-navrh'));
+}
+
+console.log('\n===== ZK: zápis po kouscích, protokol i po přerušení (R1) =====\n');
+{
+  const N1 = ico(1000021), N2 = ico(1000022), N3 = ico(1000023);
+  for (const [i, jm] of [[N1, 'Ný Jedna'], [N2, 'Ný Dva'], [N3, 'Ný Tři']]) {
+    ARES_DATA[i] = { obchodniJmeno: jm + ' s.r.o.', sidlo: { textovaAdresa: 'Kousková 1, 53002 Pardubice' } };
+    zak('zk-' + i, '2026-11-24T08:00:00.000Z', { objednatel: jm + ' s.r.o.', adresa: 'Kousková 1, 530 02 Pardubice', ico: i, kontakt: 'Kontakt ' + jm });
+  }
+  const r = await nahledCely(cA);
+  const navrzeno = r.navrh.pocty.zalozit;
+  ZZ_NASTAVENI.zapisNaVolani = 1;
+  const z1 = await zz({ akce: 'zalozit', id: r.navrh.id }, cA);
+  let prot = JSON.parse(pamet.get('zakaznici_hromadne/zk-protokol'));
+  let posl = prot[prot.length - 1];
+  test('zápis po kouscích: první volání 1 karta, nehotovo, protokol „probíhá“ se zbytkem', z1.ok && !z1.hotovo && z1.vysledek.zalozeno === 1
+    && posl.stav === 'probíhá' && posl.zalozeno === 1 && posl.zbyva === navrzeno - 1, JSON.stringify(posl));
+  const g1 = await (await get(zzFn, URL_ZZ, cA)).json();
+  test('obrazovka (GET) ukáže skutečný stav zápisu', g1.navrh && g1.navrh.faze === 'zapis' && g1.navrh.zapis.zalozeno === 1 && g1.navrh.zapis.zbyva === navrzeno - 1, JSON.stringify(g1.navrh && g1.navrh.zapis));
+  test('během zápisu nový náhled → 409', (await zz({ akce: 'nahled' }, cA)).status === 409);
+  /* pád funkce po zápisu karty, před uložením průběžného stavu */
+  padniPriZapisu = 'zakaznici_hromadne/zk-protokol';
+  let spadlo = false;
+  try { await zz({ akce: 'zalozit', id: r.navrh.id }, cA); } catch (e) { spadlo = true; }
+  prot = JSON.parse(pamet.get('zakaznici_hromadne/zk-protokol')); posl = prot[prot.length - 1];
+  test('po pádu protokol nese, co bylo zapsáno do posledního uloženého kousku', spadlo && posl.stav === 'probíhá' && posl.zalozeno === 1, JSON.stringify(posl));
+  ZZ_NASTAVENI.zapisNaVolani = 100;
+  const z2 = await zalozitCely(r.navrh.id, cA);
+  prot = JSON.parse(pamet.get('zakaznici_hromadne/zk-protokol')); posl = prot[prot.length - 1];
+  test('opakování doplní zbytek; karta z přerušeného volání se počítá jako založená', z2.ok && z2.hotovo && posl.stav === 'dokončen'
+    && posl.zalozeno === navrzeno && posl.uzExistovalo === 0 && [N1, N2, N3].every(i => pamet.has('zakaznici/z/' + i)), JSON.stringify(posl));
+  test('protokol má pro jeden zápis jediný záznam', prot.filter(x => x.id === r.navrh.id).length === 1);
+}
+
+console.log('\n===== ZK: hromadné čtení karet (R2) =====\n');
+{
+  for (const k of Object.keys(cteni)) delete cteni[k];
+  const karet = [...pamet.keys()].filter(k => k.startsWith('zakaznici/z/')).length;
+  await nahledCely(cA);
+  test('náhled nečte karty (jen klíče)', (cteni.zakaznici || 0) === 0, JSON.stringify(cteni));
+  for (const k of Object.keys(cteni)) delete cteni[k];
+  const gl = await (await get(zakaznici, 'http://x/api/zakaznici', cA)).json();
+  test('GET /api/zakaznici čte každou kartu nejvýš jednou', gl.ok && gl.zakaznici.length === karet && (cteni.zakaznici || 0) === karet, (cteni.zakaznici || 0) + ' / ' + karet);
+  await zz({ akce: 'zrusit' }, cA);
+}
+
+console.log('\n===== ZK: dvojčata, tvar IČO karty, strop karet (R4) =====\n');
+{
+  /* karta se 7místným IČO (bez úvodní nuly) = táž firma jako 8místné IČO v zakázce */
+  const I0 = ico(100031);   // 8 číslic s úvodní nulou
+  test('pomocné IČO začíná nulou', I0[0] === '0', I0);
+  ARES_DATA[I0] = { obchodniJmeno: 'Nula Stavby s.r.o.', sidlo: { textovaAdresa: 'Nulová 1, 25001 Brandýs nad Labem' } };
+  zak('zk-nula', '2026-11-24T09:00:00.000Z', { objednatel: 'Nula Stavby s.r.o.', adresa: 'Nulová 1, 250 01 Brandýs nad Labem', ico: I0 });
+  await post(zakaznici, 'http://x/api/zakaznici', { zakaznik: { nazev: 'Nula Stavby s.r.o.', ico: I0.slice(1) } }, cO);
+  test('ruční karta je pod 7místným klíčem', pamet.has('zakaznici/z/' + I0.slice(1)));
+  /* karta bez IČO se stejným názvem jako ARES */
+  const IT = ico(1000041), IU = ico(1000042);
+  ARES_DATA[IT] = { obchodniJmeno: 'Tau Dvojče s.r.o.', sidlo: { textovaAdresa: 'Dvojitá 1, 41201 Litoměřice' } };
+  ARES_DATA[IU] = { obchodniJmeno: 'Ypsilon Dvojče s.r.o.', sidlo: { textovaAdresa: 'Dvojitá 2, 41201 Litoměřice' } };
+  zak('zk-tau', '2026-11-24T09:00:00.000Z', { objednatel: 'Tau Dvojče s.r.o.', adresa: 'Dvojitá 1, 412 01 Litoměřice', ico: IT });
+  zak('zk-ups', '2026-11-24T09:00:00.000Z', { objednatel: 'Ypsilon Dvojče s.r.o.', adresa: 'Dvojitá 2, 412 01 Litoměřice', ico: IU });
+  await post(zakaznici, 'http://x/api/zakaznici', { zakaznik: { nazev: 'Tau Dvojče s.r.o.' } }, cO);
+  const pred = aresDotazy.length;
+  const r = await nahledCely(cA);
+  const P = Object.fromEntries(r.navrh.polozky.map(p => [p.ico, p]));
+  test('7místné IČO karty: „už existuje“ bez dotazu do ARES', P[I0].stav === 'existuje' && !aresDotazy.slice(pred).includes(I0), JSON.stringify(P[I0]));
+  test('náhled: karta bez IČO se stejným názvem → „už existuje“', P[IT].stav === 'existuje' && /bez IČO/.test(P[IT].duvod), JSON.stringify(P[IT]));
+  test('Ypsilon sedí', P[IU].stav === 'zalozit');
+  /* mezi náhledem a zápisem vznikne karta Ypsilon bez IČO → zápis ji nezdvojí */
+  await post(zakaznici, 'http://x/api/zakaznici', { zakaznik: { nazev: 'Ypsilon Dvojče s.r.o.' } }, cO);
+  const z = await zalozitCely(r.navrh.id, cA);
+  test('zápis: karta bez IČO se stejným názvem → nic nezaloží', z.ok && z.vysledek.zalozeno === 0 && z.vysledek.uzExistovalo === 1 && !pamet.has('zakaznici/z/' + IU), JSON.stringify(z.vysledek));
+  /* strop počtu karet */
+  const IS = ico(1000051);
+  ARES_DATA[IS] = { obchodniJmeno: 'Sigma Strop s.r.o.', sidlo: { textovaAdresa: 'Stropní 1, 76001 Zlín' } };
+  zak('zk-sigma', '2026-11-24T09:00:00.000Z', { objednatel: 'Sigma Strop s.r.o.', adresa: 'Stropní 1, 760 01 Zlín', ico: IS });
+  const r2 = await nahledCely(cA);
+  test('Sigma sedí', r2.navrh.polozky.find(p => p.ico === IS).stav === 'zalozit');
+  const vyplne = [];
+  for (let k = [...pamet.keys()].filter(x => x.startsWith('zakaznici/z/')).length; k < ZAKAZNICI_MAX; k++) {
+    const kl = 'zakaznici/z/n-vypln-' + k; pamet.set(kl, '{}'); vyplne.push(kl);
+  }
+  const z2 = await zalozitCely(r2.navrh.id, cA);
+  test('strop ZAKAZNICI_MAX: karta nevznikne, ve výsledku „strop“', z2.ok && z2.vysledek.strop === 1 && z2.vysledek.zalozeno === 0 && !pamet.has('zakaznici/z/' + IS), JSON.stringify(z2.vysledek));
+  vyplne.forEach(k => pamet.delete(k));
 }
 
 console.log('\n' + (fail ? 'FAIL' : 'OK') + ' — ' + ok + ' prošlo, ' + fail + ' selhalo');

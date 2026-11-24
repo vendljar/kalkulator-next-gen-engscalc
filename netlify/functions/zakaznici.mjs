@@ -20,7 +20,7 @@
  * Očistu vstupu dělá `zakaznikOciste` ze src/zakaznici.js — týž kód, jaký
  * si čistí prohlížeč. Server nikdy neuloží, co mu kdo pošle.
  */
-import { uloziste, vyzadujRoli, json, klicZAdresyPlatny, hloubkaChyba, vyhradne } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, klicZAdresyPlatny, hloubkaChyba, vyhradne, ctiVsechny } from '../lib/sdilene.mjs';
 
 /* NN B244 (22. 11. 2026): strop počtu karet. Karet jsou desítky; 2 000 je
  * pojistka proti zahlcení číselníku (seznam se čte kartu po kartě). */
@@ -53,12 +53,9 @@ export default async (req) => {
     /* Seznam se skládá ze záznamů, ne z rejstříku: karet jsou desítky, ne
      * tisíce, a druhý soubor s rejstříkem by byl jen další místo, kde se to
      * může rozejít (poučení z rejstříku zakázek). */
-    const klice = await s.seznam('z/');
-    const zakaznici = [];
-    for (const k of klice) {
-      const z = await s.cti(k);
-      if (z) zakaznici.push(z);
-    }
+    /* Revize ZK R2: po hromadném naplnění ze zakázek (#755) jsou karet stovky —
+     * čtou se souběžně po dávkách (ctiVsechny), ne jedna po druhé. */
+    const zakaznici = (await ctiVsechny(s, await s.seznam('z/'))).filter(Boolean);
     return json({ ok: true, zakaznici });
   }
 
