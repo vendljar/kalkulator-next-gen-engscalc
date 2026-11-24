@@ -108,5 +108,6 @@ Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.)
 - Testy: `netlify/test_po_116_odeslani.mjs` 59/59, `src/test_po_116_ui.js` 18/18, `test_prava` 1055/0, mutace [PO] 27/27;
   kolo `--bez-mutaci --proti origin/claude/integrace-16-10` VŠE ZELENÉ (sady 544/0, hodiny 443/0, statické 12/12),
   S3 SHODA 367/367.
-- Čeká: revize Fable (koordinace), otázky J. V. #762–#765, pak zkouška na deal TEST (testovací sezení se souhlasem J. V.;
+- Revize Fable (`claude/revize-po`, SLOUČIT PO OPRAVÁCH): R1–R12 opraveny ve větvi (R3, R4 podle doporučení, rozhodne J. V. v #765 d, #762 c).
+- Čeká: dorevize Fable (koordinace), otázky J. V. #762–#765, pak zkouška na deal TEST (testovací sezení se souhlasem J. V.;
   ověřit strop souboru Netlify / Pipedrive). Meze B279–B281 v `BEZPECNOST_MEZE.md`.

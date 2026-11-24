@@ -37,6 +37,13 @@ Pipedrive jen simulátor — zkouška na dealu TEST až v testovacím sezení se
 - Testy: `netlify/test_po_116_odeslani.mjs` (simulátor), `src/test_po_116_ui.js`, `netlify/test_prava.mjs`; pojistka:
   nad 7339a9e sady selžou (endpoint ani karta neexistují). Mutace [PO] 27/27. Kolo `--bez-mutaci` VŠE ZELENÉ, S3 SHODA 367/367. Meze B279–B281 (pracovní čísla).
   Otázky J. V. #762–#765 (s doporučením; naprogramováno podle doporučení).
+- **Opravy revize Fable (24. 11., `podklady/revize/REVIZE_PO.md`, SLOUČIT PO OPRAVÁCH):** krok „soubor“ respektuje
+  zastavení (ztracený / smazaný deal, cizí CN — R1); stav zápisu po variantách a před nahráním vždy hledat shodný
+  soubor u dealu (R2); prodaná zakázka / vyhraný deal = jen poznámka a Word (R3, J. V. #765); první tisk dalšímu
+  zákazníkovi se do dealu řídícího nezapisuje (R4, J. V. #762); Word kontrolován jako ZIP bez maker, OLE a ActiveX
+  a přijat až po zapsaných údajích (R5); Word v paměti přežije opětovné načtení zakázky (R6); hláška fáze jmenuje
+  PIPEDRIVE_FAZE_ODESLANO (R7); deal bez stavu fázi neposouvá (R8); bez zapsaného „zahájeno“ se nenahrává (R9);
+  testy přeživších mutací revize (R12). Testy: server 85/85, karta 23/23.
 
 ## v24.11.6 — RP: ruční položky kalkulace OCK v nabídce CN a krycím listu (#736, #740), větev claude/rp-rucni-polozky
 

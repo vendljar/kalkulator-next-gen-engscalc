@@ -2565,13 +2565,21 @@ Testy `netlify/test_po_116_odeslani.mjs` (simulátor), `src/test_po_116_ui.js`, 
   Pole, hodnotu, fázi a text poznámky skládá server z uložené zakázky; stav dealu (status) se neposílá nikdy.
 - **Stav zápisu `zak.pdOdeslani` píše jen server** (`pdOdeslaniDrz`, vzor `pdOrgVitezDrz`): hodnota z prohlížeče se
   při uložení zahodí, obnova ze souboru ji nepřebírá, kopie zakázky (Duplikovat) ji maže.
-- **B279 — obsah přiloženého Wordu server neověřuje proti nabídce — PŘIJATO (návrh, potvrdí J. V.).** Soubor posílá
-  prohlížeč (Word vzniká v prohlížeči). Server ověří jen tvar docx (zip s `[Content_Types].xml` a `word/document.xml`),
-  velikost (nejvýš 4 MB) a název složí sám (`CN_<číslo>_<datum>.docx`). Oprávněný uživatel s platnou vazbou tak může
-  k vlastnímu dealu přiložit libovolný docx do 4 MB — totéž, co dnes umí ručně v Pipedrive. Stopa: protokol zakázky.
-- **B280 — přiložení souboru není idempotentní na straně Pipedrive — ZÚŽENO.** Files API nemá klíč idempotence.
-  Před nahráním se zapíše stav `zahajeno`; další pokus po nedoručené odpovědi nejdřív vypíše soubory dealu
-  a shodný název + velikost převezme (test „odpověď nedorazila“). Zbývá: soubor nahraný v jiné instanci funkce
-  souběžně s pokusem (výhradní úsek platí jen v instanci) — nanejvýš dvě kopie téhož Wordu u dealu.
+- **B279 — obsah přiloženého Wordu server neověřuje proti nabídce — ZÚŽENO (revize PO R5, potvrdí J. V. #764).** Soubor
+  posílá prohlížeč (Word vzniká v prohlížeči). Server ho rozbalí jako ZIP (`zipPrecti` z docxgen.js, týž čtecí kód
+  jako kontrola šablon), vyžaduje `[Content_Types].xml` a `word/document.xml`, odmítne makra VBA, vložené objekty
+  a ActiveX (názvy částí i typy obsahu, vzor `sablonaObsahVadyZipu`), velikost nejvýš 4 MB, název složí sám
+  (`CN_<číslo>_<datum>.docx`) a soubor přijme až po zapsaných údajích dealu (potvrzená tabulka). Zbývá: oprávněný
+  uživatel s platnou vazbou může k vlastnímu dealu přiložit jiný (čistý) docx do 4 MB — zápis jde pod tokenem
+  aplikace, ne pod jeho účtem Pipedrive. Stopa: protokol zakázky.
+- **B280 — přiložení souboru není idempotentní na straně Pipedrive — ZÚŽENO (revize PO R2, R9, R11).** Files API nemá
+  klíč idempotence. Před KAŽDÝM nahráním se u dealu hledá soubor téhož názvu a velikosti (převezme se), před POST
+  se zapíše stav `zahajeno` (bez zápisu se nenahrává — zámek mezitím odemčen). Zbývá: hledá se mezi prvními 100
+  soubory dealu; soubor nahraný v jiné instanci funkce souběžně (výhradní úsek platí jen v instanci) — nanejvýš
+  dvě kopie téhož Wordu u dealu.
+- **Zastavení platí pro zápis i soubor (revize PO R1 — OPRAVENO):** ztracený / smazaný deal, cizí číslo nabídky,
+  první tisk pro dalšího zákazníka (R4) → 409 i pro krok „soubor“.
+- **Tělo požadavku (revize PO R10 — PŘIJATO):** tělo do 6 MB se přečte a rozparsuje i u náhledu a zápisu, mez 512 kB
+  se uplatní až po parsování (jen přihlášení s právem, strop Netlify 6 MB; test 413).
 - **B281 — okno mezi čtením dealu a zápisem — PŘIJATO (jako B277).** Otisk náhledu nese `update_time`, PATCH jde jen
   se změněnými poli.
