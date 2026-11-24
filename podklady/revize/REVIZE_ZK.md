@@ -6,7 +6,9 @@
 - **Rozsah:** nezávislá revize bezpečnosti a dat. Nic na weby, do Pipedrive ani na Disk; ARES jen zástupným
   `fetch` v testech a sondách.
 
-## Verdikt: SLOUČIT PO OPRAVÁCH
+## Verdikt: SLOUČIT PO OPRAVÁCH (první revize) → po dorevizi oprav SLOUČIT
+
+Stav po opravách je v oddílu „Dorevize oprav“ na konci. Níže je původní revize stavu `63448cb`.
 
 Bezpečnostní jádro je v pořádku: jen administrátor, role z účtu, zápis jen ze serverového náhledu, nic se
 nepřepíše, klient nedostane kontakty ani jména souborů zakázek. Cena a dokumenty se nemění (porovnání sestavení proti základu dávky `c89e872`: SHODA 367/367).
@@ -220,3 +222,78 @@ zůstane jen v kartách (autor, čas založení, poznámka s datem ověření). 
 - `bash nastroje/testovaci_kolo.sh --jen porovnani --proti c89e872` — SHODA 367/367
 
 Nespuštěno: mutace jádra a serveru (kolo `--bez-mutaci`), nic proti skutečnému ARES ani webům.
+
+---
+
+# Dorevize oprav (24. 11. 2026)
+
+- **Rozdíl:** `63448cb..62403a4` (obsahuje sloučení integrace `7339a9e`; revidovány jen změny ZK —
+  `git diff 7339a9e 62403a4`).
+
+## Verdikt dorevize: SLOUČIT
+
+Nálezy R0–R6 a R10 jsou opravené a opravy drží. Zbývají jen drobnosti D1–D4 níže; žádná nebrání sloučení.
+Před ostrým spuštěním zůstává jediný úkol mimo kód: změřit na testu dobu seznamu zákazníků po naplnění
+(je zapsaný v `BEZPECNOST_MEZE.md`). R7 a R9 dál čekají na J. V.
+
+## Stav původních nálezů
+
+| # | Stav | Jak ověřeno |
+|---|------|-------------|
+| R0 | opraveno | integrace `7339a9e` je předek `62403a4`; kolo proti integraci je VŠE ZELENÉ, SHODA 367/367 |
+| R1 | opraveno | zápis po kouscích: 250 karet = 3 volání, první 204 čtení + 104 zápisů; pád po 40. kartě druhého volání → protokol „probíhá, založeno 100, zbývá 150“, dokončení dá „dokončen, založeno 250“ |
+| R2 | opraveno | první volání náhledu při 300 kartách: 306 čtení (dřív 904), karty se nečtou; `GET /api/zakaznici` čte souběžně po 16, pořadí zachováno |
+| R3 | opraveno | strop 8, 12 IČO: kolo 1 = 8 dotazů, „Zkusit znovu“ dotáže zbylá 4 a založí je; nový náhled 0 dotazů na 8 nesedících |
+| R4 | opraveno | mých pět mutací z první revize (strop karet, dvojče názvu 2×, cizí id, tvar IČO) sada teď chytí; sada má 95 testů |
+| R5 | opraveno | propadlý náhled `GET` nevydá a smaže; rozpracovaný zápis zůstane v protokolu jako „přerušen (náhled propadl)“ |
+| R6 | zapsáno jako mez | `BEZPECNOST_MEZE.md`, oddíl ZK |
+| R10 | opraveno | `seskup.skupiny` se po fázi čtení maže, `ZZ_POLE_ARES` odstraněn |
+| R7, R9 | čeká na J. V. | beze změny |
+
+## Otázky koordinace
+
+**R1 — dá se karta „z přerušeného volání“ podvrhnout?** Prakticky ne. Karta se počítá jako „naše“, jen
+když má autora shodného s přihlášeným správcem, přesně stejnou poznámku a čas založení po začátku zápisu.
+Autora a čas píše server, takže podmínku splní jen týž správce, který by si během vlastního zápisu ručně
+založil kartu s toutéž poznámkou (sonda B). Důsledek je jen číslo v protokolu (`zalozeno` o 1 víc místo
+`uzExistovalo`); ruční karta se nepřepíše. Opačný směr: dokončí-li zápis jiný správce, karty z přerušeného
+kousku prvního správce se započtou jako „už existovalo“ — součet sedí, rozdělení ne. Obojí přijatelné.
+
+**R1 — souběh dvou správců.** V jedné instanci funkce řadí `vyhradne('zakaznici/hromadne')` volání za sebe
+(nově i `GET`). Ve dvou instancích mohou oba zpracovat tentýž kousek: druhý najde karty prvního a nezapíše
+je znovu, do náhledu se uloží počty toho, kdo zapsal poslední. Karty jsou v pořádku, počty v protokolu
+se mohou lišit nejvýš o jeden kousek. Odpovídá zapsané mezi. Nový náhled během zápisu vrací 409,
+„Zkusit znovu“ během zápisu nic nezmění.
+
+**R2 — dvojče podle názvu a IČO z klíče.** Drží: ruční karta se 7místným IČO → „už existuje“; karta bez IČO
+se stejným názvem → „už existuje“; karta s IČO zapsaným jako „CZ…“ (klíč z názvu) → „už existuje“.
+Klíč a obsah karty se nemohou rozejít — běžný zápis počítá klíč z karty a návrh změny, který by klíč
+změnil, server odmítne. Jedna odchylka je D1.
+
+**R3 — nezamaskuje paměť opravenou zakázku?** Ne. Paměť platí jen pro touž nejnovější zakázku (soubor
++ razítko uložení): po uložení opravené zakázky se IČO dotáže znovu (sonda: 1 dotaz, „založit“).
+Zamaskuje naopak změnu na straně ARES — když firma změní zápis v rejstříku a zakázka se nezmění, vyjde
+30 dní „nesedí“ s datem ověření v důvodu. Je to zapsané; viz D2.
+
+## Nové drobnosti
+
+| # | Závažnost | Nález | Návrh |
+|---|-----------|-------|-------|
+| D1 | drobnost | Karta s IČO, které neprojde kontrolní číslicí (překlep), a stejným názvem už nebrání založení karty z ARES — vznikne druhá karta téže firmy. Před opravou R2 se taková karta hledala podle názvu. | Přijmout (karta z ARES je ta správná), nebo klíč s neplatným IČO zařadit do hledání podle názvu — to ale znamená kartu přečíst. |
+| D2 | nízká | Paměť „nesedí“ nejde ručně obejít; jediná cesta je znovu uložit zakázku nebo počkat 30 dní. | Dopsat do příručky správce větu „po opravě v ARES zakázku znovu uložte“; tlačítko není nutné. |
+| D3 | nízká | Strop 600 dotazů je teď na jedno kolo, ne na náhled; jeden náhled se dá doklikat až do denního stropu 1 500. Chování je správné a zdokumentované, ale je to změna meze. | K vědomí koordinaci; mez dne drží. |
+| D4 | nízká | Mé mutace, které sada nechytila: kontrola autora u karty z přerušeného volání; platnost paměti 30 dní; smazání záznamu paměti, když IČO začne sedět; „přerušen“ v protokolu po zahození; první dotaz do ARES bez zbývajícího času. Chování je správně (sondy C a E). | Doplnit při nejbližší úpravě; nebrání sloučení. |
+
+Protokol dál nese jen e-mail správce, který zápis začal; kdo ho dokončil, se nezapisuje. Paměť „nesedí“
+nese IČO, název a sídlo z ARES a jméno souboru zakázky, žádné kontakty; klient ji nedostane.
+
+## Spuštěno v dorevizi
+
+- `node netlify/test_zk_zakaznici_ze_zakazek.mjs` — 95 prošlo, 0 selhalo
+- sondy A–F (zápis po kouscích a pád, podvrh, zahození a propadnutí, klíče, paměť, počty operací)
+- 16 vlastních mutací nad kopií větve: 11 chyceno, 5 přežilo (D4)
+- `bash nastroje/testovaci_kolo.sh --bez-mutaci --proti origin/claude/integrace-16-10` — VŠE ZELENÉ: sady 544 prošlo, 0 selhalo, 6 přeskočeno
+  (chybí firemní podklady); hodiny +400 dní 442 prošlo, 0 selhalo; statické kontroly 12 z 12; porovnání sestavení
+  **SHODA 367/367**
+
+Nespuštěno: mutace [ZK] dávky (37) a mutace jádra a serveru — beru údaj dávky, sám jsem je neopakoval.
