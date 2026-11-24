@@ -128,6 +128,26 @@ const VS_SCITANA_POLE = ['mnozstvi', 'mnozstviAuto', 'naklad', 'marze', 'sMarzi'
  * řádek nese hodnoty první šachty, která ho má; součet příplatků se o rozdíl
  * opraví (vsSoucet). Starší kalkulace engineering mezi příplatky nemají. */
 const VS_PRIPLATKY_JEDNOU = ['engineering'];
+/* JEDNO PRAVIDLO PRO VÝBĚR ŠACHTY (revize ER N1): řádek příplatku „jednou za
+ * variantu" se bere z PRVNÍ šachty, která ho má v nabídce (sloupec Nabídka,
+ * `priplatkyVynechat` jejího zadání) — s jejím množstvím, cenou i rezervou;
+ * když ho v nabídce nemá žádná, z první šachty, která ho má. Volá ho součet
+ * (vsSoucet) i objednané příplatky (objNabidnute → SoD, krycí list), ať se
+ * nemůžou rozejít. `vysledky` = výsledky šachet, `zadani` = jejich zadání ve
+ * stejném pořadí. Vrací { radek, i, vNabidce } nebo null. */
+function vsPriplatekJednou(vysledky, zadani, key) {
+  const k = String(key);
+  let prvni = null;
+  for (let i = 0; i < (vysledky || []).length; i++) {
+    const r = ((vysledky[i] && vysledky[i].priplatky) || []).find(p => p && String(p.key) === k);
+    if (!r) continue;
+    const z = (zadani && zadani[i]) || {};
+    const vyn = Array.isArray(z.priplatkyVynechat) ? z.priplatkyVynechat : [];
+    if (vyn.indexOf(k) < 0) return { radek: r, i, vNabidce: true };
+    if (!prvni) prvni = { radek: r, i, vNabidce: false };
+  }
+  return prvni;
+}
 
 function vsNormNazev(t) { return String(t == null ? '' : t).replace(/\s+/g, ' ').trim().toLowerCase(); }
 
@@ -199,7 +219,7 @@ function vsSoucetSouhrnu(vys, ksy, cenik, priplatkyKorekce) {
  * nazvyPolozek — nese součet ZE ŠACHTY 1 (kód, který o šachtách neví, dostane
  * platná data a razítka, např. skloJenSPlochou #572). Kdo popisuje šachtu
  * (specifikace, kontroly, nákres), čte výsledek své šachty `sachty[i].vysl`. */
-function vsSoucet(vys, ksy, cenik) {
+function vsSoucet(vys, ksy, cenik, zadani) {
   const r0 = vys[0];
   const r = Object.assign({}, r0);
   r.sekce = {};
@@ -212,9 +232,9 @@ function vsSoucet(vys, ksy, cenik) {
   let priplatkyKorekce = 0;
   r.priplatky.forEach(x => {
     if (VS_PRIPLATKY_JEDNOU.indexOf(String(x.key)) < 0) return;
-    let jeden = null;
-    vys.some(v => (jeden = (v.priplatky || []).find(p => p && p.key === x.key) || null));
-    if (!jeden) return;
+    const vyber = vsPriplatekJednou(vys, zadani, x.key);
+    if (!vyber) return;
+    const jeden = vyber.radek;
     priplatkyKorekce += (+jeden.sMarzi || 0) - (+x.sMarzi || 0);
     VS_SCITANA_POLE.forEach(f => { if (typeof jeden[f] === 'number') x[f] = jeden[f]; });
   });
@@ -248,7 +268,7 @@ function vypocetZakazkyOck(ock, cenik, jekly) {
   const l = sachtyZ(ock);
   const vys = l.map(s => vypocet(s.zadani, cenik, jekly, ock.fixes));
   const ksy = l.map(s => s.ks);
-  const r = vsSoucet(vys, ksy, cenik);
+  const r = vsSoucet(vys, ksy, cenik, l.map(s => s.zadani));
   const castky = vys.map((x, i) => ksy[i] * (typeof x.souhrn.zakladCenaPredZaokr === 'number'
     ? x.souhrn.zakladCenaPredZaokr : x.souhrn.zakladNaklad + x.souhrn.zakladMarze));
   const rozpis = rozpocetSachet(r.souhrn.zakladCena, castky);
@@ -357,7 +377,7 @@ function vsNazvySachetText(ock) {
 }
 
 if (typeof module !== 'undefined' && module.exports)
-  module.exports = { VS_VARIANT_MAX, VS_KS_MAX, VS_NAZEV_MAX, vsKs, vsDalsi, rezimViceSachet, vsMaData, sachtyZ, vsNazev, vsNazevPreloz, vsNazevL, VS_NAZEV_VYCHOZI, vsPocty,
+  module.exports = { VS_PRIPLATKY_JEDNOU, vsPriplatekJednou, VS_VARIANT_MAX, VS_KS_MAX, VS_NAZEV_MAX, vsKs, vsDalsi, rezimViceSachet, vsMaData, sachtyZ, vsNazev, vsNazevPreloz, vsNazevL, VS_NAZEV_VYCHOZI, vsPocty,
     rozpocetSachet, vsKlicPriplatku, vsKlicRadku, vsSlucRadky, priplatkySloucene, vsSoucetSouhrnu, vsSoucet,
     vypocetZakazkyOck, vypocetOckDat, vsTvarProblemy, vsRozvinZakazku, vsVypnutoHlaska, vsZakazkaMaData, vsNazvySachetText, vsTechspecOk };
 

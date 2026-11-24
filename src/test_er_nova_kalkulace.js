@@ -211,12 +211,65 @@ console.log('===== 7. víc šachet: engineering JEDNOU za variantu (J. V. 24. 11
   test('objednané příplatky: ostatní × ks', ov && Math.abs(ov.naklad - 5 * ven1.naklad) < 1e-6, ov);
 }
 
+console.log('===== 7b. různé šachty: součet a objednané berou tutéž šachtu (revize ER N1) =====');
+{
+  const m = ZC.zkusebniCenik().marze;
+  const pripad = (jm, s1, s2, cekej) => {
+    const z1 = nove(Object.assign({ priplatkyVynechat: [] }, s1)), z2 = nove(Object.assign({ priplatkyVynechat: [] }, s2));
+    const ock = { zadani: z1, fixes: true, ks: 2, dalsi: [{ id: 's2', ks: 3, zadani: z2 }] };
+    const r = vypocetZakazkyOck(kopie(ock), ZC.zkusebniCenik(), JEKLY);
+    const e = eng(r)[0] || {};
+    const zak = novaZakazka(); const v = zak.varianty[0];
+    v.data.ock = kopie(ock); v.data.cenik = ZC.zkusebniCenik(); v.zamek = { zamceno: true, typ: 'nabidka', kdy: '2026-11-24T10:00:00.000Z' };
+    const ob = objNabidnute(v, JEKLY).filter(x => x.key === 'engineering');
+    const obS = ob.length ? ob[0].sMarzi : null;
+    test(jm + ': součet = ' + cekej, e.sMarzi === cekej, e.sMarzi);
+    test(jm + ': objednané = součet', obS === null ? cekej === 0 || !ob.length : obS === e.sMarzi, [obS, e.sMarzi]);
+    const sumRadku = r.priplatky.reduce((a, x) => a + x.sMarzi, 0);
+    test(jm + ': „Příplatky celkem" = součet řádků', r.souhrn.priplatkyCena === Math.ceil(sumRadku / 1000) * 1000);
+  };
+  const ceil = x => Math.ceil(x / 1000) * 1000;
+  pripad('š1 mimo nabídku (rezerva 0 %), š2 v nabídce (rezerva 30 %)',
+    { priplatkyVynechat: ['engineering'], rezervaPriplatkyPct: 0 }, { rezervaPriplatkyPct: 0.3 }, ceil(10000 * 1.3 * (1 + m)));
+  pripad('š1 v nabídce s množstvím přepsaným na 0, š2 automaticky',
+    { mnozstviPrepis: { ENGINEERING: 0 } }, {}, 0);
+  pripad('š1 mimo nabídku, š2 přepis množství 3',
+    { priplatkyVynechat: ['engineering'] }, { mnozstviPrepis: { ENGINEERING: 3 } }, ceil(30000 * (1 + m)));
+  pripad('obě mimo nabídku → první šachta (kalkulace), objednané nic',
+    { priplatkyVynechat: ['engineering'], rezervaPriplatkyPct: 0.3 }, { priplatkyVynechat: ['engineering'] }, ceil(10000 * 1.3 * (1 + m)));
+  const v = vsPriplatekJednou([{ priplatky: [{ key: 'engineering', sMarzi: 1 }] }, { priplatky: [{ key: 'engineering', sMarzi: 2 }] }],
+    [{ priplatkyVynechat: ['engineering'] }, {}], 'engineering');
+  test('vsPriplatekJednou: první šachta v nabídce', v && v.i === 1 && v.vNabidce === true);
+}
+
 console.log('===== 8. server: tvar příznaku =====');
 {
   const s1 = f => { const z = novaZakazka(); f(z.varianty[0].data.ock.zadani); return U.uloTypyProblemy(z); };
   test('2 / chybí projde', !s1(z => { z.kalkVerze = 2; }).length && !s1(z => { delete z.kalkVerze; }).length);
   test('jiná hodnota (1, "2", true) = chyba tvaru',
     [1, '2', true].every(h => s1(z => { z.kalkVerze = h; }).some(p => /kalkVerze/.test(p.kde) && p.duvod === 'typ')));
+}
+
+console.log('===== 8b. server: příznak uložené kalkulace se nemění (revize ER N3) =====');
+{
+  const ulozena = novaZakazka(); Object.assign(ulozena.varianty[0].data.ock.zadani, ROZMERY);
+  ulozena.varianty[0].data.ock.dalsi = [{ id: 's2', zadani: kopie(ulozena.varianty[0].data.ock.zadani) }];
+  const stara = kopie(ulozena);
+  const zmena = (f) => { const z = kopie(stara); f(z.varianty[0].data.ock); return U.uloTypyProblemy(z, stara); };
+  const jeKv = (p) => p.some(x => x.duvod === 'kalkVerze');
+  test('beze změny projde', !jeKv(zmena(() => {})));
+  test('ubrat příznak u uložené varianty = odmítnuto', jeKv(zmena(o => { delete o.zadani.kalkVerze; })));
+  test('ubrat příznak u uložené šachty 2 = odmítnuto', jeKv(zmena(o => { delete o.dalsi[0].zadani.kalkVerze; })));
+  const st2 = kopie(stara); delete st2.varianty[0].data.ock.zadani.kalkVerze; delete st2.varianty[0].data.ock.dalsi[0].zadani.kalkVerze;
+  const pridat = kopie(st2); pridat.varianty[0].data.ock.zadani.kalkVerze = 2;
+  test('přidat příznak staré kalkulaci = odmítnuto', jeKv(U.uloTypyProblemy(pridat, st2)));
+  test('obnova ze zálohy smí', !jeKv(U.uloTypyProblemy(pridat, st2, { obnova: true })));
+  const pd = kopie(st2); pd.pdCerstva = true;
+  test('první uložení čerstvé kalkulace z Pipedrive smí', !jeKv(U.uloTypyProblemy(pridat, pd)));
+  test('nová varianta / zakázka (bez uložené) projde', !jeKv(U.uloTypyProblemy(pridat, null)));
+  const zam = kopie(st2); zam.varianty[0].zamek = { zamceno: true };
+  test('zamčená uložená varianta se neposuzuje', !jeKv(U.uloTypyProblemy(pridat, zam)));
+  test('věta pro obchodníka', /změnu pravidel výpočtu uložené kalkulace/.test(U.uloIdProblemyText(U.uloTypyProblemy(pridat, st2))));
 }
 
 console.log('===== 9. překlad a UI =====');
