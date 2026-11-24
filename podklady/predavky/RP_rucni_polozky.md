@@ -3,7 +3,7 @@
 Větev `claude/rp-rucni-polozky` nad d655295, sloučeno s integrací 0fd6410 (v24.11.1); pracovní v24.11.2 (číslo přidělí
 koordinace). Rozhodnutí J. V. 23. 11., prototyp a doporučení a)–f) odsouhlaseny 24. 11. (přes koordinaci).
 
-**Stav 24. 11.: HOTOVO, k revizi Fable (dokument + cena).** Prototyp https://claude.ai/artifact/N9Ro3detwDcydtf1XtDjxu.
+**Stav 24. 11.: revize Fable SLOUČIT PO OPRAVÁCH (podklady/revize/REVIZE_RP.md na claude/revize-rp) — opravy T1, T2, S1, N2, N4, N5, N6, N10 hotové, čeká dorevize.** Prototyp https://claude.ai/artifact/N9Ro3detwDcydtf1XtDjxu.
 
 **Kolo** `--bez-mutaci --proti origin/claude/integrace-16-10 --ocekavane podklady/porovnani/ocekavane_rp_rucni_polozky_2026-11-24.txt`:
 VŠE ZELENÉ (sady 536/0/6, hodiny 435/0/1, statické 12/12); porovnání 367: 230 SHODA, 137 očekávaných, 0 neočekávaných —
@@ -13,8 +13,14 @@ Důkaz: s `rucniPolozkyVysledku → []` SHODA 367/367. Mutace [RP] 18/18, `mutac
 **Převod sekcí:** Hrubá OCK, ATYP, Spojovací, Lakování → KONSTRUKČNÍ ŘEŠENÍ ŠACHTY; Opláštění → OPLÁŠTĚNÍ ŠACHTY;
 Volitelné → DOPLŇKOVÉ KONSTRUKCE; Můstky → MŮSTKY MEZI BUDOVOU A OCK (cena odečtena z řádku můstků); Režie → PROJEKČNÍ…
 
-**K potvrzení J. V.:** řádek `rucniPolozky` v tabulce zmrazení KL (podklady/ZMRAZENI_KL_VOLBY_JV_22_10.json) zařazen
-jako Příplatky v nabídce (editovatelne).
+**J. V. 24. 11.:** `rucniPolozky` v tabulce zmrazení KL editovatelné (jako Příplatky v nabídce) — potvrzeno.
+**Čeká na J. V.:** N1 — krycí list u šachty s ks > 1 píše cenu ruční položky za 1 kus (násobit / „× N ks“?).
+**Před main:** R1 ruční zkouška Wordu na skutečných šablonách CN v18 CZ/EN/DE/FR (testovací sezení; N3 prázdné
+odstavce pod „CENA CELKEM“, N8 SoD beze změny).
+**N7 (slepé místo nástroje, následná dávka — svěřené):** `nastroje/porovnani_sada.js` i `zlata_vs.js` volají
+`kryciData(zak, v, J)` bez verze (0 sekcí) a `nabidkaNahledSekce` bez šachet a ručních položek — krycí list
+a náhled porovnání nevidí; věta „krycí list beze změny“ v seznamu očekávaných proto není doložená. Návrh: volat
+s verzí `bo` a s `data.sachty`, `data.rucni`, zlatou sadu přegenerovat.
 
 **Kód:** `src/rucni_polozky.js`, nabidka.js, docxgen.js (`__radkyNavic`), nahled_word.js, zakazka_ui.js, kryci.js,
 pd_nanecisto.js, kontroly.js (`rucniPolozkaCesky`), kalk_ock.js, zamek_ui.js, preklad.js. Testy test_rp_rucni_polozky.js (41),

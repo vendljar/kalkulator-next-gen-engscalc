@@ -33,7 +33,12 @@ a krycího listu jen u zakázek, které ruční položku mají. Číslo verze p�
 - Testy: `src/test_rp_rucni_polozky.js` (41), `src/test_np_nahled_word.js` oddíl G (náhled = Word s ručními
   položkami); pojistka nad d655295 selže. Mutace [RP] 18. Vědomě upravené: test_kontroly (54 pravidel), test_kryci,
   test_platby_ock, zlatá sada VS (jen texty dokumentů u 25 scénářů s ruční položkou), cisla_vydani.json,
-  tabulka zmrazení KL (nové pole jako Příplatky v nabídce — k potvrzení J. V.). Příručka kap. 18.
+  tabulka zmrazení KL (nové pole jako Příplatky v nabídce — potvrdil J. V. 24. 11.). Příručka kap. 18.
+- **Opravy revize Fable (24. 11.):** kontrola před tiskem „Ruční položka se ve Wordu nevytiskne“ (šablona bez řádku
+  cílové sekce nebo bez řádku pro cenu, S1); ruční položka Spojovacího materiálu a Lakování (jen z importu) se tiskne
+  v KONSTRUKČNÍM ŘEŠENÍ (N2); stará šablona v15: ruční Můstky v sekci MŮSTKY (N4); trvalá položka i podle zadání (N5);
+  server hlídá typ a délku jednotky, dodatkového textu a překladu (N6); testy eur (T1), dotisku a krycího listu ze
+  zámku (T2). Pravidel kontrol 55. Čeká na J. V.: N1 (krycí list u šachty s ks > 1).
 
 ## v24.11.1 — MT2: zpevnění testů kola (#737 mutace #553 kontakt, #738 sady kolem půlnoci), větev claude/mt2-testy
 
