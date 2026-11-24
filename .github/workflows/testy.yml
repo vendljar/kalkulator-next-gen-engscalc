@@ -22,7 +22,7 @@
 #                          smoke + VŠECHNY overit_*.mjs globem, statické
 #                          kontroly: verze = den commitu, CRLF, osobní údaje
 #                          a tajemství)
-#   job „mutace-server"  = testovaci_kolo.sh --jen mutace-server, matrix 24 částí
+#   job „mutace-server"  = testovaci_kolo.sh --jen mutace-server, matrix 32 částí
 #   job „mutace-jadro"   = testovaci_kolo.sh --jen mutace-jadro, matrix 3 části
 # Mutace běží v samostatných jobech, aby jely souběžně. OD 23. 10. 2026 (P2,
 # podklady/PROMPT_mutacni_beh_23_10.md) PO ČÁSTECH: celý běh se do jednoho
@@ -33,7 +33,7 @@
 # server v 6 částech po ~150 mutacích — 5 z 6 zrušil limit 75 min (nejrychlejší
 # část 63 min); od 24. 10. (#514) 10 částí po ~92 mutacích, limit 90 min; od 2. 11.
 # (T2 #543, Testy 41391649224: ~113 mutací na část, části 1, 2 a 5 přes 90 min)
-# 16 částí po ~71 mutacích, limit 100 min; od 23. 11. (CI-24, 1812 mutací) 24 částí. Přeskočené sady vypíše souhrn skriptu; přeskočená kontrola,
+# 16 částí po ~71 mutacích, limit 100 min; od 23. 11. (CI-24, 1812 mutací) 24 částí; od 24. 11. (CI-32, 1852 mutací, části 17 a 24 přes limit 100 min) 32 částí. Přeskočené sady vypíše souhrn skriptu; přeskočená kontrola,
 # o které se mlčí, je totéž co kontrola, která neexistuje.
 name: Testy
 
@@ -118,8 +118,9 @@ jobs:
     strategy:
       fail-fast: false   # jedna červená část nesmí zrušit ostatní — chceme vidět všechny nechycené
       matrix:
-        cast: ['1/24', '2/24', '3/24', '4/24', '5/24', '6/24', '7/24', '8/24', '9/24', '10/24', '11/24', '12/24',
-               '13/24', '14/24', '15/24', '16/24', '17/24', '18/24', '19/24', '20/24', '21/24', '22/24', '23/24', '24/24']
+        cast: ['1/32', '2/32', '3/32', '4/32', '5/32', '6/32', '7/32', '8/32', '9/32', '10/32', '11/32', '12/32',
+               '13/32', '14/32', '15/32', '16/32', '17/32', '18/32', '19/32', '20/32', '21/32', '22/32', '23/32', '24/32',
+               '25/32', '26/32', '27/32', '28/32', '29/32', '30/32', '31/32', '32/32']
     name: mutace-server (část ${{ matrix.cast }})
     env:
       ADMIN_EMAIL: spravce@priklad.cz
