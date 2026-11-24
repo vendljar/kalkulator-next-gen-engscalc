@@ -1469,6 +1469,14 @@ const PREKLAD_VZORY = [
     en: '$1 pcs, size $2 × $3 mm (width × length), steel structure incl. railing and installation',
     de: '$1 Stk., Abmessung $2 × $3 mm (Breite × Länge), Stahlkonstruktion inkl. Geländer und Montage',
     fr: '$1 pcs, dimensions $2 × $3 mm (largeur × longueur), structure en acier y compris garde-corps et montage' },
+  /* PT-ZAB (#759, J. V. 24. 11. 2026): víc skupin můstků (Model 2, starý ceník
+   * #354 — techspec prefill `mustky`, sk.length > 1): „1 ks 1600 × 1000 mm,
+   * 2 ks 1000 × 800 mm (šířka × délka), ocelová konstrukce vč. zábradlí
+   * a montáže" — stejnými slovy jako věta pro jednu skupinu. */
+  { re: /^(\d+ ks \d+ × \d+ mm(?:, \d+ ks \d+ × \d+ mm)+) \(šířka × délka\), ocelová konstrukce vč\. zábradlí a montáže$/i,
+    en: (m, sk) => sk.replace(/ ks /g, ' pcs ') + ' (width × length), steel structure incl. railing and installation',
+    de: (m, sk) => sk.replace(/ ks /g, ' Stk. ') + ' (Breite × Länge), Stahlkonstruktion inkl. Geländer und Montage',
+    fr: (m, sk) => sk.replace(/ ks /g, ' pcs ') + ' (largeur × longueur), structure en acier y compris garde-corps et montage' },
   { re: /^přisazena k (fasádě|podestám), v (\d+) nástupištích přes můstky$/i,
     en: (m, k, n) => 'Attached to the ' + (k === 'fasádě' ? 'facade' : 'landings') + ', at ' + n + ' landings via access bridges',
     de: (m, k, n) => 'An ' + (k === 'fasádě' ? 'die Fassade' : 'die Podeste') + ' angebaut, an ' + n + ' Zugangsstellen über Brücken',

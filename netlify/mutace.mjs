@@ -2397,6 +2397,10 @@ const MUTACE = [
     hledej: "  \"úpravy a napojení stávajícího zábradlí na podestách\": [",
     nahrad: "  \"úpravy a napojení stávajícího zábradlí na podestách-x\": [",
     proc: 'EN/DE/FR specifikace by tiskla hodnotu zábradlí na podestách česky' },
+  { nazev: '[PTZAB] vzor pro výčet víc skupin můstků chybí', soubor: '../src/preklad.js',
+    hledej: "  { re: /^(\\d+ ks \\d+ × \\d+ mm(?:, \\d+ ks \\d+ × \\d+ mm)+) \\(šířka × délka\\)",
+    nahrad: "  { re: /^NIKDY(\\d+ ks \\d+ × \\d+ mm(?:, \\d+ ks \\d+ × \\d+ mm)+) \\(šířka × délka\\)",
+    proc: 'výčet víc skupin můstků (Model 2 + ceník #354) by v EN/DE/FR specifikaci zůstal česky' },
   /* ---------- [K50N1] (19. 11. 2026, kolo 50): statika opláštění v zahraniční řadě.
    * Hlídají test_k50n1_statika_zahr.mjs (B112, zámek) a ../src/test_k50n1_statika_zahr.js. ---------- */
   { nazev: '[K50N1] server: zahraniční řada nechá tuzemskou statiku opláštění', soubor: '../src/cenik_rady.js',

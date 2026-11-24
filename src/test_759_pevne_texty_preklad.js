@@ -29,7 +29,8 @@
  * chyba (seznam se nesmí zanášet).
  *
  * Pojistka: bez hesla „úpravy a napojení stávajícího zábradlí na podestách"
- * v src/preklad.js test selže (EN/DE/FR, pole zabradliPodesty).
+ * v src/preklad.js test selže (EN/DE/FR, pole zabradliPodesty); bez vzoru
+ * pro výčet víc skupin můstků (PREKLAD_VZORY) také.
  * Spuštění: cd src && node test_759_pevne_texty_preklad.js */
 'use strict';
 const nacti = f => { const m = require(f); Object.keys(m).forEach(k => { global[k] = m[k]; }); return m; };
@@ -59,12 +60,7 @@ const JAZ = ['en', 'de', 'fr'];
  * { vzor: RegExp celého textu (čísla se mění), jazyky, popis }.
  * Po schválení heslo / vzor patří do src/preklad.js a řádek odsud pryč. */
 const CEKA_NA_JV = [
-  /* čeká na J. V. (#759, 24. 11. 2026): pole MŮSTKY MEZI BUDOVOU A OCK,
-   * víc skupin můstků v Modelu 2 se starým ceníkem #354 (techspec.js,
-   * prefill `mustky`, větev `sk.length > 1`) — výčet rozměrů skupin; vzor
-   * v PREKLAD_VZORY zná jen jednu skupinu („N ks, rozměr …"). */
-  { vzor: /^\d+ ks \d+ × \d+ mm(, \d+ ks \d+ × \d+ mm)+ \(šířka × délka\), ocelová konstrukce vč\. zábradlí a montáže$/,
-    jazyky: ['en', 'de', 'fr'], popis: 'MŮSTKY: víc skupin, Model 2 + ceník #354' },
+  /* prázdné: výčet víc skupin můstků (Model 2 + ceník #354) schválil J. V. 24. 11. → vzor v PREKLAD_VZORY */
 ];
 
 /* Smyšlený ceník: názvy položek zkušebního ceníku (… (zkušební)) nejsou
@@ -240,6 +236,17 @@ test('seznam „čeká na J. V." nemá zastaralé výjimky (už přeložené / u
     de: 'Anpassung und Anschluss des bestehenden Geländers an den Podesten',
     fr: 'adaptation et raccordement du garde-corps existant sur les paliers' };
   JAZ.forEach(L => test('PT-ZAB: ' + L.toUpperCase() + ' = schválený překlad', PR.tr(h.text, L) === CIL[L], PR.tr(h.text, L)));
+}
+
+/* PT-ZAB (J. V. 24. 11. 2026): výčet víc skupin můstků stejnými slovy jako věta pro jednu skupinu. */
+{
+  const cz = '1 ks 1600 × 1000 mm, 2 ks 1000 × 800 mm (šířka × délka), ocelová konstrukce vč. zábradlí a montáže';
+  const CIL = { en: '1 pcs 1600 × 1000 mm, 2 pcs 1000 × 800 mm (width × length), steel structure incl. railing and installation',
+    de: '1 Stk. 1600 × 1000 mm, 2 Stk. 1000 × 800 mm (Breite × Länge), Stahlkonstruktion inkl. Geländer und Montage',
+    fr: '1 pcs 1600 × 1000 mm, 2 pcs 1000 × 800 mm (largeur × longueur), structure en acier y compris garde-corps et montage' };
+  JAZ.forEach(L => test('PT-ZAB: víc skupin můstků ' + L.toUpperCase() + ' = schválený překlad', PR.tr(cz, L) === CIL[L], PR.tr(cz, L)));
+  const jedna = PR.tr('1 ks, rozměr 1600 × 1000 mm (šířka × délka), ocelová konstrukce vč. zábradlí a montáže', 'de');
+  test('PT-ZAB: věta pro jednu skupinu beze změny', jedna === '1 Stk., Abmessung 1600 × 1000 mm (Breite × Länge), Stahlkonstruktion inkl. Geländer und Montage', jedna);
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);

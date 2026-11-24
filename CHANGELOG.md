@@ -22,9 +22,10 @@ technické specifikace OCK u interiérové šachty se zaškrtnutým zábradlím.
   hodnoty polí, poznámky) pro 522 zadání (interiér/exteriér, průchozí, přechodové plechy, každá volitelná položka
   zapnutá i vypnutá, stříšky, můstky ve všech modelech) a data nabídky OCK pro 21 zakázek (i víc šachet) v EN/DE/FR;
   nepřeložený pevný text = chyba. Pole, která si jazyk skládají sama, hlídá po částech (sledování překladu #518).
-- **Čeká na J. V.** (výjimka v testu): výčet víc skupin můstků v Modelu 2 se starým ceníkem #354
-  („1 ks 1600 × 1000 mm, 2 ks 1000 × 800 mm (šířka × délka), ocelová konstrukce vč. zábradlí a montáže“) zůstává česky.
-- Pojistka: bez hesla test 4 FAIL (souhrn EN/DE/FR), s heslem 8 OK; cílená mutace (odebrání hesla) chycena.
+- **Opraveno i (J. V. 24. 11.):** výčet víc skupin můstků v Modelu 2 se starým ceníkem #354 („1 ks 1600 × 1000 mm,
+  2 ks 1000 × 800 mm (šířka × délka), ocelová konstrukce vč. zábradlí a montáže“), který hlídač našel, zůstával
+  v EN/DE/FR česky — nový vzor ho překládá stejnými slovy jako větu pro jednu skupinu. Výjimky „čeká na J. V.“ nejsou.
+- Pojistka: bez hesla test 4 FAIL, bez vzoru 4 FAIL, s obojím 12 OK; cílené mutace [PTZAB] 2 z 2 chycené.
 
 ## v24.11.5 — K54-N1 #750: smazaná otevřená kalkulace se zavře a uložením nevzkřísí, větev claude/rychla-K54-N1
 
