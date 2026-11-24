@@ -91,7 +91,8 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
   zpracovatele ze zámku (#665/#715) jen pro CN; SoD OCK/PROJ a objednávka PROJ = kdo právě tiskne.
 - `src/zpracovatel.js` `zpracovatelTiskneDoklad` (ZPRAC_*, FIRMA_ZPRACOVAL*, sken) — volá `sodData`, `sodProjData`
   (`sodTiskne`) a `objednavkaProjData`. CN beze změny.
-- Test `src/test_k56i2_tiskar.js`: 6722ad9 7 FAIL, po 26 OK; mutace [K56I2] 4/4. Kolo viz zpráva koordinaci.
+- Test `src/test_k56i2_tiskar.js`: 6722ad9 7 FAIL, po 26 OK; mutace [K56I2] 4/4. Kolo `--bez-mutaci --proti origin/test`
+  VŠE ZELENÉ (sady 538/0, hodiny 437/0, statické 12/12, S3 SHODA 367/367 — sada nemá zámek tištěný jiným uživatelem).
 - Po nasazení do testu J. V.: zamčená varianta, SoD/objednávku vytiskne kolega → jeho jméno a podpis; CN dál původní.
 
 ## Čeká na J. V.
