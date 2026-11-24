@@ -48,7 +48,15 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 
 ## Běžící dávky
 
-24. 11. 2026 odpoledne: RP (#736/#740, opravy po revizi Fable). Sloučené dávky PV, MT2, UT (v24.11.2), R3 (v24.11.3), DT (v24.11.4) a K54-N1 (v24.11.5, rychlou cestou v test 6722ad9) — předávky v `podklady/predavky/2026-11.md`. Kokpit koordinace: https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2
+Stav 24. 11. 2026 21:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74 % → doporučeno nové sezení; kokpit https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2):
+- **main** v19.11.11 (cda289e). **test** v24.11.5 (6722ad9). **integrace** v24.11.6 (7339a9e) = UT, R3, DT, RP. Celé kolo Actions nad c89e872 (v24.11.5) ZELENÉ 36/36.
+- **v24.11.7 pro test** (lokálně v pracovní kopii koordinace, NEpushnuto): test 6722ad9 + claude/rychla-PT-ZAB (7d1b3d1, #759 překlad zábradlí + výčet víc skupin můstků) + claude/rychla-K56-I2 (7ddb87f, #760 SoD a objednávka PROJ = kdo tiskne, CN snímek zámku). Postup: sloučit obě větve nad origin/test (konflikty jen přidané řádky — sjednotit), verze 24.11.7, kolo `--bez-mutaci --proti origin/test --ocekavane podklady/porovnani/ocekavane_pt-zab_2026-11-24.txt`, push do test, /api/zdravi, pak test sloučit do integrace.
+- **main: J. V. 24. 11. — zítra ráno 25. 11. společně** (test → main na jeho pokyn; PIPEDRIVE_ZAPIS na main zůstává vypnutý do zkoušky prodeje na dealu TEST). Porovnání main × test: stará sada SHODA, rozšířená (kolo 56) 387 očekávaných, 0 neočekávaných.
+- **ER** (claude/er-engineering-rezerva, 3f3162f, #757 engineering příplatek 1× za variantu, #758 rezerva v položkách + automat ATYP, #761 přepínače; jen nové kalkulace kalkVerze 2): opravy po revizi Fable (N1 engineering víc šachet, N3 server hlídá příznak, N5, N6) → dorevize (session_018mwHQEfyWwjwB8mdLvYCpJ). J. V.: N2 a N3 ano.
+- **ZK** (claude/zk-zakaznici-ze-zakazek, 62403a4, #755 naplnění zákazníků podle ARES): dorevize běží (session_018mwHQJYxTLw32SuMNrUtwJ). J. V.: R7, R9 a ostatní ponechat.
+- **PO** (claude/po-odeslani-pipedrive, 1836433, #116 zápis do Pipedrive při odeslání): opravy po revizi (R1 soubor k lost/cizímu dealu, R2, R5 makra, R6–R9, R12 testy; R3/R4 podle doporučení, J. V. ano) → dorevize (session_018mwHQFNkww2bgYTpMqUUj6). J. V. založí pole „Datum nabídky“ v Pipedrive (#763).
+- **Fronta:** K56-D (doplnění porovnání; potřebuje větev claude/testovani-kolo56 e221781f — bundle od J. V.); doprava a přesun hmot OCK (PDF návrh u majitele); R1 RP Word na skutečných šablonách CN v18 před main (testovací sezení).
+- Sloučené dnes: PV, MT2, UT, R3, DT, K54-N1, RP — předávky v `podklady/predavky/2026-11.md`.
 
 ## Čeká na J. V.
 
