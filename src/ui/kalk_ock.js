@@ -1741,13 +1741,13 @@ function rpPodRadek(r, NC) {
   const jaz = otevreno ? `<div class="rp-jazyky">${['en', 'de', 'fr'].map(j => {
     const v = (p.jazyky && p.jazyky[j]) || {};
     return `<div class="rp-jazyk"><b>${j.toUpperCase()}</b>
-      <input type="text" class="rp-j-nazev" placeholder="název ${j.toUpperCase()}" value="${esc(v.nazev || '')}"${dis} onchange="rpJazykSet('${sek}', ${i}, '${j}', 'nazev', this.value)">
-      <input type="text" class="rp-j-dodatek" placeholder="dodatkový text ${j.toUpperCase()}" value="${esc(v.dodatek || '')}"${dis} onchange="rpJazykSet('${sek}', ${i}, '${j}', 'dodatek', this.value)"></div>`;
+      <input type="text" class="rp-j-nazev" maxlength="500" placeholder="název ${j.toUpperCase()}" value="${esc(v.nazev || '')}"${dis} onchange="rpJazykSet('${sek}', ${i}, '${j}', 'nazev', this.value)">
+      <input type="text" class="rp-j-dodatek" maxlength="2000" placeholder="dodatkový text ${j.toUpperCase()}" value="${esc(v.dodatek || '')}"${dis} onchange="rpJazykSet('${sek}', ${i}, '${j}', 'dodatek', this.value)"></div>`;
   }).join('')}</div>` : '';
   return `<tr class="rp-pod noprint"><td colspan="${NC}"><div class="rp-pod-in">
     <label class="rp-jed">jednotka ${sel}</label>
     <label class="rp-dodatek">Dodatkový text do cenové nabídky (nepovinné)
-      <input type="text" class="rp-dodatek-in" value="${esc(p.dodatek || '')}"${dis} onchange="vlastniSet('${sek}', ${i}, 'dodatek', this.value)"></label>
+      <input type="text" class="rp-dodatek-in" maxlength="2000" value="${esc(p.dodatek || '')}"${dis} onchange="vlastniSet('${sek}', ${i}, 'dodatek', this.value)"></label>
     <span class="note rp-sekce" title="ruční položka se vytiskne vždy, do sekce technické specifikace podle sekce kalkulace">v nabídce: ${esc(RP_SEKCE_TS[r.sekce])}</span>
     <button class="mini rp-preklad" onclick="rpPrekladToggle('${escJs(klic)}')">překlad EN/DE/FR${pocet ? ' (' + pocet + ')' : ''} ${otevreno ? '▴' : '▾'}</button>
   </div>${jaz}</td></tr>`;

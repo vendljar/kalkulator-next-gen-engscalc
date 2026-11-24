@@ -594,6 +594,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
   const rucniTsRadky = !vs.sachty ? rucniPol.map(p => RP.rpRadekTs(p, L, P))
     : [].concat(...vs.sachty.map(sa => (sa.rucni || []).filter(p => RP.RP_SEKCE_SACHTY.indexOf(p.sekceTs) < 0)
       .map(p => { const t = RP.rpRadekTs(p, L, P); return Object.assign(t, { nazev: t.nazev + ' (' + sa.nazev + ')' }); })));
+  const rucniWord = RP.rpRadkyWord(rucniTsRadky, sablona && sablona.symboly);
   const tsRadkyNavic = [
     { symbol: 'TS_NENI_LESENI_VNITRNI', kotva: 'TS_NENI_LESENI', pred: true,
       nazev: P('LEŠENÍ VNITŘNÍ PRO STAVBU OCK'), hodnota: placeholders.TS_NENI_LESENI_VNITRNI },
@@ -602,8 +603,11 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
     ...tsExtraDalsi.map(e => ({ kotva: 'TS_NENI_PRISTUP', vzdy: true, nazev: e.nazev, hodnota: e.hodnota })),
     /* RP: ruční položky do sekcí specifikace (před klony můstků — sekce
      * MŮSTKY ze šablony v15 se klonuje za tutéž kotvu) a do cenového bloku */
-    ...RP.rpRadkyWord(rucniTsRadky, sablona && sablona.symboly),
+    ...rucniWord.filter(x => !nabidkaRucniZaMustky(x)),
     ...nabidkaMustkyKlon(placeholders, P, sablona),
+    /* revize N4: šablona bez sekce MŮSTKY (v15) — ruční řádek Můstků až za
+     * naklonovanou sekci MŮSTKY (tatáž kotva, pořadí klonů = pořadí seznamu) */
+    ...rucniWord.filter(nabidkaRucniZaMustky),
     ...nabidkaRucniCenaKlon(placeholders, P, rozpisRucni, kc),
   ];
   return { placeholders, priplatky: priplatkyList, jazyk: L, platbyOck, tsRadkyNavic, tsExtra, mena,
@@ -718,6 +722,12 @@ function nabidkaMustkyKlon(ph, P, sablona) {
       nazev: P('MŮSTKY MEZI BUDOVOU A OCK'), hodnota: ph.CENA_MUSTKY_BEZ_DPH },
     { kotva: 'CENA_BEZ_DPH', symbol: 'CENA_MUSTKY_BEZ_DPH', prejmenuj: true, nazev: P('CENA CELKEM') },
   ];
+}
+
+/* Ruční řádek sekce MŮSTKY bez vlastní kotvy v šabloně (v15: sekce MŮSTKY se
+ * klonuje za {{TS_SOKL}}) patří až za klony sekce (revize N4). */
+function nabidkaRucniZaMustky(x) {
+  return !!x && x.sekceTs === 'MŮSTKY MEZI BUDOVOU A OCK' && x.kotva !== 'TS_MUSTKY_SLOUPY';
 }
 
 /* RUČNÍ POLOŽKY V CENOVÉM BLOKU WORDU (dávka RP, J. V. 23. 11. 2026, bod 4).

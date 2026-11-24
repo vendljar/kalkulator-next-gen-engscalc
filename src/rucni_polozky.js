@@ -82,20 +82,49 @@ function rpZdroj(Z, sekce, idx) {
 function rucniPolozkyVysledku(r, Z) {
   if (!r || !r.sekce) return [];
   const out = [];
+  const pridej = (sekce, idx, row, src, sMarzi) => {
+    const nazev = String(row.nazev == null ? '' : row.nazev).trim();
+    const mn = +(row.mnozstvi != null ? row.mnozstvi : row.ks) || 0;
+    if (!nazev || !(mn > 0)) return;
+    out.push({
+      sekce, sekceKalk: RP_SEKCE_KALK[sekce], sekceTs: RP_SEKCE_TS[sekce], idx,
+      nazev, mnozstvi: mn, jednotka: rpJednotka(src),
+      dodatek: String(src.dodatek == null ? '' : src.dodatek).trim(),
+      jazyky: (src.jazyky && typeof src.jazyky === 'object' && !Array.isArray(src.jazyky)) ? src.jazyky : {},
+      sMarzi: +sMarzi || 0,
+    });
+  };
   Object.keys(r.sekce).forEach(k => {
     (Array.isArray(r.sekce[k]) ? r.sekce[k] : []).forEach(row => {
-      if (!row || !row.vlastni || row.kid || !row.sekce || !RP_SEKCE_TS[row.sekce]) return;
+      if (!row || !row.vlastni || !row.sekce || !RP_SEKCE_TS[row.sekce]) return;
       const src = rpZdroj(Z, row.sekce, row.idx) || {};
-      const nazev = String(row.nazev == null ? '' : row.nazev).trim();
-      const mn = +row.mnozstvi || 0;
-      if (!nazev || !(mn > 0)) return;
-      out.push({
-        sekce: row.sekce, sekceKalk: RP_SEKCE_KALK[row.sekce], sekceTs: RP_SEKCE_TS[row.sekce], idx: row.idx,
-        nazev, mnozstvi: mn, jednotka: rpJednotka(src),
-        dodatek: String(src.dodatek == null ? '' : src.dodatek).trim(),
-        jazyky: (src.jazyky && typeof src.jazyky === 'object') ? src.jazyky : {},
-        sMarzi: +row.sMarzi || 0,
-      });
+      /* trvalá položka z ceníku: `kid` ve výsledku, pojistka i v zadání (revize N5) */
+      if (row.kid || src.kid) return;
+      pridej(row.sekce, row.idx, row, src, row.sMarzi);
+    });
+  });
+  /* SPOJOVACÍ MATERIÁL A LAKOVÁNÍ (revize N2). Jádro vede vlastní položky těchto
+   * sekcí mimo r.sekce — jako náklad uvnitř jednoho řádku Hrubé OCK. V UI ruční
+   * položka (bez kid) do nich nejde, jen u importovaného souboru; nesmí ale zvednout
+   * cenu bez tisku. Cena s marží = náklad × poměr cena/náklad jejich řádku Hrubé OCK
+   * (táž marže, žádný druhý výpočet). Pořadí řádků = pořadí v zadání. */
+  const radekSekce = nazev => {
+    let x = null;
+    Object.keys(r.sekce).forEach(k => (Array.isArray(r.sekce[k]) ? r.sekce[k] : []).forEach(row => {
+      if (row && (row.origNazev || row.nazev) === nazev) x = row;
+    }));
+    return x;
+  };
+  [['spojovaci', r.spojovaci && r.spojovaci.rows, 'SPOJOVACÍ MATERIÁL'],
+   ['lakovani', r.lakovani && r.lakovani.vlastniRows, 'LAKOVÁNÍ (ŠACHTA, PLECHY, ZASKLENÍ, OPLECHOVÁNÍ)']].forEach(([sek, rows, nazevRadku]) => {
+    const vl = (Array.isArray(rows) ? rows : []).filter(x => x && x.vlastni);
+    if (!vl.length) return;
+    const rs = radekSekce(nazevRadku);
+    const pomer = (rs && +rs.naklad > 0) ? (+rs.sMarzi || 0) / (+rs.naklad) : 0;
+    vl.forEach((row, i) => {
+      const src = rpZdroj(Z, sek, i) || {};
+      if (src.kid) return;
+      pridej(sek, i, row, src, (+row.celkem || 0) * pomer);
     });
   });
   return out.sort((a, b) => (RP_PORADI.indexOf(a.sekce) - RP_PORADI.indexOf(b.sekce)) || (a.idx - b.idx));
@@ -128,7 +157,7 @@ function rpRadekTs(p, L, P) {
 function rpRadkyWord(radkyTs, symboly, jenSekce) {
   return (radkyTs || []).filter(t => !jenSekce || jenSekce.indexOf(t.sekceTs) >= 0).map(t => {
     const kotva = rpKotva(t.sekceTs, symboly);
-    return kotva ? { kotva, vzdy: true, nazev: t.nazev, hodnota: t.hodnota } : null;
+    return kotva ? { kotva, vzdy: true, nazev: t.nazev, hodnota: t.hodnota, sekceTs: t.sekceTs } : null;
   }).filter(Boolean);
 }
 
@@ -163,6 +192,20 @@ function rpKryciText(polozky, kc) {
     + f(p.sMarzi) + ' (' + p.sekceKalk + ')').join('; ');
 }
 
+/* Kontrola před tiskem (revize S1): ruční řádky, které šablona Wordu nemá kam
+ * vložit (žádná kotva cílové sekce), a cenový blok bez řádku pro klon
+ * ({{CENA_MUSTKY_BEZ_DPH}} v16+, ani {{CENA_BEZ_DPH}} ve starší). `symboly` =
+ * pole nebo Set symbolů šablony. Vrací { specifikace: [položky], cena: bool }. */
+function rpChybiVeWordu(polozky, symboly) {
+  const sym = Array.isArray(symboly) ? new Set(symboly) : symboly;
+  if (!sym || !sym.size) return { specifikace: [], cena: false };
+  const a = polozky || [];
+  return {
+    specifikace: a.filter(p => !rpKotva(p.sekceTs, sym)),
+    cena: a.some(p => p.sMarzi > 0) && !sym.has('CENA_MUSTKY_BEZ_DPH') && !sym.has('CENA_BEZ_DPH'),
+  };
+}
+
 /* Kontrola před tiskem (bod 6): názvy položek, které v nabídce jazyka L
  * zůstanou česky — chybí jazyková varianta a slovník text nezná (název
  * i dodatkový text). Česká nabídka nic. */
@@ -176,4 +219,4 @@ function rpCeskeVCiziNabidce(polozky, L, trStavFn) {
 
 if (typeof module !== 'undefined')
   module.exports = { RP_JEDNOTKY, RP_SEKCE_TS, RP_SEKCE_KALK, RP_SEKCE_SACHTY, RP_KOTVY, rpKotva, rpJednotka, rpZdroj,
-    rucniPolozkyVysledku, rpText, rpRadekTs, rpRadkyWord, rpRozpisCeny, rpKryciText, rpCeskeVCiziNabidce };
+    rucniPolozkyVysledku, rpText, rpRadekTs, rpRadkyWord, rpRozpisCeny, rpKryciText, rpCeskeVCiziNabidce, rpChybiVeWordu };

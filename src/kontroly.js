@@ -916,6 +916,40 @@ const KONTROLY = [
     },
   },
   {
+    /* RUČNÍ POLOŽKA, KTEROU ŠABLONA WORDU NEMÁ KAM VLOŽIT (revize RP S1,
+     * 24. 11. 2026). Řádek specifikace se klonuje z posledního řádku cílové
+     * sekce šablony (RP_KOTVY); upravená nebo hodně stará šablona bez žádné
+     * z kotev by řádek tiše vynechala — zákazník by dostal cenu položky bez
+     * jejího popisu (týž druh vady jako CN-431). Totéž cenový blok bez řádku
+     * pro klon. Vzor slevaWord: mlčí, dokud šablonu neznáme; jen varuje. */
+    kod: 'rucniPolozkaWord', kde: 'Nabídka', nazev: 'Ruční položka se ve Wordu nevytiskne',
+    zjisti(ctx) {
+      if (ctx.jenProj) return null;
+      const s = ctx.sablonaNabidka;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      const r = ctx.vysledek;
+      if (!r) return null;
+      const RPk = (typeof rucniPolozkyVysledku === 'function') ? { rucniPolozkyVysledku, rpChybiVeWordu }
+        : require('./rucni_polozky.js');
+      let pol = [];
+      if (Array.isArray(r.sachty) && r.sachty.length && ctx.ock && typeof sachtyZ === 'function') {
+        const zad = sachtyZ(ctx.ock);
+        r.sachty.forEach((x, i) => { pol = pol.concat(RPk.rucniPolozkyVysledku(x.vysl || r, (zad[i] || {}).zadani || ctx.zadani)); });
+      } else pol = RPk.rucniPolozkyVysledku(r, ctx.zadani);
+      if (!pol.length) return null;
+      const ch = RPk.rpChybiVeWordu(pol, s.symboly);
+      const cena = ch.cena && !(Array.isArray(r.sachty) && r.sachty.length);
+      if (!ch.specifikace.length && !cena) return null;
+      const sab = 'šablona nabídky OCK' + (s.nazev ? ' „' + s.nazev + '"' : '') + (s.verze ? ' (verze ' + s.verze + ')' : '');
+      const casti = [];
+      if (ch.specifikace.length) casti.push('řádek technické specifikace ' + kontrolyVyctem(ch.specifikace.map(p => '„' + p.nazev + '" (' + p.sekceTs + ')'))
+        + ' — ' + sab + ' nemá v té sekci řádek, za který by se vložil');
+      if (cena) casti.push('řádek ceny ruční položky — ' + sab + ' nemá řádek ceny můstků ani {{CENA_BEZ_DPH}}');
+      return { text: 'Word nevytiskne ' + casti.join('; ') + '. Online náhled je ukazuje. Použijte šablonu CN v18, '
+        + 'nebo řádek ve Wordu doplňte ručně.' };
+    },
+  },
+  {
     /* TERMÍN DODÁNÍ U ATYP (#330, nález TD1, 24. 9. 2026). Nabídka od teď
      * nese termín ze zakázky jako první odrážku kapitoly V.; zbytek
      * kapitoly je text z Firmy. Když v tom textu zůstala standardní lhůta

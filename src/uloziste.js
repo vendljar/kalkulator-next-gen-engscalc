@@ -1281,6 +1281,11 @@ const ULO_ZADANI_BEZ_ZAPORU = ['rezervaProfilyPct', 'rezervaPlechyPct', 'rezerva
  * načítá i bez jádra; shodu hlídá src/test_560_mustky_sekce.js). */
 const ULO_MUSTKY_MAX = 20;
 const ULO_MUSTKY_TEXT = 120;
+/* RP (revize N6): ruční položka — jednotka (ks/bm/m²/kpl), dodatkový text
+ * a překlad názvu / dodatku EN/DE/FR. */
+const ULO_RP_JEDNOTKA_MAX = 10;
+const ULO_RP_NAZEV_MAX = 500;
+const ULO_RP_TEXT_MAX = 2000;
 const ULO_MUSTKY_CISLA = ['ks', 'sirkaMm', 'delkaMm', 'zabradliStrany', 'sloupyKs', 'sloupVyskaM'];
 const ULO_MUSTKY_VOLBY = { podlaha: ['plech', 'pororost', 'vana', 'jine'], zabradli: ['kov', 'sklo', 'bez', 'jine'],
   kotveni: ['deska', 'sloupy', 'konzola', 'jine'] };
@@ -1315,6 +1320,25 @@ function uloZaporneVZadani(z, zp) {
       if (!p || typeof p !== 'object' || Array.isArray(p)) { out.push({ kde: c, duvod: 'typ' }); return; }
       hlidej(p.cena, c + '.cena'); strop(p.cena, c + '.cena');
       hlidej(p.mnozstvi, c + '.mnozstvi'); strop(p.mnozstvi, c + '.mnozstvi');
+      /* RP #736/#740 (revize N6): jednotka, dodatkový text a překlad ruční
+       * položky — typ a strop délky jako u ostatních textů zadání. */
+      const text = (h, kde, max) => {
+        if (h === undefined || h === null) return;
+        if (typeof h !== 'string') out.push({ kde, duvod: 'typ' });
+        else if (h.length > max) out.push({ kde, id: h.slice(0, 40) + '…', duvod: 'delka' });
+      };
+      text(p.jednotka, c + '.jednotka', ULO_RP_JEDNOTKA_MAX);
+      text(p.dodatek, c + '.dodatek', ULO_RP_TEXT_MAX);
+      if (p.jazyky !== undefined && p.jazyky !== null) {
+        if (typeof p.jazyky !== 'object' || Array.isArray(p.jazyky)) out.push({ kde: c + '.jazyky', duvod: 'typ' });
+        else Object.keys(p.jazyky).forEach(j => {
+          const cj = c + '.jazyky.' + (/^(en|de|fr)$/.test(j) ? j : '?');
+          const v = p.jazyky[j];
+          if (!/^(en|de|fr)$/.test(j) || !v || typeof v !== 'object' || Array.isArray(v)) { out.push({ kde: cj, duvod: 'typ' }); return; }
+          text(v.nazev, cj + '.nazev', ULO_RP_NAZEV_MAX);
+          text(v.dodatek, cj + '.dodatek', ULO_RP_TEXT_MAX);
+        });
+      }
     });
   };
   if (z && typeof z === 'object') {

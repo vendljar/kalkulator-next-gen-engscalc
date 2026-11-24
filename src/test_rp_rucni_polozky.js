@@ -19,7 +19,10 @@
  *  G) odeslaná (zamčená) nabídka: dotisk má řádky a rozpis ceny ze ZMRAZENÉHO
  *     výsledku, zmrazená čísla odpovídají přepočtu (žádný rozdíl B59/B232);
  *  H) víc šachet: řádky u své šachty, Režie s názvem šachty, cena po šachtách
- *     beze změny.
+ *     beze změny;
+ *  I) nálezy revize Fable 24. 11.: S1 kontrola chybějící kotvy Wordu, N2 Spojovací /
+ *     Lakování, N4 Můstky ve v15, N5 pojistka kid, N6 typ a délka polí na serveru;
+ *     T1 eura v C, T2 název a krycí list ze zámku v G.
  * Pojistka: na d655295 (před dávkou RP) modul neexistuje a nabidkaData ani
  * krycí list ruční položky neznají — sada selže; viz zpráva commitu.
  * Spuštění: node src/test_rp_rucni_polozky.js */
@@ -123,6 +126,10 @@ for (const [jm, o, L] of [['CZ bez slevy', {}, 'cz'], ['CZ sleva 5 %', { sleva: 
     ph.CENA_BEZ_DPH_CELKEM === ph.CENA_BEZ_DPH && ph.CENA_BEZ_DPH_SACHTA === '');
   if (L === 'cz') test('C ' + jm + ': ruční položka = její cena s marží (56 000 × 1,2 = 67 200,00 Kč)',
     mezery(d.rucni.ceny.find(x => /NOSNÁ/.test(x.nazev)).cena) === '67 200,00 Kč', d.rucni.ceny);
+  /* revize T1: v eurech se ruční řádek převádí kurzem (nahoru na celé euro), ne korunová částka se znakem € */
+  if (L === 'en') test('C ' + jm + ': ruční řádek v eurech = ceil(67 200 / 25) = € 2 688',
+    hal(cislo(d.rucni.ceny.find(x => /NOSNÁ/.test(x.nazev)).cena)) === hal(Math.ceil(67200 / 25)), d.rucni.ceny);
+  test('C ' + jm + ': žádný řádek rozpisu není záporný', radky.every(t => cislo(t) >= 0 && !/[-−]/.test(String(t))), radky);
 }
 {
   /* ruční položka v Můstcích: vlastní řádek, odečtená z řádku můstků */
@@ -209,12 +216,18 @@ for (const [jm, o, L] of [['CZ bez slevy', {}, 'cz'], ['CZ sleva 5 %', { sleva: 
   /* po odeslání se ceník změní — dotisk má jít ze ZMRAZENÉHO výsledku */
   vv.data.cenik.zamecnikAtypKc = (+vv.data.cenik.zamecnikAtypKc || 0) + 1;
   vv.data.ock.zadani.vlastniPolozky.volitelne[0].cena = 99999;   // data se po zámku mění jen podvrhem — dotisk je nesmí vzít
+  vv.data.ock.zadani.vlastniPolozky.volitelne[0].nazev = 'Podvržený název';   // revize T2a: název ze zámku, ne ze zadání
   const d = nabidkaData(z, vv, J, 'cz');
   const dz = nabidkaData(zak, v, J, 'cz');
   test('G dotisk odeslané nabídky: řádky specifikace a rozpis ceny jsou, ceny ze zmrazeného výsledku',
     d.rucni && d.rucni.tsRadky.length === 4 && JSON.stringify(d.rucni.ceny) === JSON.stringify(dz.rucni.ceny)
     && d.placeholders.CENA_BEZ_DPH === dz.placeholders.CENA_BEZ_DPH && d.placeholders.CENA_PRED_SLEVOU === dz.placeholders.CENA_PRED_SLEVOU,
     { a: d.rucni && d.rucni.ceny, b: dz.rucni.ceny });
+  test('G dotisk: název řádku ze zmrazeného výsledku, podvržený název v zadání se nevytiskne (revize T2a)',
+    d.rucni.tsRadky.some(t => t.nazev === 'NOSNÁ KONSTRUKCE S POCHOZÍM DNEM PROHLUBNĚ') && !JSON.stringify(d.rucni).includes('PODVRŽENÝ'), d.rucni.tsRadky);
+  const kl = kryciData(z, vv, J, 'bo').sekce[0].radky.find(x => x[0] === 'Ruční položky v ceně');
+  test('G krycí list odeslané nabídky: cena i název ze zámku, ne z podvrženého zadání (revize T2b)',
+    kl && /Nosná konstrukce s pochozím dnem prohlubně, 1 ks, 67 200 Kč/.test(mezery(kl[1])) && !/Podvržený|99/.test(kl[1]), kl);
 }
 
 /* ---------- H) víc šachet ---------- */
@@ -234,6 +247,73 @@ for (const [jm, o, L] of [['CZ bez slevy', {}, 'cz'], ['CZ sleva 5 %', { sleva: 
     && d.rucni.ceny.length === 0 && d.tsRadkyNavic.some(x => x.nazev === 'DOPRAVA B (Výtah B)' && x.kotva === 'TS_STATIKA'), d.rucni);
   const kl = kryciData(zak, v, J, 'bo').sekce[0].radky.find(x => x[0] === 'Ruční položky v ceně');
   test('H krycí list: šachta v závorce u sekce', kl && /\(Opláštění, Výtah B\)/.test(kl[1]) && /\(Režie, Výtah A\)/.test(kl[1]), kl);
+}
+
+/* ---------- I) nálezy revize Fable 24. 11. (S1, N2, N4, N5, N6, N10) ---------- */
+{
+  /* S1: šablona bez kotvy cílové sekce / bez řádku pro cenu → kontrola */
+  const { zak, v } = zakazka({});
+  const ctx = sym => ({ jazyk: 'cz', vysledek: vypocetZ(v, J), zadani: v.data.ock.zadani, ock: v.data.ock,
+    sablonaNabidka: sym ? { nazev: 'CN', verze: 'x', symboly: sym } : null });
+  const n = sym => kontrolyProved(ctx(sym)).nalezy.find(x => x.kod === 'rucniPolozkaWord');
+  const v18 = ['TS_POZARNI', 'TS_NAPOJENI_DVERI', 'TS_SOKL', 'TS_STATIKA', 'CENA_MUSTKY_BEZ_DPH', 'CENA_SACHTA_BEZ_DPH'];
+  test('I S1 pravidlo rucniPolozkaWord existuje', kontrolyPravidla().some(p => p.kod === 'rucniPolozkaWord'));
+  test('I S1 šablona v18: nic', !n(v18), n(v18));
+  test('I S1 šablona neznámá: nic', !n(null));
+  const bez = n(['TS_POZARNI', 'TS_SOKL', 'TS_STATIKA', 'CENA_MUSTKY_BEZ_DPH']);
+  test('I S1 šablona bez kotvy OPLÁŠTĚNÍ: varuje a jmenuje položku i sekci', bez && /Oplechování atiky/.test(bez.text) && /OPLÁŠTĚNÍ ŠACHTY/.test(bez.text)
+    && !/Výztuha navíc/.test(bez.text), bez);
+  const bc = n(['TS_POZARNI', 'TS_NAPOJENI_DVERI', 'TS_SOKL', 'TS_STATIKA']);
+  test('I S1 šablona bez řádku pro cenu (ani CENA_MUSTKY_BEZ_DPH, ani CENA_BEZ_DPH): varuje', bc && /řádek ceny ruční položky/.test(bc.text), bc);
+  const bz = zakazka({ rucni: false });
+  test('I S1 bez ruční položky: nic', !kontrolyProved({ jazyk: 'cz', vysledek: vypocetZ(bz.v, J), zadani: bz.v.data.ock.zadani, ock: bz.v.data.ock,
+    sablonaNabidka: { symboly: ['X'] } }).nalezy.some(x => x.kod === 'rucniPolozkaWord'));
+}
+{
+  /* N2: ruční položka ve Spojovacím materiálu / Lakování (jen import) se vytiskne v KONSTRUKČNÍM ŘEŠENÍ */
+  const { zak, v } = zakazka({ rucni: { spojovaci: [{ nazev: 'Kotvy navíc', mnozstvi: 10, cena: 100 }, { nazev: 'Trvalá', mnozstvi: 1, cena: 50, kid: 'k9' }],
+    lakovani: [{ nazev: 'Lak navíc', mnozstvi: 2, cena: 500 }] } });
+  const r = vypocetZ(v, J);
+  const a = rucniPolozkyVysledku(r, v.data.ock.zadani);
+  const sp = r.sekce.hrubaOck.find(x => x.origNazev === 'SPOJOVACÍ MATERIÁL');
+  const k = a.find(x => x.nazev === 'Kotvy navíc'), l = a.find(x => x.nazev === 'Lak navíc');
+  test('I N2 Spojovací a Lakování: ruční položka v KONSTRUKČNÍM ŘEŠENÍ, trvalá ne',
+    a.length === 2 && k && l && k.sekceTs === 'KONSTRUKČNÍ ŘEŠENÍ ŠACHTY' && l.sekceTs === 'KONSTRUKČNÍ ŘEŠENÍ ŠACHTY' && k.mnozstvi === 10, a);
+  test('I N2 cena s marží jejich řádku Hrubé OCK (1 000 × cena/náklad)', k && Math.abs(k.sMarzi - 1000 * sp.sMarzi / sp.naklad) < 1e-6, { k, sp: sp && [sp.naklad, sp.sMarzi] });
+  const d = nabidkaData(zak, v, J, 'cz');
+  const soucet = [d.placeholders.CENA_SACHTA_BEZ_DPH].concat(d.rucni.ceny.map(x => x.cena)).reduce((s0, t) => s0 + hal(cislo(t)), 0);
+  test('I N2 rozpis ceny sedí na korunu', soucet === hal(cislo(d.placeholders.CENA_PRED_SLEVOU)) && d.rucni.ceny.length === 2, d.rucni.ceny);
+}
+{
+  /* N4: šablona v15 (bez sekce MŮSTKY) — ruční Můstky až za naklonovanou sekcí MŮSTKY */
+  const { zak, v } = zakazka({ mustky: true, rucni: { mustky: [{ nazev: 'Stříška nad můstkem', mnozstvi: 1, cena: 10000 }],
+    volitelne: [{ nazev: 'Doplněk', mnozstvi: 1, cena: 1000 }] } });
+  const w = nabidkaData(zak, v, J, 'cz', { symboly: new Set(['TS_MUSTKY', 'TS_SOKL', 'TS_PRECHODOVE_PLECHY', 'CENA_BEZ_DPH', 'CENA_PRED_SLEVOU']) }).tsRadkyNavic;
+  const i = n0 => w.findIndex(x => x.nazev === n0);
+  const iPruh = w.findIndex(x => x.pruh && x.nazev === 'MŮSTKY MEZI BUDOVOU A OCK');
+  test('I N4 v15: Doplněk (Volitelné) před pruhem MŮSTKY, Stříška (Můstky) za řádky sekce MŮSTKY',
+    iPruh >= 0 && i('DOPLNĚK') >= 0 && i('DOPLNĚK') < iPruh && i('STŘÍŠKA NAD MŮSTKEM') > iPruh
+    && w.filter((x, j) => x.kotva === 'TS_SOKL' && j > i('STŘÍŠKA NAD MŮSTKEM')).length === 0, w.map(x => [x.nazev, x.kotva]));
+}
+{
+  /* N5: zmrazený výsledek bez kid — trvalou položku pozná i podle zadání */
+  const { v } = zakazka({ rucni: { volitelne: [{ nazev: 'Trvalá z ceníku', mnozstvi: 1, cena: 100, kid: 'k1' }, { nazev: 'Ruční', mnozstvi: 1, cena: 100 }] } });
+  const r = kop(vypocetZ(v, J));
+  Object.keys(r.sekce).forEach(s0 => (r.sekce[s0] || []).forEach(x => { delete x.kid; }));
+  const a = rucniPolozkyVysledku(r, v.data.ock.zadani);
+  test('I N5 výsledek bez kid: trvalá položka (kid v zadání) se netiskne', a.length === 1 && a[0].nazev === 'Ruční', a);
+}
+{
+  /* N6: server — typ a délka nových polí */
+  const ch = z => uloZaporneVZadani(z).map(x => x.kde + ':' + x.duvod);
+  const pol = o => ({ vlastniPolozky: { volitelne: [Object.assign({ nazev: 'A', mnozstvi: 1, cena: 1 }, o)] } });
+  test('I N6 platná položka s jednotkou, dodatkem a překladem projde',
+    !ch(pol({ jednotka: 'm²', dodatek: 'x'.repeat(2000), jazyky: { en: { nazev: 'A', dodatek: 'B' } } })).length);
+  const e = ch(pol({ jednotka: 'x'.repeat(11), dodatek: 'x'.repeat(2001), jazyky: { en: { nazev: 'y'.repeat(501) }, xx: {} } }));
+  test('I N6 dlouhý dodatek / jednotka / překlad a neznámý jazyk se odmítnou', e.includes('ock.zadani.vlastniPolozky.volitelne[0].dodatek:delka')
+    && e.includes('ock.zadani.vlastniPolozky.volitelne[0].jednotka:delka') && e.includes('ock.zadani.vlastniPolozky.volitelne[0].jazyky.en.nazev:delka')
+    && e.includes('ock.zadani.vlastniPolozky.volitelne[0].jazyky.?:typ'), e);
+  test('I N6 špatný typ (dodatek číslo, jazyky pole)', ch(pol({ dodatek: 5, jazyky: [] })).length === 2, ch(pol({ dodatek: 5, jazyky: [] })));
 }
 
 console.log(`\nVýsledek: ${ok} OK, ${fail} FAIL`);
