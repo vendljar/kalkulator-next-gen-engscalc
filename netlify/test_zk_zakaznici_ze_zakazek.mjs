@@ -345,6 +345,14 @@ console.log('\n===== ZK: zápis po kouscích, protokol i po přerušení (R1) ==
   const r = await nahledCely(cA);
   const navrzeno = r.navrh.pocty.zalozit;
   ZZ_NASTAVENI.zapisNaVolani = 1;
+  /* pád už při zápisu první karty — protokol musí existovat od začátku */
+  const prvni = r.navrh.polozky.filter(p => p.stav === 'zalozit').map(p => p.ico).sort()[0];
+  padniPriZapisu = 'zakaznici/z/' + prvni;
+  let spadlo0 = false;
+  try { await zz({ akce: 'zalozit', id: r.navrh.id }, cA); } catch (e) { spadlo0 = true; }
+  const prot0 = JSON.parse(pamet.get('zakaznici_hromadne/zk-protokol') || '[]').filter(x => x.id === r.navrh.id);
+  test('pád v prvním kousku: protokol už nese záznam „probíhá“ (kdo, kdy, navrženo)', spadlo0 && prot0.length === 1
+    && prot0[0].stav === 'probíhá' && prot0[0].zalozeno === 0 && prot0[0].navrzeno === navrzeno && prot0[0].kdo === ADMIN_EMAIL, JSON.stringify(prot0));
   const z1 = await zz({ akce: 'zalozit', id: r.navrh.id }, cA);
   let prot = JSON.parse(pamet.get('zakaznici_hromadne/zk-protokol'));
   let posl = prot[prot.length - 1];
