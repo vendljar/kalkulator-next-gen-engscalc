@@ -8,6 +8,19 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## (verzi přidělí koordinace) — UT: texty v aplikaci (#742 popisek práva Pipedrive; #741 čeká), větev claude/ut-texty
+
+Nad integrací `0fd6410` (v24.11.1). **Cenu ani text dokumentů nemění** (porovnání sestavení proti `origin/test`: SHODA).
+
+- **#742 — O2, rozhodnutí J. V. 24. 11. 2026 (varianta a):** právo `crm.pipedrive` zůstává (klíč beze změny), popisek
+  v Nastavení → Zobrazení je nově „Pipedrive: čtení a zápis do vlastních obchodních případů“ (hlídá i zápis prodeje
+  do dealu, #597). Tentýž název citují karta Prodej, chyba 403 z `/api/pd/*`, hláška výběru organizace dealu,
+  příručka administrátora a kompletní příručka, `NASAZENI_NETLIFY.md`, `BEZPECNOST_MEZE.md` (O2 rozhodnuto).
+  Mutace B80 přepsaná na nový řádek, nové mutace `[UT] #742` (4). Test `src/test_ut_742_popisek_pd.js`,
+  pojistka: před opravou 18 FAIL, po 20 OK.
+- **#741 — nápověda u volby Opláštění (čeká):** standardní zasklení je „VSG 4.4.1 + izolační dvojsklo“ jen
+  u exteriérové šachty; interiér mezi příčníky = VSG 4.4.1, na terče = VSG 4.4.2. Dotaz koordinaci / J. V.
+
 ## v24.11.1 — MT2: zpevnění testů kola (#737 mutace #553 kontakt, #738 sady kolem půlnoci), větev claude/mt2-testy
 
 Nad integrací `db1e9e7` (v23.11.7). **Aplikace beze změny, cenu ani dokumenty nemění** (porovnání sestavení proti

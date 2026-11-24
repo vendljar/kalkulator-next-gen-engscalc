@@ -455,7 +455,7 @@ const ZOBRAZENI_PRVKY = [
    * 15. 10. 2026 (v15.10.7): „zatím přidej všem uživatelům, časem to možná
    * v nastavení změním". Před velkým stahováním chrání strop a cache. */
   {
-    klic: 'crm.pipedrive', skupina: 'data', nazev: 'Čtení obchodních případů z Pipedrive',
+    klic: 'crm.pipedrive', skupina: 'data', nazev: 'Pipedrive: čtení a zápis do vlastních obchodních případů',
     kde: 'serverové rozhraní /api/pd/* (výběr zakázky z CRM; v rozhraní zatím není)',
     popis: 'Seznam a detail obchodních případů z CRM včetně objednatele, IČO a kontaktů '
          + '(jméno, e-mail, telefon) a mapa vlastních polí CRM.',

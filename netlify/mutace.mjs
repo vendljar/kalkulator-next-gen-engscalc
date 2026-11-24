@@ -5619,17 +5619,35 @@ const MUTACE = [
   /* v15.10.7: výchozí stav je „všem" (rozhodnutí J. V.), mutace ho proto
    * obrací — obchodník by bez zásahu administrátora o čtení přišel. */
   { nazev: 'B80: výchozí matice bere obchodníkovi čtení z Pipedrive', soubor: '../src/zobrazeni.js',
-    hledej: "    klic: 'crm.pipedrive', skupina: 'data', nazev: 'Čtení obchodních případů z Pipedrive',\n"
+    hledej: "    klic: 'crm.pipedrive', skupina: 'data', nazev: 'Pipedrive: čtení a zápis do vlastních obchodních případů',\n"
       + "    kde: 'serverové rozhraní /api/pd/* (výběr zakázky z CRM; v rozhraní zatím není)',\n"
       + "    popis: 'Seznam a detail obchodních případů z CRM včetně objednatele, IČO a kontaktů '\n"
       + "         + '(jméno, e-mail, telefon) a mapa vlastních polí CRM.',\n"
       + "    vychozi: { 'Obchodník': true, 'Vedoucí': true },",
-    nahrad: "    klic: 'crm.pipedrive', skupina: 'data', nazev: 'Čtení obchodních případů z Pipedrive',\n"
+    nahrad: "    klic: 'crm.pipedrive', skupina: 'data', nazev: 'Pipedrive: čtení a zápis do vlastních obchodních případů',\n"
       + "    kde: 'serverové rozhraní /api/pd/* (výběr zakázky z CRM; v rozhraní zatím není)',\n"
       + "    popis: 'Seznam a detail obchodních případů z CRM včetně objednatele, IČO a kontaktů '\n"
       + "         + '(jméno, e-mail, telefon) a mapa vlastních polí CRM.',\n"
       + "    vychozi: { 'Obchodník': false, 'Vedoucí': true },",
     proc: 'obchodníci by přišli o čtení z CRM, které jim J. V. 15. 10. 2026 přidělil' },
+  /* [UT] #742 (O2, J. V. 24. 11. 2026): popisek práva crm.pipedrive a hlášky,
+   * které ho citují. Hlídá src/test_ut_742_popisek_pd.js. */
+  { nazev: '[UT] #742: popisek práva crm.pipedrive zpět na starý', soubor: '../src/zobrazeni.js',
+    hledej: "klic: 'crm.pipedrive', skupina: 'data', nazev: 'Pipedrive: čtení a zápis do vlastních obchodních případů',",
+    nahrad: "klic: 'crm.pipedrive', skupina: 'data', nazev: 'Čtení obchodních případů z Pipedrive',",
+    proc: 'matice by nazývala právo jen čtením, i když od #597 hlídá i zápis prodeje do dealu' },
+  { nazev: '[UT] #742: 403 z /api/pd cituje starý popisek práva', soubor: 'lib/pipedrive.mjs',
+    hledej: "+ '(Nastavení → Zobrazení → „Pipedrive: čtení a zápis do vlastních obchodních případů\").' }, 403)",
+    nahrad: "+ '(Nastavení → Zobrazení → „Čtení obchodních případů z Pipedrive\").' }, 403)",
+    proc: 'hláška by posílala administrátora hledat v matici právo, které tam pod tím jménem není' },
+  { nazev: '[UT] #742: výběr organizace dealu cituje starý popisek práva', soubor: 'lib/pd_org_vitez.mjs',
+    hledej: "kolega s právem „Pipedrive: čtení a zápis do vlastních obchodních případů“.',",
+    nahrad: "kolega s právem „Čtení obchodních případů z Pipedrive“.',",
+    proc: 'hláška by citovala právo, které v matici pod tím jménem není' },
+  { nazev: '[UT] #742: karta Prodej cituje starý popisek práva', soubor: '../src/ui/sod_ui.js',
+    hledej: "Zápis do Pipedrive jde online s právem „Pipedrive: čtení a zápis do vlastních obchodních případů“.",
+    nahrad: "Zápis do Pipedrive jde online s právem „Čtení obchodních případů z Pipedrive“.",
+    proc: 'karta Prodej by citovala právo, které v matici pod tím jménem není' },
   { nazev: 'B80: GET na /api/pd/* z cizího původu projde', soubor: 'lib/pipedrive.mjs',
     hledej: "  if (cizihoPuvodu(req))\n    return { chyba: json({ ok: false, chyba: 'Požadavek z cizí stránky se odmítá.' }, 403) };",
     nahrad: "  if (false)\n    return { chyba: json({ ok: false, chyba: 'Požadavek z cizí stránky se odmítá.' }, 403) };",

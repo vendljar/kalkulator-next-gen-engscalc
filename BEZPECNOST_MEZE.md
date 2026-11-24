@@ -2502,7 +2502,7 @@ Testy `netlify/test_pv_597_zapis.mjs`, `netlify/test_pv_734_autor.mjs`, `overit_
   z uložené (po Prodáno zmrazené) zakázky, včetně Čísla nabídky = značky vlastníka dealu (#115 B).
 - **Chyby Pipedrive do zakázky jen pevnou větou (revize S4 — OPRAVENO).** `v.prodano.pipedrive.duvod` a protokol nesou
   vlastní větu podle stavu (`pdProdejChybaVeta`); surový text Pipedrive jen v odpovědi (`podrobnost`) tomu, kdo zapisoval.
-- *O1 rozhodnuto J. V. 24. 11. 2026: ano.* *Otázka pro J. V.:* O1 — vlastník dealu jako autor kalkulace z webhooku má práva autora (zrušit vazbu, změnit deal,
+- *O1 rozhodnuto J. V. 24. 11. 2026: ano. O2 rozhodnuto J. V. 24. 11. 2026: varianta a — právo `crm.pipedrive` zůstává, popisek přejmenován (#742).* *Otázka pro J. V.:* O1 — vlastník dealu jako autor kalkulace z webhooku má práva autora (zrušit vazbu, změnit deal,
   opravit firmu; dřív u webhookové kalkulace jen administrátor); O2 — zápis prodeje hlídá právo `crm.pipedrive`
-  („Čtení obchodních případů z Pipedrive“) + autor / kdo prodal / vedoucí / administrátor. Kód je zatím podle
+  („Pipedrive: čtení a zápis do vlastních obchodních případů“) + autor / kdo prodal / vedoucí / administrátor. Kód je zatím podle
   doporučení revize (O1 ano, O2 zatím stačí).
