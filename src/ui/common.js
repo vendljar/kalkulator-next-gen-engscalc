@@ -2532,6 +2532,12 @@ function tiskListaSkript(hlasky, zamek) {
   /* VZ-E3 (#602): zákazník, pro kterého náhled vznikl (jen víc zákazníků) —
    * u jednoho zákazníka se skript nemění ani o znak. */
   if (z && typeof zamek.zakaznik === 'string' && zamek.zakaznik) z.zakaznik = zamek.zakaznik;
+  /* DT #745: den, který náhled nabídky tiskne — zámek ho převezme (náhled
+   * může být otevřený přes půlnoc). Bez něj se skript nemění. */
+  if (z && typeof zamek.datumNabidky === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(zamek.datumNabidky)) z.datumNabidky = zamek.datumNabidky;
+  const navicJs = (z && (z.zakaznik || z.datumNabidky))
+    ? ',null,{' + [z.zakaznik ? 'zakaznik:TISK_ZAMEK.zakaznik' : '', z.datumNabidky ? 'datumNabidky:TISK_ZAMEK.datumNabidky' : ''].filter(Boolean).join(',') + '}'
+    : '';
   /* JSON uvnitř skriptu (B84, hloubkový test 24. 9. 2026): uzavírací značka
    * skriptu v hlášce nebo id by skript ukončila a zbytek by se četl jako
    * HTML. (Samotná značka tu v komentáři stát nesmí — aplikace je jeden
@@ -2549,7 +2555,7 @@ function tiskListaSkript(hlasky, zamek) {
     // druhý záznam do historie výtisků by pak byl falešný.
     + 'var t=Date.now();if(t-TISK_ZAMEK_KDY<3000)return;TISK_ZAMEK_KDY=t;'
     + 'try{if(window.opener&&!window.opener.closed&&typeof window.opener.zamekPoTisku==="function"){'
-    + 'window.opener.zamekPoTisku(TISK_ZAMEK.typ,TISK_ZAMEK.varId' + (z && z.zakaznik ? ',null,{zakaznik:TISK_ZAMEK.zakaznik}' : '')
+    + 'window.opener.zamekPoTisku(TISK_ZAMEK.typ,TISK_ZAMEK.varId' + navicJs
     + ');tiskStav(TISK_HLASKY.zamceno);}}catch(e){}}\n'
     + 'window.addEventListener("beforeprint",tiskZamkni);\n'
     + 'function tiskDph(zap){var d=document.getElementById("dok");if(!d)return;'
