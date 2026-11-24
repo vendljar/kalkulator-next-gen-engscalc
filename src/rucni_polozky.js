@@ -188,8 +188,13 @@ function rpKryciText(polozky, kc) {
   const f = typeof kc === 'function' ? kc : (n => String(n));
   const a = polozky || [];
   if (!a.length) return 'bez ručních položek';
+  /* N1 (J. V. 24. 11. 2026): u šachty s víc kusy cena za kus × kusy = celkem
+   * („12 000 Kč/ks × 2 ks = 24 000 Kč"); u 1 ks jen cena. `ks` nese položka
+   * (krycí list víc šachet), výsledek šachty je za jeden kus. */
+  const cena = p => { const ks = Math.max(1, Math.round(+p.ks || 1));
+    return ks > 1 ? f(p.sMarzi) + '/ks × ' + ks + ' ks = ' + f(p.sMarzi * ks) : f(p.sMarzi); };
   return a.length + ' – ' + a.map(p => p.nazev + ', ' + rpCislo(p.mnozstvi) + ' ' + p.jednotka + ', '
-    + f(p.sMarzi) + ' (' + p.sekceKalk + ')').join('; ');
+    + cena(p) + ' (' + p.sekceKalk + ')').join('; ');
 }
 
 /* Kontrola před tiskem (revize S1): ruční řádky, které šablona Wordu nemá kam

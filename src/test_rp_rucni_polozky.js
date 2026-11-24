@@ -22,7 +22,8 @@
  *     beze změny;
  *  I) nálezy revize Fable 24. 11.: S1 kontrola chybějící kotvy Wordu, N2 Spojovací /
  *     Lakování, N4 Můstky ve v15, N5 pojistka kid, N6 typ a délka polí na serveru;
- *     T1 eura v C, T2 název a krycí list ze zámku v G.
+ *     T1 eura v C, T2 název a krycí list ze zámku v G; N1 (J. V. 24. 11.) krycí list
+ *     u šachty s ks > 1 „cena/ks × N ks = celkem“ v H.
  * Pojistka: na d655295 (před dávkou RP) modul neexistuje a nabidkaData ani
  * krycí list ruční položky neznají — sada selže; viz zpráva commitu.
  * Spuštění: node src/test_rp_rucni_polozky.js */
@@ -247,6 +248,18 @@ for (const [jm, o, L] of [['CZ bez slevy', {}, 'cz'], ['CZ sleva 5 %', { sleva: 
     && d.rucni.ceny.length === 0 && d.tsRadkyNavic.some(x => x.nazev === 'DOPRAVA B (Výtah B)' && x.kotva === 'TS_STATIKA'), d.rucni);
   const kl = kryciData(zak, v, J, 'bo').sekce[0].radky.find(x => x[0] === 'Ruční položky v ceně');
   test('H krycí list: šachta v závorce u sekce', kl && /\(Opláštění, Výtah B\)/.test(kl[1]) && /\(Režie, Výtah A\)/.test(kl[1]), kl);
+  /* N1 (J. V. 24. 11. 2026): šachta s ks > 1 — cena za kus × kusy = celkem; 1 ks jen cena (BO i Tech, i ze zámku) */
+  const n1 = t => /Jen u B, 1 ks, 1 200 Kč\/ks × 2 ks = 2 400 Kč \(Opláštění, Výtah B\)/.test(mezery(t))
+    && /Doprava B, 1 ks, 600 Kč\/ks × 2 ks = 1 200 Kč \(Režie, Výtah B\)/.test(mezery(t))
+    && /Doprava jeřábem, 1 kpl, 9 600 Kč \(Režie, Výtah A\)/.test(mezery(t)) && !/Výtah A\)[^;]*×/.test(mezery(t));
+  const kt = kryciData(zak, v, J, 'techdata').sekce[0].radky.find(x => x[0] === 'Ruční položky v ceně');
+  test('H N1 krycí list BO i Tech: ks > 1 „cena/ks × N ks = celkem“, 1 ks jen cena', kl && kt && n1(kl[1]) && n1(kt[1]), kl && kl[1]);
+  const z2 = kop(zak); const v2 = z2.varianty[0];
+  v2.zamek = { zamceno: true, kdy: '2026-11-20T10:00:00.000Z', kdo: 'test@priklad.cz', cislo: z2.cislo,
+    vysledek: kop(zamekVysledekSpocti(v2, J, 'test')), snimek: zamekSnimekSpocti(v2) };
+  v2.data.ock.dalsi[0].zadani.vlastniPolozky.oplasteni[0].cena = 5000;   // podvrh po odeslání — KL ze zámku
+  const kz = kryciData(z2, v2, J, 'bo').sekce[0].radky.find(x => x[0] === 'Ruční položky v ceně');
+  test('H N1 odeslaná nabídka: krycí list ze zámku i s kusy', kz && n1(kz[1]), kz && kz[1]);
 }
 
 /* ---------- I) nálezy revize Fable 24. 11. (S1, N2, N4, N5, N6, N10) ---------- */

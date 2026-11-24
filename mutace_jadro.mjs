@@ -6135,6 +6135,14 @@ const MUTACE = [
     hledej: "      const ch = RPk.rpChybiVeWordu(pol, s.symboly);",
     nahrad: "      const ch = { specifikace: [], cena: false };",
     proc: "šablona bez kotvy by ruční řádek tiše vynechala (revize S1)", sady: ["test_rp_rucni_polozky.js"] },
+  { nazev: "[RP] N1 krycí list bez kusů šachty", soubor: "kryci.js",
+    hledej: "          .map(p => Object.assign({}, p, { ks: +s.ks || 1, sekceKalk:",
+    nahrad: "          .map(p => Object.assign({}, p, { ks: 1, sekceKalk:",
+    proc: "krycí list u šachty s víc kusy by uvedl cenu ruční položky jen za jeden kus (J. V. 24. 11., N1)", sady: ["test_rp_rucni_polozky.js"] },
+  { nazev: "[RP] N1 krycí list bez rozpisu cena/ks × ks", soubor: "rucni_polozky.js",
+    hledej: "    return ks > 1 ? f(p.sMarzi) + '/ks × ' + ks + ' ks = ' + f(p.sMarzi * ks) : f(p.sMarzi); };",
+    nahrad: "    return f(p.sMarzi); };",
+    proc: "krycí list by u víc kusů neuvedl cenu celkem (J. V. 24. 11., N1)", sady: ["test_rp_rucni_polozky.js"] },
 ];
 
 /* ============================================================

@@ -38,7 +38,9 @@ a krycího listu jen u zakázek, které ruční položku mají. Číslo verze p�
   cílové sekce nebo bez řádku pro cenu, S1); ruční položka Spojovacího materiálu a Lakování (jen z importu) se tiskne
   v KONSTRUKČNÍM ŘEŠENÍ (N2); stará šablona v15: ruční Můstky v sekci MŮSTKY (N4); trvalá položka i podle zadání (N5);
   server hlídá typ a délku jednotky, dodatkového textu a překladu (N6); testy eur (T1), dotisku a krycího listu ze
-  zámku (T2). Pravidel kontrol 55. Čeká na J. V.: N1 (krycí list u šachty s ks > 1).
+  zámku (T2). Pravidel kontrol 55.
+- **Krycí list u šachty s víc kusy (N1, J. V. 24. 11.):** u ruční položky cena za kus a celkem, např. „12 000 Kč/ks ×
+  2 ks = 24 000 Kč“ (BO i Tech, i odeslaná nabídka); u 1 ks jen cena.
 
 ## v24.11.1 — MT2: zpevnění testů kola (#737 mutace #553 kontakt, #738 sady kolem půlnoci), větev claude/mt2-testy
 

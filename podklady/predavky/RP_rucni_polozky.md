@@ -14,7 +14,7 @@ Důkaz: s `rucniPolozkyVysledku → []` SHODA 367/367. Mutace [RP] 18/18, `mutac
 Volitelné → DOPLŇKOVÉ KONSTRUKCE; Můstky → MŮSTKY MEZI BUDOVOU A OCK (cena odečtena z řádku můstků); Režie → PROJEKČNÍ…
 
 **J. V. 24. 11.:** `rucniPolozky` v tabulce zmrazení KL editovatelné (jako Příplatky v nabídce) — potvrzeno.
-**Čeká na J. V.:** N1 — krycí list u šachty s ks > 1 píše cenu ruční položky za 1 kus (násobit / „× N ks“?).
+**J. V. 24. 11. N1:** KL u šachty s ks > 1 „cena/ks × N ks = celkem“ (u 1 ks jen cena) — hotovo, ROZHODNUTI_LOG.
 **Před main:** R1 ruční zkouška Wordu na skutečných šablonách CN v18 CZ/EN/DE/FR (testovací sezení; N3 prázdné
 odstavce pod „CENA CELKEM“, N8 SoD beze změny).
 **N7 (slepé místo nástroje, následná dávka — svěřené):** `nastroje/porovnani_sada.js` i `zlata_vs.js` volají

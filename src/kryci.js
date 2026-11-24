@@ -609,7 +609,7 @@ function kryciCtx(zak, varianta, jekly) {
         const zad = (typeof sachtyZ === 'function') ? sachtyZ(d.ock) : [];
         const vsN = (typeof vsNazev === 'function') ? vsNazev : ((z, i) => 'Šachta ' + (i + 1));
         const vse = [].concat(...rOck.sachty.map((s, i) => RPk.rucniPolozkyVysledku(s.vysl || rOck, (zad[i] || {}).zadani || Zv)
-          .map(p => Object.assign({}, p, { sekceKalk: p.sekceKalk + ', ' + vsN(zad[i] || {}, i) }))));
+          .map(p => Object.assign({}, p, { ks: +s.ks || 1, sekceKalk: p.sekceKalk + ', ' + vsN(zad[i] || {}, i) }))));
         rucniText = vse.length ? RPk.rpKryciText(vse, kryciKc) : '';
       } else {
         const a = RPk.rucniPolozkyVysledku(rOck, Zv);
