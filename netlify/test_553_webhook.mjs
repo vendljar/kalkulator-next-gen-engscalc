@@ -308,6 +308,13 @@ console.log('\n===== ODPOVĚDI =====\n');
 const vse = odpovedi.join('\n');
 test('v odpovědích není e-mail', !/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/.test(vse), (vse.match(/[\w.+-]+@[\w.-]+\.\w+/) || [])[0]);
 test('… ani telefon kontaktu', !/\+420 000/.test(vse));
+/* MT2 (24. 11. 2026): od PD #729 nese kontakt jen JMÉNO osoby dealu — kontrola
+ * e-mailu a telefonu by únik kontaktu do odpovědi nechytila. Jméno je osobní
+ * údaj (K8-S3): žádné jméno kontaktní osoby zapsané webhookem v odpovědi. */
+const jmenaKontaktu = [...new Set(zakazkyKlice().map((k) => (JSON.parse(pamet.get(k)) || {}).kontakt).filter((x) => x && x.length > 2))];
+test('webhook zapsal aspoň jedno jméno kontaktu (kontrola není prázdná)', jmenaKontaktu.length > 0, jmenaKontaktu);
+test('… ani jméno kontaktní osoby', !jmenaKontaktu.some((j) => vse.includes(j)), jmenaKontaktu.filter((j) => vse.includes(j)));
+test('… ani pole kontakt', !/"kontakt"\s*:/.test(vse));
 test('… ani klíč webhooku nebo token', !vse.includes(KLIC) && !vse.includes(KLIC.slice(0, 20)) && !/x-api-token/i.test(vse));
 test('… ani hash pole Pipedrive', !vse.includes(HASH_ODKAZ) && !vse.includes(HASH_ADRESA));
 
