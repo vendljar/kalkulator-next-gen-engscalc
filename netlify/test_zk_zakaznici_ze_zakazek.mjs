@@ -157,6 +157,7 @@ console.log('\n===== ZK: čistá logika (seskupení, normalizace, shoda) =====\n
   test('sídlo: PSČ s mezerou a bez části obce sedí', ZZ.zzAdresaSedi('Zkušební 1522/53, 170 00 Praha 7', ar));
   test('sídlo: jen číslo popisné sedí', ZZ.zzAdresaSedi('Zkušební 1522, Praha 7, 17000', ar));
   test('sídlo: jiné číslo popisné nesedí', !ZZ.zzAdresaSedi('Zkušební 1523/53, 170 00 Praha 7', ar));
+  test('sídlo: chybí číslo popisné (jen orientační) → nesedí', !ZZ.zzAdresaSedi('Zkušební 53, 170 00 Praha 7', ar));
   test('sídlo: jiná ulice nesedí', !ZZ.zzAdresaSedi('Jiná 1522/53, 170 00 Praha 7', ar));
   test('sídlo: chybí PSČ → nesedí', !ZZ.zzAdresaSedi('Zkušební 1522/53, Praha 7', ar));
   test('sídlo: jiné PSČ → nesedí', !ZZ.zzAdresaSedi('Zkušební 1522/53, 170 01 Praha 7', ar));
