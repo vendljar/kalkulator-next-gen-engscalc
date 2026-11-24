@@ -137,7 +137,7 @@ Fixtury 7/7 a fuzz 300/300 SHODA; všech 60 rozdílů je ve skupinách stavěný
 
 Rozsah: 15 souborů, +170 / −28; kód `src/vice_sachet.js`, `src/objednane.js`, `src/uloziste.js`, test, mutace, texty.
 
-### Verdikt dorevize: VERDIKT_DOREVIZE
+### Verdikt dorevize: SLOUČIT (D1 nízká — doporučuji drobnou opravu, sloučení neblokuje)
 
 ### Stav nálezů
 
@@ -166,4 +166,5 @@ klienta, ne bezpečnostní hranice; doporučuji to tak v mezích popsat.
 ### Běh dorevize
 
 - `src/test_er_nova_kalkulace.js` 111 OK, `src/test_atyp_idempotence.js` 37 OK (na 56cda50).
-KOLO_DOREVIZE
+- Kolo `--bez-mutaci --proti origin/claude/integrace-16-10 --ocekavane …` nad 56cda50 (oddělená pracovní kopie): **VŠE ZELENÉ** (36 min 37 s). Porovnání: 367 kalkulací, 307 shodných, 60 očekávaných, **0 neočekávaných**; fixtury 7/7, fuzz 300/300 SHODA.
+- Mutace revize nepouštěla (dávka hlásí jádro [ER] 33/33).
