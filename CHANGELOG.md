@@ -30,7 +30,7 @@ dopad na cenu byl nepřímý — vzkříšená stará data smazané kalkulace (n
 - **N3 (rozhodnutí J. V. 24. 11.):** čerstvou kalkulaci z Pipedrive (`pdCerstva`) nepřepíše stará kopie ani
   „Přepsat serverovou verzi“ — 409 „Kalkulaci mezitím znovu založil Pipedrive — otevřete ji ze Seznamu / odkazem
   z dealu; vaše kopie se neuložila.“ Řádné první uložení načtené čerstvé kalkulace projde.
-- Testy s pojistkou: `netlify/test_k54n1_smazana.mjs` (před 6 FAIL, po N3 dalších 5 FAIL; po 24 OK),
+- Testy s pojistkou: `netlify/test_k54n1_smazana.mjs` (před 6 FAIL, po N3 dalších 5 FAIL; po 25 OK),
   `src/test_k54n1_smazani_ui.js` (na `0fd6410` 21 FAIL, na `b23e832` 15 FAIL; po 30 OK); mutace [K54N1].
 
 ## v24.11.1 — MT2: zpevnění testů kola (#737 mutace #553 kontakt, #738 sady kolem půlnoci), větev claude/mt2-testy

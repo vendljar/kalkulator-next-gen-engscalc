@@ -165,6 +165,11 @@ test('N3: ani nová zakázka pod týmž číslem s vědomým přepsáním', r.st
 test('N3: čerstvá kalkulace zůstala (pdCerstva, razítko, adresa z dealu)', zakazka(W2).pdCerstva === true && G.uloRazitko(zakazka(W2)) === razCerstve
   && zakazka(W2).adresa !== 'STARÁ KOPIE 1, Vzorov');
 o = await nacti(W2, cA);
+const sPrepsat = G.importZakazka(o.zakazka); delete sPrepsat.pdCerstva;
+r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: sPrepsat, ocekavaneRazitko: G.uloRazitko(sPrepsat), ocekavanySoubor: W2, prepsat: true }, cA);
+test('N3: prepsat: true neprojde ani s razítkem čerstvé (vědomé přepsání čerstvé nejde)', r.status === 409 && r.pdCerstvaJina === true
+  && zakazka(W2).pdCerstva === true, [r.status, r.chyba]);
+o = await nacti(W2, cA);
 const radne = G.importZakazka(o.zakazka);
 delete radne.pdCerstva; radne.adresa = 'Řádně otevřená 1, Vzorov';   // jako po pdCerstvaPriprav a úpravě
 r = await postJ(zakazky, 'http://x/api/zakazky', { zakazka: radne, ocekavaneRazitko: G.uloRazitko(radne), ocekavanySoubor: W2 }, cA);

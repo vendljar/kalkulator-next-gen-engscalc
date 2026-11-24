@@ -80,8 +80,8 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
   a počká na uložení (N7); `onlineUloz` posílá `ocekavanySoubor`, po 409 `smazana`/`pdCerstvaJina` neukládá (N5).
 - Server `zakazky.mjs`: neleží-li nic pod jménem a tělo nese razítko + `ocekavanySoubor` = jméno → 409 `smazana`.
   N3 (J. V. 24. 11.): záznam s `pdCerstva` uloží jen okno s jeho razítkem v datech; jinak / `prepsat` → 409.
-- Testy: `netlify/test_k54n1_smazana.mjs` 24 OK, `src/test_k54n1_smazani_ui.js` 30 OK (pojistky v CHANGELOG),
-  mutace [K54N1]. N4 v BEZPECNOST_MEZE. Revize Fable `claude/revize-k54n1` (SLOUČIT PO OPRAVÁCH) → čeká dorevize.
+- Testy: `netlify/test_k54n1_smazana.mjs` 25 OK, `src/test_k54n1_smazani_ui.js` 30 OK (pojistky v CHANGELOG),
+  mutace [K54N1] 24/24, kolo VŠE ZELENÉ (S3 SHODA 367/367). N4 v BEZPECNOST_MEZE. Revize Fable `claude/revize-k54n1` (SLOUČIT PO OPRAVÁCH) → čeká dorevize.
 - Po nasazení do testu J. V.: smazat otevřenou → prázdná Nová zakázka, Ctrl+Z nic nevrátí; druhá karta → „byla
   mezitím smazána“; webhook po smazání → nová čerstvá; stará kopie nad ní → „znovu založil Pipedrive“.
 
