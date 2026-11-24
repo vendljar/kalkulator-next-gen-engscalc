@@ -5810,7 +5810,7 @@ const MUTACE = [
     hledej: "  if (info.zpracovatel && typeof info.zpracovatel === 'object') v.zamek.zpracovatel = info.zpracovatel;", nahrad: "",
     proc: "odeslaná nabídka by si zpracovatele nepamatovala", sady: ["test_665_vypracoval.js"] },
   { nazev: "VZD #665: snímek zpracovatele se nedrží [VZD]", soubor: "uloziste.js",
-    hledej: "'hlavicka', 'prijato', 'zpracovatel', 'strana'].forEach", nahrad: "'hlavicka', 'prijato', 'strana'].forEach",
+    hledej: "'hlavicka', 'prijato', 'zpracovatel', 'strana', 'datumNabidky'].forEach", nahrad: "'hlavicka', 'prijato', 'strana', 'datumNabidky'].forEach",
     proc: "klient by snímek zpracovatele uloženého zámku přepsal", sady: ["test_665_vypracoval.js"] },
   { nazev: "VZD #665: nabídka OCK bez varianty [VZD]", soubor: "nabidka.js",
     hledej: ", varianta));   // #665: dotisk ze snímku zámku", nahrad: "));",

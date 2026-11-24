@@ -113,6 +113,18 @@ function kryciDnesIso() {
   const dva = n => String(n).padStart(2, '0');
   return d.getFullYear() + '-' + dva(d.getMonth() + 1) + '-' + dva(d.getDate());
 }
+/* „Dne" krycího listu = datum cenové nabídky (DT #745, J. V. 24. 11. 2026):
+ * neodeslaná den tisku v Europe/Prague, odeslaná den odeslání
+ * (nabidkaDatum). Zámek před DT (bez `datumNabidky`) beze změny: dnešní
+ * den — u zámků od 29. 9. 2026 má stejně přednost zmrazená hodnota. */
+function kryciDatumNabidky(c) {
+  const v = c && c.varianta;
+  const z = v && v.zamek;
+  if (typeof nabidkaDatum !== 'function'
+    || (z && z.zamceno && !(typeof zamekDatumPlatne === 'function' && zamekDatumPlatne(z.datumNabidky))))
+    return kryciDnesIso();
+  return nabidkaDatum(c.zak, v) || kryciDnesIso();
+}
 
 const KRYCI_SEKCE = [
   { sekce: 'Základní údaje', pole: [
@@ -447,7 +459,7 @@ const KRYCI_SEKCE = [
    * a „Informován" se rozpadl na dvě oddělení, protože se běžně liší. */
   { sekce: 'Ostatní', pole: [
     { id: 'podpisDne', label: 'Dne', verze: ['bo', 'techdata'], typ: 'date',
-      prefill: () => kryciDnesIso(), src: 'datum tisku' },
+      prefill: c => kryciDatumNabidky(c), src: 'datum cenové nabídky (den tisku)' },
     { id: 'podpisObchodnik', label: 'Obchodník', verze: ['bo', 'techdata'], prefill: c => kryciObchodnikJmeno(c.firma), src: 'přihlášený uživatel / Nastavení → Firma' },
     { id: 'podpisInformovanBo', label: 'Informováno Backoffice', verze: ['bo', 'techdata'], ph: 'kdo z BO byl o zakázce informován…' },
     { id: 'podpisInformovanTech', label: 'Informováno Technické odd.', verze: ['bo', 'techdata'], ph: 'kdo z technického oddělení byl informován…' },
@@ -1429,4 +1441,4 @@ if (typeof module !== 'undefined')
     kryciFaktura2Dopocet, kryciFaktura2Sync,
     KRYCI_PRAVIDLA_PLATEB, KRYCI_FAKTURACE_MESICNE_VETA, KRYCI_VETY_V13, kryciPlatbaProcento, kryciPlatbyStary,
     kryciPlatebniKalendar, kryciPlatebniSymboly, kryciSodPlatby, kryciSodMilnik,
-    KRYCI_MISTO_PLNENI, KRYCI_DPH_REZIMY, KRYCI_EU_DIC, kryciDphRezimVychozi, kryciDnesIso, kryciPokutaStav, kryciPoleHodnota };
+    KRYCI_MISTO_PLNENI, KRYCI_DPH_REZIMY, KRYCI_EU_DIC, kryciDphRezimVychozi, kryciDnesIso, kryciDatumNabidky, kryciPokutaStav, kryciPoleHodnota };

@@ -8,6 +8,29 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v24.11.4 — DT: datum cenové nabídky = den tisku (#745, #746), větev claude/dt-datum-tisku
+
+Nad integrací `0fd6410` (v24.11.1). Rozhodnutí J. V. 24. 11. 2026. **Cenu, číslo nabídky ani otisk zámku nemění**
+(datum není v klíči zámku ani v otisku). Porovnání sestavení proti `origin/test`: cena SHODA, 363/367 shodných,
+4 očekávané rozdíly jen v DATUM neodeslaných variant fixtur (`podklady/porovnani/ocekavane_dt_2026-11-24.txt`).
+
+- **Nabídka OCK i PROJ (všechny jazyky) nese den tisku** v Europe/Prague, ne datum založení kalkulace
+  (`nabidkaDatum` v `src/zamek.js`). Online náhled ukazuje datum, jaké dostane tisk dnes.
+- **Odeslaná nabídka drží den odeslání**: nové pole zámku `zamek.datumNabidky` (jen při prvním zamčení; mimo klíč
+  zámku; uložené drží server `uloZamekRazitkaDrz`, nový zámek ověří `zakazka_kontrola.mjs` — nejvýš 7 dní před
+  odesláním, jinak den odeslání). **Zámky před DT** pole nemají → dotisk beze změny (datum založení).
+- Krycí list OCK/PROJ „Dne“ = datum nabídky (zmrazené hodnoty starých zámků beze změny); objednávka PROJ
+  „nabídka ze dne“ = datum nabídky.
+- **Smlouva o dílo** (OCK i PROJ) cituje „nabídku ze dne“ týmž datem jako nabídka (#746, J. V. 24. 11. 2026);
+  ostatní text a data SoD beze změny. Zámek vzniklý tiskem SoD = den odeslání nabídky.
+- **Beze změny:** plná moc, `v.datum`/`zak.datum` (stáří ceníku, controlling, seznamy).
+- Tiskový náhled OCK i PROJ předá zámku den, který vytiskl (symbol DATUM), takže náhled otevřený přes půlnoc
+  a jeho dotisk se shodují (revize N1). Krycí list „Dne“ se při zámku dál zmrazí na den zámku (J. V., N4);
+  mez data vůči `zamek.kdy` = B278 v BEZPECNOST_MEZE (N5).
+- Testy: `src/test_dt_datum_tisku.js` (pojistka: nad 0fd6410 53 FAIL a pád, po 84 OK), `netlify/test_dt_datum_tisku.mjs`
+  (nad 0fd6410 12 FAIL, po 17 OK); mutace `[DT]` 18/18 chycených. Zlatá sada VS přegenerovaná (jen DATUM 4 neodeslaných
+  variant, svěřené DT-2), harness `overit_vz_tisk.mjs` (DT-1). Kolo `--bez-mutaci`: sady 537/0, hodiny 436/0, statické 12/12.
+
 ## v24.11.3 — R3: zákaz dalších polí Wordu v šablonách (#751), větev claude/r3-pole-wordu
 
 Nad integrací `3cab0c5` (v24.11.2). **Cenu ani text dokumentů nemění** (firemní šablony mají jen pole `PAGE`).
@@ -40,7 +63,6 @@ Nad integrací `0fd6410` (v24.11.1). **Cenu ani text dokumentů nemění** (poro
   (dřív pevný seznam CN v14 / PROJ v4 → CN v18 a PROJ v9 se přeskočily). Pojistka: stará sada s podklady jen s vadnou
   CN v18 zelená, nová 1 FAIL. Svěřené rozhodnutí UT-3. **#744 (K54-I2)** — jazykové SoD projekce na testu: čeká na J. V.
 - Mutační harness: obě nové sady UT v `SADY` (dřív tam `test_ut_742` chyběl a mutace `[UT] #742` ho nepouštěly).
-
 ## v24.11.1 — MT2: zpevnění testů kola (#737 mutace #553 kontakt, #738 sady kolem půlnoci), větev claude/mt2-testy
 
 Nad integrací `db1e9e7` (v23.11.7). **Aplikace beze změny, cenu ani dokumenty nemění** (porovnání sestavení proti

@@ -38,6 +38,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/mt-mutace-2311` | (tato dávka) | v23.11.3 | MT #735: 4 nechycené mutace kola 45162888071 — jen testy, nad c8d3d9d |
 | `claude/sa-sablony` | (tato dávka) | v23.11.6 | SA #719–#721 kontrola šablon nad 133a8f5; verzi přečísluje koordinace |
 | `claude/lak-lakovani` | (tato dávka) | v22.11.8 | LAK #666 lakování z nabídky lakovny nad 05a496d, s integrací 36e2681 |
+| `claude/dt-datum-tisku` | (tato dávka) | — | DT #745 #746 datum nabídky = den tisku nad 0fd6410; verzi přidělí koordinace |
 | `claude/pv-pipedrive` | (tato dávka) | v23.11.7 | PV #597 zápis prodeje do dealu + #734 autor = vlastník dealu nad 1280831; revize Fable; verzi přidělí koordinace |
 | `claude/ut-texty` | (tato dávka) | — | UT #741 #742 #743 (#744 čeká na J. V.) nad 0fd6410; verzi přidělí koordinace |
 | `claude/r3-pole-wordu` | (tato dávka) | — | R3 #751 zákaz dalších polí Wordu nad 3cab0c5 (v24.11.2); verzi přidělí koordinace |
@@ -47,7 +48,7 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 
 ## Běžící dávky
 
-24. 11. 2026 odpoledne: RP (#736/#740, opravy po revizi Fable), DT (#745/#746, opravy po revizi), RYCHLÁ K54-N1 (#750, opravy po dorevizi). Sloučené dávky PV, MT2, UT (v24.11.2) a R3 (v24.11.3) — předávky v `podklady/predavky/2026-11.md`. Kokpit koordinace: https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2
+24. 11. 2026 odpoledne: RP (#736/#740, opravy po revizi Fable), RYCHLÁ K54-N1 (#750, opravy po dorevizi). Sloučené dávky PV, MT2, UT (v24.11.2) R3 (v24.11.3) a DT (v24.11.4) — předávky v `podklady/predavky/2026-11.md`. Kokpit koordinace: https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2
 
 ## Čeká na J. V.
 

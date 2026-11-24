@@ -1006,7 +1006,8 @@ async function nabidkaOckDokument() {
       vyp: P('Úpravy vypnuté. Ruční změny zůstávají, jen se do dokumentu už nedá psát.'),
       vraceno: P('Vráceno původní znění z kalkulace.'),
       zamceno: P('Varianta byla uzamčena jako odeslaná nabídka. Další úpravy provádějte v jejím klonu.'),
-    }, Object.assign({ typ: 'nabidkaTisk', varId: varianta.id }, vzTiskZamekNavic(vt)))}`);
+    }, Object.assign({ typ: 'nabidkaTisk', varId: varianta.id,
+      datumNabidky: typeof zamekDatumZeSymbolu === 'function' ? zamekDatumZeSymbolu(p.DATUM) : '' }, vzTiskZamekNavic(vt)))}`);
   w.document.write((sleduj ? neprelozenoSkript(L, neprelozenoKonec(), neprelozenoRucne([
     p.OBJEDNATEL, p.OBJEDNATEL_KONTAKT, p.NAZEV_AKCE, p.ADRESA, vt.zak.popisZameru])) : '')
     + '</body></html>');

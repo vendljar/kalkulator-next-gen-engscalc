@@ -686,6 +686,17 @@ function nabidkaProjDalsiUjednani(zadani) {
     .map(e => ({ label: jedenRadek(e.label), hodnota: jedenRadek(e.hodnota) }));
 }
 
+/* DT #745: ISO den cenové nabídky PROJ (viz DATUM v nabidkaProjData). */
+function nabidkaProjDatumIso(zak, varianta, h, moznosti) {
+  const z = varianta && varianta.zamek;
+  const zalozeni = typeof nabidkaDatum !== 'function'
+    || !!(z && z.zamceno && !(typeof zamekDatumPlatne === 'function' && zamekDatumPlatne(z.datumNabidky)));
+  if (!zalozeni) return nabidkaDatum(zak, varianta, moznosti && moznosti.ted);
+  return (varianta && varianta.datum)
+    || (typeof variantaDatum === 'function' ? variantaDatum(zak, varianta) : (h && h.datum))
+    || (h && h.datum);
+}
+
 function nabidkaProjData(zak, varianta, lang, moznosti) {
   if (typeof vzTiskHlidej === 'function') vzTiskHlidej(zak);   // VZ-E2 (revize U3): jen z pohledu zákazníka
   /* Dotisk odeslané CN PROJ ze snímku zámku (Z1) — viz nabidkaData. */
@@ -1089,9 +1100,11 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
      * vzniká typicky po odeslané nabídce, takže datum založení zakázky by na
      * něm bylo staré o týdny. Varianta bez `datum` (všechny starší) spadne na
      * hlavičku přesně jako dosud — historické nabídky se nemění. */
-    DATUM: datumCz((varianta && varianta.datum)
-      || (typeof variantaDatum === 'function' ? variantaDatum(zak, varianta) : h.datum)
-      || h.datum),
+    /* DT #745: datum nabídky = den tisku (Praha), odeslaná drží den odeslání
+     * (nabidkaDatum). Zámek bez `datumNabidky` (před DT) beze změny — datum
+     * založení varianty (nález D2: varianta, starší spadnou na hlavičku).
+     * Totéž datum cituje smlouva o dílo („ze dne“, J. V. 24. 11. 2026). */
+    DATUM: datumCz(nabidkaProjDatumIso(zak, varianta, h, moznosti)),
     NAZEV_AKCE: h.nazevAkce || '…',
     CISLO_NABIDKY: String(h.cislo || '').replace(/\s+/g, ''),
     ADRESA: h.adresa || '…',
@@ -1315,4 +1328,4 @@ if (typeof dokumentRegistruj === 'function')
   });
 
 if (typeof module !== 'undefined')
-  module.exports = { nabidkaProjNabizi, nabidkaProjDalsiUjednani, nabidkaProjStudieBezZamereni, nabidkaProjDpzBezZamereni, NABIDKA_PROJ_DPZ_STAVAJICI, NABIDKA_PROJ_STUDIE_CASTI, NABIDKA_PROJ_PUVODNI_STAV, nabidkaProjData, nabidkaProjNabiziAD, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, nabidkaProjUvodRucne, nabidkaProjUvodNesedi, NABIDKA_PROJ_CESTOVNE, NABIDKA_PROJ_CESTOVNE_KDE, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_UVOD_ZAVER, NABIDKA_PROJ_DPZ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };
+  module.exports = { nabidkaProjDatumIso, nabidkaProjNabizi, nabidkaProjDalsiUjednani, nabidkaProjStudieBezZamereni, nabidkaProjDpzBezZamereni, NABIDKA_PROJ_DPZ_STAVAJICI, NABIDKA_PROJ_STUDIE_CASTI, NABIDKA_PROJ_PUVODNI_STAV, nabidkaProjData, nabidkaProjNabiziAD, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, nabidkaProjUvodRucne, nabidkaProjUvodNesedi, NABIDKA_PROJ_CESTOVNE, NABIDKA_PROJ_CESTOVNE_KDE, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_UVOD_ZAVER, NABIDKA_PROJ_DPZ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };

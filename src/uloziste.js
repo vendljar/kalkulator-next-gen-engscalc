@@ -724,7 +724,8 @@ function uloZamekRazitkaDrz(naDisku, kUlozeni) {
      * mimo klíč zámku (uloZamekKlic), takže starší klient, který ho nezná, ukládá bez 409. */
     /* `zpracovatel` (#665): blok „Vypracoval" odeslané nabídky — píše ho server při prvním přijetí zámku.
      * `strana` (B231): příznaky strany zakázky v okamžiku zámku — doklad, píše jen server. */
-    ['kdo', 'popis', 'sablona', 'slovnik', 'hlavicka', 'prijato', 'zpracovatel', 'strana'].forEach(k => {
+    /* `datumNabidky` (DT #745): den na papíře odeslané nabídky — po prvním přijetí ho klient nepřepíše ani nedopíše. */
+    ['kdo', 'popis', 'sablona', 'slovnik', 'hlavicka', 'prijato', 'zpracovatel', 'strana', 'datumNabidky'].forEach(k => {
       if (!stejne(sz[k], nz[k])) {
         if (sz[k] === undefined) delete nz[k]; else nz[k] = JSON.parse(JSON.stringify(sz[k]));
         oprav++;
