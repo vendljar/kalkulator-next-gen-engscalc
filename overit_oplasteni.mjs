@@ -687,8 +687,10 @@ await p.waitForTimeout(600);
   });
   zkus('P4: řádek skla boků i čelního skla nese nápovědu „jiné sklo = opláštění po stěnách"',
     /po stěnách A–D/.test(p4.boky || '') && /po stěnách A–D/.test(p4.celni || ''), JSON.stringify(p4));
-  zkus('P4: jiný řádek (PRÁCE OPLÁŠTĚNÍ) ji nenese a volba opláštění ano',
-    p4.prace != null && !/po stěnách A–D/.test(p4.prace) && /po stěnách A–D/.test(p4.volba), JSON.stringify(p4));
+  /* #741 (J. V. 24. 11. 2026): volba opláštění nese nápovědu podle zvolené
+   * hodnoty (standard = zasklení, které se počítá), ne „jiné sklo". */
+  zkus('P4: jiný řádek (PRÁCE OPLÁŠTĚNÍ) ji nenese; volba opláštění (standard) nese zasklení (#741)',
+    p4.prace != null && !/po stěnách A–D/.test(p4.prace) && p4.volba === 'Zasklení VSG 4.4.1 + Izolační dvojsklo', JSON.stringify(p4));
   await p.evaluate(() => {
     set('OCK.zadani.sirka', 1.6); set('OCK.zadani.hloubka', 1.4);
     set('OCK.zadani.zdvih', 9); set('OCK.zadani.prejezd', 3.5); set('OCK.zadani.prohluben', 1.1);
@@ -712,6 +714,27 @@ await p.waitForTimeout(600);
   await p.waitForTimeout(250);
   const meze3 = await p.evaluate(() => ['A', 'B', 'C', 'D'].map(k => Z.oplasteni.steny[k].odM));
   zkus('P2: odškrtnutí vrátí meze na 0', meze3.every(m => m === 0), JSON.stringify(meze3));
+
+  /* #741: title volby opláštění sleduje volbu, typ šachty i způsob zasklení
+   * (po změně se Zadání překreslí). */
+  const volba = () => p.evaluate(() => (document.querySelector('select[onchange^="oplRezimSet"]') || {}).title || '');
+  await p.evaluate(() => { oplRezimSet('poStenach'); });
+  await p.waitForTimeout(250);
+  const t741 = { poStenach: await volba() };
+  await p.evaluate(() => { oplRezimSet('standard'); });
+  await p.waitForTimeout(250);
+  await p.selectOption('select[onchange^="set(\'Z.zaskleni\'"]', 'mezi příčníky');
+  await p.waitForTimeout(250);
+  t741.extListy = await volba();
+  await p.evaluate(() => { typSachtyPrepni('interiérová'); });
+  await p.waitForTimeout(250);
+  t741.intListy = await volba();
+  await p.selectOption('select[onchange^="set(\'Z.zaskleni\'"]', 'na terče');
+  await p.waitForTimeout(250);
+  t741.intTerce = await volba();
+  zkus('#741: po stěnách „Jiný typ zasklení viz níže.", standard podle typu šachty a zasklení',
+    t741.poStenach === 'Jiný typ zasklení viz níže.' && t741.extListy === 'Zasklení VSG 4.4.1 + Izolační dvojsklo'
+    && t741.intListy === 'Zasklení VSG 4.4.1' && t741.intTerce === 'Zasklení VSG 4.4.2', JSON.stringify(t741));
 }
 
 zkus('za celý průchod nevznikla chyba v konzoli', konzole.length === 0, konzole.slice(0, 2).join(' | '));
