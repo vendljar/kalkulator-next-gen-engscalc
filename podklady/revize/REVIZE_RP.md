@@ -4,6 +4,8 @@ Nezávislá revize, 24. 11. 2026. Revidovaný rozdíl `git diff 0fd6410 b36b97a`
 30 souborů, +1158 −183). Větev revize `claude/revize-rp` (nad b36b97a, jen tento soubor). V revidované větvi
 nebylo nic měněno; na weby, Pipedrive ani Disk se nesahalo.
 
+> **Stav po dorevizi oprav (ed622f4): SLOUČIT** — viz oddíl „DOREVIZE oprav“ na konci.
+
 ## Verdikt: SLOUČIT PO OPRAVÁCH
 
 Jádro výpočtu je beze změny, cena ani zámek se nemění, součet cenového bloku sedí na korunu i na euro a Word
@@ -174,3 +176,69 @@ položky v řádku šachty; ruční řádek nese jen cenu s marží. Sedí s roz
 
 Bez jednotky i s neznámou jednotkou = „ks“ (`rpJednotka`), starší `volitelneVlastni` → DOPLŇKOVÉ KONSTRUKCE
 (fixtura ze srpna 2026 v porovnání). Nic se do dat nedopisuje.
+
+---
+
+# DOREVIZE oprav (24. 11. 2026) — rozdíl `b36b97a..ed622f4`
+
+Opravy v 567a70b, předávka a CHANGELOG v ed622f4 (15 souborů, +416 −171).
+
+## Verdikt dorevize: SLOUČIT
+
+T1 a S1 jsou opravené a ověřené, další opravy (T2, N2, N4, N5, N6, N10) taky. Cena se nemění, nic se nepočítá
+podruhé. Zbývá jen to, co bylo už v první zprávě mimo kód: R1 (Word na skutečných šablonách před `main`),
+N1 (krycí list × ks — čeká na J. V.), N7 (nástroj porovnání). Jeden nový nízký nález (D1) může jít později.
+
+## Co jsem spustil
+
+| Zkouška | Výsledek |
+|---|---|
+| Porovnání ed622f4 × 0fd6410 (základ větve) se seznamem očekávaných | 367: 230 SHODA, 137 očekávaných, **0 neočekávaných** |
+| Zkušební sloučení ed622f4 + integrace c89e872 (v24.11.5) | kód se sloučil sám; střety jen `CHANGELOG.md`, `roadmapa/roadmap.json`, `verze.txt`, `src/test_vs_zlata.json` |
+| Zlatá sada VS přegenerovaná nad sloučením × zlatá sada integrace | změna v **týchž 137 případech**, jen `ph-*`, `radky-*`, `docx`, `sod`; 0 případů mimo seznam, 0 v seznamu beze změny |
+| Kolo `--bez-mutaci --proti origin/claude/integrace-16-10 --ocekavane …` **nad zkušebním sloučením** | **VŠE ZELENÉ**, kód 0 — sady 542/0/6, hodiny 441/0/1, statické 12/12, porovnání 230 SHODA + 137 očekávaných, 0 neočekávaných |
+| Sady nad sloučením jednotlivě | `test_rp_rucni_polozky` 64/0, `test_kontroly` 159/0 (55 pravidel), `test_dt_datum_tisku` 84/0, `test_vs_zlata` 319/319, `test_platby_ock` 77/0, `test_kryci` 129/0 |
+| Vlastní fuzz ceny (600 zakázek × CZ/EN, nově i ruční položky ve Spojovacím materiálu a Lakování) | součet řádků = cena před slevou vždy, žádný záporný řádek |
+| Vlastní mutace nad opravami (12) | 11 chyceno; dvanáctá byla rovnocenná — viz T2 |
+
+## Opravy jednotlivě
+
+- **T1 — opraveno.** Mutace bez převodu kurzem shodí 4 testy oddílu C.
+- **S1 — opraveno.** Pravidlo `rucniPolozkaWord`: s plnou šablonou mlčí, bez kotvy sekce jmenuje položku
+  a sekci, bez cenového řádku hlásí cenu, bez známé šablony mlčí (ověřeno vlastní zkouškou). Šablona se nově
+  stahuje i u zakázky s ruční položkou (`kontrolyMaRucniPolozku`). Mutace chyceny.
+- **T2 — opraveno.** Název ze zadání: chyceno (3 testy). Krycí list ze zámku: mutace dávky (`vypocet(Zv, Cv…)`)
+  chycena. Oprava mé první zprávy: moje původní mutace (b) s `vypocetZ` byla rovnocenná — `vypocetZ` u zamčené
+  varianty vrací zmrazený výsledek — takže „přežití“ tehdy nic nedokazovalo. Pojistka je teď skutečná.
+- **N2 — opraveno, cena se nemění, nic se nepočítá podruhé.** `rucniPolozkyVysledku` jen čte výsledek
+  (`r.spojovaci.rows`, `r.lakovani.vlastniRows`), do výpočtu nesahá: porovnání 0 neočekávaných. Ruční položka
+  2 × 50 000 Kč ve Spojovacím materiálu: cena nabídky jako před opravou, řádek 120 000,00 Kč, šachta o tolik
+  nižší, součet sedí (Kč i EUR, Model 1 i 2). Trvalá položka (`kid`) se netiskne. Viz D1 k okrajovému případu.
+- **N4 — opraveno.** Stará šablona v15: ruční položka Můstků stojí za naklonovanou sekcí MŮSTKY.
+- **N5 — opraveno.** `row.kid || src.kid`, mutace chycena.
+- **N6 — opraveno.** Typ a strop délky na serveru (jednotka 10, název překladu 500, texty 2000), v UI
+  `maxlength`. Stávající data neodmítne: trvalé položky se do zadání kopírují bez jednotky (`katalogAplikuj`),
+  fixtury ta pole nemají.
+- **N10 — opraveno.** Vzor volání je zase povinný.
+
+## Střet s DT a R3
+
+Žádný věcný. DT (#745, datum nabídky = den tisku) mění v `nabidka.js` jen symbol `DATUM`, v `sod.js` komentář
+a v `zamek.js` přidává `nabidkaDatum`; RP na ta místa nesahá a sady DT nad sloučením prošly. Při slučování je
+potřeba: vzít verzi, CHANGELOG a roadmapu ručně a **zlatou sadu VS přegenerovat nad sloučeným stavem**
+(`node nastroje/zlata_vs.js > src/test_vs_zlata.json`) — ani jedna strana střetu není správně.
+
+## Nový nález
+
+**D1 (N) — Spojovací materiál / Lakování: přepsaná cena souhrnného řádku.** Cena ruční položky se počítá
+jako náklad × (cena s marží / náklad) souhrnného řádku Hrubé OCK. Když je u toho řádku ručně přepsaná cena
+nebo množství, poměr zůstane 1 + marže a ruční řádek neodpovídá skutečnému podílu: při přepisu ceny řádku
+na 10 Kč nese ruční položka dál 120 000,00 Kč (šachta je o tolik nižší, součet sedí), při přepisu množství
+na 2 nese 120 000 místo 240 000. Nastane jen u importovaného souboru s ruční položkou v těchto sekcích
+a zároveň s přepisem souhrnného řádku. *Návrh:* podíl na řádku — `rs.sMarzi × celkem / součet řádků sekce`
+(`r.spojovaci.celkem`, u lakování `r.lakovani.pouzito`).
+
+## Zůstává otevřené (beze změny)
+
+R1 Word na skutečných šablonách CN v18 CZ/EN/DE/FR a SoD před `main` (včetně N3 prázdných odstavců);
+N1 krycí list × ks (J. V.); N7 nástroj porovnání nevidí krycí list ani náhled; N8, N9, N11, N12 informace.
