@@ -8,6 +8,24 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## (verzi přidělí koordinace) — PT-ZAB #759: překlad hodnoty ZÁBRADLÍ NA PODESTÁCH + hlídač pevných textů, větev claude/rychla-PT-ZAB
+
+Rychlá cesta (vada dokumentu) nad testem `6722ad9` (v24.11.5). **Cena beze změny**; mění se jen text EN/DE/FR
+technické specifikace OCK u interiérové šachty se zaškrtnutým zábradlím.
+
+- **Opraveno:** pole ZÁBRADLÍ NA PODESTÁCH tisklo v anglické, německé i francouzské specifikaci česky
+  „úpravy a napojení stávajícího zábradlí na podestách“ (heslo ve vestavěném slovníku chybělo od srpna; export
+  J. V. NEPRELOZENE_2026-11-24-SPECIFIKACE-EN_24.11.5.csv). Nové heslo se schváleným překladem J. V. 24. 11.:
+  EN „modification and connection of the existing railing at the landings“, DE „Anpassung und Anschluss des
+  bestehenden Geländers an den Podesten“, FR „adaptation et raccordement du garde-corps existant sur les paliers“.
+- **Hlídač (#759):** `src/test_759_pevne_texty_preklad.js` projde celou technickou specifikaci (sekce, popisky,
+  hodnoty polí, poznámky) pro 522 zadání (interiér/exteriér, průchozí, přechodové plechy, každá volitelná položka
+  zapnutá i vypnutá, stříšky, můstky ve všech modelech) a data nabídky OCK pro 21 zakázek (i víc šachet) v EN/DE/FR;
+  nepřeložený pevný text = chyba. Pole, která si jazyk skládají sama, hlídá po částech (sledování překladu #518).
+- **Čeká na J. V.** (výjimka v testu): výčet víc skupin můstků v Modelu 2 se starým ceníkem #354
+  („1 ks 1600 × 1000 mm, 2 ks 1000 × 800 mm (šířka × délka), ocelová konstrukce vč. zábradlí a montáže“) zůstává česky.
+- Pojistka: bez hesla test 4 FAIL (souhrn EN/DE/FR), s heslem 8 OK; cílená mutace (odebrání hesla) chycena.
+
 ## v24.11.5 — K54-N1 #750: smazaná otevřená kalkulace se zavře a uložením nevzkřísí, větev claude/rychla-K54-N1
 
 Rychlá cesta nad integrací `0fd6410` (= test, v24.11.1). **Ceník ani sazby nemění** (porovnání sestavení: SHODA);

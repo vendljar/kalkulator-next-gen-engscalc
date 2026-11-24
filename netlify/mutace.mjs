@@ -137,6 +137,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      '../src/test_550_zahr_mustky.js',
      /* #551 (2. 11. 2026, K37-I2): „IČ:" v cizojazyčné patičce — rychlá sada. */
      '../src/test_551_ic_preklad.js',
+     /* [PTZAB] #759 (24. 11. 2026): pevné texty specifikace a nabídky OCK v EN/DE/FR — rychlá sada (~1 s). */
+     '../src/test_759_pevne_texty_preklad.js',
      /* PB #547 (2. 11. 2026): Prodáno nad odeslanou nabídkou bez klonu — rychlé sady. */
      '../src/test_prodano_zamek.js', 'test_prodano_zamek.mjs',
      /* PR #563 (4. 11. 2026): prodaná varianta je vždy řídící — rychlé sady. */
@@ -2389,6 +2391,12 @@ const MUTACE = [
     hledej: "firmaPaticka(f, P) : '') || h('nazev');   // #551",
     nahrad: "firmaPaticka(f) : '') || h('nazev');   // #551",
     proc: 'náhled cizojazyčné nabídky by ukazoval české „IČ:"' },
+  /* ---------- [PTZAB] #759 (24. 11. 2026): hodnota ZÁBRADLÍ NA PODESTÁCH v EN/DE/FR.
+   * Hlídá ../src/test_759_pevne_texty_preklad.js. ---------- */
+  { nazev: '[PTZAB] slovník bez hesla „úpravy a napojení stávajícího zábradlí na podestách"', soubor: '../src/preklad.js',
+    hledej: "  \"úpravy a napojení stávajícího zábradlí na podestách\": [",
+    nahrad: "  \"úpravy a napojení stávajícího zábradlí na podestách-x\": [",
+    proc: 'EN/DE/FR specifikace by tiskla hodnotu zábradlí na podestách česky' },
   /* ---------- [K50N1] (19. 11. 2026, kolo 50): statika opláštění v zahraniční řadě.
    * Hlídají test_k50n1_statika_zahr.mjs (B112, zámek) a ../src/test_k50n1_statika_zahr.js. ---------- */
   { nazev: '[K50N1] server: zahraniční řada nechá tuzemskou statiku opláštění', soubor: '../src/cenik_rady.js',

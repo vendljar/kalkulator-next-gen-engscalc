@@ -85,6 +85,17 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 - Po nasazení do testu J. V.: smazat otevřenou → prázdná Nová zakázka, Ctrl+Z nic nevrátí; druhá karta → „byla
   mezitím smazána“; webhook po smazání → nová čerstvá; stará kopie nad ní → „znovu založil Pipedrive“.
 
+## Rychlá oprava PT-ZAB (`claude/rychla-PT-ZAB`, 24. 11. 2026)
+
+- Nad testem `6722ad9` (v24.11.5), #759 (alias PT-ZAB), verzi přidělí koordinace. Vada dokumentu z exportu J. V.
+  NEPRELOZENE_2026-11-24-SPECIFIKACE-EN_24.11.5.csv: hodnota ZÁBRADLÍ NA PODESTÁCH (interiér + zábradlí)
+  „úpravy a napojení stávajícího zábradlí na podestách“ chyběla ve slovníku → EN/DE/FR specifikace česky.
+- `src/preklad.js`: heslo se schváleným překladem J. V. 24. 11. (EN/DE/FR). Cena beze změny.
+- Hlídač `src/test_759_pevne_texty_preklad.js`: specifikace (522 zadání) + nabídka OCK (21 zakázek, víc šachet,
+  můstky) × EN/DE/FR; sledování `tr` hlídá i části polí `jazykSam`. Pojistka: bez hesla 4 FAIL, po 8 OK.
+- Čeká na J. V. (výjimka v testu): výčet víc skupin můstků, Model 2 + ceník #354 (`techspec.js` prefill `mustky`).
+- Kolo a očekávané rozdíly: `podklady/porovnani/ocekavane_pt-zab_2026-11-24.txt`, výsledek ve zprávě koordinaci.
+
 ## Čeká na J. V.
 
 Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.). Od S6 je zdrojem evidence

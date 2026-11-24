@@ -10,6 +10,7 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
+| 24. 11. 2026 | PT-ZAB (#759): schválen překlad „úpravy a napojení stávajícího zábradlí na podestách“ — EN „modification and connection of the existing railing at the landings“, DE „Anpassung und Anschluss des bestehenden Geländers an den Podesten“, FR „adaptation et raccordement du garde-corps existant sur les paliers“ (rychlá cesta, vada dokumentu) | technická specifikace OCK, slovník překladů |
 | 24. 11. 2026 | K54-N1 N3: zakázat přepsání čerstvé kalkulace z Pipedrive (`pdCerstva`) starou kopií — server odmítne 409 „Kalkulaci mezitím znovu založil Pipedrive — otevřete ji ze Seznamu / odkazem z dealu; vaše kopie se neuložila.“; řádné první uložení čerstvé projde | ukládání online, webhook Pipedrive |
 | 24. 11. 2026 | K54-N1 (#750): smazaná otevřená kalkulace se hned zavře (prázdná Nová zakázka) s hláškou „Kalkulace <číslo> byla smazána.“; server odmítne (409) uložení kalkulace, která na serveru už neexistuje | Seznam zakázek, ukládání online |
 | 24. 11. 2026 | PV O1: vlastník dealu jako autor kalkulace založené webhookem má práva autora (zrušit vazbu na deal, změnit deal zakázky, opravit firmu); „V pořádku“ dál jen administrátor. O2 (právo pro zápis prodeje) — vysvětlení vyžádáno. | #597, #734; BEZPECNOST_MEZE oddíl PV |
