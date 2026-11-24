@@ -33,10 +33,10 @@ Pipedrive jen simulátor — zkouška na dealu TEST až v testovacím sezení se
 - Nové: `POST /api/pd/odeslani` (`netlify/functions/pd_odeslani.mjs`, `netlify/lib/pd_odeslani.mjs`),
   `src/ui/odeslani_pd_ui.js`; simulátor umí soubory k dealu; `pdZavolej` umí multipart; proměnná
   `PIPEDRIVE_FAZE_ODESLANO` (volitelná: id nebo název cílové fáze). Datum nabídky do vlastního pole dealu až po založení
-  pole v Pipedrive (#758) — zatím v poznámce.
+  pole v Pipedrive (#763) — zatím v poznámce.
 - Testy: `netlify/test_po_116_odeslani.mjs` (simulátor), `src/test_po_116_ui.js`, `netlify/test_prava.mjs`; pojistka:
   nad 7339a9e sady selžou (endpoint ani karta neexistují). Mutace [PO] 27/27. Kolo `--bez-mutaci` VŠE ZELENÉ, S3 SHODA 367/367. Meze B279–B281 (pracovní čísla).
-  Otázky J. V. #757–#760 (s doporučením; naprogramováno podle doporučení).
+  Otázky J. V. #762–#765 (s doporučením; naprogramováno podle doporučení).
 
 ## v24.11.6 — RP: ruční položky kalkulace OCK v nabídce CN a krycím listu (#736, #740), větev claude/rp-rucni-polozky
 

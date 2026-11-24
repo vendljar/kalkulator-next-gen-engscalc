@@ -102,11 +102,11 @@ Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.)
 ## Dávka PO — odeslání nabídky do Pipedrive (#116, 24. 11. 2026)
 
 - Větev `claude/po-odeslani-pipedrive` nad `7339a9e`. Poradce Fable navrhl postup (a–h); kód podle něj, odchylky:
-  datum nabídky zatím jen v poznámce (pole v Pipedrive chybí, #758), podklad = odesílaná varianta (#757).
+  datum nabídky zatím jen v poznámce (pole v Pipedrive chybí, #763), podklad = odesílaná varianta (#762).
 - Server `POST /api/pd/odeslani` (nahled / zapis / soubor), `lib/pd_odeslani.mjs`; karta `src/ui/odeslani_pd_ui.js`
   pod lištou zámku; stav `zak.pdOdeslani` jen ze serveru; simulátor umí soubory; `pdZavolej` multipart.
 - Testy: `netlify/test_po_116_odeslani.mjs` 59/59, `src/test_po_116_ui.js` 18/18, `test_prava` 1055/0, mutace [PO] 27/27;
   kolo `--bez-mutaci --proti origin/claude/integrace-16-10` VŠE ZELENÉ (sady 544/0, hodiny 443/0, statické 12/12),
   S3 SHODA 367/367.
-- Čeká: revize Fable (koordinace), otázky J. V. #757–#760, pak zkouška na deal TEST (testovací sezení se souhlasem J. V.;
+- Čeká: revize Fable (koordinace), otázky J. V. #762–#765, pak zkouška na deal TEST (testovací sezení se souhlasem J. V.;
   ověřit strop souboru Netlify / Pipedrive). Meze B279–B281 v `BEZPECNOST_MEZE.md`.
