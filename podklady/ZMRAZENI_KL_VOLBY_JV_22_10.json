@@ -64,6 +64,16 @@
    "upraveno_jv": true
   },
   {
+   "id": "rucniPolozky",
+   "label": "Ruční položky v ceně",
+   "sekce": "Základní údaje",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "pozn": "RP #736 (24. 11. 2026): nové pole, zařazeno stejně jako Příplatky v nabídce — k potvrzení J. V.; hodnota se počítá ze zmrazeného výsledku odeslané nabídky"
+  },
+  {
    "id": "priplatkyObjednane",
    "label": "Objednané příplatky",
    "sekce": "Základní údaje",
