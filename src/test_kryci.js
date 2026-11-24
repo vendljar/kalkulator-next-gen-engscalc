@@ -311,11 +311,13 @@ const dTd = kr.kryciData(zak, v, JEKLY, 'techdata');
 const radky = (dd) => [].concat(...dd.sekce.filter(s => s.sekce !== 'Hodiny z kalkulace').map(s => s.radky));
 const labely = (dd) => radky(dd).map(r => r[0]);
 
+/* RP #736 (24. 11. 2026): pole s `jenKdyz` („Ruční položky v ceně") se
+ * vypíše jen u zakázky, která ho potřebuje — tahle zakázka ruční položku nemá. */
 test('verze Backoffice obsahuje jen pole své verze',
-  radky(dBo).length === VSECHNA_POLE.filter(p => p.verze.includes('bo')).length,
+  radky(dBo).length === VSECHNA_POLE.filter(p => p.verze.includes('bo') && !p.jenKdyz).length,
   radky(dBo).length);
 test('verze Techdata obsahuje jen pole své verze',
-  radky(dTd).length === VSECHNA_POLE.filter(p => p.verze.includes('techdata')).length,
+  radky(dTd).length === VSECHNA_POLE.filter(p => p.verze.includes('techdata') && !p.jenKdyz).length,
   radky(dTd).length);
 test('platební podmínky jsou jen ve verzi Backoffice',
   labely(dBo).includes('Splatnost faktur (dní)') && !labely(dTd).includes('Splatnost faktur (dní)'));
