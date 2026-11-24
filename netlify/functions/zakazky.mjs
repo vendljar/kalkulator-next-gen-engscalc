@@ -15,6 +15,7 @@ import { funkceCti } from '../lib/funkce.mjs';
 import { pdPoznamkyUlozeni } from '../lib/pd_poznamka.mjs';
 import { pdPoleMapa } from './pd_pole.mjs';
 import { pdWebhookOdkaz } from '../lib/pd_webhook.mjs';
+import { pdVazbaNorm } from '../lib/pd_vazba.mjs';   // K54-N1 N3: totožnost čerstvé kalkulace
 
 /* Jméno k e-mailu z účtů (P7 / K16-N87) — jen pro hlášku o kolizi verzí
  * u zakázek uložených dřív, než se jméno začalo zapisovat. Jedno čtení,
@@ -144,6 +145,25 @@ export default async (req) => {
   const vysledek = await vyhradne('zakazky/z/' + jmeno, async () => {
   const stara = await s.cti('z/' + jmeno);
 
+  /* K54-N1 (#750, J. V. 24. 11. 2026): SMAZANÁ KALKULACE SE ULOŽENÍM NEVZKŘÍSÍ.
+   * Prohlížeč, který kalkulaci načetl ze serveru, posílá razítko verze
+   * (`ocekavaneRazitko`) i jméno záznamu, ze kterého vyšel (`ocekavanySoubor`).
+   * Když pod tím jménem na serveru nic neleží, kalkulaci mezitím někdo smazal
+   * (Seznam zakázek, jiná karta, kolega) — zápis by ji založil znovu ze staré
+   * kopie v paměti (zamčené varianty, ceník, protokol, bez serverových polí)
+   * a webhook Pipedrive by ji pak bral jako existující. 409 bez `kolize`
+   * (tlačítko „Přepsat serverovou verzi“ tu nemá co přepsat) a `prepsat`
+   * to neobchází. Nová zakázka razítko nemá, přečíslovaná míří na jiné jméno,
+   * obnova ze zálohy jde jinou cestou (obnova.mjs) — těch se to netýká. */
+  if (!stara && typeof t.ocekavaneRazitko === 'string' && t.ocekavaneRazitko
+      && typeof t.ocekavanySoubor === 'string' && t.ocekavanySoubor === jmeno) {
+    const cislo = String(zak.cislo || '').trim() || jmeno;
+    return { odpoved: json({ ok: false, smazana: true, soubor: jmeno,
+      chyba: 'Kalkulace ' + cislo + ' byla mezitím smazána z databáze — neuloženo. '
+        + 'Z této kopie ji znovu založit nejde; zavřete ji (Nová zakázka). '
+        + 'Vrátit smazanou kalkulaci jde jen ze zálohy databáze.' }, 409) };
+  }
+
   /* Razítko verze (audit 22. 8. 2026, B10). Klient posílá razítko verze, ze
    * které vyšel (`ocekavaneRazitko`). Když v databázi leží jiná verze —
    * kolega mezitím uložil, nebo jde o cizí zakázku pod stejným číslem — server
@@ -155,6 +175,26 @@ export default async (req) => {
    * propadla: všichni klienti od B10 pole posílají. `prepsat: true` zůstává
    * (vědomé přepsání po dotazu) — práva nerozšiřuje, zakázku smí uložit každý,
    * kdo ji smí načíst (mez v BEZPECNOST_MEZE, NN B237). */
+  /* K54-N1 N3 (J. V. 24. 11. 2026): ČERSTVOU KALKULACI Z PIPEDRIVE NEPŘEPÍŠE
+   * STARÁ KOPIE. Leží-li pod jménem kalkulace, kterou webhook založil a člověk
+   * ji ještě neuložil (`pdCerstva`), uloží ji jen okno s TOUTÉŽ kalkulací:
+   * totožnost nese čas založení vazby z webhooku (`pdVazbaWebhook.kdy` — webhook
+   * ho při aktualizaci drží, nově založená kalkulace má jiný, okno ho dostane
+   * při načtení a nic jiného ho nepíše). Dorevize D1/D2: razítko verze v datech
+   * se na to nehodí — mění ho aktualizace webhookem i zápis do složky.
+   * Jiná vazba nebo žádná (stará kopie smazané kalkulace, nová zakázka pod
+   * týmž číslem) → 409 i s `prepsat`; stejná → běžná cesta včetně kolize B10
+   * s „Načíst znovu / Přepsat“. Čte se z těla PŘED pdVazbaDrz (ta vazbu
+   * v těle přepíše uloženou). Ochrana proti omylu, ne bezpečnostní mez
+   * (dorevize D3, BEZPECNOST_MEZE). */
+  if (stara && stara.pdCerstva === true) {
+    const kdyUlozene = (pdVazbaNorm(stara.pdVazbaWebhook) || {}).kdy || '';
+    const kdyTelo = (pdVazbaNorm(zak.pdVazbaWebhook) || {}).kdy || '';
+    if (kdyUlozene && kdyTelo !== kdyUlozene)
+      return { odpoved: json({ ok: false, pdCerstvaJina: true, soubor: jmeno,
+        chyba: 'Kalkulaci mezitím znovu založil Pipedrive — otevřete ji ze Seznamu / odkazem z dealu; vaše kopie se neuložila.' }, 409) };
+  }
+
   if (stara && t.prepsat !== true) {
     const kol = ULO.uloKolize(stara, typeof t.ocekavaneRazitko === 'string' ? t.ocekavaneRazitko : '');
     if (kol.kolize) {

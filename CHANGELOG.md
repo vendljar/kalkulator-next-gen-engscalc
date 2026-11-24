@@ -8,6 +8,35 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v24.11.5 — K54-N1 #750: smazaná otevřená kalkulace se zavře a uložením nevzkřísí, větev claude/rychla-K54-N1
+
+Rychlá cesta nad integrací `0fd6410` (= test, v24.11.1). **Ceník ani sazby nemění** (porovnání sestavení: SHODA);
+dopad na cenu byl nepřímý — vzkříšená stará data smazané kalkulace (nález kola 54, CN-432 na testu).
+
+- **Klient (rozhodnutí J. V. 24. 11.):** smaže-li administrátor v Seznamu zakázek kalkulaci, kterou má otevřenou,
+  okno ji hned zavře (prázdná Nová zakázka, jako tlačítko Nová zakázka) s hláškou „Kalkulace <číslo> byla smazána.“
+  Dřív zůstala otevřená a upravitelná a první uložení ji na serveru založilo znovu ze staré kopie (zamčená varianta,
+  ceník s marží 0, protokol) — webhook Pipedrive ji pak jen aktualizoval. Nepovedené smazání ani smazání jiné
+  zakázky otevřenou nezavře.
+- **Server (pojistka):** uložení, které nese razítko a jméno záznamu (`ocekavanySoubor`), pod nímž už nic neleží,
+  `POST /api/zakazky` odmítne 409 `smazana` s vysvětlením — smazanou kalkulaci nevzkřísí ani jiná karta nebo kolega
+  (ani „Přepsat serverovou verzi“). Nová zakázka (i pod číslem smazané), přečíslování, obnova ze zálohy a webhook
+  (nová čerstvá kalkulace s `pdCerstva`) beze změny; formát dat beze změny.
+- **Revize Fable (`podklady/revize/REVIZE_K54N1.md`):** po smazání se zahodí kroky Zpět/Znovu a záloha smazané
+  kalkulace v prohlížeči (N1, N2 — Ctrl+Z ji dřív vrátil a autosave založil znovu); odpověď 409 `smazana` zastaví
+  ukládání a radí duplikovat nebo zavřít (N5); potvrzení mazání předem řekne, že se otevřená kalkulace zavře,
+  karta se nepřepíná (N6); mazání zruší naplánovaný autosave a počká na rozběhnuté uložení (N7); zbylé vědomé cesty
+  zapsány do `BEZPECNOST_MEZE.md` (N4).
+- **N3 (rozhodnutí J. V. 24. 11.):** čerstvou kalkulaci z Pipedrive (`pdCerstva`) nepřepíše stará kopie ani
+  „Přepsat serverovou verzi“ — 409 „Kalkulaci mezitím znovu založil Pipedrive — otevřete ji ze Seznamu / odkazem
+  z dealu; vaše kopie se neuložila.“ Řádné první uložení načtené čerstvé kalkulace projde. Totožnost čerstvé
+  kalkulace nese čas založení vazby z webhooku (`pdVazbaWebhook.kdy`), ne razítko verze — aktualizace webhookem nad
+  otevřenou kalkulací dá běžnou kolizi s „Načíst znovu / Přepsat“ a zápis do složky uložení neblokuje (dorevize D1/D2);
+  pojistka je ochrana proti omylu, ne bezpečnostní mez (D3). Značka „smazána“ platí i u okna bez jména záznamu a ruší
+  ji úspěšné uložení i odhlášení (D4).
+- Testy s pojistkou: `netlify/test_k54n1_smazana.mjs` (před 6 FAIL, N3 5 FAIL, D1/D2 3 FAIL; po 30 OK),
+  `src/test_k54n1_smazani_ui.js` (na `0fd6410` 21 FAIL, na `b23e832` 15 FAIL, D4 3 FAIL; po 34 OK); mutace [K54N1].
+
 ## v24.11.4 — DT: datum cenové nabídky = den tisku (#745, #746), větev claude/dt-datum-tisku
 
 Nad integrací `0fd6410` (v24.11.1). Rozhodnutí J. V. 24. 11. 2026. **Cenu, číslo nabídky ani otisk zámku nemění**

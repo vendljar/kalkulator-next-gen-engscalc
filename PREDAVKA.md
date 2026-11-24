@@ -48,7 +48,7 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 
 ## Běžící dávky
 
-24. 11. 2026 odpoledne: RP (#736/#740, opravy po revizi Fable), RYCHLÁ K54-N1 (#750, opravy po dorevizi). Sloučené dávky PV, MT2, UT (v24.11.2) R3 (v24.11.3) a DT (v24.11.4) — předávky v `podklady/predavky/2026-11.md`. Kokpit koordinace: https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2
+24. 11. 2026 odpoledne: RP (#736/#740, opravy po revizi Fable). Sloučené dávky PV, MT2, UT (v24.11.2), R3 (v24.11.3), DT (v24.11.4) a K54-N1 (v24.11.5, rychlou cestou v test 6722ad9) — předávky v `podklady/predavky/2026-11.md`. Kokpit koordinace: https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2
 
 ## Čeká na J. V.
 

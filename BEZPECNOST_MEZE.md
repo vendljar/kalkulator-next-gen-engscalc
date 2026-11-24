@@ -2527,3 +2527,27 @@ mutace [DT]. Číslo B278 je pracovní (přidělí koordinace).
   ne). Není to zhoršení proti stavu před DT: dřív nabídka tiskla `v.datum`, které klient psal bez jakékoli meze.
   Přísnější varianta (datum nejvýš N dní před časem přijetí serverem, `prijato`) by zpřísnila i tisk bez sítě —
   neprogramováno. Stopa: `zamek.prijato` (čas přijetí serverem) a `kdo` zámku.
+## K54-N1 — smazaná kalkulace se uložením nevzkřísí (#750, rychlá cesta, 24. 11. 2026)
+
+Větev `claude/rychla-K54-N1`, revize Fable `podklady/revize/REVIZE_K54N1.md` (větev `claude/revize-k54n1`; SLOUČIT
+PO OPRAVÁCH — N1, N2, N3 (rozhodnutí J. V.), N5–N8 opraveny, N4 zapsáno sem). Testy `netlify/test_k54n1_smazana.mjs`,
+`src/test_k54n1_smazani_ui.js`, mutace [K54N1].
+
+- **Pojistka serveru chrání přímé uložení z okna, které kalkulaci načetlo.** `POST /api/zakazky` odmítne 409 `smazana`
+  tělo s razítkem a `ocekavanySoubor` = cílové jméno, pod nímž nic neleží. Okno, které mazalo, kalkulaci zavře
+  a zahodí kroky Zpět/Znovu i zálohu smazané v prohlížeči (N1/N2); okno, které dostalo 409, další uložení neposílá (N5).
+- **PŘIJATO (revize N4) — vědomé kroky starou kopii založit umí.** Přečíslování v okně se smazanou kalkulací (druhá
+  karta, kolega) ji uloží pod novým číslem i s `pdDealId`; import souboru JSON, duplikát a klon ji uloží jako novou
+  zakázku (jediná cesta, jak smazanou kalkulaci z kopie vrátit). Kalkulace bez razítka (před B10), správcovská oprava
+  přípon a ukázková data (těla bez `ocekavanySoubor`) beze změny. Souběh DELETE × POST ve dvou instancích funkce —
+  známá mez Blobs bez podmíněného zápisu (viz K7-S1). Robustní varianta (náhrobek smazané kalkulace / totožnost
+  záznamu) mění formát dat a zavřela by i záchranu importem — rozhodnutí J. V., samostatná položka roadmapy.
+- **OPRAVENO (revize N3, J. V. 24. 11. 2026; dorevize D1/D2):** čerstvou kalkulaci z webhooku (`pdCerstva` na
+  serveru) uloží jen okno s toutéž kalkulací — totožnost nese čas založení vazby `pdVazbaWebhook.kdy` (webhook ho při
+  aktualizaci drží, nově založená kalkulace má jiný; razítko verze ne — mění ho aktualizace webhookem i zápis do
+  složky). Jiná nebo žádná vazba (stará kopie smazané kalkulace, nová zakázka pod týmž číslem) → 409 `pdCerstvaJina`
+  („Kalkulaci mezitím znovu založil Pipedrive …“) i s `prepsat`, bez kolize, takže se „Přepsat serverovou verzi“
+  nenabídne. Stejná vazba → běžná cesta včetně kolize B10 s „Načíst znovu / Přepsat“.
+- **PŘIJATO (dorevize D3): pojistka N3 je ochrana proti omylu, ne bezpečnostní mez.** Čas vazby je v načtené zakázce
+  (kdo smí zakázku načíst, smí ji i uložit — NN B237); úmyslně sestavený požadavek ji obejde. Chrání před starou
+  kopií v okně, ne před útočníkem.
