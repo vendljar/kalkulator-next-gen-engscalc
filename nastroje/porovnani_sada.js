@@ -14,6 +14,10 @@
  *                      #451) a K36-N2 (zahraniční montáž můstků, #550)
  *          k50:*       K50-N1 (statika opláštění v zahraniční řadě)
  *          k40:*       K40-N1 (přepnutí typu šachty / zasklení, čelní sklo; #647)
+ *          lak:*       LAK #666 (cena lakování z nabídky lakovny, se zdrojem i bez)
+ *          vs:*        víc šachet s výchozími názvy, dokumenty EN/DE (DS #648)
+ *          dotisk:*    odeslaná nabídka se snímkem zpracovatele (#665, VZD)
+ *          proj:*      kalkulace PROJ: sleva 100 % (#683), vyřazená studie, prodaná s lhůtami (D8)
  *          ukazka:*    smyšlené zakázky testovacího webu (src/testdata.js)
  *          fuzz:*      generátor fuzz invariantů, pevné semínko 20261110
  *        Model 1 i Model 2. Ceník: zkušební ceník testů (src/zkusebni_cenik.js
@@ -36,7 +40,14 @@
  *   vyp,vypZ  celý výsledek jádra, výsledek přes vypocetZ                  → „výsledek"
  *   ph-cz/en  symboly cenové nabídky, po klíčích (změněný × jen nový)      → „symboly"
  *   docx      text Wordu nabídky ze zkušební šablony se všemi symboly      → „dokument"
- *   nahled-*, radky-*, kryci, spec, sod                                    → „dokument"
+ *   nahled-*, radky-*, kryci-bo/-tech, spec(-en), sod(-en/-de)             → „dokument"
+ *   nahled-np-cz/en  Kompletní náhled podkladů (nwBloky, NP #681)          → „dokument"
+ *   proj-vyp, proj-cena  výsledek a koncová cena PROJ                      → „cena PROJ"
+ *   proj-ph-cz/en  symboly nabídky PROJ po klíčích                          → „symboly"
+ *   kryci-proj-bo/-tech, sod-proj, pm, obj-proj                            → „dokument"
+ * K56 (24. 11. 2026, svěřené K56-1): krycí list se dřív volal bez verze, takže
+ * nenesl žádný řádek; PROJ, náhled podkladů, plná moc, objednávka PROJ a cizí
+ * jazyky SoD / specifikace sada neviděla vůbec.
  *   pd, ctrl, snimek, zamek                                                → „ostatní"
  *
  * Soubor --ocekavane (jeden řádek = jedno pravidlo, # komentář):
@@ -62,13 +73,15 @@ const SEMINKO = 20261110;              // semínko generátoru v zlata_vs.js (mu
 /* ---------- skupiny polí ---------- */
 const SKUPINY = {
   'cena-celkem': ['cena'],
+  'cena-proj': ['proj-vyp', 'proj-cena'],
   radky: ['radky'],
   vysledek: ['vyp', 'vypZ'],
-  symboly: ['ph-cz', 'ph-en'],
-  dokument: ['docx', 'nahled-cz', 'nahled-en', 'radky-cz', 'radky-en', 'kryci', 'spec', 'sod'],
+  symboly: ['ph-cz', 'ph-en', 'proj-ph-cz', 'proj-ph-en'],
+  dokument: ['docx', 'nahled-cz', 'nahled-en', 'nahled-np-cz', 'nahled-np-en', 'vs-word-cz', 'vs-word-en', 'radky-cz', 'radky-en', 'kryci-bo', 'kryci-tech',
+    'spec', 'spec-en', 'sod', 'sod-en', 'sod-de', 'kryci-proj-bo', 'kryci-proj-tech', 'sod-proj', 'pm', 'obj-proj'],
   ostatni: ['pd', 'ctrl', 'snimek', 'zamek'],
 };
-const POPIS_SKUPINY = { 'cena-celkem': 'cena celkem', radky: 'řádky', vysledek: 'výsledek jádra', symboly: 'symboly CN',
+const POPIS_SKUPINY = { 'cena-celkem': 'cena celkem', 'cena-proj': 'cena PROJ', radky: 'řádky', vysledek: 'výsledek jádra', symboly: 'symboly CN',
   'symboly-nove': 'jen nové symboly', dokument: 'text dokumentu', ostatni: 'ostatní', chybi: 'případ chybí' };
 function skupinaPole(k) {
   for (const s of Object.keys(SKUPINY)) if (SKUPINY[s].includes(k)) return s;
@@ -78,8 +91,12 @@ function skupinaPole(k) {
 /* ============================================================
  * REŽIM 1: otisky nad složkou src
  * ============================================================ */
+/* Moduly, které prohlížeč má a ZV.CORE ne (K56): lhůty PROJ (D8), objednávka
+ * PROJ (D3), Kompletní náhled podkladů (NP), číslo nabídky (CN). Chybějící
+ * soubor (starší sestavení) se přeskočí — funkce pak spadne a porovná se text chyby. */
+const MODULY_NAVIC = ['lhuty_proj.js', 'objednavka_proj.js', 'nahled_word.js', 'cislo_nabidky.js'];
 function nactiStrom(src) {
-  for (const f of ZV.CORE) {
+  for (const f of ZV.CORE.concat(MODULY_NAVIC)) {
     const p = path.join(src, f);
     if (!fs.existsSync(p)) continue;
     const m = require(p);
@@ -126,19 +143,50 @@ async function scenar(zak, v, J) {
       o['ph-' + L] = ph;
       o['nahled-' + L] = otisk(zkus(() => nabidkaNahledSekce(nd.placeholders, L, nd.platbyOck, nd.tsExtra)));
       o['radky-' + L] = otisk(nd.tsRadkyNavic);
+      o['nahled-np-' + L] = otisk(zkus(() => nwBloky(nd, L, { foto: '' })));
+      o['vs-word-' + L] = otisk(nd.sachtyWord || null);   // smyčka šachet Wordu (víc šachet, DS #648)
       if (L === 'cz') o.docx = otisk(await zkusA(() => ZV.docxText(Object.keys(nd.placeholders).sort(), nd.placeholders, nd.tsRadkyNavic)));
     } else o['ph-' + L] = { '(chyba)': otisk(nd) };
   }
-  o.kryci = otisk(zkus(() => kryciData(zak, v, J)));
+  /* Krycí list s verzí listu (K56): bez verze kryciData nevrátí žádný řádek. */
+  o['kryci-bo'] = otisk(zkus(() => kryciData(zak, v, J, 'bo')));
+  o['kryci-tech'] = otisk(zkus(() => kryciData(zak, v, J, 'techdata')));
   const r2 = ok ? zkus(() => vypocet(d.ock.zadani, d.cenik, J, d.ock.fixes)) : null;
-  o.spec = otisk(zkus(() => {
+  const spec = (L) => otisk(zkus(() => {
     const ts = {};
     TECHSPEC_DEF.forEach(s => (!s.jen || s.jen(r2, d.ock.zadani)) && s.pole.forEach(p => {
-      ts[p.id] = tsHodnota(p, d.techspec, r2, d.ock.zadani, d.cenik, 'cz').text;
+      ts[p.id] = tsHodnota(p, d.techspec, r2, d.ock.zadani, d.cenik, L).text;
     }));
     return ts;
   }));
+  o.spec = spec('cz');
+  o['spec-en'] = spec('en');
   o.sod = otisk(zkus(() => sodData(zak, v, J, 'cz')));
+  o['sod-en'] = otisk(zkus(() => sodData(zak, v, J, 'en')));
+  o['sod-de'] = otisk(zkus(() => sodData(zak, v, J, 'de')));
+  /* PROJ (K56): výsledek, koncová cena, symboly nabídky, krycí list, SoD
+   * projekce, plná moc a objednávka PROJ — dřív sada PROJ nepočítala vůbec. */
+  const rp = zkus(() => vypocetProjZ(v));
+  o['proj-vyp'] = otisk(rp);
+  o['proj-cena'] = otisk(zkus(() => cenaNabidkyProj(rp, d.slevaProj, d.zaokrProj)));
+  /* PROJ EN bere kurz z ceníku PROJ (kurzEurZ); sada ho jinde nenese, takže
+   * se pro EN doplní z ceníku OCK (nebo 25) — jinak by EN spadla všude stejně. */
+  const vEn = d.proj && d.proj.cenik && !d.proj.cenik.kurzEurKc
+    ? Object.assign({}, v, { data: Object.assign({}, d, { proj: Object.assign({}, d.proj, { cenik: Object.assign({}, d.proj.cenik, { kurzEurKc: (d.cenik && d.cenik.kurzEurKc) || 25 }) }) }) })
+    : v;
+  for (const L of ['cz', 'en']) {
+    const np = zkus(() => nabidkaProjData(zak, L === 'en' ? vEn : v, L));
+    if (np && np.placeholders) {
+      const ph = {};
+      Object.keys(np.placeholders).sort().forEach(k => { ph[k] = otisk(np.placeholders[k]).slice(0, 12); });
+      o['proj-ph-' + L] = ph;
+    } else o['proj-ph-' + L] = { '(chyba)': otisk(np) };
+  }
+  o['kryci-proj-bo'] = otisk(zkus(() => kryciProjData(zak, v, J, 'bo')));
+  o['kryci-proj-tech'] = otisk(zkus(() => kryciProjData(zak, v, J, 'techdata')));
+  o['sod-proj'] = otisk(zkus(() => sodProjData(zak, v, 'cz')));
+  o.pm = otisk(zkus(() => plnaMocData(zak, v)));
+  o['obj-proj'] = otisk(zkus(() => objednavkaProjData(zak, v)));
   o.pd = otisk(zkus(() => pdnTelo(pdnPodklad(zak, J))));
   o.ctrl = otisk(zkus(() => {
     const { z, vv } = ZV.zamcena(zak, v, J);
@@ -288,6 +336,83 @@ async function otisky(src, volby) {
     }
   }
 
+  /* 3d) K56 — scénáře změn main → test, které pevná sada nepokrývala.
+   *     Data se skládají přímo (ne funkcemi rucniCenaNastav ap.), aby obě
+   *     sestavení dostala bajt po bajtu stejný vstup. Čísla a jména smyšlená. */
+  const LAK = 'C.lak.nabidkaKc';
+  const LAK_ZAZNAM = (h, zdroj) => ({ dodavatel: zdroj ? 'Lakovna Příklad s.r.o.' : '', cislo: zdroj ? 'NL-2026-66' : '', datum: '', platnostDo: '',
+    zaklad: null, hodnota: h, potvrdil: zdroj ? { jmeno: 'Porovnání', email: '', kdy: DATUM + 'T10:00:00Z', lokalne: true } : null });
+  const LAKS = [
+    ['lak:ext-tomas-se-zdrojem', 'exteriérová', 'tomas', 54321, true],
+    ['lak:ext-lakovna-se-zdrojem', 'exteriérová', 'lakovna', 54321, true],
+    ['lak:int-tomas-nula-se-zdrojem', 'interiérová', 'tomas', 0, true],
+    ['lak:ext-tomas-bez-zdroje', 'exteriérová', 'tomas', 40000, false],
+    ['lak:ext-tomas-vlastni-polozka', 'exteriérová', 'tomas', 54321, true],
+  ];
+  for (const [jm, typ, rezim, h, zdroj] of LAKS) {
+    for (const f of [true, false]) {
+      const zak = nova('2026-OPR-CN-9666', 'Porovnání sestavení ' + jm);
+      const v = zak.varianty[0];
+      Object.assign(v.data.ock.zadani, ZAD, { typSachty: typ, profily: kop((global.PROFILY_VYCHOZI || {})[typ] || v.data.ock.zadani.profily) });
+      if (/vlastni/.test(jm)) v.data.ock.zadani.vlastniPolozky = { lakovani: [{ nazev: 'Lak navíc', mnozstvi: 2, cena: 1000 }] };
+      v.data.ock.fixes = f;
+      v.data.cenik = cenikZ(false);
+      v.data.cenik.lak = Object.assign({}, v.data.cenik.lak, { rezim, nabidkaKc: h });
+      v.data.rucniCeny = Object.assign({}, v.data.rucniCeny, { [LAK]: LAK_ZAZNAM(h, zdroj) });
+      out[jm + ':' + (f ? 'm2' : 'm1')] = await scenar(zak, v, J);
+    }
+  }
+  /* víc šachet s výchozím a ručním názvem (DS #648): nabídka a SoD i EN/DE */
+  for (const [jm, nazvy] of [['vs:vychozi-nazvy', ['', 'Šachta 2']], ['vs:rucni-nazvy', ['Výtah A', 'Výtah B']]]) {
+    const zak = nova('2026-OPR-CN-9648', 'Porovnání sestavení ' + jm);
+    const v = zak.varianty[0];
+    Object.assign(v.data.ock.zadani, ZAD, { typSachty: 'exteriérová', profily: kop((global.PROFILY_VYCHOZI || {})['exteriérová'] || v.data.ock.zadani.profily) });
+    v.data.ock.fixes = true;
+    v.data.cenik = cenikZ(false);
+    v.data.ock.nazev = nazvy[0];
+    const zB = Object.assign(kop(global.DEFAULT_ZADANI || v.data.ock.zadani), ZAD, { sirka: 2.4, typSachty: 'interiérová',
+      profily: kop((global.PROFILY_VYCHOZI || {})['interiérová'] || v.data.ock.zadani.profily) });
+    v.data.ock.dalsi = [{ id: 's_b', nazev: nazvy[1], ks: 2, zadani: zB }];
+    out[jm + ':m2'] = await scenar(zak, v, J);
+  }
+  /* odeslaná nabídka se snímkem zpracovatele (#665): dotisk tiskne „Vypracoval“ z doby odeslání */
+  for (const [jm, se] of [['dotisk:se-snimkem-zpracovatele', true], ['dotisk:bez-snimku', false]]) {
+    const zak = nova('2026-OPR-CN-9665', 'Porovnání sestavení ' + jm);
+    zak.projHlavicka = Object.assign({}, zak.projHlavicka, { cislo: '2026 - OVP - CN - 9665' });
+    const v = zak.varianty[0];
+    Object.assign(v.data.ock.zadani, ZAD);
+    v.data.ock.fixes = true;
+    v.data.cenik = cenikZ(false);
+    const { vv } = ZV.zamcena(zak, v, J);
+    v.zamek = vv.zamek;
+    if (se) v.zamek.zpracovatel = { email: 'puvodni.obchodnik@priklad.cz', jmeno: 'Petr Původní', titul: 'Ing.', funkce: 'Obchodní technik', telefon: '212 300 111' };
+    out[jm + ':m2'] = await scenar(zak, v, J);
+  }
+  /* PROJ (#683, D8): výchozí, sleva 100 %, vyřazená studie, prodaná s lhůtami */
+  const PROJS = [
+    ['proj:vychozi', () => {}],
+    ['proj:sleva-100', v => { v.data.slevaProj = Object.assign({}, v.data.slevaProj, { procenta: 100, stav: 'schváleno' }); }],
+    ['proj:sleva-30', v => { v.data.slevaProj = Object.assign({}, v.data.slevaProj, { procenta: 30, stav: 'schváleno' }); }],
+    ['proj:studie-vyrazena', v => { const st = (v.data.proj.zadani.sekce || []).find(s => s.key === 'studie'); if (st) st.polozky.forEach(p => { p.vyrazeno = true; }); }],
+    ['proj:prodana-lhuty', v => { v.zamek = { zamceno: true, tisky: [] }; v.prodano = { datum: DATUM, zakaznik: 'z1' };
+      if (typeof lhutyProjVychozi === 'function') v.data.kryciProj = Object.assign({ hodnoty: {} }, v.data.kryciProj, { lhutyProj: lhutyProjVychozi() }); }],
+    ['proj:prodana-sleva-100', v => { v.data.slevaProj = Object.assign({}, v.data.slevaProj, { procenta: 100, stav: 'schváleno' });
+      v.zamek = { zamceno: true, tisky: [] }; v.prodano = { datum: DATUM, zakaznik: 'z1' };
+      if (typeof lhutyProjVychozi === 'function') v.data.kryciProj = Object.assign({ hodnoty: {} }, v.data.kryciProj, { lhutyProj: lhutyProjVychozi() }); }],
+  ];
+  for (const [jm, uprava] of PROJS) {
+    const zak = nova('2026-OPR-CN-9683', 'Porovnání sestavení ' + jm);
+    zak.projHlavicka = Object.assign({}, zak.projHlavicka, { cislo: '2026 - OVP - CN - 9683' });
+    const v = zak.varianty[0];
+    Object.assign(v.data.ock.zadani, ZAD);
+    v.data.ock.fixes = true;
+    v.data.cenik = cenikZ(false);
+    v.data.proj.cenik = ZC.zkusebniCenikProj();
+    v.data.kryciProj = { hodnoty: {} };
+    uprava(v);
+    out[jm + ':m2'] = await scenar(zak, v, J);
+  }
+
   /* 4) smyšlené zakázky testovacího webu (src/testdata.js TOHOTO stromu) */
   const TD = require(path.join(KOREN, 'src', 'testdata.js'));
   for (const p of TD.TESTDATA_ZAKAZKY) {
@@ -353,7 +478,7 @@ function rozdilyPripadu(a, b) {
 
 function skupinaPripadu(jm) {
   const p = jm.split(':')[0];
-  return { fixtura: 'fixtury', scenar: 'scénáře #560 + můstky', k29: 'K29-N1 / #451', k36: 'K36-N2 / #550', k50: 'K50-N1', k40: 'K40-N1 / #614', ukazka: 'ukázkové zakázky', fuzz: 'fuzz (semínko)' }[p] || p;
+  return { fixtura: 'fixtury', scenar: 'scénáře #560 + můstky', k29: 'K29-N1 / #451', k36: 'K36-N2 / #550', k50: 'K50-N1', k40: 'K40-N1 / #614', lak: 'LAK #666', vs: 'víc šachet #648', dotisk: 'dotisk #665', proj: 'PROJ #683 / D8', ukazka: 'ukázkové zakázky', fuzz: 'fuzz (semínko)' }[p] || p;
 }
 
 function porovnej(A, B, volby) {
