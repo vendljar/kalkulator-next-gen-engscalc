@@ -607,9 +607,9 @@
       ],
       [
        "zakaznici_hromadne",
-       "naplnění zákazníků ze zakázek podle ARES: náhled (`zk-navrh`, platí 24 h; IČO, název a sídlo firmy, subjekt z ARES, bez kontaktů), denní počítadlo dotazů do ARES (`zk-den`) a protokol hromadných zápisů (`zk-protokol`: kdo, kdy, počty); mimo zálohu",
+       "naplnění zákazníků ze zakázek podle ARES: náhled (`zk-navrh`, platí 24 h; IČO, název a sídlo firmy, subjekt z ARES, bez kontaktů), denní počítadlo dotazů do ARES (`zk-den`), paměť IČO, která nesedí s ARES (`zk-nesedi`, 30 dní) a protokol hromadných zápisů (`zk-protokol`: kdo, kdy, stav, počty); mimo zálohu",
        "e-mail správce v protokolu a v náhledu",
-       "náhled do zápisu nebo 24 h, protokol posledních 100 běhů"
+       "náhled do zápisu nebo 24 h (propadlý se smaže), paměť „nesedí“ 30 dní, protokol posledních 100 běhů"
       ],
       [
        "pripominky",

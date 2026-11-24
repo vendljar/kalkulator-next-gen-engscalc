@@ -2564,9 +2564,23 @@ Větev `claude/zk-zakaznici-ze-zakazek` nad `c89e872`. Testy `netlify/test_zk_za
   platí 24 h, id musí souhlasit), u každé položky se znovu přečte zakázka a ověří shoda s uloženým subjektem ARES;
   existující karta (klíč IČO, nebo karta bez IČO se stejným názvem) se nepřepíše. Strop `ZAKAZNICI_MAX` platí.
 - **ARES:** jen platné IČO (kontrolní číslice), jen IČO bez karty; `aresNacti` (pevná adresa, 3 s, bez přesměrování,
-  strop odpovědi). Nejvýš 10 dotazů na volání s pauzou 400 ms, 600 na náhled, 1 500 za den (počítadlo `zk-den`).
+  strop odpovědi). Nejvýš 10 dotazů na volání s pauzou 400 ms, 600 na jedno kolo náhledu („Zkusit znovu“ = další
+  kolo, pokračuje zbytkem fronty), 1 500 za den (počítadlo `zk-den`). IČO, které nesedělo, se znovu neptá, dokud se
+  nezmění jeho nejnovější zakázka (paměť `zk-nesedi`, nejvýš 30 dní; revize R3).
+- **Zápis po kouscích (revize R1):** nejvýš 100 karet nebo 7 s na volání; protokol vzniká prvním voláním a nese
+  průběžné počty, takže i přerušený zápis nechá stopu (nejvýš o jeden nedokončený kousek pozadu — karta z něj se při
+  opakování pozná podle autora, poznámky a času a započte se jako založená). Propadlý náhled (24 h) se nevydá a smaže
+  (R5); rozpracovaný zápis pak zůstane v protokolu jako „přerušen“.
+- **Čtení karet (revize R2):** náhled ani zápis karty nečtou — existenci pozná z klíčů úložiště (klíč = IČO, bez
+  IČO `n-<název>`); čte se jen karta téhož klíče těsně před zápisem. `GET /api/zakaznici` čte karty souběžně po 16
+  (`ctiVsechny`). Skutečnou dobu seznamu po naplnění změří testovací sezení na testu.
+- **R6 — novější zakázka mezi náhledem a zápisem — VĚDOMÁ MEZ:** zápis znovu ověří zakázku z náhledu proti subjektu
+  ARES z náhledu (nejvýš 24 h starému), ale neověří, že je pořád nejnovější. Uloží-li mezitím někdo novější zakázku
+  téže firmy s jiným kontaktem, karta dostane kontakt ze starší. Okno nejvýš 24 h; kontakt jde v kartě opravit (autor
+  karty = správce). ARES se při zápisu znovu neptá.
 - **Mez (vědomá):** výhradní úsek `vyhradne('zakaznici/hromadne')` a počítadlo dne jsou čtení–změna–zápis bez
   podmíněného zápisu — dvě instance funkce (dva správci naráz) se nevidí: náhled jednoho může přepsat náhled druhého
   (zápis pak skončí 409 a spustí se znovu) a denní strop může přetéct o jedno volání (≤ 10 dotazů). Karty chrání
   `vyhradne('zakaznici/<klíč>')` a kontrola existence těsně před zápisem (mez jako K7-S1).
-- **Výjimka ze zálohy (k vědomí J. V.):** úložiště `zakaznici_hromadne` (náhled, počítadlo, protokol) se nezálohuje.
+- **Výjimka ze zálohy (k vědomí J. V., revize R9):** úložiště `zakaznici_hromadne` (náhled, počítadlo, paměť „nesedí“,
+  protokol) se nezálohuje; po obnově zůstane stopa „kdo a kdy“ jen v kartách (autor, čas, poznámka s datem ověření).
