@@ -2582,5 +2582,8 @@ Větev `claude/zk-zakaznici-ze-zakazek` nad `c89e872`. Testy `netlify/test_zk_za
   podmíněného zápisu — dvě instance funkce (dva správci naráz) se nevidí: náhled jednoho může přepsat náhled druhého
   (zápis pak skončí 409 a spustí se znovu) a denní strop může přetéct o jedno volání (≤ 10 dotazů). Karty chrání
   `vyhradne('zakaznici/<klíč>')` a kontrola existence těsně před zápisem (mez jako K7-S1).
-- **Výjimka ze zálohy (k vědomí J. V., revize R9):** úložiště `zakaznici_hromadne` (náhled, počítadlo, paměť „nesedí“,
+- **R7 — banka a číslo účtu ze zakázky do karty — PŘIJATO (J. V. 24. 11. 2026: ponechat):** ARES je neověřuje; karta
+  je pak předvyplňuje do dalších zakázek. Totéž dělá ruční „Založit z otevřené zakázky“; okruh lidí, kteří údaj vidí,
+  se nemění (zakázky i karty čte každý přihlášený); autor karty je správce, obchodník změnu jen navrhne (B234).
+- **Výjimka ze zálohy — PŘIJATO (J. V. 24. 11. 2026: ponechat, revize R9):** úložiště `zakaznici_hromadne` (náhled, počítadlo, paměť „nesedí“,
   protokol) se nezálohuje; po obnově zůstane stopa „kdo a kdy“ jen v kartách (autor, čas, poznámka s datem ověření).

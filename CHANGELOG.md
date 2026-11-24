@@ -26,13 +26,13 @@ Podnět J. V. 24. 11.: v databázi zákazníků na ostrém webu jsou 2 karty —
   roli ověřuje účet (ne-admin 403), ARES přes `aresNacti` (jen platné IČO bez karty; nejvýš 10 dotazů za volání
   s pauzou 400 ms, strop 600 na náhled a 1 500 za den; výpadek = „zkusit znovu“, nic se nezapíše). Náhled nenese
   kontakty, odpověď nenese jména souborů zakázek. Náhled, denní počítadlo a protokol jsou ve vlastním úložišti
-  `zakaznici_hromadne` — **výjimka ze zálohy** (provozní stopa, k vědomí J. V.); karty jsou v zálohovaném `zakaznici`.
+  `zakaznici_hromadne` — **výjimka ze zálohy** (provozní stopa, J. V. 24. 11.: ponechat); karty jsou v zálohovaném `zakaznici`.
 - **Revize Fable (`podklady/revize/REVIZE_ZK.md`, SLOUČIT PO OPRAVÁCH):** sloučena integrace `7339a9e` (R0); zápis
   karet po kouscích s časovým rozpočtem, protokol od prvního volání s průběžnými počty i po přerušení, tlačítko
   „Dokončit zápis“ (R1); náhled a zápis karty nečtou — existence z klíčů úložiště, `GET /api/zakaznici` čte karty
   souběžně (`ctiVsechny`) (R2); strop 600 platí na kolo, „Zkusit znovu“ pokračuje, IČO, které nesedělo, se znovu
   neptá, dokud se nezmění jeho zakázka (paměť `zk-nesedi`, 30 dní) (R3); testy R4; propadlý náhled se nevydá
-  a smaže (R5); R6 zapsáno do `BEZPECNOST_MEZE.md`. R7 (banka a účet do karty) a R9 (mimo zálohu) čekají na J. V.
+  a smaže (R5); R6 zapsáno do `BEZPECNOST_MEZE.md`. R7 (banka a účet do karty) a R9 (mimo zálohu): J. V. 24. 11. ponechat.
 - Testy s pojistkou: `netlify/test_zk_zakaznici_ze_zakazek.mjs` (před ZK import selže; 74 OK, po revizi 95 OK), harness
   `overit_zk_zakaznici.mjs` (15 OK; před opravou panelu po přepnutí účtu 1 FAIL), matice práv `test_prava.mjs`,
   úplnost zálohy `test_zalohy.mjs` N4; mutace [ZK] 37/37 (po revizi); kolo `--bez-mutaci --proti origin/claude/integrace-16-10` (7339a9e) VŠE ZELENÉ (544 sad, 12/12 statických), porovnání sestavení SHODA 367/367.

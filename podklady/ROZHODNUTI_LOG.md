@@ -10,6 +10,11 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
+| 24. 11. 2026 | ZK: hromadně založená karta zákazníka přebírá z nejnovější zakázky i banku a číslo účtu (ARES je neověřuje) — ponechat (revize R7) | #755, Zákazníci → Naplnit ze zakázek (ARES) |
+| 24. 11. 2026 | ZK: úložiště `zakaznici_hromadne` (náhled, denní počítadlo ARES, paměť „nesedí“, protokol) je výjimka ze zálohy — ponechat (revize R9) | #755, zálohy (`test_zalohy.mjs` N4) |
+| 24. 11. 2026 | ZK: shoda názvu s ARES přísně — diakritika se nezahazuje („Novy dum“ ≠ „Nový dům“ → nesedí, založit ručně) | #755, `zzNormNazev` |
+| 24. 11. 2026 | ZK: DIČ hromadně založené karty jen z ARES (neplátce = prázdné, i když ho zakázka má) | #755, `zzKarta` |
+| 24. 11. 2026 | ZK: databázi zákazníků naplnit hromadně ze zakázek, ale jen záznamy, kde data sedí podle ARES (nástroj správce, zápis po potvrzení) | #755 |
 | 24. 11. 2026 | RP N1: krycí list OCK (BO i Tech, i odeslaná nabídka ze zámku) u šachty s ks > 1 uvádí u ruční položky cenu za kus a celkem, např. „12 000 Kč/ks × 2 ks = 24 000 Kč“; u 1 ks jen cena. | #736, krycí list „Ruční položky v ceně“ |
 | 24. 11. 2026 | K54-N1 N3: zakázat přepsání čerstvé kalkulace z Pipedrive (`pdCerstva`) starou kopií — server odmítne 409 „Kalkulaci mezitím znovu založil Pipedrive — otevřete ji ze Seznamu / odkazem z dealu; vaše kopie se neuložila.“; řádné první uložení čerstvé projde | ukládání online, webhook Pipedrive |
 | 24. 11. 2026 | K54-N1 (#750): smazaná otevřená kalkulace se hned zavře (prázdná Nová zakázka) s hláškou „Kalkulace <číslo> byla smazána.“; server odmítne (409) uložení kalkulace, která na serveru už neexistuje | Seznam zakázek, ukládání online |

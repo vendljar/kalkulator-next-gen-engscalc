@@ -101,12 +101,9 @@ Větev `claude/zk-zakaznici-ze-zakazek` nad `c89e872`. Nic na weby, do Pipedrive
   potvrzení ze serverového náhledu s novým ověřením zakázky, protokol bez osobních údajů. UI `src/ui/zakaznici_ui.js`.
 - **Testy:** `netlify/test_zk_zakaznici_ze_zakazek.mjs` 74 OK, `overit_zk_zakaznici.mjs` 15 OK, `test_prava.mjs`
   a `test_zalohy.mjs` N4 doplněny; mutace [ZK] 24/24; kolo `--bez-mutaci --proti origin/claude/integrace-16-10` (7339a9e) VŠE ZELENÉ, SHODA 367/367; po revizi testy 95 OK, mutace [ZK] 37/37, kolo znovu VŠE ZELENÉ (544 sad), SHODA 367/367.
-- **Pro J. V. (k vědomí / rozhodnutí):** (1) úložiště `zakaznici_hromadne` (náhled, denní počítadlo, paměť „nesedí“, protokol) je
-  **výjimka ze zálohy** — doporučení: ponechat (karty samy se zálohují); (2) diakritika v názvu se při shodě
-  s ARES **nezahazuje** („Novy dum“ ≠ „Nový dům“ → nesedí) — doporučení: ponechat přísně, takové položky založit ručně;
-  (3) DIČ karty je výhradně z ARES (neplátce = prázdné, i když zakázka DIČ má) — doporučení: ponechat.
+- **Rozhodnutí J. V. 24. 11.:** vše ponechat — mimo zálohu, diakritika přísně, DIČ jen z ARES, banka a účet do karty (R7/R9); `podklady/ROZHODNUTI_LOG.md`.
 - **Revize Fable** (`claude/revize-zk`, SLOUČIT PO OPRAVÁCH): R0 sloučena integrace 7339a9e, R1–R5 a R10 opraveny,
-  R6 jako mez; R7 (banka a účet do karty — doporučení ponechat) a R9 (mimo zálohu — ponechat) čekají na J. V.
+  R6 jako mez; R7 a R9 J. V. ponechal.
 - **Další krok:** dorevize Fable → sloučení koordinací; na testu změřit dobu seznamu Zákazníci po naplnění (R2);
   spuštění na testu testovací sezení, na ostrém J. V.
 
