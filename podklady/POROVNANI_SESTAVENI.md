@@ -20,12 +20,19 @@ Sada i ceník se berou ze stromu, kde leží nástroj, takže obě strany dostan
 | scénáře #560 + můstky | zlatá pojistka #560, skladebné můstky (jako `zlata_vs.js`), Model 1 a 2 | 12 |
 | K29-N1 / #451 | zastřešení vyřazené, ruční množství 0 / prázdné / 9,5, vlastní měď, 3 můstky | 14 |
 | K36-N2 / #550 | zahraniční řada s montáží můstků bez / s vlastní sazbou, skladebné, ČR | 8 |
+| K56: LAK #666 | částka lakovny se záznamem / bez zdroje / nula / s vlastní položkou, Model 1 a 2 | 10 |
+| K56: víc šachet #648 | výchozí a ruční názvy šachet (SoD a Word EN/DE) | 2 |
+| K56: dotisk #665 | odeslaná nabídka se snímkem zpracovatele a bez něj | 2 |
+| K56: PROJ #683 / D8 | výchozí, sleva 30 / 100 %, studie vyřazená, prodaná s lhůtami (i se slevou 100 %) | 6 |
 | ukázkové zakázky | smyšlené zakázky testovacího webu (`src/testdata.js`) | 12 |
 | fuzz | generátor fuzz invariantů, semínko 20261110 (`--fuzz N`, výchozí 300) | 300 |
 
 Porovnávaná pole: **cena celkem** (`cenaNabidkyOck`), **řádky** (sekce + příplatky), výsledek jádra
 (`vypocet`, `vypocetZ`), **symboly CN** po klíčích (změněný × jen nový symbol), **text dokumentu**
-(Word nabídky ze zkušební šablony, online náhled CZ/EN, řádky navíc, krycí list, specifikace, SoD)
+(Word nabídky ze zkušební šablony, online náhled CZ/EN, Kompletní náhled podkladů CZ/EN `nahled-np-*`,
+smyčka šachet Wordu `vs-word-*`, řádky navíc, krycí list OCK **ve verzi BO i techdata** `kryci-bo/-tech`,
+specifikace CZ/EN, SoD CZ/EN/DE), **PROJ** (`proj-vyp`, `proj-cena` = skupina `cena-proj`; symboly nabídky
+PROJ `proj-ph-cz/en`; krycí list PROJ `kryci-proj-bo/-tech`, SoD projekce, plná moc, objednávka PROJ)
 a ostatní (Pipedrive, controlling CSV, snímek a výsledek zámku). Vše přes otisk sha256 —
 **výstup nenese ceny ani texty**, jen počty, případy a pole. Běh trvá kolem 11 s (se sestavením).
 
@@ -87,5 +94,10 @@ do sestavení nedostala.
 
 - Sada vidí jádro a generátory dokumentů ze `src/` — ne živý ceník, zveřejněné šablony Wordu
   ani prohlížeč. Ty dál hlídá plné kolo (stupeň 3) před main a po nasazení.
+- Do kola 56 (24. 11. 2026) sada krycí list volala bez verze (0 řádků — slepé místo), PROJ, Kompletní
+  náhled podkladů a cizí jazyky SoD vůbec nepočítala; rozšíření svěřené K56-1 (`podklady/kola/STAV_KOLO56.md`).
+- Kalkulaci založenou webhookem Pipedrive (#733) sada nevidí — průběh je v prohlížeči a na serveru. Pro
+  main × test: `KOREN=<strom s dist> node nastroje/porovnani_pd_webhook.mjs` nad každým stromem (JSON
+  se snímkem Nové zakázky a kalkulace z odkazu: marže, cena dle nabídky, cena OCK, cenové symboly).
 - Případ, který v jedné straně spadne chybou, se porovnává podle textu chyby (stejná chyba = shoda).
 - Test nástroje: `nastroje/test_porovnej_sestaveni.sh` (statické kontroly kola).
