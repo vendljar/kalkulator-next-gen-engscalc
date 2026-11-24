@@ -42,14 +42,47 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/pv-pipedrive` | (tato dávka) | v23.11.7 | PV #597 zápis prodeje do dealu + #734 autor = vlastník dealu nad 1280831; revize Fable; verzi přidělí koordinace |
 | `claude/ut-texty` | (tato dávka) | — | UT #741 #742 #743 (#744 čeká na J. V.) nad 0fd6410; verzi přidělí koordinace |
 | `claude/r3-pole-wordu` | (tato dávka) | — | R3 #751 zákaz dalších polí Wordu nad 3cab0c5 (v24.11.2); verzi přidělí koordinace |
-| `claude/zk-zakaznici-ze-zakazek` | (tato dávka) | — | ZK #755 zákazníci ze zakázek podle ARES (nástroj správce) nad c89e872 (v24.11.5); revize Fable; verzi přidělí koordinace |
+| `claude/zk-zakaznici-ze-zakazek` | (tato dávka) | v24.11.8 | ZK #755 zákazníci ze zakázek podle ARES (nástroj správce) nad c89e872, sloučeno s integrací d3d449b (v24.11.7); revize Fable SLOUČIT |
 
 Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontrola: `python3 nastroje/release_odkaz.py --chybejici`
 (22. 11.: žádná — main v19.11.11, tag vydán).
 
 ## Běžící dávky
 
-24. 11. 2026 odpoledne: RP (#736/#740, opravy po revizi Fable). Sloučené dávky PV, MT2, UT (v24.11.2), R3 (v24.11.3), DT (v24.11.4) a K54-N1 (v24.11.5, rychlou cestou v test 6722ad9) — předávky v `podklady/predavky/2026-11.md`. Kokpit koordinace: https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2
+Stav 24. 11. 2026 21:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74 % → doporučeno nové sezení; kokpit https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2):
+- **main** v19.11.11 (cda289e). **test** v24.11.5 (6722ad9). **integrace** v24.11.6 (7339a9e) = UT, R3, DT, RP. Celé kolo Actions nad c89e872 (v24.11.5) ZELENÉ 36/36.
+- **v24.11.7 pro test** (lokálně v pracovní kopii koordinace, NEpushnuto): test 6722ad9 + claude/rychla-PT-ZAB (7d1b3d1, #759 překlad zábradlí + výčet víc skupin můstků) + claude/rychla-K56-I2 (7ddb87f, #760 SoD a objednávka PROJ = kdo tiskne, CN snímek zámku). Postup: sloučit obě větve nad origin/test (konflikty jen přidané řádky — sjednotit), verze 24.11.7, kolo `--bez-mutaci --proti origin/test --ocekavane podklady/porovnani/ocekavane_pt-zab_2026-11-24.txt`, push do test, /api/zdravi, pak test sloučit do integrace.
+- **main: J. V. 24. 11. — zítra ráno 25. 11. společně** (test → main na jeho pokyn; PIPEDRIVE_ZAPIS na main zůstává vypnutý do zkoušky prodeje na dealu TEST). Porovnání main × test: stará sada SHODA, rozšířená (kolo 56) 387 očekávaných, 0 neočekávaných.
+- **ER** (claude/er-engineering-rezerva, 3f3162f, #757 engineering příplatek 1× za variantu, #758 rezerva v položkách + automat ATYP, #761 přepínače; jen nové kalkulace kalkVerze 2): opravy po revizi Fable (N1 engineering víc šachet, N3 server hlídá příznak, N5, N6) → dorevize (session_018mwHQEfyWwjwB8mdLvYCpJ). J. V.: N2 a N3 ano.
+- **ZK** (claude/zk-zakaznici-ze-zakazek, 62403a4, #755 naplnění zákazníků podle ARES): dorevize běží (session_018mwHQJYxTLw32SuMNrUtwJ). J. V.: R7, R9 a ostatní ponechat.
+- **PO** (claude/po-odeslani-pipedrive, 1836433, #116 zápis do Pipedrive při odeslání): opravy po revizi (R1 soubor k lost/cizímu dealu, R2, R5 makra, R6–R9, R12 testy; R3/R4 podle doporučení, J. V. ano) → dorevize (session_018mwHQFNkww2bgYTpMqUUj6). J. V. založí pole „Datum nabídky“ v Pipedrive (#763).
+- **Fronta:** K56-D (doplnění porovnání; potřebuje větev claude/testovani-kolo56 e221781f — bundle od J. V.); doprava a přesun hmot OCK (PDF návrh u majitele); R1 RP Word na skutečných šablonách CN v18 před main (testovací sezení).
+- Sloučené dnes: PV, MT2, UT, R3, DT, K54-N1, RP — předávky v `podklady/predavky/2026-11.md`.
+- Sloučené dávky (SA, PD, CN, RA, LAK, JT, NN, PR, BZ, HN, RJ, VZD, MT) — oddíly přesunuty do `podklady/predavky/2026-11.md` (23. 11. 2026). Běží: PV (#734 + #597), RP (prototyp ručních položek, čeká na J. V.).
+
+## Dávka PV (`claude/pv-pipedrive`, 23. 11. 2026)
+
+- Nad integrací 1280831 (v23.11.5), v23.11.7. **#734:** webhook při založení dohledá vlastníka dealu
+  (owner_id → GET /api/v1/users → e-mail → aktivní účet) = autor; jinak technický účet + varování a `autor` v logu.
+  Vazba nese `zalozil` (pdVazbaDokladaZapis). **#597:** POST `/api/pd/prodej` náhled/zápis (functions/pd_prodej.mjs,
+  lib/pd_prodej.mjs, lib/jadro_pd.cjs), karta Prodej v `src/ui/sod_ui.js`; stav `v.prodano.pipedrive` zapsano/chyba.
+- Testy: test_pv_597_zapis 57/0, test_pv_734_autor 51/0, overit_pv_prodej 19/0, mutace [PV] 18/18 chycených,
+  kolo `--bez-mutaci --proti origin/claude/integrace-16-10` VŠE ZELENÉ (534/0, hodiny 433/0, S3 SHODA 367/367); sloučeno s 9f2445a.
+- Do živého Pipedrive nic. Po nasazení do testu: testovací sezení zkušební zápis na deal TEST (PIPEDRIVE_SPUSTENI A6b, A9).
+- Revize Fable (`podklady/revize/REVIZE_PV.md`): V1 (texty krycího listu ze serveru), S1 (převzetí: úmysl před PATCH,
+  poznámka při opakování), S2 (výhradní úsek na deal), S3 (limit `/users` ve webhooku), S4 (pevné věty chyb) opraveny;
+  mez okna GET–PATCH = B277. Otázky pro J. V.: O1 práva vlastníka-autora, O2 právo pro zápis prodeje (kód podle doporučení).
+- Návrhy do roadmapy (revize N1–N6): N1 vypnutý uživatel PD (`active_flag`) jako autor; N2 `pdPoleMapa` v časovém rozpočtu
+  zápisu; N3 deal se čte dvakrát (vrátit ho z `pdDealPatriZakazce`); N4 neúspěch kvůli vypnutému zápisu / vazbě nemá psát
+  zakázku ani přepsat „zapsano“; N5 řádek logu `pd_prodej` bez osobních údajů; N6 komentář `icoShoda` v `pd_vazba.mjs:53`.
+
+## Dávka MT2 (`claude/mt2-testy`, 24. 11. 2026)
+
+- Nad integrací db1e9e7 (v23.11.7), v24.11.1. Jen testy a nástroje kola (svěřená MT2-1, MT2-2); aplikace beze změny.
+- **#737:** mutace „#553: kontakt v odpovědi“ nechycená — test zeslábl po #729 (kontakt = jméno). `test_553_webhook.mjs`
+  hlídá jména kontaktů a pole `kontakt` v odpovědích; mutace před 0/1, po 1/1.
+- **#738:** sady bz/cn/nn/ra červené 00–01 Praha (datum prodeje v UTC). `netlify/pomoc_den.mjs` (dnesPraha),
+  `netlify/pomoc_falesne_hodiny.mjs`, hlídka `test_mt2_pulnoc.mjs`; před 8 FAIL, po 16 OK. Klient bere `objDnes()` — v aplikaci vada není.
 
 ## Čeká na J. V.
 
