@@ -8,9 +8,9 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## (verzi přidělí koordinace) — PO: odeslání nabídky do dealu v Pipedrive (#116 CRM-17), větev claude/po-odeslani-pipedrive
+## v24.11.10 — PO: odeslání nabídky do dealu v Pipedrive (#116 CRM-17), větev claude/po-odeslani-pipedrive
 
-Nad integrací `7339a9e` (v24.11.6). Rozhodnutí J. V. 24. 11. 2026. Poradce Fable navrhl postup; revize Fable před
+Nad integrací `7339a9e` (v24.11.6), sloučeno s `0d8a95f` (v24.11.9, ER). Rozhodnutí J. V. 24. 11. 2026. Poradce Fable navrhl postup; revize Fable před
 sloučením přes koordinaci. **Cenu kalkulací ani text dokumentů nemění** (porovnání sestavení má dát SHODA).
 Pipedrive jen simulátor — zkouška na dealu TEST až v testovacím sezení se souhlasem J. V.
 
@@ -50,6 +50,95 @@ Pipedrive jen simulátor — zkouška na dealu TEST až v testovacím sezení se
   kontrole práv a stropu (D3); test nového zámku (D4); D2 zapsáno k B279, D5 do příručky. Nový test
   `src/test_po_116_docx.js` (Word vygenerovaný aplikací projde, 5 průniků z dorevize odmítnuto; pojistka: nad 6ddd54e
   5 FAIL).
+
+## v24.11.9 — ER #757, #758, #761: nová kalkulace (engineering jako příplatek, rezerva příplatků v položkách, Režie bez přepínačů); automat ATYP, větev claude/er-engineering-rezerva
+
+Nad integrací `c89e872` (v24.11.5), sloučeno s v24.11.6 (RP) a `230eb6a` (v24.11.8, ZK). **Mění cenu NOVÝCH kalkulací** (rozhodnutí J. V. 24. 11.); existující beze změny.
+Nová kalkulace nese příznak zadání `kalkVerze: 2` (jen založení nové kalkulace a čerstvá z Pipedrive; klon a duplikát
+kopírují zdroj, import ani stará data ho nedostanou).
+
+- **#757 Engineering** je u nové kalkulace příplatková položka (C.engineeringKc × 1), ve výchozím stavu **mimo nabídku**
+  (obchodník ho zaškrtne ve sloupci Nabídka; administrátor může výchozí stav změnit ve sloupci Výchozí), v Režii není.
+  U víc šachet a kusů **jednou za variantu** — z první šachty, která ho má ve sloupci Nabídka (jinak z první,
+  která ho má), stejně v kalkulaci, nabídce i objednaných příplatcích (SoD, krycí list po prodeji). Tiskne se jako ostatní příplatky
+  (EN „TECHNICAL ENGINEERING“, DE „TECHNISCHES ENGINEERING“, FR „INGÉNIERIE TECHNIQUE“ — schváleno J. V.); krycí list, Pipedrive a controlling ho berou jako ostatní příplatky.
+- **#758 Rezerva příplatků:** u nové kalkulace se přičte do ceny každého příplatku (před zaokrouhlením na tisíce), takže ji
+  nese nabídka, krycí list, SoD i Pipedrive; controlling ji vede řádkem REZERVA PŘÍPLATKY bez dvojího započtení. Starší
+  kalkulace dál jen v součtu „Příplatky celkem (pokud vše)“. **Schváleno J. V. 24. 11. (revize N2):** u nové kalkulace
+  s rezervou se „Příplatky celkem“ liší od dřívějšího výpočtu o zaokrouhlení — dřív se rezerva přičetla k součtu
+  a zaokrouhlil se celek, nově se zaokrouhluje každá položka i s rezervou; na zkušebních případech řádově tisíce Kč
+  oběma směry (−6 000 až +4 000, průměr −407 Kč). **Automat ATYP** (všechny kalkulace) už nepřepíše ručně
+  zadaná pole (rezervy, zámečník, hodiny); ruční klik na ATYP dosadí předlohu z ceníku jako dosud.
+- **#761 Režie:** nová kalkulace nemá přepínače „Výstup ze zaměření pro zákazníka“ (řádek vždy 1 × C.vystupZamereniKc,
+  specifikace „ano“) a „Statické posouzení opláštění“ (řádek jen u šachty s opláštěním). Starší kalkulace přepínače mají dál.
+- Server hlídá tvar příznaku (i u šachet 2+) a **odmítne změnu příznaku uložené varianty nebo šachty** (revize N3,
+  schváleno J. V. 24. 11.; výjimka obnova ze zálohy a první uložení čerstvé kalkulace z Pipedrive). Příručka výpočtu doplněna.
+- Roadmapa: #766 ruční značky ATYP po šachtách (nízká), #767 víc šachet — výběr příplatků nabídka × krycí list (mimo ER).
+- Testy: `src/test_er_nova_kalkulace.js` (113 OK; proti c89e872 padá), mutace jádra [ER] 33/33 chycené; porovnání sestavení
+  proti integraci: fixtury 7/7 a fuzz 300/300 SHODA, 60 očekávaných rozdílů jen u případů z `novaZakazka()`
+  (`podklady/porovnani/ocekavane_er_2026-11-24.txt`); zlaté sady #560/VS očištěny o příznak (svěřené rozhodnutí ER-1).
+- Revize Fable `podklady/revize/REVIZE_ER.md`: SLOUČIT po opravách N1, N3, N5, N6 a dorevizi D1 (změna příznaku
+  i u zamčené uložené varianty); meze v `BEZPECNOST_MEZE.md` (oddíl ER).
+
+## v24.11.8 — ZK #755: zákazníci ze zakázek podle ARES (nástroj správce), větev claude/zk-zakaznici-ze-zakazek
+
+Nad integrací `c89e872` (v24.11.5), sloučeno s integrací `7339a9e` (v24.11.6) a `d3d449b` (v24.11.7). **Cenu, ceník ani text dokumentů nemění** (porovnání sestavení: SHODA).
+Podnět J. V. 24. 11.: v databázi zákazníků na ostrém webu jsou 2 karty — vznikaly jen ručně.
+
+- **Zákazníci → „Naplnit ze zakázek (ARES)…“ (jen administrátor):** náhled projde uložené zakázky (řídící i další
+  zákazníci), seskupí je podle IČO (normalizace, kontrolní číslice; bez IČO / s neplatným IČO jen počet) a pro IČO bez
+  karty ověří ARES. Kartu navrhne jen když subjekt existuje, nezanikl a **název i sídlo z ARES sedí s hlavičkou
+  nejnovější zakázky** (velikost písmen, mezery, „s.r.o. / spol. s r.o.“, PSČ s mezerou; část obce smí chybět;
+  diakritika názvu se nezahazuje). Tabulka založit / už existuje / nesedí s ARES (důvod) / ARES nedostupný (zkusit znovu).
+- **Karta** = ARES (název, sídlo, IČO, DIČ) + z nejnovější zakázky jen pole, která ARES nemá (kontaktní osoba,
+  zástupci, banka, účet, zápis). Autor = správce, poznámka s datem ověření.
+- **Zápis až po potvrzení**, ze serverového náhledu (platí 24 h; klient nic nedodává), u každé položky znovu ověří
+  zakázku; nic existujícího nepřepíše, druhý běh nic nezaloží. Protokol kdo / kdy / počty bez osobních údajů.
+- **Server** `/api/zakaznici-ze-zakazek` (`functions/zakaznici_ze_zakazek.mjs`, logika `lib/zakaznici_ze_zakazek.mjs`):
+  roli ověřuje účet (ne-admin 403), ARES přes `aresNacti` (jen platné IČO bez karty; nejvýš 10 dotazů za volání
+  s pauzou 400 ms, strop 600 na náhled a 1 500 za den; výpadek = „zkusit znovu“, nic se nezapíše). Náhled nenese
+  kontakty, odpověď nenese jména souborů zakázek. Náhled, denní počítadlo a protokol jsou ve vlastním úložišti
+  `zakaznici_hromadne` — **výjimka ze zálohy** (provozní stopa, J. V. 24. 11.: ponechat); karty jsou v zálohovaném `zakaznici`.
+- **Revize Fable (`podklady/revize/REVIZE_ZK.md`, SLOUČIT PO OPRAVÁCH):** sloučena integrace `7339a9e` (R0); zápis
+  karet po kouscích s časovým rozpočtem, protokol od prvního volání s průběžnými počty i po přerušení, tlačítko
+  „Dokončit zápis“ (R1); náhled a zápis karty nečtou — existence z klíčů úložiště, `GET /api/zakaznici` čte karty
+  souběžně (`ctiVsechny`) (R2); strop 600 platí na kolo, „Zkusit znovu“ pokračuje, IČO, které nesedělo, se znovu
+  neptá, dokud se nezmění jeho zakázka (paměť `zk-nesedi`, 30 dní) (R3); testy R4; propadlý náhled se nevydá
+  a smaže (R5); R6 zapsáno do `BEZPECNOST_MEZE.md`. R7 (banka a účet do karty) a R9 (mimo zálohu): J. V. 24. 11. ponechat.
+- **Dorevize (SLOUČIT):** D1 přijato jako mez, D2 věta do příručky správce, D3 změna meze zapsána, D4 testy na 5 přeživších
+  mutací (mutace [ZK] 42).
+- Testy s pojistkou: `netlify/test_zk_zakaznici_ze_zakazek.mjs` (před ZK import selže; 74 OK, po revizi 95 OK, po dorevizi 102 OK), harness
+  `overit_zk_zakaznici.mjs` (15 OK; před opravou panelu po přepnutí účtu 1 FAIL), matice práv `test_prava.mjs`,
+  úplnost zálohy `test_zalohy.mjs` N4; mutace [ZK] 37/37 (po revizi); kolo `--bez-mutaci --proti origin/claude/integrace-16-10` (7339a9e) VŠE ZELENÉ (544 sad, 12/12 statických), porovnání sestavení SHODA 367/367.
+
+## v24.11.7 — PT-ZAB #759: překlad hodnoty ZÁBRADLÍ NA PODESTÁCH + hlídač pevných textů, větev claude/rychla-PT-ZAB
+
+Rychlá cesta (vada dokumentu) nad testem `6722ad9` (v24.11.5). **Cena beze změny**; mění se jen text EN/DE/FR
+technické specifikace OCK u interiérové šachty se zaškrtnutým zábradlím.
+
+- **Opraveno:** pole ZÁBRADLÍ NA PODESTÁCH tisklo v anglické, německé i francouzské specifikaci česky
+  „úpravy a napojení stávajícího zábradlí na podestách“ (heslo ve vestavěném slovníku chybělo od srpna; export
+  J. V. NEPRELOZENE_2026-11-24-SPECIFIKACE-EN_24.11.5.csv). Nové heslo se schváleným překladem J. V. 24. 11.:
+  EN „modification and connection of the existing railing at the landings“, DE „Anpassung und Anschluss des
+  bestehenden Geländers an den Podesten“, FR „adaptation et raccordement du garde-corps existant sur les paliers“.
+- **Hlídač (#759):** `src/test_759_pevne_texty_preklad.js` projde celou technickou specifikaci (sekce, popisky,
+  hodnoty polí, poznámky) pro 522 zadání (interiér/exteriér, průchozí, přechodové plechy, každá volitelná položka
+  zapnutá i vypnutá, stříšky, můstky ve všech modelech) a data nabídky OCK pro 21 zakázek (i víc šachet) v EN/DE/FR;
+  nepřeložený pevný text = chyba. Pole, která si jazyk skládají sama, hlídá po částech (sledování překladu #518).
+- **Opraveno i (J. V. 24. 11.):** výčet víc skupin můstků v Modelu 2 se starým ceníkem #354 („1 ks 1600 × 1000 mm,
+  2 ks 1000 × 800 mm (šířka × délka), ocelová konstrukce vč. zábradlí a montáže“), který hlídač našel, zůstával
+  v EN/DE/FR česky — nový vzor ho překládá stejnými slovy jako větu pro jednu skupinu. Výjimky „čeká na J. V.“ nejsou.
+- Pojistka: bez hesla test 4 FAIL, bez vzoru 4 FAIL, s obojím 12 OK; cílené mutace [PTZAB] 2 z 2 chycené.
+## v24.11.7 — K56-I2 #760: smlouva o dílo a objednávka PROJ nesou toho, kdo je tiskne, větev claude/rychla-K56-I2
+
+Rychlá cesta (vada dokumentu, kolo 56) nad testem `6722ad9` (v24.11.5). **Cena beze změny.**
+
+- **Opraveno (rozhodnutí J. V. 24. 11.):** zmrazený snímek zpracovatele ze zámku (#665 / #715 — jméno, funkce,
+  telefon, e-mail a sken podpisu z prvního odeslání) platí **jen pro cenovou nabídku** (CN OCK i PROJ, všechny jazyky,
+  Word i online tisk). Smlouva o dílo (OCK i PROJ, všechny jazyky) a objednávka PROJ („Vystavil“) znovu nesou
+  přihlášeného uživatele, který dokument právě tiskne — jako před #665. Dřív u zamčené varianty tištěné kolegou
+  nesly zpracovatele z prvního odeslání nabídky i se skenem jeho podpisu.
+- Test `src/test_k56i2_tiskar.js` (pojistka: na 6722ad9 7 FAIL, po opravě 26 OK); cílené mutace [K56I2] 4 z 4 chycené.
 
 ## v24.11.6 — RP: ruční položky kalkulace OCK v nabídce CN a krycím listu (#736, #740), větev claude/rp-rucni-polozky
 

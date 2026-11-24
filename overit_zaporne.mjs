@@ -132,7 +132,8 @@ await page.evaluate(([c, cp]) => {
 test('prohlížeč je v roli obchodníka', await page.evaluate(() => NAST.jeAdmin === false && zobrazeniRole() === 'Obchodník'));
 const cenaOck = () => page.evaluate(() => vypocetAkt().souhrn.zakladCena);
 const cenaPred = await cenaOck();
-test('výchozí cena OCK zkušební zakázky je 980 000 Kč', cenaPred === 980000, cenaPred);
+/* 986 000 od ER (#761): nová kalkulace účtuje výstup ze zaměření vždy 1 × (dřív 980 000). */
+test('výchozí cena OCK zkušební zakázky je 986 000 Kč', cenaPred === 986000, cenaPred);
 
 /* ---------- OCK: „+ přidat položku" a záporná cena ---------- */
 await page.evaluate(() => vlastniAdd('hrubaOck'));
@@ -147,7 +148,7 @@ await page.waitForFunction(() => (window.__dlgTexty || []).length > 0).catch(() 
 const texty1 = await dlgTexty();
 test('záporná cena → hláška, že částka nesmí být záporná (a odkaz na slevu)', /nemohou být záporné/.test(texty1) && /slev/.test(texty1), texty1);
 test('cena vlastní položky zůstala 0', await page.evaluate(() => vlastniPolozkyArr('hrubaOck')[0].cena === 0));
-test('cena nabídky OCK zůstala 980 000 Kč', (await cenaOck()) === 980000, await cenaOck());
+test('cena nabídky OCK zůstala 986 000 Kč', (await cenaOck()) === 986000, await cenaOck());
 await poleMn.fill('-1'); await poleMn.dispatchEvent('change'); await cekejNaKlid(page);
 test('záporné množství vlastní položky se také odmítne', await page.evaluate(() => vlastniPolozkyArr('hrubaOck')[0].mnozstvi === 1));
 /* kladná částka dál jde (oprava neblokuje běžnou práci) */

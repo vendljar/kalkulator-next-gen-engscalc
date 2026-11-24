@@ -1,0 +1,16 @@
+# Očekávané rozdíly ER (#757, #758, #761) × integrace 7339a9e (v24.11.6; původně c89e872) — 24. 11. 2026
+# Formát: <vzor případu> <pole,pole|*>  # důvod   (popis v nastroje/porovnani_sada.js)
+#
+# Rozhodnutí J. V. 24. 11. 2026: NOVÁ kalkulace (příznak kalkVerze 2 ze ZADANI_NOVA) má
+# engineering jako příplatek mimo nabídku (#757), rezervu příplatků v cenách položek (#758)
+# a výstup ze zaměření vždy 1 × / statiku opláštění podle opláštění (#761).
+# Mění se jen případy, které sada staví přes novaZakazka() — scénáře #560, K29, K36, K40,
+# K50 a ukázkové zakázky: výstup ze zaměření 0,5 × → 1 × (cena, řádky, dokumenty, zámek,
+# Pipedrive, controlling), engineering mezi příplatky, specifikace „výstup: ano".
+# Fixtury (staré kalkulace, i odeslané) a fuzz (DEFAULT_ZADANI bez příznaku) = SHODA.
+scenar:*   *   # ER: nová kalkulace (novaZakazka) — #757/#761
+k29:*      *   # ER: nová kalkulace (novaZakazka) — #757/#761
+k36:*      *   # ER: nová kalkulace (novaZakazka) — #757/#761
+k40:*      *   # ER: nová kalkulace (novaZakazka) — #757/#761
+k50:*      *   # ER: nová kalkulace (novaZakazka) — #757/#761
+ukazka:*   *   # ER: ukázkové zakázky testovacího webu vznikají jako nová kalkulace

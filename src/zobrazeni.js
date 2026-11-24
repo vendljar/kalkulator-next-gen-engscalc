@@ -691,6 +691,13 @@ const ZOBRAZENI_POCITAT = 'ock.pocitat:';
  * (sloupec Nabídka). Klíč příplatku tečku neobsahuje, ale vlastní tvar
  * má i tak — ať se obě věci nepletou. */
 const ZOBRAZENI_PRIPLATEK = 'ock.priplatek:';
+/* Příplatky, které v NOVÉ zakázce do nabídky NEJDOU, i když je matice
+ * nezná (#757, engineering — J. V. 24. 11. 2026: obchodník ho zaškrtne).
+ * Kódový základ sloupce Výchozí: matice nese jen odchylku (výslovné true). */
+const ZOBRAZENI_PRIPLATEK_ZAKLAD_MIMO = ['engineering'];
+function zobrazeniPriplatekZaklad(key) {
+  return ZOBRAZENI_PRIPLATEK_ZAKLAD_MIMO.indexOf(String(key)) < 0;
+}
 
 function zobrazeniPolozkaVychozi(mat, klic, zaklad) {
   const v = mat && mat.vychozi && mat.vychozi[klic];
@@ -765,6 +772,14 @@ function zobrazeniVychoziAplikuj(mat, zadaniOck, zadaniProj) {
     const vynechane = Object.keys(mv)
       .filter(k => k.indexOf(ZOBRAZENI_PRIPLATEK) === 0 && mv[k] === false)
       .map(k => k.slice(ZOBRAZENI_PRIPLATEK.length));
+    /* #757: příplatek se základem „mimo nabídku" zůstane mimo, dokud ho
+     * matice výslovně nezapne — ale jen v zadání, které ho z kódu nese
+     * (nová kalkulace s příznakem kalkVerze ≥ 2, viz kalkNova v engine.js). */
+    ZOBRAZENI_PRIPLATEK_ZAKLAD_MIMO.forEach(k => {
+      if (mv[ZOBRAZENI_PRIPLATEK + k] === true || vynechane.indexOf(k) >= 0) return;
+      if (k === 'engineering' && !(Number.isInteger(zadaniOck.kalkVerze) && zadaniOck.kalkVerze >= 2)) return;
+      vynechane.push(k);
+    });
     const dnesP = Array.isArray(zadaniOck.priplatkyVynechat) ? zadaniOck.priplatkyVynechat : [];
     if (vynechane.join('\u0000') !== dnesP.join('\u0000')) {
       zadaniOck.priplatkyVynechat = vynechane;
@@ -906,7 +921,7 @@ if (typeof module !== 'undefined')
     zobrazeniVidi, zobrazeniPredloha, zobrazeniAdminZamcene, zobrazeniAdminZamekPorusen,
     ZOBRAZENI_KLIC_NAKLADY,
     ZOBRAZENI_SEKCE_VOLBY, zobrazeniSekceVolba, zobrazeniSekceNastav,
-    ZOBRAZENI_POCITAT, ZOBRAZENI_PRIPLATEK,
+    ZOBRAZENI_POCITAT, ZOBRAZENI_PRIPLATEK, ZOBRAZENI_PRIPLATEK_ZAKLAD_MIMO, zobrazeniPriplatekZaklad,
     zobrazeniPolozkaVychozi, zobrazeniPolozkaVychoziNastav,
     zobrazeniProjKlic, zobrazeniVychoziAplikuj, zobrazeniVychoziNedotcene,
     zobrazeniLeseniHlavaTyp, zobrazeniLeseniHlavaVychozi, zobrazeniLeseniHlavaJeVychozi,

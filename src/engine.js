@@ -2449,10 +2449,21 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     return out;
   })();
 
+  /* NOVÁ KALKULACE (ER, rozhodnutí J. V. 24. 11. 2026) — příznak zadání
+   * `kalkVerze: 2` (ZADANI_NOVA, viz kalkNova). Jen ona:
+   *   #757 engineering je příplatková položka (C.engineeringKc × 1, ve
+   *        výchozím stavu mimo nabídku), v Režii není;
+   *   #761 VÝSTUP ZE ZAMĚŘENÍ vždy 1 × (přepínač zrušen), statika opláštění
+   *        jen podle opláštění (statikaOplZahrnuta);
+   *   #758 rezerva příplatků v cenách jednotlivých příplatků (mkPrip).
+   * Stará data příznak nemají a počítají postaru, cena beze změny.
+   * DEFAULT_ZADANI příznak schválně nenese (fixtury, fuzz, porovnání). */
+  const nova = kalkNova(z);
+  const engPrip = nova;
   const rezie = [
     mkItem('ZAMĚŘENÍ 3D SKENEREM', 1, c.sken3dKc, { cenaPath: 'C.sken3dKc' }),
-    mkItem('VÝSTUP ZE ZAMĚŘENÍ PRO ZÁKAZNÍKA', z.vystupZamereni ? 1 : 0.5, c.vystupZamereniKc, { cenaPath: 'C.vystupZamereniKc' }),
-    z.engineeringKs ? mkItem('ENGINEERING', z.engineeringKs, c.engineeringKc, { cenaPath: 'C.engineeringKc' }) : null,
+    mkItem('VÝSTUP ZE ZAMĚŘENÍ PRO ZÁKAZNÍKA', (nova || z.vystupZamereni) ? 1 : 0.5, c.vystupZamereniKc, { cenaPath: 'C.vystupZamereniKc' }),
+    (!engPrip && z.engineeringKs) ? mkItem('ENGINEERING', z.engineeringKs, c.engineeringKc, { cenaPath: 'C.engineeringKc' }) : null,
     /* Poznámka u hodin navíc: obchodník musí vidět, proč je řádek vyšší,
      * než co má v poli „Projekce – základ" (9. 9. 2026). */
     mkItem('DÍLENSKÁ DOKUMENTACE', projekceHod, c.projekceHodKc,
@@ -2622,10 +2633,18 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
       naklad = mn * cenaEff;
     }
     const novyNazev = z.nazvyPrepis ? z.nazvyPrepis[nazev] : null;
+    /* REZERVA PŘÍPLATKŮ V CENĚ POLOŽKY (#758, J. V. 24. 11. 2026) — jen nová
+     * kalkulace. Stejný základ jako dřívější souhrnná rezerva (Model 2 z
+     * nákladu, Model 1 z ceny), jen se přičte ke každé položce PŘED
+     * zaokrouhlením, takže ji nese i nabídka, krycí list, SoD a Pipedrive.
+     * Stará data: pole `rezerva*` chybí a rezerva zůstává jen v součtu. */
+    const rezPct = (nova && +z.rezervaPriplatkyPct > 0) ? +z.rezervaPriplatkyPct : 0;
+    const rezN = rezPct ? (fixes ? naklad : naklad * (1 + m)) * rezPct : 0;
+    const rezPole = rezPct ? { rezervaNaklad: rezN, rezervaSMarzi: rezN * (1 + m) } : {};
     return sJazyky({ key, nazev: novyNazev || nazev, origNazev: nazev, nazevPrepsan: !!novyNazev,
              mnozstvi: mn, mnozstviAuto: mnozstvi, prepsano: prepisJe,
              cena: cenaEff, cenaAuto: cena, cenaPrepsana: cenaPrepis != null, cenaPath: opts.cenaPath || null,
-             naklad, sMarzi: CEIL(naklad * (1 + m), 1000), pozn: opts.pozn || '', vlastni: !!opts.vlastni,
+             naklad, sMarzi: CEIL(naklad * (1 + m) + rezN * (1 + m), 1000), ...rezPole, pozn: opts.pozn || '', vlastni: !!opts.vlastni,
              /* Dodatkový text z ceníku (#267). Nese ho POLOŽKA, aby ho nabídka
               * nemusela dohledávat v ceníku sama — jinak by si musela vozit celý
               * ceník kvůli jedné větě.
@@ -2724,6 +2743,9 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
       { cenaPath: 'C.zabradliKc' }) : null,
     (ext && !v.sokl) ? mkPrip('sokl', 'OPLECHOVÁNÍ SOKLU PROHLUBNĚ (EXT)', z.sirka + 2 * z.hloubka, c.soklBmKc,
       { cenaPath: 'C.soklBmKc' }) : null,
+    /* #757: engineering jako příplatek jen u kalkulace s příznakem (viz engPrip). */
+    engPrip ? mkPrip('engineering', 'ENGINEERING', 1, +c.engineeringKc || 0,
+      { cenaPath: 'C.engineeringKc' }) : null,
     ...(Array.isArray(z.priplatkyVlastni) ? z.priplatkyVlastni : []).map((vl, i) =>
       ({ ...mkPrip('vlastni:' + i, vl.nazev, +vl.mnozstvi || 0, +vl.cena || 0,
         { vlastni: true, pozn: vl.kid ? 'trvalá položka z ceníku' : 'ruční položka' }), kid: vl.kid || null })),
@@ -2731,7 +2753,8 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   if (z.priplatkyVyber) priplatky = priplatky.filter(p => z.priplatkyVyber.includes(p.key));
   const priplatkyNaklad = priplatky.reduce((a, r) => a + r.naklad, 0);
   const priplatkyCena = priplatky.reduce((a, r) => a + r.sMarzi, 0);
-  const priplatkyRez = z.rezervaPriplatkyPct
+  /* #758: nová kalkulace má rezervu už v cenách položek (mkPrip). */
+  const priplatkyRez = (z.rezervaPriplatkyPct && !nova)
     ? (fixes ? priplatkyNaklad : priplatkyCena) * z.rezervaPriplatkyPct * (1 + m) : 0;
   const priplatkyCenaCelkem = CEIL(priplatkyCena + priplatkyRez, 1000);
 
@@ -2932,10 +2955,17 @@ function cenikDoplnKlice(cenik, vzor) {
  * (DEFAULT_ZADANI), import ho tedy nedoplní. Jiná hodnota než true/false
  * = výchozí stav (tvar hlídá server, ULO_VYCTY_MIMO_VZOR). */
 function statikaOplZahrnuta(z, oplPlocha) {
+  /* #761 (J. V. 24. 11. 2026): nová kalkulace přepínač nemá — jen opláštění. */
+  if (kalkNova(z)) return (+oplPlocha || 0) > 0;
   const v = z ? z.statikaOpl : undefined;
   if (v === true) return true;
   if (v === false) return false;
   return (+oplPlocha || 0) > 0;
+}
+/* NOVÁ KALKULACE (ER, 24. 11. 2026): zadání s příznakem `kalkVerze` ≥ 2
+ * (ZADANI_NOVA). Jen celé číslo — text ani true příznak nejsou. */
+function kalkNova(z) {
+  return !!z && Number.isInteger(z.kalkVerze) && z.kalkVerze >= 2;
 }
 /* Volby výběru v zadání (revize #667 N4): výchozí stav jde vždy vrátit.
  * Hodnota '' = výchozí (klíč se smaže / null), '1' = Ano, '0' = Ne. */
@@ -2999,4 +3029,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, lakNabidkaCastka, profilyNezname, mustkyPocet, mustkySkupiny, mustekSkupinaOciste, mustekSkupinaNova, mustkyNaSkupiny, mustkyCenikSkladebny, mustkyProvedeniMimoVychozi, MUSTEK_PODLAHY, MUSTEK_ZABRADLI, MUSTEK_KOTVENI, MUSTKY_SKLADBA_KLICE, MUSTEK_RADEK, MUSTKY_SKUPIN_MAX, MUSTEK_TEXT_MAX, mustkyCenikNovy, mustkyRozpad, mustekDelkaMm, mustekSloupVychoziM, MUSTEK_SLOUP_ODPOCET_M, cenikMigraceMustku, mustkyCenikKontrola, MUSTEK_REF_SIRKA_MIN_MM, MUSTEK_REF_SIRKA_MAX_MM, MUSTKY_CENIK_KLICE, MUSTEK_DELKA_VYCHOZI_MM, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, NAD_DVERMI_NABIDKA, svetlikyStavbaNaBez, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniPasyMeze, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikMigraceStatikyOpl, statikaOplZahrnuta, statikaOplSazba, statikaOplVolby, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
+if (typeof module !== 'undefined') module.exports = { vypocet, lakNabidkaCastka, profilyNezname, mustkyPocet, mustkySkupiny, mustekSkupinaOciste, mustekSkupinaNova, mustkyNaSkupiny, mustkyCenikSkladebny, mustkyProvedeniMimoVychozi, MUSTEK_PODLAHY, MUSTEK_ZABRADLI, MUSTEK_KOTVENI, MUSTKY_SKLADBA_KLICE, MUSTEK_RADEK, MUSTKY_SKUPIN_MAX, MUSTEK_TEXT_MAX, mustkyCenikNovy, mustkyRozpad, mustekDelkaMm, mustekSloupVychoziM, MUSTEK_SLOUP_ODPOCET_M, cenikMigraceMustku, mustkyCenikKontrola, MUSTEK_REF_SIRKA_MIN_MM, MUSTEK_REF_SIRKA_MAX_MM, MUSTKY_CENIK_KLICE, MUSTEK_DELKA_VYCHOZI_MM, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, NAD_DVERMI_NABIDKA, svetlikyStavbaNaBez, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniPasyMeze, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikMigraceStatikyOpl, kalkNova, statikaOplZahrnuta, statikaOplSazba, statikaOplVolby, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };

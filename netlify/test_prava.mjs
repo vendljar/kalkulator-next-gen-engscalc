@@ -66,6 +66,7 @@ import slovnikFn from './functions/slovnik.mjs';
 import controllingFn from './functions/controlling.mjs';
 import controllingExportFn from './functions/controlling_export.mjs';
 import zakazniciFn from './functions/zakaznici.mjs';
+import zakazniciZeZakazekFn from './functions/zakaznici_ze_zakazek.mjs';
 import schvalovaniFn from './functions/schvalovani.mjs';
 import sablonyFn from './functions/sablony.mjs';
 import analytikaFn from './functions/analytika.mjs';
@@ -415,6 +416,23 @@ const MATICE = [
     url: 'http://x/api/zakaznici?klic=12345679',
     proc: 'smazaná karta bere s sebou i dohledané údaje — nevratné, proto jen administrátor',
     prava: JEN_ADMIN },
+
+  /* ZK #755 (24. 11. 2026): hromadné naplnění databáze zákazníků ze zakázek
+   * podle ARES — čte VŠECHNY zakázky a ptá se ARES, proto jen administrátor.
+   * V matici jen volání bez dotazu do ARES (zrušení náhledu, zápis s cizím
+   * id = 409); náhled a zápis hlídá netlify/test_zk_zakaznici_ze_zakazek.mjs. */
+  { fn: zakazniciZeZakazekFn, soubor: 'zakaznici_ze_zakazek.mjs', nazev: 'zákazníci ze zakázek — stav a protokol (GET /api/zakaznici-ze-zakazek)',
+    metoda: 'GET', url: 'http://x/api/zakaznici-ze-zakazek',
+    proc: 'náhled nese firmy ze všech zakázek — jen administrátor',
+    prava: JEN_ADMIN },
+  { fn: zakazniciZeZakazekFn, nazev: 'zákazníci ze zakázek — zrušení náhledu (POST akce=zrusit)',
+    metoda: 'POST', url: 'http://x/api/zakaznici-ze-zakazek', telo: () => ({ akce: 'zrusit' }),
+    proc: 'hromadná akce nad databází zákazníků — jen administrátor',
+    prava: JEN_ADMIN },
+  { fn: zakazniciZeZakazekFn, nazev: 'zákazníci ze zakázek — zápis karet (POST akce=zalozit, cizí id)',
+    metoda: 'POST', url: 'http://x/api/zakaznici-ze-zakazek', telo: () => ({ akce: 'zalozit', id: 'neexistuje' }),
+    proc: 'hromadné založení karet jen administrátor (409 = náhled neexistuje)',
+    prava: { 'nepřihlášený': 401, 'Obchodník': 403, 'Vedoucí': 403, 'Administrátor': 409 } },
 
   { fn: zobrazeni, soubor: 'zobrazeni.mjs', nazev: 'zobrazení — čtení matice (GET /api/zobrazeni)', metoda: 'GET',
     url: 'http://x/api/zobrazeni',

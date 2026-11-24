@@ -329,9 +329,14 @@ function renderInputs() {
        * Prázdné pole = řádek není (příp. ceníková sazba u starých zakázek
        * s uloženými kusy); zaškrtnutí ATYP předvyplní 50 000 Kč. */
       inp('Z.zamecnikAtypKc', { l: 'Zámečník atyp (prázdné = žádný)', step: 1000, u: 'Kč', klic: 'Z.zamecnikAtypKc ← C.atypZamecnikKc (sazba: C.zamecnikAtypKc)' }) +
-      inp('Z.engineeringKs', { type: 'anone', l: 'Engineering' }) +
-      inp('Z.vystupZamereni', { type: 'anone', l: 'Výstup ze zaměření pro zákazníka' }) +
-      statikaOplRadek(rAkt) +
+      /* NOVÁ KALKULACE (ER, J. V. 24. 11. 2026, kalkNova): engineering je
+       * v příplatcích (#757), výstup ze zaměření vždy a statika opláštění podle
+       * opláštění (#761) — přepínače tu zůstávají jen u starých kalkulací. */
+      (kalkNova(Z)
+        ? '<div class="row"><label>Engineering</label><span class="note">v příplatkových položkách (sloupec Nabídka)</span></div>'
+        : inp('Z.engineeringKs', { type: 'anone', l: 'Engineering' }) +
+          inp('Z.vystupZamereni', { type: 'anone', l: 'Výstup ze zaměření pro zákazníka' }) +
+          statikaOplRadek(rAkt)) +
       /* REZERVY v procentech (17. 8. večer): 30 = +30 %. Základ se počítá
        * z celého základu kalkulace, příplatky z příplatků — jako dosud,
        * mění se jen zadávání (v datech zůstává desetinný podíl). */
@@ -514,7 +519,7 @@ function atypPrepni(zap, opts) {
       projekceAtypHod: Math.round(S('atypProjekcePct') * (+Z.projekceZakladHod || 0)),
     };
   }
-  atypHodnoty(Z, vData, zap, predloha);
+  atypHodnoty(Z, vData, zap, predloha, { automat: !!(opts && opts.automat) });
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   render();
 }
@@ -2709,7 +2714,8 @@ function renderOutputs() {
        * (sloupec Nabídka vlevo). Vlastní příplatek zakázky ho nemá — ten
        * v nové zakázce vůbec nevznikne. */
       c += `<td class="admincol">${x.vlastni ? ''
-        : vychoziPolozkaChk(ZOBRAZENI_PRIPLATEK + x.key, true,
+        : vychoziPolozkaChk(ZOBRAZENI_PRIPLATEK + x.key,
+          (typeof zobrazeniPriplatekZaklad === 'function') ? zobrazeniPriplatekZaklad(x.key) : true,
           'zaškrtnuto = příplatek jde v NOVÉ zakázce do cenové nabídky (platí pro všechny); '
           + 'otevřená zakázka se nemění')}</td>`;
     }

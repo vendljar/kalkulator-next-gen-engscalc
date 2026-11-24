@@ -2552,6 +2552,64 @@ PO OPRAVÁCH — N1, N2, N3 (rozhodnutí J. V.), N5–N8 opraveny, N4 zapsáno s
   (kdo smí zakázku načíst, smí ji i uložit — NN B237); úmyslně sestavený požadavek ji obejde. Chrání před starou
   kopií v okně, ne před útočníkem.
 
+## ER — příznak nové kalkulace `kalkVerze` (#757, #758, #761, dávka ER, 24. 11. 2026)
+
+Větev `claude/er-engineering-rezerva`, revize Fable `podklady/revize/REVIZE_ER.md` (větev `claude/revize-er`; SLOUČIT
+po opravách N1, N3, N5, N6 a dorevizi D1). Test `src/test_er_nova_kalkulace.js`, mutace jádra [ER].
+
+- **Server odmítne změnu příznaku uložené varianty a šachty** (revize N3, J. V. 24. 11. 2026): `uloTypyProblemy`
+  porovná `ock.zadani.kalkVerze` i `ock.dalsi[].zadani.kalkVerze` (šachta podle `id`) s uloženou verzí; jiná hodnota
+  → 400 s větou o změně pravidel výpočtu. Platí i pro uloženou ZAMČENOU variantu (dorevize D1: odemčení a změna
+  příznaku v jednom uložení neprojdou). Výjimky: obnova ze zálohy (`obnova`) a první uložení čerstvé kalkulace
+  z Pipedrive (`pdCerstva` v uložené verzi). Tvar příznaku (jen 2) hlídá server u všech šachet.
+- **PŘIJATO (dorevize ER): je to pojistka proti omylu a upravenému klientovi, ne hranice.** Příznak smí nést
+  (a tedy nový výpočet dostat) **nová varianta nebo šachta s novým `id`**, **nová zakázka** a **obnova ze souboru
+  administrátorem** — tam není uložený stav, se kterým porovnávat. Kdo smí zakázku uložit, smí ji takto založit znovu
+  (NN B237); běžné cesty aplikace (klon, duplikát, kopie šachty) příznak jen kopírují. Zamčené (odeslané) nabídky
+  chrání zmrazený výsledek zámku.
+## ZK — zákazníci ze zakázek podle ARES (#755, dávka ZK, 24. 11. 2026)
+
+Větev `claude/zk-zakaznici-ze-zakazek` nad `c89e872`. Testy `netlify/test_zk_zakaznici_ze_zakazek.mjs`,
+`overit_zk_zakaznici.mjs`, matice `test_prava.mjs`, mutace [ZK]. Před sloučením revize Fable.
+
+- **Jen administrátor:** `/api/zakaznici-ze-zakazek` volá `vyzadujRoli(req, 'Administrátor')` pro GET i POST (roli
+  určuje účet, ne cookie; původ požadavku hlídá `prihlaseny`). Náhled nese název, sídlo a IČO firem ze všech zakázek —
+  proto žádná jiná role, ani pro čtení. Kontakty ani jména souborů zakázek klient nedostane; čtou se až při zápisu.
+- **Zápis nevěří klientovi:** karty se zakládají z náhledu uloženého na serveru (`zakaznici_hromadne/zk-navrh`,
+  platí 24 h, id musí souhlasit), u každé položky se znovu přečte zakázka a ověří shoda s uloženým subjektem ARES;
+  existující karta (klíč IČO, nebo karta bez IČO se stejným názvem) se nepřepíše. Strop `ZAKAZNICI_MAX` platí.
+- **ARES:** jen platné IČO (kontrolní číslice), jen IČO bez karty; `aresNacti` (pevná adresa, 3 s, bez přesměrování,
+  strop odpovědi). Nejvýš 10 dotazů na volání s pauzou 400 ms, 600 na jedno kolo náhledu („Zkusit znovu“ = další
+  kolo, pokračuje zbytkem fronty), 1 500 za den (počítadlo `zk-den`). IČO, které nesedělo, se znovu neptá, dokud se
+  nezmění jeho nejnovější zakázka (paměť `zk-nesedi`, nejvýš 30 dní; revize R3).
+- **Zápis po kouscích (revize R1):** nejvýš 100 karet nebo 7 s na volání; protokol vzniká prvním voláním a nese
+  průběžné počty, takže i přerušený zápis nechá stopu (nejvýš o jeden nedokončený kousek pozadu — karta z něj se při
+  opakování pozná podle autora, poznámky a času a započte se jako založená). Propadlý náhled (24 h) se nevydá a smaže
+  (R5); rozpracovaný zápis pak zůstane v protokolu jako „přerušen“.
+- **Čtení karet (revize R2):** náhled ani zápis karty nečtou — existenci pozná z klíčů úložiště (klíč = IČO, bez
+  IČO `n-<název>`); čte se jen karta téhož klíče těsně před zápisem. `GET /api/zakaznici` čte karty souběžně po 16
+  (`ctiVsechny`). Skutečnou dobu seznamu po naplnění změří testovací sezení na testu.
+- **D3 — změna meze (dorevize, k vědomí koordinace):** strop 600 dotazů platí na jedno KOLO náhledu, ne na celý
+  náhled; „Zkusit znovu“ začne další kolo, takže jeden náhled se dá doklikat až do denního stropu 1 500. Denní mez drží.
+- **D1 — karta s neplatným IČO a stejným názvem — PŘIJATO (dorevize):** existence se pozná z klíčů; karta, jejíž IČO
+  neprojde kontrolní číslicí (překlep, klíč = číslice), se nehledá podle názvu, takže vedle ní vznikne karta z ARES
+  (ta je správná). Hledat ji podle názvu by znamenalo číst karty (proti R2). Duplicitu správce smaže ručně.
+- **D2 — paměť „nesedí“ nejde ručně obejít:** po opravě firmy v ARES je potřeba zakázku znovu uložit, jinak IČO vyjde
+  „nesedí“ (s datem ověření) nejvýš 30 dní. Uvedeno v příručce správce.
+- **R6 — novější zakázka mezi náhledem a zápisem — VĚDOMÁ MEZ:** zápis znovu ověří zakázku z náhledu proti subjektu
+  ARES z náhledu (nejvýš 24 h starému), ale neověří, že je pořád nejnovější. Uloží-li mezitím někdo novější zakázku
+  téže firmy s jiným kontaktem, karta dostane kontakt ze starší. Okno nejvýš 24 h; kontakt jde v kartě opravit (autor
+  karty = správce). ARES se při zápisu znovu neptá.
+- **Mez (vědomá):** výhradní úsek `vyhradne('zakaznici/hromadne')` a počítadlo dne jsou čtení–změna–zápis bez
+  podmíněného zápisu — dvě instance funkce (dva správci naráz) se nevidí: náhled jednoho může přepsat náhled druhého
+  (zápis pak skončí 409 a spustí se znovu) a denní strop může přetéct o jedno volání (≤ 10 dotazů). Karty chrání
+  `vyhradne('zakaznici/<klíč>')` a kontrola existence těsně před zápisem (mez jako K7-S1).
+- **R7 — banka a číslo účtu ze zakázky do karty — PŘIJATO (J. V. 24. 11. 2026: ponechat):** ARES je neověřuje; karta
+  je pak předvyplňuje do dalších zakázek. Totéž dělá ruční „Založit z otevřené zakázky“; okruh lidí, kteří údaj vidí,
+  se nemění (zakázky i karty čte každý přihlášený); autor karty je správce, obchodník změnu jen navrhne (B234).
+- **Výjimka ze zálohy — PŘIJATO (J. V. 24. 11. 2026: ponechat, revize R9):** úložiště `zakaznici_hromadne` (náhled, počítadlo, paměť „nesedí“,
+  protokol) se nezálohuje; po obnově zůstane stopa „kdo a kdy“ jen v kartách (autor, čas, poznámka s datem ověření).
+
 ## PO — zápis odeslání nabídky do dealu (#116 CRM-17, dávka PO, 24. 11. 2026)
 
 Větev `claude/po-odeslani-pipedrive` nad `7339a9e`. Poradce Fable navrhl postup; revize před sloučením přes koordinaci.

@@ -225,6 +225,9 @@ const ULOZISTE = {
    * Po obnově začne od nuly (první volání ho zapíše znovu). Výjimka k vědomí J. V. */
   aktivita: 'výjimka: čas poslední aktivity uživatele (#ON), po obnově se zapíše prvním voláním',
   zalohy: 'výjimka: otisky samy, tokeny obnovy',
+  /* ZK #755 (24. 11. 2026): náhled hromadného naplnění zákazníků (24 h), denní počítadlo
+   * dotazů do ARES a protokol hromadných zápisů — provozní stopa. Výjimka k vědomí J. V. */
+  zakaznici_hromadne: 'výjimka: náhled, denní počítadlo ARES a protokol hromadného naplnění zákazníků (ZK #755); karty samy jsou v úložišti zakaznici',
   disk_kopie: 'výjimka: připravený soubor kopie pro skript Apps Script (#577, odvozený z nočního otisku) a počítadla četnosti',
 };
 /* Pevné klíče (literály a konstanty v `zapis(…)`) → úložiště a zda je otisk
@@ -260,6 +263,10 @@ const KLICE = {
   klic_zaznam: ['pripominky_limit', false],        // PR: záznam použití klíče koordinace, ne data
   klic_spravce: ['pripominky_limit', false],       // NN #711: záznam akcí správce s klíčem koordinace, ne data
   pripominky_klic: ['program', 'výjimka: hash klíče koordinace připomínek (PR, B257) — po obnově vydá správce nový'],
+  'zk-navrh': ['zakaznici_hromadne', false],      // ZK #755: náhled hromadného naplnění (24 h), ne data
+  'zk-den': ['zakaznici_hromadne', false],        // ZK #755: denní počítadlo dotazů do ARES, ne data
+  'zk-protokol': ['zakaznici_hromadne', false],   // ZK #755: protokol hromadných zápisů (výjimka k vědomí J. V.)
+  'zk-nesedi': ['zakaznici_hromadne', false],     // ZK revize R3: paměť IČO, která nesedí s ARES (30 dní), ne data
   'a/': ['aktivita', false],                       // #ON: čas poslední aktivity, ne data
   'o/': ['aktivita', false],                       // #ON: čas odhlášení, ne data
 };

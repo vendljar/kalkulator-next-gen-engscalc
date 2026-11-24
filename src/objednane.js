@@ -78,6 +78,8 @@ function objNabidnute(v, jekly) {
   if (vo) {
     const l = (typeof sachtyZ === 'function') ? sachtyZ(v.data && v.data.ock) : [];
     const mapa = new Map();
+    const jednouKlice = (typeof VS_PRIPLATKY_JEDNOU !== 'undefined') ? VS_PRIPLATKY_JEDNOU : require('./vice_sachet.js').VS_PRIPLATKY_JEDNOU;
+    const jednou = (typeof vsPriplatekJednou === 'function') ? vsPriplatekJednou : require('./vice_sachet.js').vsPriplatekJednou;
     vo.sachty.forEach((s, i) => {
       const z = (l[i] && l[i].zadani) || {};
       const vyn = Array.isArray(z.priplatkyVynechat) ? z.priplatkyVynechat : [];
@@ -86,6 +88,12 @@ function objNabidnute(v, jekly) {
         const k = String(p.key);
         if (!mapa.has(k)) mapa.set(k, { key: k, nazev: String(p.nazev || p.key), sMarzi: 0, naklad: 0 });
         const x = mapa.get(k);
+        /* #757: engineering jednou za variantu — tatáž šachta jako v součtu (vsPriplatekJednou). */
+        if (jednouKlice.indexOf(k) >= 0) {
+          const v1 = jednou(vo.sachty.map(t => t.vysl), l.map(t => t && t.zadani), k);
+          x.sMarzi = v1 ? (+v1.radek.sMarzi || 0) : 0; x.naklad = v1 ? (+v1.radek.naklad || 0) : 0;
+          return;
+        }
         x.sMarzi += s.ks * (+p.sMarzi || 0); x.naklad += s.ks * (+p.naklad || 0);
       });
     });

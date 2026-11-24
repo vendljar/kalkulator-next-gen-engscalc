@@ -121,7 +121,33 @@ function rozpocetSachet(T, castky) {
  * ceník → stejná položka se sloučí; vlastní položka s jinou cenou zůstane
  * zvlášť. Popisná pole (název, jednotka, poznámka) ze šachty, kde se řádek
  * objevil poprvé; `vsSachty` = [{ i, ks }] šachty, kterých se řádek týká. */
-const VS_SCITANA_POLE = ['mnozstvi', 'mnozstviAuto', 'naklad', 'marze', 'sMarzi'];
+const VS_SCITANA_POLE = ['mnozstvi', 'mnozstviAuto', 'naklad', 'marze', 'sMarzi', 'rezervaNaklad', 'rezervaSMarzi'];   // rezerva*: #758, jen nová kalkulace
+
+/* PŘÍPLATKY JEDNOU ZA VARIANTU (#757, J. V. 24. 11. 2026): engineering se
+ * u víc šachet a kusů účtuje jednou (1 × C.engineeringKc), ne × ks. Sloučený
+ * řádek nese hodnoty první šachty, která ho má; součet příplatků se o rozdíl
+ * opraví (vsSoucet). Starší kalkulace engineering mezi příplatky nemají. */
+const VS_PRIPLATKY_JEDNOU = ['engineering'];
+/* JEDNO PRAVIDLO PRO VÝBĚR ŠACHTY (revize ER N1): řádek příplatku „jednou za
+ * variantu" se bere z PRVNÍ šachty, která ho má v nabídce (sloupec Nabídka,
+ * `priplatkyVynechat` jejího zadání) — s jejím množstvím, cenou i rezervou;
+ * když ho v nabídce nemá žádná, z první šachty, která ho má. Volá ho součet
+ * (vsSoucet) i objednané příplatky (objNabidnute → SoD, krycí list), ať se
+ * nemůžou rozejít. `vysledky` = výsledky šachet, `zadani` = jejich zadání ve
+ * stejném pořadí. Vrací { radek, i, vNabidce } nebo null. */
+function vsPriplatekJednou(vysledky, zadani, key) {
+  const k = String(key);
+  let prvni = null;
+  for (let i = 0; i < (vysledky || []).length; i++) {
+    const r = ((vysledky[i] && vysledky[i].priplatky) || []).find(p => p && String(p.key) === k);
+    if (!r) continue;
+    const z = (zadani && zadani[i]) || {};
+    const vyn = Array.isArray(z.priplatkyVynechat) ? z.priplatkyVynechat : [];
+    if (vyn.indexOf(k) < 0) return { radek: r, i, vNabidce: true };
+    if (!prvni) prvni = { radek: r, i, vNabidce: false };
+  }
+  return prvni;
+}
 
 function vsNormNazev(t) { return String(t == null ? '' : t).replace(/\s+/g, ' ').trim().toLowerCase(); }
 
@@ -163,14 +189,14 @@ function priplatkySloucene(vysl) {
 }
 
 /* ---------- součet výsledků šachet ---------- */
-function vsSoucetSouhrnu(vys, ksy, cenik) {
+function vsSoucetSouhrnu(vys, ksy, cenik, priplatkyKorekce) {
   const dph = +(cenik && cenik.dph) || 0;
   const S = (fn) => vys.reduce((a, r, i) => a + ksy[i] * (+fn(r) || 0), 0);
   const pred = (r, k, z) => { const x = r.souhrn[k]; return typeof x === 'number' ? x : z(r); };
   const U = S(r => pred(r, 'zakladCenaPredZaokr', x => x.souhrn.zakladNaklad + x.souhrn.zakladMarze));
   const N = S(r => r.souhrn.zakladNaklad);
   const Z = VS_CEIL(U, 1000);                                     // R3: jen na součtu
-  const Pp = S(r => pred(r, 'priplatkyCenaPredZaokr', x => x.souhrn.priplatkyCena));
+  const Pp = S(r => pred(r, 'priplatkyCenaPredZaokr', x => x.souhrn.priplatkyCena)) + (+priplatkyKorekce || 0);
   const P = VS_CEIL(Pp, 1000);
   const souhrn = { zakladNaklad: N, zakladMarze: U - N, zakladCena: Z, zakladDph: Z * dph, zakladSDph: Z * (1 + dph),
     priplatkyCena: P, priplatkyDph: P * dph, priplatkySDph: P * (1 + dph) };
@@ -193,7 +219,7 @@ function vsSoucetSouhrnu(vys, ksy, cenik) {
  * nazvyPolozek — nese součet ZE ŠACHTY 1 (kód, který o šachtách neví, dostane
  * platná data a razítka, např. skloJenSPlochou #572). Kdo popisuje šachtu
  * (specifikace, kontroly, nákres), čte výsledek své šachty `sachty[i].vysl`. */
-function vsSoucet(vys, ksy, cenik) {
+function vsSoucet(vys, ksy, cenik, zadani) {
   const r0 = vys[0];
   const r = Object.assign({}, r0);
   r.sekce = {};
@@ -202,6 +228,16 @@ function vsSoucet(vys, ksy, cenik) {
   klSek.forEach(k => { r.sekce[k] = vsSlucRadky(vys.map(x => (x.sekce || {})[k]), ksy, vsKlicRadku); });
   r.volitelneKatalog = vsSlucRadky(vys.map(x => x.volitelneKatalog), ksy, vsKlicRadku);
   r.priplatky = vsSlucRadky(vys.map(x => x.priplatky), ksy, vsKlicPriplatku);
+  /* #757: příplatek „jednou za variantu" — hodnoty jedné šachty, korekce součtu. */
+  let priplatkyKorekce = 0;
+  r.priplatky.forEach(x => {
+    if (VS_PRIPLATKY_JEDNOU.indexOf(String(x.key)) < 0) return;
+    const vyber = vsPriplatekJednou(vys, zadani, x.key);
+    if (!vyber) return;
+    const jeden = vyber.radek;
+    priplatkyKorekce += (+jeden.sMarzi || 0) - (+x.sMarzi || 0);
+    VS_SCITANA_POLE.forEach(f => { if (typeof jeden[f] === 'number') x[f] = jeden[f]; });
+  });
   const klSou = [];
   vys.forEach(x => Object.keys(x.souctySekci || {}).forEach(k => { if (klSou.indexOf(k) < 0) klSou.push(k); }));
   r.souctySekci = {};
@@ -216,7 +252,7 @@ function vsSoucet(vys, ksy, cenik) {
   ['hodinyNavicCelkem', 'hod1osoba', 'hodCelkem', 'dni'].forEach(f => {
     r.montaz[f] = vys.reduce((a, x, i) => a + ksy[i] * (+(x.montaz || {})[f] || 0), 0);
   });
-  r.souhrn = vsSoucetSouhrnu(vys, ksy, cenik);
+  r.souhrn = vsSoucetSouhrnu(vys, ksy, cenik, priplatkyKorekce);
   return r;
 }
 
@@ -232,7 +268,7 @@ function vypocetZakazkyOck(ock, cenik, jekly) {
   const l = sachtyZ(ock);
   const vys = l.map(s => vypocet(s.zadani, cenik, jekly, ock.fixes));
   const ksy = l.map(s => s.ks);
-  const r = vsSoucet(vys, ksy, cenik);
+  const r = vsSoucet(vys, ksy, cenik, l.map(s => s.zadani));
   const castky = vys.map((x, i) => ksy[i] * (typeof x.souhrn.zakladCenaPredZaokr === 'number'
     ? x.souhrn.zakladCenaPredZaokr : x.souhrn.zakladNaklad + x.souhrn.zakladMarze));
   const rozpis = rozpocetSachet(r.souhrn.zakladCena, castky);
@@ -341,7 +377,7 @@ function vsNazvySachetText(ock) {
 }
 
 if (typeof module !== 'undefined' && module.exports)
-  module.exports = { VS_VARIANT_MAX, VS_KS_MAX, VS_NAZEV_MAX, vsKs, vsDalsi, rezimViceSachet, vsMaData, sachtyZ, vsNazev, vsNazevPreloz, vsNazevL, VS_NAZEV_VYCHOZI, vsPocty,
+  module.exports = { VS_PRIPLATKY_JEDNOU, vsPriplatekJednou, VS_VARIANT_MAX, VS_KS_MAX, VS_NAZEV_MAX, vsKs, vsDalsi, rezimViceSachet, vsMaData, sachtyZ, vsNazev, vsNazevPreloz, vsNazevL, VS_NAZEV_VYCHOZI, vsPocty,
     rozpocetSachet, vsKlicPriplatku, vsKlicRadku, vsSlucRadky, priplatkySloucene, vsSoucetSouhrnu, vsSoucet,
     vypocetZakazkyOck, vypocetOckDat, vsTvarProblemy, vsRozvinZakazku, vsVypnutoHlaska, vsZakazkaMaData, vsNazvySachetText, vsTechspecOk };
 
