@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## (verzi přidělí koordinace) — UT: texty v aplikaci (#741 nápověda Opláštění, #742 popisek práva Pipedrive), test šablon (#743), větev claude/ut-texty
+## v24.11.2 — UT: texty v aplikaci (#741 nápověda Opláštění, #742 popisek práva Pipedrive), test šablon (#743), větev claude/ut-texty
 
 Nad integrací `0fd6410` (v24.11.1). **Cenu ani text dokumentů nemění** (porovnání sestavení proti `origin/test`: viz zpráva koordinaci).
 
