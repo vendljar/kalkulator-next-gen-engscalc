@@ -8,6 +8,34 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v24.11.7 — PT-ZAB #759: překlad hodnoty ZÁBRADLÍ NA PODESTÁCH + hlídač pevných textů, větev claude/rychla-PT-ZAB
+
+Rychlá cesta (vada dokumentu) nad testem `6722ad9` (v24.11.5). **Cena beze změny**; mění se jen text EN/DE/FR
+technické specifikace OCK u interiérové šachty se zaškrtnutým zábradlím.
+
+- **Opraveno:** pole ZÁBRADLÍ NA PODESTÁCH tisklo v anglické, německé i francouzské specifikaci česky
+  „úpravy a napojení stávajícího zábradlí na podestách“ (heslo ve vestavěném slovníku chybělo od srpna; export
+  J. V. NEPRELOZENE_2026-11-24-SPECIFIKACE-EN_24.11.5.csv). Nové heslo se schváleným překladem J. V. 24. 11.:
+  EN „modification and connection of the existing railing at the landings“, DE „Anpassung und Anschluss des
+  bestehenden Geländers an den Podesten“, FR „adaptation et raccordement du garde-corps existant sur les paliers“.
+- **Hlídač (#759):** `src/test_759_pevne_texty_preklad.js` projde celou technickou specifikaci (sekce, popisky,
+  hodnoty polí, poznámky) pro 522 zadání (interiér/exteriér, průchozí, přechodové plechy, každá volitelná položka
+  zapnutá i vypnutá, stříšky, můstky ve všech modelech) a data nabídky OCK pro 21 zakázek (i víc šachet) v EN/DE/FR;
+  nepřeložený pevný text = chyba. Pole, která si jazyk skládají sama, hlídá po částech (sledování překladu #518).
+- **Opraveno i (J. V. 24. 11.):** výčet víc skupin můstků v Modelu 2 se starým ceníkem #354 („1 ks 1600 × 1000 mm,
+  2 ks 1000 × 800 mm (šířka × délka), ocelová konstrukce vč. zábradlí a montáže“), který hlídač našel, zůstával
+  v EN/DE/FR česky — nový vzor ho překládá stejnými slovy jako větu pro jednu skupinu. Výjimky „čeká na J. V.“ nejsou.
+- Pojistka: bez hesla test 4 FAIL, bez vzoru 4 FAIL, s obojím 12 OK; cílené mutace [PTZAB] 2 z 2 chycené.
+## v24.11.7 — K56-I2 #760: smlouva o dílo a objednávka PROJ nesou toho, kdo je tiskne, větev claude/rychla-K56-I2
+
+Rychlá cesta (vada dokumentu, kolo 56) nad testem `6722ad9` (v24.11.5). **Cena beze změny.**
+
+- **Opraveno (rozhodnutí J. V. 24. 11.):** zmrazený snímek zpracovatele ze zámku (#665 / #715 — jméno, funkce,
+  telefon, e-mail a sken podpisu z prvního odeslání) platí **jen pro cenovou nabídku** (CN OCK i PROJ, všechny jazyky,
+  Word i online tisk). Smlouva o dílo (OCK i PROJ, všechny jazyky) a objednávka PROJ („Vystavil“) znovu nesou
+  přihlášeného uživatele, který dokument právě tiskne — jako před #665. Dřív u zamčené varianty tištěné kolegou
+  nesly zpracovatele z prvního odeslání nabídky i se skenem jeho podpisu.
+- Test `src/test_k56i2_tiskar.js` (pojistka: na 6722ad9 7 FAIL, po opravě 26 OK); cílené mutace [K56I2] 4 z 4 chycené.
 ## v24.11.6 — RP: ruční položky kalkulace OCK v nabídce CN a krycím listu (#736, #740), větev claude/rp-rucni-polozky
 
 Nad integrací `d655295`, sloučeno s `0fd6410` (v24.11.1) a `c89e872` (v24.11.5). Rozhodnutí J. V. 23. 11. 2026 (podnět CN-431), prototyp
