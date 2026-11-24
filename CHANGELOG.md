@@ -8,6 +8,36 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## (verzi přidělí koordinace) — PO: odeslání nabídky do dealu v Pipedrive (#116 CRM-17), větev claude/po-odeslani-pipedrive
+
+Nad integrací `7339a9e` (v24.11.6). Rozhodnutí J. V. 24. 11. 2026. Poradce Fable navrhl postup; revize Fable před
+sloučením přes koordinaci. **Cenu kalkulací ani text dokumentů nemění** (porovnání sestavení má dát SHODA).
+Pipedrive jen simulátor — zkouška na dealu TEST až v testovacím sezení se souhlasem J. V.
+
+- **Karta „Odeslání do Pipedrive“ pod lištou odeslané nabídky.** První tisk cenové nabídky (OCK i PROJ, Word i tisk)
+  = odeslání: po uložení zámku na server karta sama ukáže tabulku „Dnes v Pipedrive / Nově“ a zapíše až po
+  potvrzení „Potvrdit a zapsat do Pipedrive“. Tisk nic neblokuje — bez dealu, bez práva, offline nebo s vypnutým
+  `PIPEDRIVE_ZAPIS` karta jen řekne proč. Dotisk sám nic nezapisuje (zápis a přiložení jen tlačítkem).
+- **Co se zapíše:** pole krycího listu podle mapy polí (směr „zápis“, bez polí smlouvy o dílo; zákazník, adresa
+  a kontakty jsou podle mapy z CRM), Číslo nabídky (CN), hodnota dealu = cena odesílané varianty bez DPH
+  (kombinovaná = součet), fáze **jen dopředu** podle pořadí fází v pipeline (Zkontaktováno → Nabídka odeslána;
+  Vyjednávání, Před podpisem, Vyhrané k podpisu SoD se nevracejí; vyhraný deal fázi nemění, ztracený nezapíše nic),
+  poznámka „Nabídka odeslána: …“ (číslo a datum nabídky = datum zámku, odeslané varianty s cenami, šachty,
+  Vypracoval, odkaz na kalkulaci; bez e-mailů a telefonů; jedna na zakázku a deal, opakování ji upraví) a vygenerovaný
+  Word jako soubor k dealu (`CN_<číslo>_<datum>.docx`, nejvýš 4 MB). Stav dealu se nemění nikdy.
+- **Ochrany jako zápis prodeje #597:** právo „Pipedrive: čtení a zápis do vlastních obchodních případů“ + autor / kdo
+  odeslal / vedoucí / administrátor, platná vazba dealu, otisk náhledu (změna dealu mezi náhledem a zápisem → nic se
+  nezapíše), cizí číslo nabídky v dealu zápis zastaví, strop pokusů, časové meze, chyby pevnou větou. Výsledek
+  (údaje / poznámka / soubor) v kartě a protokolu zakázky, každý krok jde zopakovat; po nedoručené odpovědi na nahrání
+  se soubor u dealu dohledá a nepřiloží podruhé.
+- Nové: `POST /api/pd/odeslani` (`netlify/functions/pd_odeslani.mjs`, `netlify/lib/pd_odeslani.mjs`),
+  `src/ui/odeslani_pd_ui.js`; simulátor umí soubory k dealu; `pdZavolej` umí multipart; proměnná
+  `PIPEDRIVE_FAZE_ODESLANO` (volitelná: id nebo název cílové fáze). Datum nabídky do vlastního pole dealu až po založení
+  pole v Pipedrive (#758) — zatím v poznámce.
+- Testy: `netlify/test_po_116_odeslani.mjs` (simulátor), `src/test_po_116_ui.js`, `netlify/test_prava.mjs`; pojistka:
+  nad 7339a9e sady selžou (endpoint ani karta neexistují). Mutace [PO] 27. Meze B279–B281 (pracovní čísla).
+  Otázky J. V. #757–#760 (s doporučením; naprogramováno podle doporučení).
+
 ## v24.11.6 — RP: ruční položky kalkulace OCK v nabídce CN a krycím listu (#736, #740), větev claude/rp-rucni-polozky
 
 Nad integrací `d655295`, sloučeno s `0fd6410` (v24.11.1) a `c89e872` (v24.11.5). Rozhodnutí J. V. 23. 11. 2026 (podnět CN-431), prototyp

@@ -41,6 +41,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/dt-datum-tisku` | (tato dávka) | — | DT #745 #746 datum nabídky = den tisku nad 0fd6410; verzi přidělí koordinace |
 | `claude/pv-pipedrive` | (tato dávka) | v23.11.7 | PV #597 zápis prodeje do dealu + #734 autor = vlastník dealu nad 1280831; revize Fable; verzi přidělí koordinace |
 | `claude/ut-texty` | (tato dávka) | — | UT #741 #742 #743 (#744 čeká na J. V.) nad 0fd6410; verzi přidělí koordinace |
+| `claude/po-odeslani-pipedrive` | (tato dávka) | — | PO #116 odeslání nabídky do dealu (simulátor) nad 7339a9e (v24.11.6); revize Fable přes koordinaci; verzi přidělí koordinace |
 | `claude/r3-pole-wordu` | (tato dávka) | — | R3 #751 zákaz dalších polí Wordu nad 3cab0c5 (v24.11.2); verzi přidělí koordinace |
 
 Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontrola: `python3 nastroje/release_odkaz.py --chybejici`
@@ -97,3 +98,14 @@ Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.)
    sloučených mezitím jdou do `podklady/predavky/2026-11.md`, živý stav sem).
 2. J. V. nahraje skill `testovaci-procedura-kng`; skill `kalkulator-next-gen` zkrátit do 25 kB (návrh S7, mimo repo).
 3. Rychlá cesta K40-N1 do `test` (nad integrací) → J. V. ověří rozdíly cen → do `main` jen na jeho pokyn se sloučením testu.
+
+## Dávka PO — odeslání nabídky do Pipedrive (#116, 24. 11. 2026)
+
+- Větev `claude/po-odeslani-pipedrive` nad `7339a9e`. Poradce Fable navrhl postup (a–h); kód podle něj, odchylky:
+  datum nabídky zatím jen v poznámce (pole v Pipedrive chybí, #758), podklad = odesílaná varianta (#757).
+- Server `POST /api/pd/odeslani` (nahled / zapis / soubor), `lib/pd_odeslani.mjs`; karta `src/ui/odeslani_pd_ui.js`
+  pod lištou zámku; stav `zak.pdOdeslani` jen ze serveru; simulátor umí soubory; `pdZavolej` multipart.
+- Testy: `netlify/test_po_116_odeslani.mjs` 58/58, `src/test_po_116_ui.js` 18/18, `test_prava` 1055/0, mutace [PO] 27
+  (výsledek ve zprávě koordinaci a v commitu), kolo `--bez-mutaci --proti origin/claude/integrace-16-10`.
+- Čeká: revize Fable (koordinace), otázky J. V. #757–#760, pak zkouška na deal TEST (testovací sezení se souhlasem J. V.;
+  ověřit strop souboru Netlify / Pipedrive). Meze B279–B281 v `BEZPECNOST_MEZE.md`.

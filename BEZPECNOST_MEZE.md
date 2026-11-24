@@ -2551,3 +2551,27 @@ PO OPRAVÁCH — N1, N2, N3 (rozhodnutí J. V.), N5–N8 opraveny, N4 zapsáno s
 - **PŘIJATO (dorevize D3): pojistka N3 je ochrana proti omylu, ne bezpečnostní mez.** Čas vazby je v načtené zakázce
   (kdo smí zakázku načíst, smí ji i uložit — NN B237); úmyslně sestavený požadavek ji obejde. Chrání před starou
   kopií v okně, ne před útočníkem.
+
+## PO — zápis odeslání nabídky do dealu (#116 CRM-17, dávka PO, 24. 11. 2026)
+
+Větev `claude/po-odeslani-pipedrive` nad `7339a9e`. Poradce Fable navrhl postup; revize před sloučením přes koordinaci.
+Testy `netlify/test_po_116_odeslani.mjs` (simulátor), `src/test_po_116_ui.js`, `netlify/test_prava.mjs`, mutace [PO].
+Čísla B279–B281 jsou pracovní (přidělí koordinace).
+
+- **Stejná brána jako zápis prodeje (#597):** `POST /api/pd/odeslani` — přihlášení, vlastní původ, právo `crm.pipedrive`,
+  k tomu autor zakázky / kdo nabídku odeslal (`zamek.zpracovatel.email`, snímek serveru z relace #665) / vedoucí /
+  administrátor; deal jen z uložené zakázky a s platnou vazbou (`pd_overeni.mjs`); `PIPEDRIVE_ZAPIS` hlídá zápis
+  dřív, než se sáhne na síť; strop pokusů na deal; časové meze; zápis do téhož dealu jeden po druhém (výhradní úsek).
+  Pole, hodnotu, fázi a text poznámky skládá server z uložené zakázky; stav dealu (status) se neposílá nikdy.
+- **Stav zápisu `zak.pdOdeslani` píše jen server** (`pdOdeslaniDrz`, vzor `pdOrgVitezDrz`): hodnota z prohlížeče se
+  při uložení zahodí, obnova ze souboru ji nepřebírá, kopie zakázky (Duplikovat) ji maže.
+- **B279 — obsah přiloženého Wordu server neověřuje proti nabídce — PŘIJATO (návrh, potvrdí J. V.).** Soubor posílá
+  prohlížeč (Word vzniká v prohlížeči). Server ověří jen tvar docx (zip s `[Content_Types].xml` a `word/document.xml`),
+  velikost (nejvýš 4 MB) a název složí sám (`CN_<číslo>_<datum>.docx`). Oprávněný uživatel s platnou vazbou tak může
+  k vlastnímu dealu přiložit libovolný docx do 4 MB — totéž, co dnes umí ručně v Pipedrive. Stopa: protokol zakázky.
+- **B280 — přiložení souboru není idempotentní na straně Pipedrive — ZÚŽENO.** Files API nemá klíč idempotence.
+  Před nahráním se zapíše stav `zahajeno`; další pokus po nedoručené odpovědi nejdřív vypíše soubory dealu
+  a shodný název + velikost převezme (test „odpověď nedorazila“). Zbývá: soubor nahraný v jiné instanci funkce
+  souběžně s pokusem (výhradní úsek platí jen v instanci) — nanejvýš dvě kopie téhož Wordu u dealu.
+- **B281 — okno mezi čtením dealu a zápisem — PŘIJATO (jako B277).** Otisk náhledu nese `update_time`, PATCH jde jen
+  se změněnými poli.
