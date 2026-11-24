@@ -10,6 +10,7 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
+| 24. 11. 2026 | K56-I2 (#760): snímek zpracovatele ze zámku (#665/#715: jméno, kontakty, sken podpisu z prvního odeslání) platí JEN pro cenovou nabídku (CN OCK i PROJ, všechny jazyky, Word i online tisk); smlouva o dílo (OCK, PROJ) a objednávka PROJ („Vystavil“) nesou toho, kdo dokument právě tiskne (chování před #665) | smlouva o dílo, objednávka PROJ, blok Vypracoval |
 | 24. 11. 2026 | K54-N1 N3: zakázat přepsání čerstvé kalkulace z Pipedrive (`pdCerstva`) starou kopií — server odmítne 409 „Kalkulaci mezitím znovu založil Pipedrive — otevřete ji ze Seznamu / odkazem z dealu; vaše kopie se neuložila.“; řádné první uložení čerstvé projde | ukládání online, webhook Pipedrive |
 | 24. 11. 2026 | K54-N1 (#750): smazaná otevřená kalkulace se hned zavře (prázdná Nová zakázka) s hláškou „Kalkulace <číslo> byla smazána.“; server odmítne (409) uložení kalkulace, která na serveru už neexistuje | Seznam zakázek, ukládání online |
 | 24. 11. 2026 | PV O1: vlastník dealu jako autor kalkulace založené webhookem má práva autora (zrušit vazbu na deal, změnit deal zakázky, opravit firmu); „V pořádku“ dál jen administrátor. O2 (právo pro zápis prodeje) — vysvětlení vyžádáno. | #597, #734; BEZPECNOST_MEZE oddíl PV |

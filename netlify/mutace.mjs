@@ -137,6 +137,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      '../src/test_550_zahr_mustky.js',
      /* #551 (2. 11. 2026, K37-I2): „IČ:" v cizojazyčné patičce — rychlá sada. */
      '../src/test_551_ic_preklad.js',
+     /* [K56I2] (24. 11. 2026): SoD a objednávka PROJ nesou tiskaře, snímek zámku jen CN — rychlá sada. */
+     '../src/test_k56i2_tiskar.js',
      /* PB #547 (2. 11. 2026): Prodáno nad odeslanou nabídkou bez klonu — rychlé sady. */
      '../src/test_prodano_zamek.js', 'test_prodano_zamek.mjs',
      /* PR #563 (4. 11. 2026): prodaná varianta je vždy řídící — rychlé sady. */
@@ -2389,6 +2391,24 @@ const MUTACE = [
     hledej: "firmaPaticka(f, P) : '') || h('nazev');   // #551",
     nahrad: "firmaPaticka(f) : '') || h('nazev');   // #551",
     proc: 'náhled cizojazyčné nabídky by ukazoval české „IČ:"' },
+  /* ---------- [K56I2] (24. 11. 2026, kolo 56): snímek zpracovatele ze zámku jen pro CN.
+   * Hlídá ../src/test_k56i2_tiskar.js. ---------- */
+  { nazev: '[K56I2] SoD OCK nese snímek zámku místo tiskaře', soubor: '../src/sod.js',
+    hledej: "  const d = nabidkaData(zak, varianta, jekly, lang, undefined, { zive: true });   // Z1: SoD nese živé podmínky a DPH\n  sodTiskne(d);",
+    nahrad: "  const d = nabidkaData(zak, varianta, jekly, lang, undefined, { zive: true });   // Z1: SoD nese živé podmínky a DPH",
+    proc: 'smlouva o dílo OCK by nesla zpracovatele z prvního odeslání nabídky, ne toho, kdo ji tiskne' },
+  { nazev: '[K56I2] SoD PROJ nese snímek zámku místo tiskaře', soubor: '../src/sod.js',
+    hledej: "  const d = nabidkaProjData(zak, varianta, lang, { slevaZvlast: false, zive: true });   // Z1: živé podmínky a DPH\n  sodTiskne(d);",
+    nahrad: "  const d = nabidkaProjData(zak, varianta, lang, { slevaZvlast: false, zive: true });   // Z1: živé podmínky a DPH",
+    proc: 'smlouva o dílo PROJ by nesla zpracovatele z prvního odeslání nabídky' },
+  { nazev: '[K56I2] objednávka PROJ: Vystavil ze snímku zámku', soubor: '../src/objednavka_proj.js',
+    hledej: "  if (typeof zpracovatelTiskneDoklad === 'function') zpracovatelTiskneDoklad(d);",
+    nahrad: "",
+    proc: '„Vystavil" objednávky PROJ by nesl zpracovatele nabídky, ne tiskaře' },
+  { nazev: '[K56I2] přepis tiskařem nechá sken podpisu ze zámku', soubor: '../src/zpracovatel.js',
+    hledej: "    delete d.obrazky.ZPRAC_PODPIS;\n    Object.assign(d.obrazky, zpracovatelObrazky());",
+    nahrad: "    Object.assign(d.obrazky, {});",
+    proc: 'pod jméno tiskaře by se ve smlouvě vložil zmrazený sken původního zpracovatele' },
   /* ---------- [K50N1] (19. 11. 2026, kolo 50): statika opláštění v zahraniční řadě.
    * Hlídají test_k50n1_statika_zahr.mjs (B112, zámek) a ../src/test_k50n1_statika_zahr.js. ---------- */
   { nazev: '[K50N1] server: zahraniční řada nechá tuzemskou statiku opláštění', soubor: '../src/cenik_rady.js',

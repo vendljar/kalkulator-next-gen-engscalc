@@ -85,6 +85,15 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 - Po nasazení do testu J. V.: smazat otevřenou → prázdná Nová zakázka, Ctrl+Z nic nevrátí; druhá karta → „byla
   mezitím smazána“; webhook po smazání → nová čerstvá; stará kopie nad ní → „znovu založil Pipedrive“.
 
+## Rychlá oprava K56-I2 (`claude/rychla-K56-I2`, 24. 11. 2026)
+
+- Nad testem `6722ad9` (v24.11.5), #760 (kolo 56), verzi přidělí koordinace. Rozhodnutí J. V. 24. 11.: snímek
+  zpracovatele ze zámku (#665/#715) jen pro CN; SoD OCK/PROJ a objednávka PROJ = kdo právě tiskne.
+- `src/zpracovatel.js` `zpracovatelTiskneDoklad` (ZPRAC_*, FIRMA_ZPRACOVAL*, sken) — volá `sodData`, `sodProjData`
+  (`sodTiskne`) a `objednavkaProjData`. CN beze změny.
+- Test `src/test_k56i2_tiskar.js`: 6722ad9 7 FAIL, po 26 OK; mutace [K56I2] 4/4. Kolo viz zpráva koordinaci.
+- Po nasazení do testu J. V.: zamčená varianta, SoD/objednávku vytiskne kolega → jeho jméno a podpis; CN dál původní.
+
 ## Čeká na J. V.
 
 Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.). Od S6 je zdrojem evidence

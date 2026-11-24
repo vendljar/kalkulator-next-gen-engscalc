@@ -8,6 +8,17 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## (verzi přidělí koordinace) — K56-I2 #760: smlouva o dílo a objednávka PROJ nesou toho, kdo je tiskne, větev claude/rychla-K56-I2
+
+Rychlá cesta (vada dokumentu, kolo 56) nad testem `6722ad9` (v24.11.5). **Cena beze změny.**
+
+- **Opraveno (rozhodnutí J. V. 24. 11.):** zmrazený snímek zpracovatele ze zámku (#665 / #715 — jméno, funkce,
+  telefon, e-mail a sken podpisu z prvního odeslání) platí **jen pro cenovou nabídku** (CN OCK i PROJ, všechny jazyky,
+  Word i online tisk). Smlouva o dílo (OCK i PROJ, všechny jazyky) a objednávka PROJ („Vystavil“) znovu nesou
+  přihlášeného uživatele, který dokument právě tiskne — jako před #665. Dřív u zamčené varianty tištěné kolegou
+  nesly zpracovatele z prvního odeslání nabídky i se skenem jeho podpisu.
+- Test `src/test_k56i2_tiskar.js` (pojistka: na 6722ad9 7 FAIL, po opravě 26 OK); cílené mutace [K56I2] 4 z 4 chycené.
+
 ## v24.11.5 — K54-N1 #750: smazaná otevřená kalkulace se zavře a uložením nevzkřísí, větev claude/rychla-K54-N1
 
 Rychlá cesta nad integrací `0fd6410` (= test, v24.11.1). **Ceník ani sazby nemění** (porovnání sestavení: SHODA);

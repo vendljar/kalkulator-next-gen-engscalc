@@ -204,11 +204,18 @@ function sodJazykZabrana(typ, L, maMutaci, podilCestiny) {
     + '; do té doby zvolte u tlačítka Jazyk tisku „česky".';
 }
 
+/* K56-I2 (J. V. 24. 11. 2026): blok zpracovatele smlouvy = přihlášený, kdo
+ * smlouvu tiskne; snímek zámku (#665) platí jen pro cenovou nabídku. */
+function sodTiskne(d) {
+  return (typeof zpracovatelTiskneDoklad === 'function') ? zpracovatelTiskneDoklad(d) : d;
+}
+
 /* SoD realizace (OCK) — stejná data jako nabídka OCK, jiné jméno souboru. */
 function sodData(zak, varianta, jekly, lang, sablona) {
   const zabranaDph = sodDphZabrana(zak, varianta);   // B189: bez režimu DPH smlouva nevznikne
   if (zabranaDph) throw new Error(zabranaDph);
   const d = nabidkaData(zak, varianta, jekly, lang, undefined, { zive: true });   // Z1: SoD nese živé podmínky a DPH
+  sodTiskne(d);   // K56-I2: smlouvu nese ten, kdo ji tiskne (snímek zámku jen pro nabídku)
   const L = d.jazyk || 'cz';
   /* Objednané příplatky (#447 C6) — cena díla = nabídka + objednané. */
   const objPryc = sodObjednaneSymboly(d, zak, varianta, jekly, L, sablona);
@@ -558,6 +565,7 @@ function sodProjData(zak, varianta, lang, sablona) {
   /* Smlouva nese cenu díla: činnosti po slevě, ať se sečtou na cenu, kterou
    * objednatel platí (řádek slevy smlouva nemá). */
   const d = nabidkaProjData(zak, varianta, lang, { slevaZvlast: false, zive: true });   // Z1: živé podmínky a DPH
+  sodTiskne(d);   // K56-I2: smlouvu nese ten, kdo ji tiskne (snímek zámku jen pro nabídku)
   /* Bloky studie jsou bloky NABÍDKY PROJ v7 (D1) — smlouva má vlastní seznam
    * (sodProjRozsah); cizí jméno by u šablony SoD v4 zastavilo dokument. */
   d.blokyPryc = [];

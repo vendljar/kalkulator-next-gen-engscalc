@@ -113,6 +113,23 @@ function zpracovatelObrazky(varianta) {
   return z && z.podpis ? { ZPRAC_PODPIS: z.podpis } : {};
 }
 
+/* K56-I2 (rozhodnutí J. V. 24. 11. 2026): snímek zpracovatele ze zámku (#665,
+ * RJ — jméno, kontakty i sken podpisu z prvního odeslání) platí JEN pro
+ * cenovou nabídku (CN OCK i PROJ). Smlouva o dílo (OCK i PROJ) a objednávka
+ * PROJ („Vystavil") nesou toho, kdo dokument PRÁVĚ TISKNE — přihlášeného
+ * zpracovatele, jako před #665. Buildery smluv a objednávky stojí nad
+ * nabidkaData / nabidkaProjData, proto se ZPRAC_*, FIRMA_ZPRACOVAL* a sken
+ * podpisu v jejich datech přepíšou tady (bez varianty = aktuální uživatel). */
+function zpracovatelTiskneDoklad(d) {
+  if (!d || typeof d !== 'object') return d;
+  if (d.placeholders) Object.assign(d.placeholders, zpracovatelPlaceholders(null));
+  if (d.obrazky && typeof d.obrazky === 'object') {
+    delete d.obrazky.ZPRAC_PODPIS;
+    Object.assign(d.obrazky, zpracovatelObrazky());
+  }
+  return d;
+}
+
 /* ---------- předvyplnění krycího listu ----------
  * Krycí list má pole „Jméno obchodníka“ a „Nabídku vypracoval“. Dřív se braly
  * z Nastavení → Firma, protože aplikace přihlášeného uživatele neznala.
@@ -127,6 +144,6 @@ function zpracovatelKontaktProKryci(f) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { zpracovatelAktualni, zpracovatelJmeno, zpracovatelPlaceholders, zpracovatelZeZamku,
+  module.exports = { zpracovatelAktualni, zpracovatelJmeno, zpracovatelPlaceholders, zpracovatelZeZamku, zpracovatelTiskneDoklad,
     zpracovatelPodpisPriprav, zpracovatelPodpisZamkuUloz, ZPRAC_PODPISY_ZAMKU,
     zpracovatelObrazky, zpracovatelJmenoProKryci, zpracovatelKontaktProKryci };

@@ -95,6 +95,9 @@ function objednavkaProjRozsahy(bloky) {
 function objednavkaProjData(zak, varianta, moznosti) {
   const m = moznosti || {};
   const d = nabidkaProjData(zak, varianta, 'cz');
+  /* K56-I2 (J. V. 24. 11. 2026): „Vystavil" = kdo objednávku PRÁVĚ TISKNE
+   * (přihlášený zpracovatel); snímek zámku (#665) platí jen pro nabídku. */
+  if (typeof zpracovatelTiskneDoklad === 'function') zpracovatelTiskneDoklad(d);
   const p = d.placeholders;
   const cisloNabidky = p.CISLO_NABIDKY;
   const cislo = objednavkaProjCislo(cisloNabidky);
@@ -169,7 +172,7 @@ function objednavkaProjData(zak, varianta, moznosti) {
    * (J. V. 19. 11. 2026, #689 bod 2); prázdné = řádek se netiskne. */
   const kl = (varianta && varianta.data && varianta.data.kryciProj && varianta.data.kryciProj.hodnoty) || {};
   const cisloZakazky = t(kl.cisloZakazky);
-  /* Vystavil = zpracovatel nabídky (přihlášený uživatel, Můj profil). */
+  /* Vystavil = přihlášený uživatel, který objednávku tiskne (Můj profil; K56-I2). */
   const vystavil = [t(p.ZPRAC_JMENO), t(p.ZPRAC_TEL), t(p.ZPRAC_EMAIL)].filter(Boolean).join(', ');
 
   /* Platební kalendář z plánu plateb (tytéž splátky jako SoD PROJ, ceny po slevě,
