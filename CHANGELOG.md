@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## (verzi přidělí koordinace) — PT-ZAB #759: překlad hodnoty ZÁBRADLÍ NA PODESTÁCH + hlídač pevných textů, větev claude/rychla-PT-ZAB
+## v24.11.7 — PT-ZAB #759: překlad hodnoty ZÁBRADLÍ NA PODESTÁCH + hlídač pevných textů, větev claude/rychla-PT-ZAB
 
 Rychlá cesta (vada dokumentu) nad testem `6722ad9` (v24.11.5). **Cena beze změny**; mění se jen text EN/DE/FR
 technické specifikace OCK u interiérové šachty se zaškrtnutým zábradlím.
@@ -26,6 +26,16 @@ technické specifikace OCK u interiérové šachty se zaškrtnutým zábradlím.
   2 ks 1000 × 800 mm (šířka × délka), ocelová konstrukce vč. zábradlí a montáže“), který hlídač našel, zůstával
   v EN/DE/FR česky — nový vzor ho překládá stejnými slovy jako větu pro jednu skupinu. Výjimky „čeká na J. V.“ nejsou.
 - Pojistka: bez hesla test 4 FAIL, bez vzoru 4 FAIL, s obojím 12 OK; cílené mutace [PTZAB] 2 z 2 chycené.
+## v24.11.7 — K56-I2 #760: smlouva o dílo a objednávka PROJ nesou toho, kdo je tiskne, větev claude/rychla-K56-I2
+
+Rychlá cesta (vada dokumentu, kolo 56) nad testem `6722ad9` (v24.11.5). **Cena beze změny.**
+
+- **Opraveno (rozhodnutí J. V. 24. 11.):** zmrazený snímek zpracovatele ze zámku (#665 / #715 — jméno, funkce,
+  telefon, e-mail a sken podpisu z prvního odeslání) platí **jen pro cenovou nabídku** (CN OCK i PROJ, všechny jazyky,
+  Word i online tisk). Smlouva o dílo (OCK i PROJ, všechny jazyky) a objednávka PROJ („Vystavil“) znovu nesou
+  přihlášeného uživatele, který dokument právě tiskne — jako před #665. Dřív u zamčené varianty tištěné kolegou
+  nesly zpracovatele z prvního odeslání nabídky i se skenem jeho podpisu.
+- Test `src/test_k56i2_tiskar.js` (pojistka: na 6722ad9 7 FAIL, po opravě 26 OK); cílené mutace [K56I2] 4 z 4 chycené.
 
 ## v24.11.5 — K54-N1 #750: smazaná otevřená kalkulace se zavře a uložením nevzkřísí, větev claude/rychla-K54-N1
 

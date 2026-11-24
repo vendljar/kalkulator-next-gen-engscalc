@@ -71,34 +71,6 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 - **#738:** sady bz/cn/nn/ra červené 00–01 Praha (datum prodeje v UTC). `netlify/pomoc_den.mjs` (dnesPraha),
   `netlify/pomoc_falesne_hodiny.mjs`, hlídka `test_mt2_pulnoc.mjs`; před 8 FAIL, po 16 OK. Klient bere `objDnes()` — v aplikaci vada není.
 
-## Rychlá oprava K54-N1 (`claude/rychla-K54-N1`, 24. 11. 2026)
-
-- Nad integrací `0fd6410` (= test, v24.11.1), #750, předběžně v24.11.2 (verzi přidělí koordinace). Nález kola 54
-  (CN-432): smazaná otevřená kalkulace zůstala otevřená, první uložení ji založilo znovu, webhook ji jen aktualizoval.
-- Klient: `onlineSmazVybrane` zavře opravdu smazanou otevřenou (`zakNovaZakazkaProved({bezPrepnuti})`), zahodí
-  Zpět/Znovu a zálohu smazané (`historieZapomen`, revize N1/N2), předem to řekne v potvrzení (N6), zruší autosave
-  a počká na uložení (N7); `onlineUloz` posílá `ocekavanySoubor`, po 409 `smazana`/`pdCerstvaJina` neukládá (N5).
-- Server `zakazky.mjs`: neleží-li nic pod jménem a tělo nese razítko + `ocekavanySoubor` = jméno → 409 `smazana`.
-  N3 (J. V. 24. 11.): záznam s `pdCerstva` uloží jen okno s toutéž `pdVazbaWebhook.kdy` (dorevize D1/D2); jinak → 409.
-- Testy: `netlify/test_k54n1_smazana.mjs` 30 OK, `src/test_k54n1_smazani_ui.js` 34 OK (pojistky v CHANGELOG),
-  mutace [K54N1] a kolo viz zpráva koordinaci. N4 v BEZPECNOST_MEZE. Revize i dorevize Fable `claude/revize-k54n1` (D1–D4 opraveny) → čeká druhá dorevize.
-- Po nasazení do testu J. V.: smazat otevřenou → prázdná Nová zakázka, Ctrl+Z nic nevrátí; druhá karta → „byla
-  mezitím smazána“; webhook po smazání → nová čerstvá; stará kopie nad ní → „znovu založil Pipedrive“.
-
-## Rychlá oprava PT-ZAB (`claude/rychla-PT-ZAB`, 24. 11. 2026)
-
-- Nad testem `6722ad9` (v24.11.5), #759 (alias PT-ZAB), verzi přidělí koordinace. Vada dokumentu z exportu J. V.
-  NEPRELOZENE_2026-11-24-SPECIFIKACE-EN_24.11.5.csv: hodnota ZÁBRADLÍ NA PODESTÁCH (interiér + zábradlí)
-  „úpravy a napojení stávajícího zábradlí na podestách“ chyběla ve slovníku → EN/DE/FR specifikace česky.
-- `src/preklad.js`: heslo se schváleným překladem J. V. 24. 11. (EN/DE/FR). Cena beze změny.
-- Hlídač `src/test_759_pevne_texty_preklad.js`: specifikace (522 zadání) + nabídka OCK (21 zakázek, víc šachet,
-  můstky) × EN/DE/FR; sledování `tr` hlídá i části polí `jazykSam`. Pojistka: bez hesla 4 FAIL, po 8 OK.
-- Výčet víc skupin můstků (Model 2 + ceník #354) schválil J. V. 24. 11. → vzor v `PREKLAD_VZORY`; výjimky v testu nejsou.
-- Kolo 1 (jen heslo): `--bez-mutaci --proti origin/test` VŠE ZELENÉ (538/0, hodiny 437/0, statické 12/12, S3 SHODA).
-- Kolo 2 (+ vzor): `--jen build,sady,staticke,porovnani` VŠE ZELENÉ (538/0, 12/12); S3 2 očekávané rozdíly
-  `scenar:skladebne-2` (EN TS_MUSTKY) → `podklady/porovnani/ocekavane_pt-zab_2026-11-24.txt`; zlaté otisky VS
-  (4 hodnoty) přegenerovány. Mutace [PTZAB] 2/2.
-
 ## Čeká na J. V.
 
 Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.). Od S6 je zdrojem evidence
