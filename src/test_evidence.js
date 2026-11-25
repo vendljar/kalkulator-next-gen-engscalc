@@ -241,6 +241,12 @@ test('novinky: neznámá verze → kód 2', r.status === 2, r.stdout);
 const NOV = path.join(dir, 'NOVINKY.md');
 r = novinky('2.1.1', '5.1.1', '--zapsat', '--vystup', NOV);
 test('novinky --zapsat vyrobí soubor', r.status === 0 && fs.existsSync(NOV), r.stdout);
+/* Revize koordinace S2 (G1-T1): dočasná značka dávky v hotové položce → chyba novinky.py i release --od */
+const RMG = path.join(dir, 'roadmap_g1.json');
+fs.writeFileSync(RMG, JSON.stringify({ meta: {}, polozky: dbN.polozky.concat([{ id: '46', stav: 'hotovo', typ: 'ukol', verze: 'G1', nazev: 'Dávka bez čísla' }]) }));
+r = py([NOVINKY, '--changelog', CL, '--roadmapa', RMG, '2.1.1', '5.1.1']);
+test('novinky: dočasná značka „G1“ → kód 2 a „přepsat značku dávky na číslo verze“',
+  r.status === 2 && /přepsat značku dávky na číslo verze/.test(r.stdout) && /#46 \(G1\)/.test(r.stdout), r.stdout + r.stderr);
 
 /* ---------------- release_odkaz.py z téhož textu ---------------- */
 const rel = (...a) => py([RELEASE, '--changelog', CL, ...a], { KNG_TAGY: '', KNG_VERZE_MAIN: '' });
@@ -260,6 +266,10 @@ r = rel('5.1.1', 'a'.repeat(40), '--od', '3.1.1');
 let body = '';
 try { body = new URL(r.stdout.trim()).searchParams.get('body') || ''; } catch (e) { /* níž */ }
 test('release --od: odkaz nese novinky v `body`', /Pro uživatele/.test(body) && /Přehled stavu/.test(body), r.stdout + r.stderr);
+fs.copyFileSync(RMG, path.join(dir, 'roadmapa', 'roadmap.json'));
+r = rel('5.1.1', '--jen-text', '--od', '3.1.1');
+test('release --od: dočasná značka „G1“ v roadmapě → kód 2, přepsat značku', r.status === 2 && /přepsat značku dávky na číslo verze/.test(r.stdout), r.stdout + r.stderr);
+fs.copyFileSync(RMN, path.join(dir, 'roadmapa', 'roadmap.json'));
 
 /* ---------------- archiv hotových položek (#642, 22. 11. 2026) ----------------
  * `--archivuj` přesune hotové položky dokončené před víc než 60 dny do

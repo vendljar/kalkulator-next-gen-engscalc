@@ -150,6 +150,29 @@ const CT = '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.o
     test('D #754 cp:lastModifiedBy = ENGINEERS CZ s.r.o.', core.includes('<cp:lastModifiedBy>ENGINEERS CZ s.r.o.</cp:lastModifiedBy>') && !core.includes('Upravil'), core);
     test('D #754 ostatní vlastnosti beze změny (title, revision)', core.includes('<dc:title>Nabídka</dc:title>') && core.includes('<cp:revision>7</cp:revision>'), core);
     test('D #754 text dokumentu vyplněn jako dřív', dec.decode(vyst.find(p => p.nazev === 'word/document.xml').data).includes('Cena 100'));
+    /* Revize koordinace S1: CN v18 má i docProps/core0.xml (záznam v [Content_Types].xml a vztah v _rels/.rels) */
+    const CT2 = '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+      + '<Default Extension="xml" ContentType="application/xml"/>'
+      + '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>'
+      + '<Override PartName="/docProps/core0.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>'
+      + "<Override ContentType='application/vnd.openxmlformats-package.core-properties+xml' PartName='/docProps/jenTypy.xml'/></Types>";
+    const RELS = '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+      + '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
+      + '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>'
+      + '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core0.xml"/>'
+      + "<Relationship Id='rId4' Type='http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties' Target='/meta/vlastnosti.xml'/></Relationships>";
+    const sab2 = await bajty(zipZapis([{ nazev: '[Content_Types].xml', data: enc.encode(CT2) }, { nazev: '_rels/.rels', data: enc.encode(RELS) },
+      { nazev: 'docProps/core.xml', data: enc.encode(CORE_XML) }, { nazev: 'docProps/core0.xml', data: enc.encode(CORE_XML) },
+      { nazev: 'meta/vlastnosti.xml', data: enc.encode(CORE_XML) }, { nazev: 'docProps/jenTypy.xml', data: enc.encode(CORE_XML) }, { nazev: 'docProps/app.xml', data: enc.encode('<Properties><dc:creator>Jiny Prvek</dc:creator></Properties>') },
+      { nazev: 'word/document.xml', data: enc.encode(DOC) }]));
+    const vyst2 = await zipPrecti(await bajty(await docxVyplnSablonu(sab2.buffer, { CENA: '100' }, [], {}, {})));
+    const cast = n => dec.decode(vyst2.find(p => p.nazev === n).data);
+    const firma = x => x.includes('<dc:creator>ENGINEERS CZ s.r.o.</dc:creator>') && x.includes('<cp:lastModifiedBy>ENGINEERS CZ s.r.o.</cp:lastModifiedBy>');
+    test('D S1 druhá část vlastností docProps/core0.xml (CN v18) přepsána', firma(cast('docProps/core0.xml')), cast('docProps/core0.xml'));
+    test('D S1 část jen podle [Content_Types].xml (docProps/jenTypy.xml) přepsána', firma(cast('docProps/jenTypy.xml')), cast('docProps/jenTypy.xml'));
+    test('D S1 část jen podle vztahu v _rels/.rels (/meta/vlastnosti.xml) přepsána', firma(cast('meta/vlastnosti.xml')), cast('meta/vlastnosti.xml'));
+    test('D S1 docProps/core.xml dál přepsána, jiná část (app.xml) beze změny',
+      firma(cast('docProps/core.xml')) && cast('docProps/app.xml').includes('Jiny Prvek'));
     const fn = typeof docxVlastnostiAutorXml === 'function' ? docxVlastnostiAutorXml : x => x;
     test('D #754 prázdný prvek (<cp:lastModifiedBy/>) dostane firmu',
       fn('<cp:lastModifiedBy/><dc:creator xml:lang="cs">x</dc:creator>') === '<cp:lastModifiedBy>ENGINEERS CZ s.r.o.</cp:lastModifiedBy><dc:creator xml:lang="cs">ENGINEERS CZ s.r.o.</dc:creator>');

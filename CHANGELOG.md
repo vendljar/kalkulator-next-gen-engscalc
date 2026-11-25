@@ -27,7 +27,12 @@ Nad integrací `9776c346`. **Cenu kalkulací ani text dokumentů nemění**; jed
   záznamy ZIP64) — jinak cizí adresář vidí Python i unzip, kontrola ne; F2 jméno lokální hlavičky se porovnává po bajtech
   (dva neplatné bajty UTF-8 se dekódovaly na totéž U+FFFD); F6 testy DEFLATE, data descriptor, komentář, bajty za koncem,
   ZIP64, UTF-32 LE s BOM a přepis ceny řádku. F3, F4, F5, F7 návrhy pro koordinaci (zpráva).
-- Testy: `src/test_g1_uklid.js` 35/0 (pojistka: nad 9776c346 15 FAIL, nad opravou bez F1/F2 2 FAIL); mutace `[G1]` 18/18, `[SA]` 23/23.
+- Revize koordinace (`origin/claude/revize-g1`, REVIZE_G1.md): S1 #754 přepisuje KAŽDOU část vlastností dokumentu
+  (typ core-properties v `[Content_Types].xml`, vztah core-properties v `_rels/.rels`, vždy `docProps/core.xml`) — CN v18
+  má i `docProps/core0.xml` se jmény osob; S2 `nastroje/novinky.py` (a tím `release_odkaz.py --od`) na hotovou položku
+  s dočasnou značkou dávky skončí chybou „přepsat značku dávky na číslo verze“. N1 (Company, dc:title) čeká na J. V.
+- Testy: `src/test_g1_uklid.js` 39/0 (pojistky: nad 9776c346 15 FAIL, bez F1/F2 2 FAIL, bez S1 3 FAIL); `test_evidence.js` 71/0
+  (bez S2 2 FAIL); mutace `[G1]` 21/21, `[SA]` 23/23.
   Porovnání sestavení čte jen `word/document.xml` — vlastnosti souboru nevidí (`podklady/porovnani/ocekavane_g1_2026-11-25.txt`).
 
 ## v25.11.2 — K56-D: doplnění porovnání sestavení (jen nástroje kola), větev claude/k56-porovnani

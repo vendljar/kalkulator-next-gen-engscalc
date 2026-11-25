@@ -67,7 +67,18 @@ def je_oprava(p):
     return bool(RE_OPRAVA.search(str(p.get('nazev', ''))))
 
 
+def docasne_znacky(db):
+    """Hotové položky s dočasnou značkou dávky místo verze (svěřené G1-T1)."""
+    return ['#%s (%s)' % (p.get('id'), p.get('verze')) for p in db.get('polozky', [])
+            if p.get('stav') == 'hotovo' and rm.RE_VERZE_DAVKA.match(str(p.get('verze') or ''))]
+
+
 def radky(changelog_text, db, od, do):
+    # Revize koordinace S2 (25. 11. 2026): položka s dočasnou značkou („G1“) by do
+    # NOVINEK ani popisu releasu tiše nepatřila — proto chyba, ne vynechání.
+    znacky = docasne_znacky(db)
+    if znacky:
+        raise ValueError('přepsat značku dávky na číslo verze v roadmapě: ' + ', '.join(znacky))
     verze = {'v' + v for v in rozsah(changelog_text, od, do)}
     hotove = [p for p in db.get('polozky', []) if p.get('stav') == 'hotovo' and rm.verze(p) in verze]
     vaha = {'vysoka': 0, 'stredni': 1, 'nizka': 2}

@@ -1493,10 +1493,42 @@ function docxVlastnostiAutorXml(xml, autor) {
   return String(xml).replace(/<((?:[^\s<>\/=:]+:)?(creator|lastModifiedBy))((?:\s[^>]*?)?)(?:\/>|>[\s\S]*?<\/\1\s*>)/g,
     (_m, jmeno, _mistni, attr) => '<' + jmeno + attr.replace(/\s+$/, '') + '>' + hodnota + '</' + jmeno + '>');
 }
+/* Revize koordinace S1 (25. 11. 2026): šablona CN v18 nese vedle
+ * docProps/core.xml ještě docProps/core0.xml (druhý vztah core-properties
+ * v _rels/.rels, druhý záznam v [Content_Types].xml) se jmény osob. Přepisuje
+ * se proto KAŽDÁ část vlastností: typ obsahu core-properties v
+ * [Content_Types].xml (Override PartName), cíl vztahu core-properties
+ * v _rels/.rels a vždy docProps/core.xml. */
+const DOCX_CORE_TYP = /^application\/vnd\.openxmlformats-package\.core-properties\+xml$/i;
+const DOCX_CORE_VZTAH = /\/metadata\/core-properties$/i;
+function docxCastiVlastnosti(polozky) {
+  const dek = new TextDecoder();
+  const casti = new Set(['docprops/core.xml']);
+  const norm = c => String(c).trim().replace(/^\/+/, '').toLowerCase();
+  const atr = (znacka, jm) => { const m = new RegExp('\\s' + jm + '\\s*=\\s*("([^"]*)"|\'([^\']*)\')').exec(znacka); return m ? (m[2] != null ? m[2] : m[3]) : null; };
+  for (const p of polozky) {
+    const n = p.nazev.toLowerCase();
+    if (n !== '[content_types].xml' && n !== '_rels/.rels') continue;
+    const xml = dek.decode(p.data);
+    if (n === '[content_types].xml') {
+      (xml.match(/<(?:[^\s<>\/=:]+:)?Override\b[^>]*>/g) || []).forEach(z => {
+        const typ = atr(z, 'ContentType'), cast = atr(z, 'PartName');
+        if (typ && cast && DOCX_CORE_TYP.test(typ.trim())) casti.add(norm(cast));
+      });
+    } else {
+      (xml.match(/<(?:[^\s<>\/=:]+:)?Relationship\b[^>]*>/g) || []).forEach(z => {
+        const typ = atr(z, 'Type'), cil = atr(z, 'Target');
+        if (typ && cil && DOCX_CORE_VZTAH.test(typ.trim()) && !/^[a-z][a-z0-9+.-]*:/i.test(cil.trim())) casti.add(norm(cil));
+      });
+    }
+  }
+  return casti;
+}
 function docxVlastnostiAutor(polozky, autor) {
   const dek = new TextDecoder(), enk = new TextEncoder();
+  const casti = docxCastiVlastnosti(polozky);
   for (const p of polozky) {
-    if (p.nazev.toLowerCase() !== 'docprops/core.xml') continue;
+    if (!casti.has(p.nazev.toLowerCase())) continue;
     const pred = dek.decode(p.data);
     const po = docxVlastnostiAutorXml(pred, autor);
     if (po !== pred) p.data = enk.encode(po);
@@ -1911,7 +1943,7 @@ function docxCisloStrankyVarovani(c) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { DOCX_AUTOR_FIRMA, docxVlastnostiAutorXml, docxVlastnostiAutor, docxCisloStranky, docxCisloStrankyXml, docxCisloStrankyVarovani, docxPodbarveniTecek, docxBehRozdel, docxRPrZluta, docxStudieBezZamereni, docxDpzBezZamereni, DOCX_DPZ_STAVAJICI, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
+  module.exports = { DOCX_AUTOR_FIRMA, docxVlastnostiAutorXml, docxVlastnostiAutor, docxCastiVlastnosti, docxCisloStranky, docxCisloStrankyXml, docxCisloStrankyVarovani, docxPodbarveniTecek, docxBehRozdel, docxRPrZluta, docxStudieBezZamereni, docxDpzBezZamereni, DOCX_DPZ_STAVAJICI, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
     odstranPrazdneTsRadky, docxSmyckaSachet, DOCX_CENA_CASTI, DOCX_TECKY, docxTecky, docxTeckySada, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,
