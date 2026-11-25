@@ -35,7 +35,14 @@ Nad integrací `cad7d93` (v25.11.1). Rozhodnutí J. V. 25. 11. 2026 (ROZHODNUTI_
 - **#763 Pipedrive: pole dealu „Datum nabídky“** (J. V. pole založil 25. 11., typ datum): mapa polí ho páruje
   podle názvu (jen typ date, verze mapy 5 — uložená mapa se obnoví); odeslání nabídky (PO #116) do něj zapíše datum
   zámku (= datum nabídky) a řádek je v tabulce „Dnes v Pipedrive / Nově“. Prodej ani webhook ho nepíšou / nečtou.
-- Mutace `[MD]` (jádro, server #768, #763); staré mutace VS-E5, VS-E2, ER N1/#757, K18-N96 a #512 přesměrované
+- **Ceník OCK: Engineering mezi Příplatkovými položkami** (J. V. 25. 11., jen zobrazení v editoru; klíč, sazba
+  a výpočet beze změny, #771).
+- **K58-N1 (#772): zámek nabídky PROJ nese číslo z papíru PROJ** (kalkulace PROJ z webhooku: CN-437 místo předlohy
+  OCK). Staré zámky PROJ se nemigrují — server je toleruje, Pipedrive (poznámka, název Wordu), lišta a razítko víc
+  zákazníků ukážou číslo PROJ. Cenu ani tištěný dokument nemění.
+- **K58-N2 (#773): částka do Pipedrive jen jako číslo** (s Kč / CZK / EUR / bez DPH / za den); jiný text („TEST K57 …“)
+  už nezapíše 57 Kč, tabulka „dnes / nově“ řekne „není částka“.
+- Mutace `[MD]` (jádro, server #768, #763, K58-N1, K58-N2); staré mutace VS-E5, VS-E2, ER N1/#757, K18-N96 a #512 přesměrované
   na nové místo kódu.
 
 ## v25.11.1 — TZ-1: test „pole Dne“ v noci (jen test), větev claude/test-dne-praha
