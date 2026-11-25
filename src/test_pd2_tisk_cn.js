@@ -150,6 +150,16 @@ const text = async (ph, volby) => {
     const po = DG.odstranPrazdneTsRadky(xml, d.placeholders);
     test('#800 Word: z bloku zůstane jediný řádek (TYP OPLÁŠTĚNÍ)', (po.match(/<w:tr>/g) || []).length === 1 && /TS_TYP_OPLASTENI/.test(po), po.slice(0, 300));
   }
+  /* ---------- smlouva / objednávka nedědí mazání popisků; KL PROJ má Odchylky ---------- */
+  {
+    const ZP = require('./zpracovatel.js');
+    const d = ZP.zpracovatelTiskneDoklad({ placeholders: {}, odstavceTextPryc: ['Tel:'] });
+    test('smlouva o dílo / objednávka PROJ (zpracovatelTiskneDoklad) popisky nabídky nemažou', d.odstavceTextPryc === undefined, d);
+    const KP = require('./kryci_proj.js');
+    const pole = [].concat(...KP.KRYCI_PROJ_SEKCE.map(x => x.pole)).find(p => p.id === 'odchylky');
+    test('A3: krycí list PROJ má pole „Jiné odchylky oproti smluvnímu standardu“ (Backoffice)', !!pole && pole.verze.includes('bo')
+      && pole.label === 'Jiné odchylky oproti smluvnímu standardu', pole);
+  }
   console.log(`\n${ok} OK, ${fail} FAIL`);
   process.exit(fail ? 1 : 0);
 })();

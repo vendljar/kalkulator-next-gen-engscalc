@@ -263,6 +263,15 @@ test('pdPrazdne: id osoby, objekt osoby, datum, text, částka = vyplněné',
   test('důvody dohledání nikdy nenesou hledanou hodnotu (pevné věty)', Object.values(DOH.PD_DOHLEDANI_DUVODY).every((t) => !/@|\{/.test(t)));
 }
 
+{
+  /* A3: Odchylky i u PROJ (zdroj KL PROJ „odchylky“). */
+  const d = DEF.odchylky;
+  const z = PRE.pdZapisDealu([d], { proj: { hodnoty: { odchylky: 'Splatnost 30 dní dle rámcové smlouvy' } } },
+    { mapa: { odchylky: hash(d.nazev) }, popisy: { odchylky: { typ: 'text', volby: null, zapisovatelne: true } } });
+  test('A3: Odchylky PROJ se zapíšou do pole „Odchylky oproti smluvnímu standardu“', d.kl.proj === 'odchylky'
+    && z.custom_fields[hash(d.nazev)] === 'Splatnost 30 dní dle rámcové smlouvy', z);
+}
+
 /* ---------- 2. ZÁPIS PRODEJE ---------- */
 puvodniLog('\n===== 2. ZÁPIS PRODEJE: JEN DO PRÁZDNÉHO =====\n');
 SIM.pdSimReset();
