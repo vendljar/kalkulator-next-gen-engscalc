@@ -129,13 +129,20 @@ for (const [nazev, plan] of PLANY) {
     const n = PRE.pdNanecisto(defs, { proj: s }, { mapa, popisy });
     test('náhled: řádek „Mimo pole Platba 1–8“ vyjmenuje platby jen v textu kalendáře',
       s.platbyMimo.length === 0 || (n.radky.find((r) => r.klic === 'platbyMimo') || {}).stav === 'ponechano', n.radky.map((r) => r.klic + ':' + r.stav));
-    /* U7e: v dealu Platba je, milník v plánu chybí → nemaže se, „ponechá se“. */
+    /* U7e (J. V. 25. 11. 2026): v dealu Platba je, milník v plánu chybí → VYMAŽE se (null), řádek „vymaže se“. */
     const chybi = defs.find((d) => !s.platby[d.klic.slice(-1)]);
     if (chybi) {
       const n2 = PRE.pdNanecisto(defs, { proj: s }, { mapa, popisy }, { deal: { custom_fields: { [mapa[chybi.klic]]: { value: 1000, currency: 'CZK' } } } });
       const r = n2.radky.find((x) => x.klic === chybi.klic) || {};
-      test('U7e: Platba v Pipedrive bez milníku v plánu → „ponechá se“ (nemaže, čeká na J. V.)', r.stav === 'ponechano'
-        && PRE.PD_PLATBY_MAZAT === false && !(mapa[chybi.klic] in PRE.pdZapisDealu(defs, { proj: s }, { mapa, popisy }).custom_fields), r);
+      const deal = { custom_fields: { [mapa[chybi.klic]]: { value: 1000, currency: 'CZK' } } };
+      const zap = PRE.pdZapisDealu(defs, { proj: s }, { mapa, popisy }, { deal });
+      test('U7e: Platba v Pipedrive bez milníku v plánu → vymaže se (PATCH null, řádek „(vymaže se)“)', r.stav === 'zapise'
+        && r.hodnota === null && r.hodnotaText === '(vymaže se)' && PRE.PD_PLATBY_MAZAT === true
+        && mapa[chybi.klic] in zap.custom_fields && zap.custom_fields[mapa[chybi.klic]] === null && /vymaže/.test(r.kolize.join(' ')), [r, zap.custom_fields]);
+      const zap2 = PRE.pdZapisDealu(defs, { proj: Object.assign({}, s, { platby: undefined }) }, { mapa, popisy }, { deal });
+      test('U7e: bez Plateb z nového plánu (starý plán / nesedící součet) se nic nemaže', !(mapa[chybi.klic] in zap2.custom_fields), zap2.custom_fields);
+      const zap3 = PRE.pdZapisDealu(defs, { proj: s }, { mapa, popisy }, { deal: { custom_fields: {} } });
+      test('U7e: prázdné pole Platba v dealu se nemaže (nic k vymazání)', !(mapa[chybi.klic] in zap3.custom_fields), zap3.custom_fields);
     }
     console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
     if (fail) process.exit(1);

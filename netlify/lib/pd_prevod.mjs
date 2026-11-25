@@ -206,10 +206,17 @@ export function pdDnesPraha(d = new Date()) {
 }
 export const PD_JEN_PRAZDNE_DUVOD = 'v Pipedrive je pole vyplněné — kalkulátor doplňuje jen prázdné pole, nepřepisuje se';
 export const PD_JEN_PRAZDNE_BEZ_DEALU = 'deal se nenačetl — pole se doplňuje jen do prázdného, bez dealu nic';
-/* Platba 1–8 (PD2, U7e): pole Platba, které v Pipedrive hodnotu má, ale nový
- * plán ten milník nemá. Do rozhodnutí J. V. se NEMAŽE (zápis nikdy nemaže). */
-export const PD_PLATBY_MAZAT = false;
-export const PD_PLATBA_BEZ_MILNIKU = 'nový plán plateb tento milník nemá — hodnota v Pipedrive zůstává (mazání čeká na rozhodnutí J. V.)';
+/* Platba 1–8 (PD2, U7e; rozhodnutí J. V. 25. 11. 2026): pole Platba u PROJ
+ * platí JEN podle kalkulačky — pole, pro které nový plán platbu nemá a které
+ * v Pipedrive hodnotu má, se při zápisu VYMAŽE (výjimka ze zásady „zápis
+ * nikdy nemaže“). Jen když kalkulace Platby má (nový plán, sedící součet);
+ * plán z doby před plánem / nesedící součet = nic se nemaže ani nepíše. */
+export const PD_PLATBY_MAZAT = true;
+export const PD_PLATBA_BEZ_MILNIKU = 'nový plán plateb tento milník nemá — pole v Pipedrive se vymaže (Platby platí jen podle kalkulačky)';
+/* Má strana platby z nového plánu (pdnPlatby)? Jen pak se Platby píšou / mažou. */
+const maPlatby = (z) => !!(z && z.platby && typeof z.platby === 'object' && !Array.isArray(z.platby));
+const platbaVymazat = (def, strana, zdroj, surova) => PD_PLATBY_MAZAT && def.prevod === 'platba' && strana === 'proj'
+  && maPlatby(zdroj) && !pdPrazdne(surova);
 /* Je pole dealu `def` u zápisu jen do prázdného obsazené? → důvod, nebo ''. */
 export function pdJenPrazdneDuvod(def, pole, deal) {
   if (!def || !def.jenPrazdne) return '';
@@ -384,7 +391,14 @@ export function pdZapisDealu(definice, strany, pole, spolecne = {}) {
     for (const strana of ['ock', 'proj']) {
       if (!strany || !strany[strana]) continue;
       const r = pdDoPd(def, strana, strany[strana], mapa[def.klic] ? popisy[def.klic] : null, spolecne);
-      if (r.prazdne) continue;
+      if (r.prazdne) {
+        /* U7e: Platba bez milníku v plánu, v dealu hodnota → vymazat (null). */
+        const cfD = (spolecne.deal && spolecne.deal.custom_fields) || {};
+        if (mapa[def.klic] && platbaVymazat(def, strana, strany[strana], cfD[mapa[def.klic]])) {
+          custom_fields[mapa[def.klic]] = null; zapsano.push(def.klic);
+        }
+        continue;
+      }
       /* PD2: jen do prázdného pole — obsazené (nebo deal neznámý) se neposílá. */
       const obsazeno = pdJenPrazdneDuvod(def, pole, spolecne.deal);
       if (obsazeno) break;
@@ -540,11 +554,12 @@ export function pdNanecisto(definice, strany, pole, spolecne = {}, zdroje = {}) 
       const surova = cf[mapa[def.klic]];
       r.vCrm = def.jenPrazdne && !pdPrazdne(surova) ? pdZobrazDohledane(surova, popis, spolecne) : pdZobraz(surova, popis, spolecne);
       /* PD2 Platba 1–8 (U7e): milník v novém plánu není, v dealu hodnota je — nemaže se. */
-      if (def.prevod === 'platba' && r.stav === 'prazdne' && !pdPrazdne(surova) && !PD_PLATBY_MAZAT) {
-        r.stav = 'ponechano'; r.duvod = PD_PLATBA_BEZ_MILNIKU;
+      if (def.prevod === 'platba' && r.stav === 'prazdne' && !pdPrazdne(surova) && s.proj && maPlatby(s.proj)) {
+        if (PD_PLATBY_MAZAT) { r.stav = 'zapise'; r.strana = 'proj'; r.hodnota = null; r.hodnotaText = '(vymaže se)'; r.duvod = PD_PLATBA_BEZ_MILNIKU; }
+        else { r.stav = 'ponechano'; r.duvod = PD_PLATBA_BEZ_MILNIKU; }
       }
       if (r.stav === 'zapise' && !def.jenPrazdne && r.vCrm && pdNorm(r.vCrm) !== pdNorm(r.hodnotaText))
-        r.kolize.push('v Pipedrive je dnes „' + r.vCrm + '" — zápis ji přepíše');
+        r.kolize.push('v Pipedrive je dnes „' + r.vCrm + '" — zápis ji ' + (r.hodnota === null && def.prevod === 'platba' ? 'vymaže' : 'přepíše'));
     }
     /* PD2: jen do prázdného pole (U1) — vyplněné v dealu zůstává, bez dealu nic. */
     if (def.jenPrazdne && r.stav !== 'prazdne' && r.stav !== 'chybiPole') {
