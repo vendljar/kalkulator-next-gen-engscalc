@@ -140,11 +140,13 @@ function sablonaJeXmlBajty(data) {
   if (typeof data === 'string') return /^[\s\u0000\uFEFF]*</.test(data);
   if (!data) return false;
   const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
-  let i = 0;
-  if (u8[0] === 0xEF && u8[1] === 0xBB && u8[2] === 0xBF) i = 3;
-  else if ((u8[0] === 0xFF && u8[1] === 0xFE) || (u8[0] === 0xFE && u8[1] === 0xFF)) i = 2;
-  for (; i < u8.length; i++) {
+  /* Revize SA R9 (G1 #753): BOM se přeskakuje kdekoli v úvodu, ne jen na
+   * začátku — UTF-32 BE s BOM (00 00 FE FF) i dvojí BOM se dřív vzaly za
+   * ne-XML a prošly nerozebrané (pak je odmítne sablonaKodovaniVada). */
+  for (let i = 0; i < u8.length; i++) {
     const b = u8[i];
+    if (b === 0xEF && u8[i + 1] === 0xBB && u8[i + 2] === 0xBF) { i += 2; continue; }
+    if ((b === 0xFF && u8[i + 1] === 0xFE) || (b === 0xFE && u8[i + 1] === 0xFF)) { i += 1; continue; }
     if (b === 0x00 || b === 0x09 || b === 0x0A || b === 0x0D || b === 0x20) continue;
     return b === 0x3C;
   }
@@ -183,9 +185,19 @@ function sablonaObsahText(data) {
   if (le !== null) {
     /* Revize SA R2: dřív smyčka String.fromCharCode po znaku (60 MB ~3,3 s). */
     const konec = od + ((u8.length - od) & ~1);
-    try { return new TextDecoder(le ? 'utf-16le' : 'utf-16be').decode(u8.subarray(od, konec)); } catch (e) { return ''; }
+    /* Revize SA R10 (G1 #753): výjimka dekodéru (prostředí bez UTF-16 BE)
+     * dřív vrátila '' a část prošla bez vady. Teď se ozve jako
+     * SABLONA_NECITELNA a kontrola část odmítne — při chybě odmítat, ne pouštět. */
+    try { return new TextDecoder(le ? 'utf-16le' : 'utf-16be').decode(u8.subarray(od, konec)); }
+    catch (e) { throw new Error(SABLONA_NECITELNA); }
   }
-  try { return new TextDecoder().decode(u8); } catch (e) { return ''; }
+  try { return new TextDecoder().decode(u8); } catch (e) { throw new Error(SABLONA_NECITELNA); }
+}
+const SABLONA_NECITELNA = 'část nejde přečíst (kódování)';
+/* Text části pro kontrolu, nebo null, když ji nejde přečíst (vadu přidá volající). */
+function sablonaObsahTextKontrola(data, pridej, nazev) {
+  try { return sablonaObsahText(data); }
+  catch (e) { pridej(SABLONA_NECITELNA + ' (' + nazev + ')'); return null; }
 }
 /* KÓDOVÁNÍ, KTERÉ KONTROLA NEČTE (#395, 8. 10. 2026). Rozbor umí UTF-8
  * a UTF-16. Část v UTF-32 nebo s deklarací jiného kódování (UTF-7 zapíše
@@ -397,7 +409,8 @@ function sablonaObsahVadyZipu(polozky) {
       pridej('XML část větší než ' + Math.round(SABLONA_XML_CAST_MAX / 1024 / 1024) + ' MB (' + nazev + ')');
       return;
     }
-    const text = sablonaObsahText(p.data);
+    const text = sablonaObsahTextKontrola(p.data, pridej, nazev);
+    if (text === null) return;
     const kodovani = sablonaKodovaniVada(p.data, text);
     if (kodovani) { pridej(kodovani + ' (' + nazev + ')'); return; }
 
@@ -462,7 +475,9 @@ function sablonaObsahVadyZipu(polozky) {
     if (!p || typeof p.nazev !== 'string') return;
     const ids = odkazy[sablonaMaleJmeno(p.nazev)];
     if (!ids) return;
-    sablonaOdkazJinakVady(sablonaNormalizuj(sablonaObsahText(p.data)), ids).forEach(v => pridej(v + ' (' + p.nazev + ')'));
+    const text = sablonaObsahTextKontrola(p.data, pridej, p.nazev);
+    if (text === null) return;
+    sablonaOdkazJinakVady(sablonaNormalizuj(text), ids).forEach(v => pridej(v + ' (' + p.nazev + ')'));
   });
   return vady;
 }

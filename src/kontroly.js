@@ -952,6 +952,32 @@ const KONTROLY = [
     },
   },
   {
+    /* RUČNÍ POLOŽKA SPOJOVACÍHO MATERIÁLU / LAKOVÁNÍ U PŘEPSANÉHO ŘÁDKU HRUBÉ OCK
+     * (#756, dorevize RP D1, G1 25. 11. 2026). Taková položka (jen z importu)
+     * bere cenu z poměru cena/náklad řádku Hrubé OCK. Když je ten řádek ručně
+     * přepsaný, poměr už neodpovídá jen ruční položce — cena položky v rozpisu
+     * je jen podíl. Cena nabídky ani tisk se nemění, jen se upozorní. */
+    kod: 'rucniPolozkaPomer', kde: 'Kalkulace OCK', nazev: 'Ruční položka u ručně přepsaného řádku Hrubé OCK',
+    zjisti(ctx) {
+      if (ctx.jenProj) return null;
+      const r = ctx.vysledek;
+      if (!r) return null;
+      const RPk = (typeof rpPomerPrepsany === 'function') ? { rpPomerPrepsany, RP_RADEK_HRUBE }
+        : require('./rucni_polozky.js');
+      let pol = [];
+      if (Array.isArray(r.sachty) && r.sachty.length && ctx.ock && typeof sachtyZ === 'function') {
+        const zad = sachtyZ(ctx.ock);
+        r.sachty.forEach((x, i) => { pol = pol.concat(RPk.rpPomerPrepsany(x.vysl || r, (zad[i] || {}).zadani || ctx.zadani)); });
+      } else pol = RPk.rpPomerPrepsany(r, ctx.zadani);
+      if (!pol.length) return null;
+      const radky = pol.map(p => RPk.RP_RADEK_HRUBE[p.sekce]).filter((x, i, a) => a.indexOf(x) === i);
+      return { text: (pol.length === 1 ? 'Ruční položka ' : 'Ruční položky ') + kontrolyVyctem(pol.map(p => '„' + p.nazev + '"'))
+        + ' bere cenu z poměru řádku ' + kontrolyVyctem(radky.map(n => '„' + n + '"'))
+        + ' v Hrubé OCK, který je ručně přepsaný (množství nebo cena). Cena položky v rozpisu nabídky je proto jen podíl '
+        + 'přepsaného řádku; celková cena nabídky sedí. Zkontrolujte rozpis, nebo zrušte přepis řádku.' };
+    },
+  },
+  {
     /* TERMÍN DODÁNÍ U ATYP (#330, nález TD1, 24. 9. 2026). Nabídka od teď
      * nese termín ze zakázky jako první odrážku kapitoly V.; zbytek
      * kapitoly je text z Firmy. Když v tom textu zůstala standardní lhůta

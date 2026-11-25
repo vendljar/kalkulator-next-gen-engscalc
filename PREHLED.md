@@ -8,14 +8,15 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | prostředí | verze |
 |---|---|
 | ostrý web (`main`) | **v24.11.7** (`4e69c276`, 24. 11. 2026) |
-| testovací web (`test`) | **v25.11.3** (`63d1d9ee`, 25. 11. 2026) |
+| testovací web (`test`) | **v25.11.3** (`5c42ca16`, 25. 11. 2026) |
 
-Test je proti main napřed o 138 commitů.
+Test je proti main napřed o 141 commitů.
 
 ## V testu, ještě ne v main
 
 | # | typ | co | verze |
 |---|---|---|---|
+| #795 | úkol | Jazykové verze šablony SoD projekce v4 (EN/DE/FR, 16 kB, o měsíc starší) proti české (124 kB) — ověřit úplnost | v25.11.3 |
 | #776 | otázka | K58-I2 (#775) mění cenu i rozpracovaným neodeslaným kalkulacím s kalkVerze 2 (revize MD S1) | v25.11.3 |
 | #775 (dřív K58-I2) | nález | Nová kalkulace: šachta bez opláštění bez plastových kotev, cestovného a čištění | v25.11.3 |
 | #774 | úkol | Ceník OCK: řádek Engineering v sekci Příplatkové položky (jen zobrazení) | v25.11.3 |
@@ -74,9 +75,11 @@ Test je proti main napřed o 138 commitů.
 | #637 | úkol | Ověřit hledání organizace (itemSearch) proti ostrému účtu Pipedrive — jen čtení | ověření (automat na ostrý účet nesmí) |
 | #643 | úkol | Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6) | nahrát upravený skill (mimo repo) |
 | #730 | dávka | Spuštění propojení s Pipedrive na main — procedura (podklady/PIPEDRIVE_SPUSTENI.md) | seznam polí pro #597 a uživatel tokenu (B1, B2) |
+| #805 (dřív K61-I4) | nález | Překlep „PROVDITELNOSTI“ v šabloně nabídky PROJ | opravit v šabloně PROJ a zveřejnit |
+| #806 (dřív K60-I1) | otázka | Automatizace Pipedrive „Pojmenování nového dealu v4“ přepíše při založení dealu „Číslo nabídky (CN)“ na CN-<id> → existující kalkulaci nejd… | návod pro obchodníky (CN změnit až po založení) nebo úprava automatizace v Pipedrive |
 
-K tomu 13 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
+K tomu 14 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
 
 ## Nehotové položky evidence
 
-Celkem 42: J. V. 29, kolega 4, koordinace 2, dávka 7. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 54: J. V. 32, kolega 4, koordinace 2, dávka 16. Výpis: `python3 roadmapa/roadmapa.py --zive`.

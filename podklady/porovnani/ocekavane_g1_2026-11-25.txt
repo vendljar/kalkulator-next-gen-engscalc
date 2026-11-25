@@ -1,0 +1,13 @@
+# Očekávané rozdíly G1 (#753, #754, #756) × integrace 9776c346 — 25. 11. 2026
+# Formát: <vzor případu> <pole,pole|*>  # důvod   (popis v nastroje/porovnani_sada.js)
+#
+# Žádné pravidlo: G1 nemá měnit cenu, řádky ani text dokumentů — porovnání má dát SHODA.
+# Jediná vědomá změna je mimo dosah porovnání (to čte jen word/document.xml):
+#   každý Word vygenerovaný ze šablony (docxVyplnSablonu — CN OCK, CN PROJ, SoD, plná moc,
+#   objednávky ze šablony) nese v docProps/core.xml dc:creator a cp:lastModifiedBy
+#   = „ENGINEERS CZ s.r.o.“ místo hodnot ze šablony (#754, rozhodnutí J. V. 25. 11. 2026).
+#   Totéž ve všech dalších částech vlastností (CN v18 docProps/core0.xml — revize S1).
+#   #794 (J. V. 25. 11.): Company v docProps/app.xml a vlastnost „Company“ v docProps/custom.xml
+#   = „ENGINEERS CZ s.r.o.“, dc:title prázdný.
+#   Dokumenty od nuly (krycí list, objednávka PROJ bez šablony) vlastnosti nemají — beze změny.
+# #756 přidává jen varování kontroly (rucniPolozkaPomer); #753 jen přísnější kontrolu šablon.

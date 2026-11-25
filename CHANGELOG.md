@@ -8,6 +8,35 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v25.11.4 — G1 — úklid nízkých nálezů vlny G, větev claude/g1-uklid
+
+Nad integrací `9776c346`. **Cenu kalkulací ani text dokumentů nemění**; jediná změna ve vygenerovaném Wordu jsou vlastnosti souboru (#754).
+
+- **#753 (revize SA R6, R9, R10) — kontrola šablon Word:**
+  R6 `zipPrecti` odmítne archiv, jehož adresář nekončí tam, kam ukazuje koncový záznam (položka skrytá počtem),
+  nesouhlasí počet „na disku“ a „celkem“, lokální hlavička nemá podpis nebo nese jiné jméno než adresář.
+  R9 `sablonaJeXmlBajty` přeskakuje BOM kdekoli v úvodu — část `.bin` v UTF-32 BE s BOM nebo s dvojím BOM se rozebere
+  (a UTF-32 odmítne). R10 výjimka dekodéru UTF-16 BE už kontrolu nevypne: část se odmítne jako „část nejde přečíst“.
+- **#754 — vlastnosti dokumentu:** generátor (`docxVyplnSablonu`) přepíše `dc:creator` a `cp:lastModifiedBy`
+  v `docProps/core.xml` na „ENGINEERS CZ s.r.o.“ (rozhodnutí J. V. 25. 11. 2026); jméno zaměstnance ze šablony se
+  k zákazníkovi nedostane. Prvek, který šablona nemá, se nepřidává; ostatní vlastnosti beze změny.
+- **#756 — kontrola „Ruční položka u ručně přepsaného řádku Hrubé OCK“** (`rucniPolozkaPomer`, varování, Kalkulace OCK):
+  ruční položka Spojovacího materiálu / Lakování (jen z importu) bere cenu z poměru řádku Hrubé OCK; je-li ten řádek
+  ručně přepsaný, kontrola na to upozorní. Cena ani tisk beze změny. Pravidel je 56.
+- Revize poradcem Fable (verdikt SLOUČIT): F1 adresář musí končit těsně před koncovým záznamem (mezi nimi smí být jen
+  záznamy ZIP64) — jinak cizí adresář vidí Python i unzip, kontrola ne; F2 jméno lokální hlavičky se porovnává po bajtech
+  (dva neplatné bajty UTF-8 se dekódovaly na totéž U+FFFD); F6 testy DEFLATE, data descriptor, komentář, bajty za koncem,
+  ZIP64, UTF-32 LE s BOM a přepis ceny řádku. F3, F4, F5, F7 návrhy pro koordinaci (zpráva).
+- Revize koordinace (`origin/claude/revize-g1`, REVIZE_G1.md): S1 #754 přepisuje KAŽDOU část vlastností dokumentu
+  (typ core-properties v `[Content_Types].xml`, vztah core-properties v `_rels/.rels`, vždy `docProps/core.xml`) — CN v18
+  má i `docProps/core0.xml` se jmény osob; S2 `nastroje/novinky.py` (a tím `release_odkaz.py --od`) na hotovou položku
+  s dočasnou značkou dávky skončí chybou „přepsat značku dávky na číslo verze“.
+- **#794 (J. V. 25. 11., revize G1 N1):** ve všech částech vlastností generovaného Wordu Company (`docProps/app.xml`
+  a vlastní vlastnost „Company“ v `docProps/custom.xml`) = „ENGINEERS CZ s.r.o.“, `dc:title` prázdný. Text dokumentu beze změny.
+- Testy: `src/test_g1_uklid.js` 45/0 (pojistky: nad 9776c346 15 FAIL, bez F1/F2 2 FAIL, bez S1 3 FAIL, bez #794 6 FAIL); `test_evidence.js` 71/0
+  (bez S2 2 FAIL); mutace `[G1]` 26/26, `[SA]` 23/23.
+  Porovnání sestavení čte jen `word/document.xml` — vlastnosti souboru nevidí (`podklady/porovnani/ocekavane_g1_2026-11-25.txt`).
+
 ## v25.11.3 — MD: malá dávka #766, #767, #768, „Dne“ podle Prahy, barvy záloh, větev claude/md-mala-davka
 
 Revize Fable 25. 11.: SLOUČIT (`claude/revize-md` 35ef173, podklady/revize/REVIZE_MD.md); střední S1 → #776, S2 → #777, nízké → #778. Kolo VŠE ZELENÉ nad 4bea53c, porovnání 390: 388 SHODA + 2 očekávané.
