@@ -462,6 +462,13 @@ function vsPriplatkyVyber(vysl, ock) {
   const l = sachtyZ(ock);
   const zad = vo.sachty.map((s, i) => (l[i] && l[i].zadani) || {});
   const mapa = new Map(), out = [];
+  /* MD N1 (#778): pořadí řádků = pořadí příplatků ve výsledku (ceník), ne
+   * pořadí prvního zaškrtnutého výskytu — příplatek zaškrtnutý jen v další
+   * šachtě dřív skončil na konci seznamu. Index z první šachty, která ho má. */
+  const poradi = new Map();
+  vo.sachty.forEach(s => ((s.vysl && s.vysl.priplatky) || []).forEach((p, j) => {
+    if (p && typeof p === 'object' && !poradi.has(String(p.key))) poradi.set(String(p.key), j);
+  }));
   vo.sachty.forEach((s, i) => {
     const vyn = Array.isArray(zad[i].priplatkyVynechat) ? zad[i].priplatkyVynechat : [];
     ((s.vysl && s.vysl.priplatky) || []).forEach(p => {
@@ -485,7 +492,9 @@ function vsPriplatkyVyber(vysl, ock) {
     const v1 = vsPriplatekJednou(vo.sachty.map(t => t.vysl), zad, x.key);
     if (v1) VS_SCITANA_POLE.forEach(f => { if (typeof v1.radek[f] === 'number') x.radek[f] = v1.radek[f]; });
   });
-  return out;
+  /* Stabilní řazení: stejný klíč s jinou sazbou drží pořadí výskytu. */
+  return out.map((x, i) => ({ x, i, p: poradi.has(x.key) ? poradi.get(x.key) : Infinity }))
+    .sort((a, b) => (a.p - b.p) || (a.i - b.i)).map(o => o.x);
 }
 
 /* Příplatky v nabídce po šachtách pro krycí list (VS-E5): [{ nazev, sachty }]. */

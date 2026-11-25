@@ -34,7 +34,8 @@ import {
   pdPristup, pdNastaveno, pdRezim, pdZavolej, PdChyba, pdStropCerstvych, pdZapisPovolen, PD_ZAPIS_VYPNUTY, PD_DEAL_MAX, PD_CACHE_ULOZISTE,
 } from '../lib/pipedrive.mjs';
 import { POLE_DEALU, pdHodnota } from '../lib/pd_mapa.mjs';
-import { pdZamyslenyZapis, pdFazeKonfigurace } from '../lib/pd_prevod.mjs';
+import { pdZamyslenyZapis, pdFazeKonfigurace, pdDnesPraha } from '../lib/pd_prevod.mjs';
+import { pdDohledej } from '../lib/pd_dohledani.mjs';
 import { pdDealPatriZakazce } from '../lib/pd_overeni.mjs';
 import { pdWebhookOdkaz } from '../lib/pd_webhook.mjs';
 import { pdRejstrikZapis, pdProtokol } from '../lib/pd_vazba.mjs';
@@ -78,6 +79,12 @@ function volani() {
     if (zbyva < 200) throw new PdChyba('Pipedrive neodpověděl včas — zápis se nedokončil (časový limit).', 504);
     return pdZavolej(cesta, { ...volby, casLimitMs: Math.min(PD_PRODEJ_VOLANI_MS, zbyva), pokusu: 1 });
   };
+}
+
+/* PV N5 (#752): jeden řádek logu funkce na požadavek — bez jmen, e-mailů a hodnot. */
+export function pdProdejLog(dealId, akce, stav, pocetPoli, prevzato = false) {
+  try { console.log('pd_prodej: ' + JSON.stringify({ dealId: String(dealId || ''), akce, stav, pocetPoli: Number(pocetPoli) || 0, prevzato: !!prevzato })); }
+  catch (e) { /* log nesmí shodit zápis */ }
 }
 
 const chybaPd = (e) => json({ ok: false, chyba: e.message }, (e.stav >= 500 || e.stav === 401) ? 502 : e.stav);
@@ -153,10 +160,14 @@ async function zpracuj(req, relace, s, soubor, akce, otiskKlienta, prevzit, zdro
   /* `text` = vlastní pevná věta (do záznamu a protokolu); `podrobnost` = surový
    * text chyby Pipedrive jen do odpovědi (revize PV S4). */
   const selhani = async (status, text, extra = {}, podrobnost = '') => {
+    pdProdejLog(deal, akce, 'chyba', 0);
     const razitko = await zaznamenej('chyba', text, 'Zápis prodeje do dealu ' + deal + ' se nepovedl: ' + text);
     return json({ ok: false, stav: 'chyba', chyba: text, ...(podrobnost && podrobnost !== text ? { podrobnost } : {}), razitko, ...extra }, status);
   };
   const selhaniPd = (status, e) => selhani(status, pdProdejChybaVeta(e), {}, e && e.message);
+  /* PV N4 (#752): vypnutý zápis a neověřená vazba nejsou pokus o zápis — jen
+   * odpověď, bez zápisu do zakázky a protokolu (stav „zapsano“ se nepřepíše). */
+  const jenOdpoved = (status, text, extra = {}) => { pdProdejLog(deal, akce, 'odmitnuto', 0); return json({ ok: false, stav: 'chyba', chyba: text, ...extra }, status); };
 
   const strop = akce === 'zapis'
     ? await pdStropCerstvych('deal:' + deal, 'prodej-zapis', PD_PRODEJ_STROP)
@@ -164,23 +175,25 @@ async function zpracuj(req, relace, s, soubor, akce, otiskKlienta, prevzit, zdro
   if (!strop) return json({ ok: false, chyba: akce === 'zapis' ? 'Zápis prodeje do tohoto dealu byl za poslední hodinu zkoušen příliš často.'
     : 'Náhled zápisu jste za poslední hodinu spustili příliš často. Zkuste to později.' }, 429);
   /* B235/B236: bez PIPEDRIVE_ZAPIS = ano se do skutečného Pipedrive nic nezapíše (náhled jen čte). */
-  if (akce === 'zapis' && !pdZapisPovolen()) return selhani(503, PD_ZAPIS_VYPNUTY);
+  if (akce === 'zapis' && !pdZapisPovolen()) return jenOdpoved(503, PD_ZAPIS_VYPNUTY);
 
   const zavolej = volani();
   const varovani = [];
   if (pdRezim() === 'simulator') varovani.push('Odpovídá SIMULÁTOR Pipedrive se smyšlenými daty — nic z toho není skutečné CRM.');
   let pole, dealData, uzivatele, fazeSeznam;
   try {
-    pole = await pdPoleMapa();
+    pole = await pdPoleMapa(false, (c, o) => zavolej(c, o));   // PV N2: v časovém rozpočtu
     /* Platná vazba deal ↔ zakázka (#704-7): vazba z webhooku nebo odkaz v dealu. */
     const ov = await pdDealPatriZakazce(ulozena, deal, { zavolej: (c) => zavolej(c), poleMapa: async () => pole,
       odkaz: pdWebhookOdkaz(soubor, req) }, G);
-    if (!ov.ok) return akce === 'zapis' ? selhani(409, ov.duvod, { kod: 'neovereno' })
+    if (!ov.ok) return akce === 'zapis' ? jenOdpoved(409, ov.duvod, { kod: 'neovereno' })
       : json({ ok: false, stav: 'neovereno', chyba: ov.duvod }, 409);
-    dealData = await zavolej('/api/v2/deals/' + Number(deal));
+    dealData = ov.deal || await zavolej('/api/v2/deals/' + Number(deal));   // PV N3: deal z ověření odkazem
     if (!dealData || typeof dealData !== 'object') throw new PdChyba('Pipedrive deal zakázky nezná.', 404);
     const u = await zavolej('/api/v1/users');
-    uzivatele = Array.isArray(u) ? u.map((x) => ({ id: x.id, name: String(x.name || '') || ('uživatel Pipedrive ' + x.id), email: x.email })) : undefined;
+    /* PD2 U6 (a PV N1): uživatel Pipedrive jen aktivní (active_flag). */
+    uzivatele = Array.isArray(u) ? u.filter((x) => x && x.active_flag !== false)
+      .map((x) => ({ id: x.id, name: String(x.name || '') || ('uživatel Pipedrive ' + x.id), email: x.email })) : undefined;
     const f = await zavolej('/api/v2/stages', { dotaz: { limit: 500 } });
     fazeSeznam = Array.isArray(f) ? f.map((x) => ({ id: x.id, name: x.name, pipeline_id: x.pipeline_id })) : [];
   } catch (e) {
@@ -190,7 +203,11 @@ async function zpracuj(req, relace, s, soubor, akce, otiskKlienta, prevzit, zdro
 
   const podklad = pdProdejStrany(ulozena, G, JEKLY);
   if (podklad.chyba) return json({ ok: false, chyba: podklad.chyba }, 409);
-  const v = pdZamyslenyZapis(POLE_DEALU, podklad.strany, pole, { uzivatele, mena: 'CZK', deal: dealData },
+  /* PD2: osoby / organizace pro pole „jen do prázdného“ (souběžně, pod lhůtou;
+   * při zápisu z dealu čteného ve výhradní sekci — ID jdou do PATCH a otisku). */
+  const dohl = await pdDohledej(POLE_DEALU, podklad.strany, pole, dealData, (c, o) => zavolej(c, o));
+  const v = pdZamyslenyZapis(POLE_DEALU, podklad.strany, pole,
+    { uzivatele, mena: 'CZK', deal: dealData, dohledano: dohl.dohledano, dnes: pdDnesPraha() },
     { faze: 'prodano', fazeSeznam, fazeKonfigurace: pdFazeKonfigurace() }, zdroje);
   const zmeny = v.patch ? pdProdejZmeny(v.patch, dealData) : { patch: null, klice: [], hodnota: false, faze: false };
   if (zmeny.patch && zmeny.patch.status !== undefined) delete zmeny.patch.status;   // #545: stav nikdy (pojistka)
@@ -203,6 +220,7 @@ async function zpracuj(req, relace, s, soubor, akce, otiskKlienta, prevzit, zdro
   const zapsanoNazvy = radky.filter((r) => r.posle).map((r) => r.nazev);
 
   if (akce === 'nahled') {
+    pdProdejLog(deal, akce, 'nahled', zapsanoNazvy.length);
     return json({ ok: true, rezim: pdRezim(), deal: { id: dealData.id, nazev: dealData.title || '', stav: dealData.status || '',
       faze: dealData.stage_id || null }, radky, souhrn: v.souhrn, duvody: v.duvody, zastaveno: v.zastaveno || '',
     cizi: cizi ? { cislo: cizi } : null, otisk, zapisPovolen: pdZapisPovolen(), nicKZapisu: !zmeny.patch,
@@ -242,9 +260,13 @@ async function zpracuj(req, relace, s, soubor, akce, otiskKlienta, prevzit, zdro
     }
   }
   const veta = 'Zápis prodeje do dealu ' + deal + ' (varianta ' + String((typeof G.variantaCislo === 'function' ? G.variantaCislo(ulozena, prod.v) : variantaId) || '')
-    + '): ' + (zapsanoNazvy.length ? 'zapsáno — ' + zapsanoNazvy.join(', ') : 'deal už měl všechny hodnoty, nic se neměnilo')
-    + (prevzetiOd ? '; deal PŘEVZAT od nabídky ' + prevzetiOd + (cizi ? '' : ' (dokončeno po nepotvrzeném pokusu)') : '');
+    + '): '
+    /* PD2: převzetí PŘED výčtem polí — protokol drží 600 znaků a dlouhý výčet
+     * (víc zapsaných polí) by větu o převzetí uřízl. */
+    + (prevzetiOd ? 'deal PŘEVZAT od nabídky ' + prevzetiOd + (cizi ? '' : ' (dokončeno po nepotvrzeném pokusu)') + '; ' : '')
+    + (zapsanoNazvy.length ? 'zapsáno — ' + zapsanoNazvy.join(', ') : 'deal už měl všechny hodnoty, nic se neměnilo');
   const razitko = await zaznamenej('zapsano', '', veta);
+  pdProdejLog(deal, akce, 'zapsano', zapsanoNazvy.length, !!prevzetiOd);
   return json({ ok: true, stav: 'zapsano', zapsano: zapsanoNazvy, prevzato: !!prevzetiOd, razitko, varovani });
 }
 

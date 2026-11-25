@@ -133,8 +133,10 @@ function hodnotaProj(id, firma) {
 
 test('PROJ: platnost nabídky přijde z firemního nastavení',
   hodnotaProj('platnostNabidky', VLASTNI) === '45 dnů', hodnotaProj('platnostNabidky', VLASTNI));
-test('PROJ: způsob fakturace přijde z firemního nastavení',
-  hodnotaProj('zpusobFakturace', VLASTNI) === 'po odevzdání každého stupně');
+/* PD2 (#782, J. V. 25. 11. 2026): nastavení „Způsob fakturace — projekce“
+ * zrušeno — uložená hodnota Firmy se nečte, platí pevná výchozí věta. */
+test('PD2: způsob fakturace PROJ už z firemního nastavení nejde (zrušeno), platí výchozí věta',
+  hodnotaProj('zpusobFakturace', VLASTNI) === 'po dokončení jednotlivých stupňů dokumentace', hodnotaProj('zpusobFakturace', VLASTNI));
 /* Zdroj musí být JEDEN. Kdyby OCK bralo platnost z firmy a PROJ z ceníku,
  * mohla by jedna zakázka nabídnout dvě různé platnosti téže nabídky. */
 test('PROJ: platnost nabídky se bere ze stejného místa jako u OCK',

@@ -8,6 +8,55 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## PD2 (verzi přidělí koordinace) — pole krycího listu do dealu Pipedrive, vady tisku CN, nálezy revizí PV a MD, větev claude/pd2-pole-kl
+
+Nad integrací `5c42ca16`. Rozhodnutí J. V. 25. 11. 2026 (ROZHODNUTI_LOG: PD2 rozsah, Informováno, starý plán PROJ,
+#777, posudek CN-432; doplňky přes koordinaci: Informováno = datum zápisu, V3 vypuštěn, Platby bez milníku vymazat,
+#800). Návrh postupu zrevidoval poradce Fable (UPRAVIT, body U1–U9 zapracovány). Do živého Pipedrive nic — jen
+simulátor.
+
+**A — Pipedrive (odeslání #116 a prodej #597, tabulka „dnes / nově“):**
+- **K53-N3 Nabídku vypracoval:** server skládal krycí list bez přihlášeného uživatele → jméno z Firmy bez e-mailu
+  („mezi uživateli Pipedrive není“). Pro Pipedrive platí ruční hodnota KL > snímek zpracovatele ze zámku
+  (jméno, telefon, e-mail) > předvyplnění; uživatel podle e-mailu, jen aktivní (`active_flag`).
+- **Jen do prázdných polí dealu** (`jenPrazdne` v mapě): kontakty smluvní / obchodní / technický (osoba podle
+  e-mailu z KL), Podepisující firma (organizace podle přesného názvu), Druhý podepisující a Zmocnitel (osoba podle
+  jména jen v organizaci dealu), Informováno BO / Tech (datum zápisu, Praha). Vyplněné = „ponechá se“; rozhoduje
+  server z dealu čteného při zápisu, ID a datum jsou v PATCH i v otisku (souběh → 409). Dohledání
+  `netlify/lib/pd_dohledani.mjs`: jen GET, přesná shoda ověřená na serveru, nic se nezakládá, nejvýš 6 hledání
+  souběžně pod společnou lhůtou (nedoběhlé = „nelze ověřit“), důvody bez hledané hodnoty. Podpisy, Zmocnitel,
+  Informováno a Platby jen při prodeji.
+- **Odchylky i u PROJ:** nové pole KL PROJ „Jiné odchylky oproti smluvnímu standardu“ (mění krycí list PROJ).
+- **Plán plateb PROJ:** zrušeno nastavení Firma „Způsob fakturace — projekce“ (uložená hodnota se nečte, symbol
+  s výchozí větou); Způsob fakturace u PROJ do Pipedrive nejde. **Platba 1–8** z dopočtu plánu (snímek zamčené
+  varianty, tytéž částky jako Platební kalendář) podle milníku; ostatní jen v textu kalendáře (řádek „Mimo pole
+  Platba 1–8“); pole Platba bez milníku v plánu se při prodeji vymaže (J. V. 25. 11.).
+- **#777:** částka „5.000 Kč“ a záporná se nezapíše, řádek „nelze“ s důvodem. **#779:** značka poznámky odeslání PROJ
+  nese číslo PROJ; stará značka se dál pozná (úprava, ne nová poznámka).
+- **Revize PV N1–N6 (#752):** vypnutý uživatel PD autorem nebude; mapa polí v časovém rozpočtu; deal z ověření
+  odkazem se nečte podruhé; vypnutý zápis a neověřená vazba jen odpověď (zakázka beze změny); řádek logu
+  `pd_prodej` bez osobních údajů; komentář `icoShoda`. Navíc: protokol prodeje uřízl větu o převzetí dealu
+  (600 znaků) — převzetí teď před výčtem polí.
+- **Revize MD N1, N2, N4, N5 (#778):** pořadí příplatků víc šachet podle ceníku; hláška 409 radí Ctrl+F5;
+  dodatekCesky u staré odeslané nabídky víc šachet bere výběr tisku; porovnávací sada k58:* a proj:zamek-cislo-ock.
+
+**B — vady tisku CN #771 (posudek CN-432) a #800 — mění TEXT nabídky:**
+- V1 bez fotky se netiskne nadpis „Pohled na objekt z ulice:“; V2 bez telefonu se netiskne „Tel:“ (Word maže jen
+  odstavec, jehož celý text je popisek; online tisk totéž; OCK i PROJ; smlouva a objednávka beze změny).
+- V4 konečná faktura „3. konečný daňový doklad ve výši 10 % (bez DPH)…“ (výchozí věta Firmy a známé procento;
+  EN/DE/FR — návrh překladu ve slovníku).
+- #800 (K61-N1) šachta bez opláštění: z bloku Opláštění šachty jen „TYP OPLÁŠTĚNÍ: bez opláštění“ (všechny jazyky).
+- Dotisk nabídky odeslané před PD2 beze změny (značka `pd2Tisk` ve snímku podmínek). V3 vypuštěn (J. V.).
+  V5 a V6 (záruka jako bod, poznámky k ceně jako seznam) — čeká na koordinaci (pevný text šablony).
+
+Testy s pojistkou: `netlify/test_pd2_pole.mjs`, `src/test_pd2_platby.js`, `src/test_pd2_tisk_cn.js`,
+`src/test_pd2_md_nalezy.js`; upravené na vědomé změny: test_pd_prevod, test_pd_nanecisto, test_pd_mapa_prehled,
+test_pv_597_zapis, test_standardy, test_platby_ock, test_podminky_texty, test_767, test_np_nahled_word; zlatá
+sada VS přegenerována (V4), tabulka zmrazení KL doplněna o Odchylky PROJ (editovatelné jako OCK), harness K39
+(karta PROJ bez Smluvních standardů). Mutace [PD2]: server 26/26, jádro 19/19 chycených; kotvy starších mutací
+(PO, PV, RJ, #512, #536, MD #767) přepsány na nový kód. Kolo `--bez-mutaci --proti origin/claude/integrace-16-10`
+VŠE ZELENÉ (561/0, hodiny 459/0, statické 12/12); porovnání 395: jen očekávané rozdíly
+(`podklady/porovnani/ocekavane_pd2_2026-11-25.txt`), ceny a výsledky výpočtu beze změny. Nový záznam roadmapy #783.
 ## v25.11.5 — PP — připomínky (zvětšení a značky na snímku), krycí list PROJ, větev claude/pp-pripominky-kl
 
 Nad integrací `ebca8ebd` (v25.11.3). Rozhodnutí J. V. 25. 11. 2026 (ROZHODNUTI_LOG). Číslo verze se nezvyšuje.

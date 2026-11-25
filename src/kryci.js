@@ -1282,7 +1282,15 @@ function kryciPlatebniKalendar(zak, varianta, jekly) {
     }
     splatky.push({ id, text, pct, proc, poradi: konecna ? null : ++poradi });
   });
-  return { stary, mesicne, splatky, vynechane, necitelne, hodnoty, podmEf: kryciPodmEfVarianty(varianta) };
+  /* PD2 #771 V4: konečná s pořadím a % jen u neodeslané nabídky a u odeslané se
+   * snímkem podmínek, který nese značku `pd2Tisk` (odeslaná po PD2). */
+  const sn = varianta && varianta.zamek && varianta.zamek.zamceno ? ((varianta.data && varianta.data.kryci && varianta.data.kryci.zmrazenoPodminky) || null) : undefined;
+  const pd2Tisk = sn === undefined || !!(sn && sn.pd2Tisk === 1);
+  const kal = { stary, mesicne, splatky, vynechane, necitelne, hodnoty, podmEf: kryciPodmEfVarianty(varianta) };
+  /* Neviditelná vlastnost: data kalendáře (platbyOck v datech nabídky, otisky
+   * porovnání) zůstanou u staré odeslané nabídky bajt po bajtu stejná. */
+  Object.defineProperty(kal, 'pd2Tisk', { value: pd2Tisk, enumerable: false });
+  return kal;
 }
 
 /* SPLÁTKY OCK = 100 % (SEC-S5, rozhodnutí J. V. 26. 10. 2026 = A, #517).
@@ -1312,6 +1320,24 @@ function kryciPlatbyOck100(kal) {
  * Konečný doklad nese větu „na zbývající část" — procento nepotřebuje;
  * dílčí doklad bez čitelného procenta dostane řádek „1. dílčí faktura:
  * <text krycího listu>" (vlastní znění zůstane, jak ho obchodník napsal). */
+/* PD2 #771 V4 (posudek CN-432, J. V. 25. 11. 2026): očíslovat všechny splátky
+ * a u konečné uvést procento. Záloha a dílčí faktura pořadí nesou ({PORADI}),
+ * výchozí věta konečné faktury ne. Je-li věta konečné faktury VÝCHOZÍ (Firma
+ * ji neupravila) a procento konečné faktury je známé, tiskne se tahle věta;
+ * vlastní znění z Firmy a konečná „na zbývající část“ bez čísla beze změny.
+ * Cizí jazyk: slovníkový vzor v preklad.js (jako věty záloh). */
+const KRYCI_VETA_KONECNA_PROC = 'Po ukončení všech výše uvedených prací a po řádném předání a převzetí celého díla předávacím protokolem '
+  + 'bude vystaven {PORADI} konečný daňový doklad ve výši {PROC} (bez DPH) z celkové ceny díla s vyúčtováním DPH v zákonné výši.';
+function kryciVetaKonecna(kal, s, lang, tr_, V) {
+  const ef = kal.podmEf || kryciPodmEf();
+  const PM = kryciPodm();
+  const vlastni = ef && ef.vety && ef.vety.konecna && ef.vety.konecna.cz !== PM.PODMINKY_VYCHOZI.vety.konecna.cz;
+  const vlastniJazyk = ef && ef.vety && ef.vety.konecna && lang !== 'cz' && ef.vety.konecna[lang];
+  if (kal.pd2Tisk === false || vlastni || vlastniJazyk || typeof s.pct !== 'number' || !(s.pct > 0)) return V('konecna');
+  const poradi = (kal.splatky || []).filter(x => x.id !== 'fakturaKonc').length + 1;
+  const cesky = PM.podmDosad(KRYCI_VETA_KONECNA_PROC, 'cz', poradi, s.proc);
+  return lang === 'cz' ? cesky : tr_(cesky);
+}
 function kryciPlatebniSymboly(kal, P, lang) {
   const tr_ = (typeof P === 'function') ? P : (x => x);
   if (!kal) return {};
@@ -1328,7 +1354,7 @@ function kryciPlatebniSymboly(kal, P, lang) {
   if (kal.mesicne) return { PODM_PLATEBNI_KALENDAR: '', PODM_FAKTURACE_MESICNE: V('mesicne') };
   const dvojtecka = lang === 'fr' ? ' : ' : ': ';
   const vety = (kal.splatky || []).map(s => {
-    if (s.id === 'fakturaKonc') return V('konecna');
+    if (s.id === 'fakturaKonc') return kryciVetaKonecna(kal, s, lang || 'cz', tr_, V);
     if (s.pct === null) return tr_(s.poradi + '. dílčí faktura') + dvojtecka + tr_(s.text);
     return V(s.id === 'zaloha1' ? 'zaloha' : 'faktura2', s);
   });
@@ -1472,6 +1498,6 @@ if (typeof module !== 'undefined')
     kryciSymbolyZeSekci, kryciPodminkoveSymboly, kryciSodSymboly, kryciZmrazPodminky, KRYCI_SOD_OPIS, kryciZmrazSod, kryciDatumCz,
     kryciZKrycihoListuProj,
     kryciFaktura2Dopocet, kryciFaktura2Sync,
-    KRYCI_PRAVIDLA_PLATEB, KRYCI_FAKTURACE_MESICNE_VETA, KRYCI_VETY_V13, kryciPlatbaProcento, kryciPlatbyStary,
+    KRYCI_PRAVIDLA_PLATEB, KRYCI_FAKTURACE_MESICNE_VETA, KRYCI_VETY_V13, KRYCI_VETA_KONECNA_PROC, kryciVetaKonecna, kryciPlatbaProcento, kryciPlatbyStary,
     kryciPlatebniKalendar, kryciPlatebniSymboly, kryciSodPlatby, kryciSodMilnik,
     KRYCI_MISTO_PLNENI, KRYCI_DPH_REZIMY, KRYCI_EU_DIC, kryciDphRezimVychozi, kryciDnesIso, kryciDatumNabidky, kryciPokutaStav, kryciPoleHodnota, kryciDatumTisk, kryciTiskHodnota };

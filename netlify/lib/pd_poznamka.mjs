@@ -207,10 +207,23 @@ export const PD_POZNAMKA_DRUH_ZAKAZNICI = Object.freeze({
  * ne uložení zakázky — v DRUHY je proto, aby ji poznámka šachet / zákazníků
  * nikdy nepřepsala (jinyDruh) a ona je. */
 export const PD_POZNAMKA_ODESL_UVOD = 'Nabídka odeslána: ';
+/* #779 (K59-N1): značka poznámky ODESLÁNÍ nese číslo, kterým se zakázka
+ * prokazuje navenek (zakazkaCisloVedouci — u PROJ číslo PROJ), ne `zak.cislo`
+ * (předloha OCK). Poznámky šachet a zákazníků beze změny. */
+export function pdPoznamkaZnackaOdeslani(zak, G = globalThis) {
+  const ved = typeof G.zakazkaCisloVedouci === 'function' ? G.zakazkaCisloVedouci(zak) : '';
+  const c = String(ved || '').replace(RIDICI, ' ').trim().slice(0, PD_POZNAMKA_CISLO_MAX);
+  return c ? PD_POZNAMKA_ZNACKA + c : pdPoznamkaZnacka(zak);
+}
+/* Naše poznámka odeslání: nová značka (#779), nebo stará (zak.cislo) u poznámek
+ * zapsaných před PD2 — ty se opakovaným odesláním upraví, nezdvojí. */
 export function pdPoznamkaOdeslJeNase(obsah, zak) {
   const t = jednaMezera(bezZnacek(obsah, ' '));
-  const znacka = jednaMezera(pdPoznamkaEsc(pdPoznamkaZnacka(zak).trim()));
-  return !!znacka && t.startsWith(jednaMezera(pdPoznamkaEsc(PD_POZNAMKA_ODESL_UVOD))) && t.endsWith(znacka);
+  if (!t.startsWith(jednaMezera(pdPoznamkaEsc(PD_POZNAMKA_ODESL_UVOD)))) return false;
+  return [pdPoznamkaZnackaOdeslani(zak), pdPoznamkaZnacka(zak)].some((z) => {
+    const zn = jednaMezera(pdPoznamkaEsc(String(z).trim()));
+    return !!zn && t.endsWith(zn);
+  });
 }
 export const PD_POZNAMKA_DRUH_ODESLANI = Object.freeze({
   pole: 'pdOdeslani', uvod: PD_POZNAMKA_ODESL_UVOD, strop: 'poznamka-odeslani', predmet: 'Souhrn odeslané nabídky',

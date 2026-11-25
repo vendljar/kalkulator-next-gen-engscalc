@@ -1403,6 +1403,16 @@
    "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
   },
   {
+   "id": "odchylky",
+   "label": "Jiné odchylky oproti smluvnímu standardu",
+   "sekce": "Rozsah projekčních prací (dle Kalkulace PROJ)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "PD2 #782 (25. 11. 2026): pole přibylo — PROJ stejně jako OCK (J. V. 22. 10.: odchylky OCK editovatelné)"
+  },
+  {
    "id": "cin_zamereni",
    "label": "Zaměření a zpracování výstupů (ZA)",
    "sekce": "Rozsah projekčních prací (dle Kalkulace PROJ)",

@@ -90,11 +90,12 @@ const zp = radek('zpusobFakturace');
 test('spárováno: Způsob fakturace s názvem a typem z CRM',
   zp.stav === 'sparovano' && zp.crmNazev === 'Způsob fakturace' && zp.crmTyp === 'enum' && zp.zapisovatelne === true,
   JSON.stringify(zp));
-test('… zdroj OCK i PROJ', JSON.stringify(zp.zdroj) === '["OCK","PROJ"]');
+test('… zdroj jen OCK (PD2: u PROJ se nezapisuje)', JSON.stringify(zp.zdroj) === '["OCK"]');
 const adr = radek('adresaStavby');
 test('pole jen ke čtení: směr čte, bez zdroje v krycím listu', adr.smer === 'cteni' && adr.zdroj.length === 0
   && adr.stav === 'sparovano', JSON.stringify(adr));
-test('pole, které kalkulátor jen zná: směr „nic"', radek('platba1').smer === 'nic');
+test('pole, které kalkulátor jen zná: směr „nic"', radek('vygenerovatNabidku').smer === 'nic' && radek('odkazKalkulace').smer === 'nic');
+test('PD2: Platba 1 se zapisuje (zdroj PROJ)', radek('platba1').smer === 'zapis' && JSON.stringify(radek('platba1').zdroj) === '["PROJ"]');
 test('nezařazené: Priorita', p.nezarazeno.some((x) => x.nazev === 'Priorita'));
 test('nezařazené nenesou hash (přehled ho nepotřebuje)', p.nezarazeno.every((x) => !('hash' in x)));
 test('nezařazené jsou seřazené podle názvu',

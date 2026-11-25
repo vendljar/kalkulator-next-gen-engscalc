@@ -900,8 +900,10 @@ function nastSmluvniStandardy(sablonyBlok) {
    * přepínačem OCK | PROJ, způsob fakturace PROJ na kartě PROJ, ostatní
    * smluvní standardy patří k OCK. */
   const cast = typeof podmCast === 'function' ? podmCast() : 'ock';
+  /* PD2 (#782): „Způsob fakturace — projekce“ zrušen (`zruseno`) — karta PROJ
+   * smluvní standardy nemá; platby projekce nese plán plateb. */
   const PROJ_STD = ['zpusobFakturaceProj'];
-  const pole = FIRMA_POLE.filter(p => p.sekce === 'Smluvní standardy' && p.id !== 'platnostNabidky'
+  const pole = FIRMA_POLE.filter(p => p.sekce === 'Smluvní standardy' && p.id !== 'platnostNabidky' && !p.zruseno
     && (cast === 'proj') === (PROJ_STD.indexOf(p.id) >= 0));
   /* Prázdné pole neznamená „nic" — krycí list má pro ten případ záložní větu
    * napsanou v kódu. Do 20. 8. 2026 to nebylo nikde vidět, takže formulář
@@ -924,14 +926,14 @@ function nastSmluvniStandardy(sablonyBlok) {
   };
   const hlava = typeof nastPodminkyHlava === 'function' ? nastPodminkyHlava() : '';
   const podminky = typeof nastPodminkyOck !== 'function' ? '' : (cast === 'proj' ? nastPodminkyProj() : nastPodminkyOck());
-  return `${hlava}${sablonyBlok || ''}${podminky}<div class="sec-title">Smluvní standardy${cast === 'proj' ? ' PROJ' : ' OCK'}</div>
+  return `${hlava}${sablonyBlok || ''}${podminky}${!pole.length ? '' : `<div class="sec-title">Smluvní standardy${cast === 'proj' ? ' PROJ' : ' OCK'}</div>
     <div class="note" style="margin-top:0">Věty, které platí pro celou firmu a propisují se do
       <b>každé</b> nabídky, smlouvy i krycího listu. Mění se jednou za čas a pro všechny naráz —
       proto tady, a ne v každé zakázce zvlášť. <b>Nejsou to duplicitní pole ke krycímu listu:</b>
       tohle je jejich <b>zdroj</b>, krycí list je jen předvyplní a v konkrétní zakázce jdou
       přepsat (↺ vrátí hodnotu odsud). Necháte-li pole prázdné, použije se
       <b>záložní věta napsaná v kódu</b> — je vidět jako šedá nápověda v poli.</div>
-    ${pole.map(radek).join('')}
+    ${pole.map(radek).join('')}`}
 
     ${cast === 'proj' && typeof nastPlanPlatebProj === 'function' ? nastPlanPlatebProj() : ''}
 

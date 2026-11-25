@@ -1303,6 +1303,12 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     obrazky: Object.assign({},
       typeof zpracovatelObrazky === 'function' ? zpracovatelObrazky(varianta) : {},
       typeof uvodniFotoObrazky === 'function' ? uvodniFotoObrazky(zak, 'proj') : {}),
+    /* PD2 #771 V1, V2: nadpis fotky bez fotky a „Tel:“ bez čísla pryč (jako OCK) — jen
+     * neodeslaná a odeslaná po PD2 (značka pd2Tisk ve snímku podmínek PROJ). */
+    odstavceTextPryc: (!(varianta && varianta.zamek && varianta.zamek.zamceno)
+      || !!(varianta.data && varianta.data.kryciProj && varianta.data.kryciProj.zmrazenoPodminky && varianta.data.kryciProj.zmrazenoPodminky.pd2Tisk === 1))
+      && typeof docxPopiskyBezHodnoty === 'function' ? docxPopiskyBezHodnoty({ P,
+      foto: typeof uvodniFotoObrazky === 'function' && !!uvodniFotoObrazky(zak, 'proj').UVODNI_FOTO, tel: placeholders.ZPRAC_TEL }) : [],
     souhrn: { bezDph: celkemBezDph, bezDphPred: soucetSekci, zaokrKc: 0,
               soucetSekci, slevaPct: slevaPodilProj, slevaKc: slevaKcNum,
               dphPct: dphPct, dphKc: dphKc, sDph: celkemBezDph + dphKc } };

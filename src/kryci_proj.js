@@ -265,6 +265,9 @@ const KRYCI_PROJ_SEKCE = [
     { id: 'rozsahJine', label: 'Jiné dohodnuté činnosti', verze: ['bo'], typ: 'textarea' },
     { id: 'cenaNezahrnuje', label: 'Cena nezahrnuje', verze: ['bo'], typ: 'textarea',
       prefill: c => kryciProjPodmEf(c && c.firma).proj.cenaNezahrnuje, src: 'Nastavení → Firma' },
+    /* PD2 (#782): odchylky i u PROJ — pole do Pipedrive „Odchylky oproti
+     * smluvnímu standardu“ (stejné znění jako krycí list OCK). */
+    { id: 'odchylky', label: 'Jiné odchylky oproti smluvnímu standardu', verze: ['bo'], typ: 'textarea', ph: 'popis odchylek…' },
   ]) },
   { sekce: 'Platební podmínky', pole: [
     { id: 'splatnostDni', label: 'Splatnost faktur (dní)', verze: ['bo'],

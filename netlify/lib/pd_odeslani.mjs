@@ -25,7 +25,11 @@ export const PD_ODESLANI_POLE = 'pdOdeslani';
 /* Dokumenty, jejichž PRVNÍ tisk = odeslání nabídky (ZAMEK_DOKUMENTY v zamek.js). */
 export const PD_ODESLANI_TYPY = ['nabidka', 'nabidkaTisk', 'nabidkaProj', 'nabidkaProjTisk'];
 /* Pole mapy, která patří smlouvě o dílo — při odeslání nabídky se nepíšou. */
-export const PD_ODESLANI_BEZ_SOD = ['datumPodpisu', 'platebniKalendar', 'spravniPoplatky', 'pokutaSoucinnost', 'kopie1', 'kopie2'];
+/* PD2: podpisy, zmocnitel, Informováno a Platba 1–8 patří prodeji / SoD —
+ * při odeslání nabídky se nepíšou; kontakty zákazníka ano (jen do prázdných). */
+export const PD_ODESLANI_BEZ_SOD = ['datumPodpisu', 'platebniKalendar', 'spravniPoplatky', 'pokutaSoucinnost', 'kopie1', 'kopie2',
+  'podpisFirma', 'podpis2', 'zmocnitel', 'informovanoBo', 'informovanoTech',
+  'platba1', 'platba2', 'platba3', 'platba4', 'platba5', 'platba6', 'platba7', 'platba8'];
 export const PD_ODESLANI_STROP = 20;          // pokusů o zápis na deal za hodinu (vzor PV)
 export const PD_ODESLANI_VOLANI_MS = 2500;
 export const PD_ODESLANI_CELKEM_MS = 8000;

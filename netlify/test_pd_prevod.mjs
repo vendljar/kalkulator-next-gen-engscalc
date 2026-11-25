@@ -104,10 +104,15 @@ test('prázdné pole se neposílá (zápis nikdy nemaže, co je v CRM)',
 test('pole, které čte jen kalkulátor z CRM, se nezapisuje',
   P('typZakazky', 'ock', { typZakazky: 'Realizace' }).prazdne === true
   && pdDoPd(DEF.zdrojFirma, 'ock', { hodnoty: { objPodpisFirma: 'X' } }, pole.popisy.zdrojFirma).prazdne === true);
-/* Kontakty mají v krycím listu protějšek (jméno zástupce), ale jsou to osoby
- * v CRM — zdrojem je Pipedrive, kalkulátor je nikdy nepřepíše. */
-test('pole čtené z CRM se nezapisuje, ani když má v krycím listu protějšek',
-  P('kontaktSmluvni', 'ock', { zastSmluvniJmeno: 'Jan Vzorový' }).prazdne === true);
+/* PD2 (J. V. 25. 11. 2026): kontakty z krycího listu se zapisují JEN do
+ * prázdného pole dealu; osobu (ID) dohledá zápis podle e-mailu — bez
+ * dohledání se nepošle nic („dohledá zápis“), s dohledáním ID osoby. */
+test('PD2: kontakt bez dohledání se nepošle (osobu dohledá až zápis)',
+  P('kontaktSmluvni', 'ock', { zastSmluvniJmeno: 'Jan Vzorový' }).neovereno === true
+  && P('kontaktSmluvni', 'ock', { zastSmluvniJmeno: 'Jan Vzorový' }).hodnota === undefined);
+test('PD2: kontakt s dohledanou osobou = ID osoby; důvod dohledání se předá',
+  P('kontaktSmluvni', 'ock', { zastSmluvniJmeno: 'Jan', zastSmluvniEmail: 'jan@priklad.cz' }, {}, { dohledano: { kontaktSmluvni: { id: 7, text: 'Jan (Firma)' } } }).hodnota === 7
+  && P('kontaktSmluvni', 'ock', { zastSmluvniEmail: 'jan@priklad.cz' }, {}, { dohledano: { kontaktSmluvni: { duvod: 'osoba není' } } }).duvod === 'osoba není');
 /* „Předpokládané datum ukončení realizace" vyplňují obchodníci v Pipedrive
  * (21. 10. 2026: u 85 z 85 vyhraných dealů) — zápis z kalkulace by jim ho
  * přepsal. Kalkulace ho jen čte do Konečného předání díla. */
@@ -204,15 +209,20 @@ test('částka: procento do pole s měnou nepatří', !!P('pokutaSoucinnost', 'o
     && J(D('1 000 Kč za den').hodnota) === J({ value: 1000, currency: 'CZK' }), [D('1 000 Kč / den'), D('1 000 Kč za den')]);
   test('K58-N2: „500 Kč (viz SoD čl. 7)“ → nelze převést', !!D('500 Kč (viz SoD čl. 7)').duvod, D('500 Kč (viz SoD čl. 7)'));
 }
-/* #512 (J. V. 23. 10. 2026): Platby 1–8 kalkulátor neplní vůbec, ani zpětně
- * u nabídky PROJ z doby před plánem plateb; PROJ neposílá ani zálohu. */
+/* PD2 (J. V. 25. 11. 2026, mění #512): Platby 1–8 z NOVÉHO plánu plateb —
+ * jen z dopočtu plánu (`zdroj.platby`), staré ruční splátky KL (sodpPlatba1–8)
+ * ani text se neposílají. */
 const PLATBY = POLE_DEALU.filter((d) => /^platba[1-8]$/.test(d.klic));
 const sPlatbami = Object.fromEntries([1, 2, 3, 4, 5, 6, 7, 8].map((i) => ['sodpPlatba' + i, '95 880 Kč']));
-test('#512: Platby 1–8 jsou v mapě (přehled je nehlásí jako nezařazené), směr „nic"',
-  PLATBY.length === 8 && PLATBY.every((d) => d.smer === 'nic' && !(d.kl && d.kl.proj)) && PLATBY.every((d) => pole.mapa[d.klic]),
-  J(PLATBY.map((d) => [d.klic, d.smer, d.kl])));
-test('#512: Platby 1–8 se nepošlou s plánem plateb',
+test('PD2: Platby 1–8 jsou v mapě, směr „zapis“, zdroj @platbaN jen PROJ',
+  PLATBY.length === 8 && PLATBY.every((d, i) => d.smer === 'zapis' && d.kl.proj === '@platba' + (i + 1) && !d.kl.ock)
+  && PLATBY.every((d) => pole.mapa[d.klic]), J(PLATBY.map((d) => [d.klic, d.smer, d.kl])));
+test('PD2: staré ruční splátky KL (sodpPlatba1–8) se jako Platby nepošlou',
   PLATBY.every((d) => P(d.klic, 'proj', sPlatbami).prazdne === true));
+test('PD2: Platba z dopočtu plánu = částka v Kč, nekladná = důvod',
+  J(P('platba3', 'proj', {}, { platby: { 3: 12345.5 }, mena: 'CZK' }).hodnota) === J({ value: 12345.5, currency: 'CZK' })
+  && P('platba1', 'proj', {}, { platby: { 3: 1 } }).prazdne === true
+  && !!P('platba2', 'proj', {}, { platby: { 2: -5 } }).duvod);
 test('#512: Platby 1–8 se nepošlou ani u nabídky z doby před plánem',
   PLATBY.every((d) => P(d.klic, 'proj', sPlatbami, { planStary: true }).prazdne === true));
 test('#512: záloha PROJ se nepošle s plánem ani u nabídky z doby před plánem',
@@ -442,15 +452,19 @@ test('licence PROJ: výchozí znění z Firmy je „Nevýhradní…"',
   P('licence', 'proj', { autorskaPrava: PM.PODMINKY_VYCHOZI.proj.licence }).hodnota === idVolby('licence', 'Nevýhradní – pro účel stavby dle smlouvy'));
 test('pojištění PROJ: výchozí „ANO – dle…" je „Ano – dle…"',
   P('pojisteni', 'proj', { pojisteni: PM.PODMINKY_VYCHOZI.proj.pojisteni }).hodnota === idVolby('pojisteni', 'Ano – dle pojistné smlouvy zhotovitele'));
-test('způsob fakturace PROJ: výchozí věta „po dokončení jednotlivých stupňů…" má protějšek',
-  P('zpusobFakturace', 'proj', { zpusobFakturace: 'po dokončení jednotlivých stupňů dokumentace' }).hodnota
-    === idVolby('zpusobFakturace', 'Po dokončení stupňů dokumentace'));
+/* PD2 (J. V. 25. 11. 2026): u PROJ se Způsob fakturace do Pipedrive NEZAPISUJE
+ * (platby PROJ nese nový plán). Synonyma voleb zůstávají (testy níž přes pdVolba). */
+test('PD2: Způsob fakturace PROJ se do Pipedrive nezapisuje (ani výchozí věta)',
+  P('zpusobFakturace', 'proj', { zpusobFakturace: 'po dokončení jednotlivých stupňů dokumentace' }).prazdne === true
+  && !DEF.zpusobFakturace.kl.proj && DEF.zpusobFakturace.kl.ock === 'zpusobFakturace');
 /* Věty kalkulace PROJ (planZpusobFakturace) → volby pro projekci, které
  * integrátor založil 2. 11. 2026. Věty se berou ze SKUTEČNÉ funkce kalkulace
  * (plán plateb v různém stavu), ne opsané. */
 {
   const PP = require('../src/plan_plateb.js');
-  const fz = (t) => P('zpusobFakturace', 'proj', { zpusobFakturace: t });
+  /* Převod věty na volbu (synonyma mapy) — od PD2 jen přes pdVolba: zdroj PROJ v mapě není. */
+  const fz = (t) => { const id = pdVolba(t, VOLBY.zpusobFakturace, DEF.zpusobFakturace);
+    return id === null ? { duvod: 'věta nemá volbu v Pipedrive' } : { hodnota: id }; };
   const ocek = [
     ['podle dohodnutého plánu plateb', 'Podle dohodnutého plánu plateb'],
     ['po předání jednotlivých stupňů dokumentace', 'Po předání stupňů dokumentace'],

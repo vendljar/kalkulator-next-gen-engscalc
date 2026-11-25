@@ -122,6 +122,9 @@ function zpracovatelObrazky(varianta) {
  * podpisu v jejich datech přepíšou tady (bez varianty = aktuální uživatel). */
 function zpracovatelTiskneDoklad(d) {
   if (!d || typeof d !== 'object') return d;
+  /* PD2 #771 V1, V2 platí jen pro cenovou nabídku — smlouva o dílo a objednávka
+   * PROJ (data převzatá z nabídky) popisky nemažou. */
+  delete d.odstavceTextPryc;
   if (d.placeholders) Object.assign(d.placeholders, zpracovatelPlaceholders(null));
   if (d.obrazky && typeof d.obrazky === 'object') {
     delete d.obrazky.ZPRAC_PODPIS;

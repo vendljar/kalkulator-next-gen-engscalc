@@ -29,11 +29,12 @@ import {
   pdPristup, pdNastaveno, pdRezim, pdZavolej, PdChyba, pdStropCerstvych, pdZapisPovolen, PD_ZAPIS_VYPNUTY, PD_DEAL_MAX, PD_CACHE_ULOZISTE,
 } from '../lib/pipedrive.mjs';
 import { POLE_DEALU, pdHodnota } from '../lib/pd_mapa.mjs';
-import { pdZamyslenyZapis, pdFazeNajdi } from '../lib/pd_prevod.mjs';
+import { pdZamyslenyZapis, pdFazeNajdi, pdDnesPraha } from '../lib/pd_prevod.mjs';
+import { pdDohledej } from '../lib/pd_dohledani.mjs';
 import { pdDealPatriZakazce } from '../lib/pd_overeni.mjs';
 import { pdWebhookOdkaz } from '../lib/pd_webhook.mjs';
 import { pdRejstrikZapis, pdProtokol } from '../lib/pd_vazba.mjs';
-import { pdPoznamkaObsah, pdPoznamkaZnacka, pdPoznamkaOtisk, pdPoznamkaZapisDruhu, PD_POZNAMKA_DRUH_ODESLANI } from '../lib/pd_poznamka.mjs';
+import { pdPoznamkaObsah, pdPoznamkaZnackaOdeslani, pdPoznamkaOtisk, pdPoznamkaZapisDruhu, PD_POZNAMKA_DRUH_ODESLANI } from '../lib/pd_poznamka.mjs';
 import { pdPoleMapa } from './pd_pole.mjs';
 import { pdNanecistoStrana } from './pd_nanecisto.mjs';
 import { pdProdejZmeny, pdProdejCnSedi, pdProdejOznacRadky, pdProdejChybaVeta } from '../lib/pd_prodej.mjs';
@@ -186,12 +187,12 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
 
   let pole, dealData;
   try {
-    pole = await pdPoleMapa();
+    pole = await pdPoleMapa(false, (c, o) => zavolej(c, o));   // PV N2: v časovém rozpočtu
     const ov = await pdDealPatriZakazce(ulozena, deal, { zavolej: (c) => zavolej(c), poleMapa: async () => pole,
       odkaz: pdWebhookOdkaz(soubor, req) }, G);
     if (!ov.ok) return akce === 'nahled' ? json({ ok: false, stav: 'neovereno', chyba: ov.duvod }, 409)
       : selhani(409, krokKlic, ov.duvod, '', { kod: 'neovereno' });
-    dealData = await zavolej('/api/v2/deals/' + Number(deal));
+    dealData = ov.deal || await zavolej('/api/v2/deals/' + Number(deal));   // PV N3: deal z ověření odkazem
     if (!dealData || typeof dealData !== 'object') throw new PdChyba('Pipedrive deal zakázky nezná.', 404);
   } catch (e) {
     if (e instanceof PdChyba) return akce === 'nahled' ? chybaPd(e) : selhani(e.stav === 404 ? 404 : 502, krokKlic, pdProdejChybaVeta(e), e.message);
@@ -220,7 +221,9 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
   let uzivatele, fazeSeznam;
   try {
     const u = await zavolej('/api/v1/users');
-    uzivatele = Array.isArray(u) ? u.map((x) => ({ id: x.id, name: String(x.name || '') || ('uživatel Pipedrive ' + x.id), email: x.email })) : undefined;
+    /* PD2 U6 (a PV N1): uživatel Pipedrive jen aktivní (active_flag). */
+    uzivatele = Array.isArray(u) ? u.filter((x) => x && x.active_flag !== false)
+      .map((x) => ({ id: x.id, name: String(x.name || '') || ('uživatel Pipedrive ' + x.id), email: x.email })) : undefined;
     const f = await zavolej('/api/v2/stages', { dotaz: { limit: 500 } });
     fazeSeznam = Array.isArray(f) ? f.map((x) => ({ id: x.id, name: x.name, pipeline_id: x.pipeline_id, order_nr: x.order_nr })) : [];
   } catch (e) {
@@ -232,7 +235,11 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
   const datum = typeof G.nabidkaDatum === 'function' ? G.nabidkaDatum(ulozena, v) : String(v.zamek.datumNabidky || '');
   const podklad = pdOdeslaniStrany(ulozena, v, G, JEKLY, datum);
   if (podklad.chyba) return json({ ok: false, chyba: podklad.chyba }, 409);
-  const z = pdZamyslenyZapis(pdOdeslaniDefinice(POLE_DEALU), podklad.strany, pole, { uzivatele, mena: 'CZK', deal: dealData }, {}, zdroje);
+  /* PD2: kontakty zákazníka jen do prázdných polí — osoby dohledá server (U1, U2). */
+  const definice = pdOdeslaniDefinice(POLE_DEALU);
+  const dohl = await pdDohledej(definice, podklad.strany, pole, dealData, (c, o) => zavolej(c, o));
+  const z = pdZamyslenyZapis(definice, podklad.strany, pole,
+    { uzivatele, mena: 'CZK', deal: dealData, dohledano: dohl.dohledano, dnes: pdDnesPraha() }, {}, zdroje);
   const faze = pdOdeslaniFaze(fazeSeznam, dealData, pdOdeslaniFazeKonfigurace(), pdFazeNajdi);
   /* R3 (doporučení revize, rozhodne J. V. #765): prodaná zakázka nebo vyhraný
    * deal — hodnotu ani pole krycího listu NEPOSÍLAT (deal nese prodej / SoD),
@@ -257,7 +264,7 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
   });
   const zpr = v.zamek.zpracovatel && typeof v.zamek.zpracovatel === 'object' ? v.zamek.zpracovatel : null;
   const poznamkaText = pdOdeslaniPoznamkaText({ cislo: cisloPapir, datum, varianty, sachty: podklad.sachty,
-    vypracoval: zpr ? [zpr.titul, zpr.jmeno].filter(Boolean).join(' ') : '', odkaz: pdWebhookOdkaz(soubor, req), znacka: pdPoznamkaZnacka(ulozena) });
+    vypracoval: zpr ? [zpr.titul, zpr.jmeno].filter(Boolean).join(' ') : '', odkaz: pdWebhookOdkaz(soubor, req), znacka: pdPoznamkaZnackaOdeslani(ulozena, G) });
   const otisk = pdOdeslaniOtisk(deal, dealData.update_time, zmeny.patch, zamekKdy, poznamkaText);
   const zapsanoNazvy = radky.filter((r) => r.posle).map((r) => r.nazev);
 

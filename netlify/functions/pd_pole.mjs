@@ -33,16 +33,19 @@ export const PLATNOST_MS = 24 * 3600 * 1000;
 
 /* Vrací hotovou mapu i ostatním funkcím (pd_dealy, pd_deal), aby si ji
  * nemusela každá skládat po svém — a hlavně aby cache byla jedna. */
-export async function pdPoleMapa(obnovit = false) {
+/* PV N2 (#752): `zavolej` = volání s časovou mezí volajícího (zápis prodeje,
+ * odeslání) — dotazy na definice polí pak čerpají jeho rozpočet a nevisí. */
+export async function pdPoleMapa(obnovit = false, zavolej = null) {
   const s = await uloziste(ULOZISTE);
   const ulozene = await s.cti(KLIC);
   if (!obnovit && ulozene && ulozene.verze === PD_POLE_VERZE
       && (Date.now() - (ulozene.poridano || 0)) < PLATNOST_MS)
     return ulozene;
 
+  const vol = typeof zavolej === 'function' ? zavolej : pdZavolej;
   const [poleDealu, poleOrg] = await Promise.all([
-    pdZavolej('/api/v2/dealFields', { dotaz: { limit: 500 } }),
-    pdZavolej('/api/v2/organizationFields', { dotaz: { limit: 500 } }),
+    vol('/api/v2/dealFields', { dotaz: { limit: 500 } }),
+    vol('/api/v2/organizationFields', { dotaz: { limit: 500 } }),
   ]);
   const deal = pdMapaZPoli(poleDealu, POLE_DEALU);
   const org = pdMapaZPoli(poleOrg, POLE_ORGANIZACE);

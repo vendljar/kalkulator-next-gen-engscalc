@@ -68,7 +68,11 @@ const poradi = await s.evaluate(() => {
 });
 const vPoradi = m => m && m.prepinac >= 0 && m.prepinac < m.sablony && m.sablony < m.platebni && m.platebni < m.standardy;
 zkus('NS: OCK — přepínač → šablony → Platební podmínky OCK → Smluvní standardy', vPoradi(poradi.ock), JSON.stringify(poradi.ock));
-zkus('NS: PROJ — přepínač → šablony → Platební podmínky PROJ → Smluvní standardy', vPoradi(poradi.proj), JSON.stringify(poradi.proj));
+/* PD2 (#782, J. V. 25. 11. 2026): „Způsob fakturace — projekce“ zrušen — karta PROJ smluvní
+ * standardy nemá (prázdná sekce se netiskne); pořadí přepínač → šablony → platební podmínky zůstává. */
+zkus('NS: PROJ — přepínač → šablony → Platební podmínky PROJ; Smluvní standardy PROJ zrušeny (PD2)',
+  poradi.proj && poradi.proj.prepinac >= 0 && poradi.proj.prepinac < poradi.proj.sablony && poradi.proj.sablony < poradi.proj.platebni
+  && poradi.proj.standardy === -1, JSON.stringify(poradi.proj));
 zkus('NS: online správa šablon — totéž pořadí', vPoradi(poradi.onlineOck) && poradi.onlineSprava, JSON.stringify(poradi));
 zkus('žádná chyba stránky', chyby.length === 0, chyby.join(' | '));
 

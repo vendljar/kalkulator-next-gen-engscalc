@@ -51,11 +51,13 @@ const tr = L => x => PR.tr(x, L);
   const zak = zk.novaZakazka(); const v = zak.varianty[0];
   const kal = kr.kryciPlatebniKalendar(zak, v, JEKLY);
   const [v13zal, v13f2, v13kon] = kr.KRYCI_VETY_V13;
-  const dnes = L => [v13zal.replace('{{PODM_ZALOHA1_PROC}}', '50 %'), v13f2.replace('{{PODM_FAKTURA2_PROC}}', '40 %'), v13kon]
+  /* PD2 #771 V4: konečná faktura s pořadím a procentem (KRYCI_VETA_KONECNA_PROC), zálohy beze změny */
+  const konecnaV4 = kr.KRYCI_VETA_KONECNA_PROC.replace('{PORADI}', '3.').replace('{PROC}', '10 %');
+  const dnes = L => [v13zal.replace('{{PODM_ZALOHA1_PROC}}', '50 %'), v13f2.replace('{{PODM_FAKTURA2_PROC}}', '40 %'), konecnaV4]
     .map(x => L === 'cz' ? x : PR.tr(x, L)).join('\n');
   ['cz'].concat(JAZ).forEach(L => {
     const s = kr.kryciPlatebniSymboly(kal, L === 'cz' ? (x => x) : tr(L), L);
-    test('prázdné Nastavení: kalendář nabídky ' + L.toUpperCase() + ' = dosavadní věty (šablona v13 + slovník)',
+    test('prázdné Nastavení: kalendář nabídky ' + L.toUpperCase() + ' = věty šablony v13 + konečná s pořadím a % (PD2 V4)',
       s.PODM_PLATEBNI_KALENDAR === dnes(L), [s.PODM_PLATEBNI_KALENDAR.slice(0, 120), dnes(L).slice(0, 120)]);
     if (L !== 'cz') test('kalendář ' + L.toUpperCase() + ' nemá češtinu', !CESKA.test(s.PODM_PLATEBNI_KALENDAR), s.PODM_PLATEBNI_KALENDAR.slice(0, 200));
   });

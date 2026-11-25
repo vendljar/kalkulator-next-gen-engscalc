@@ -90,7 +90,11 @@ export const POLE_DEALU = [
    * dealů, 83× po datu výhry) — zdrojem je CRM. V kalkulaci jen předvyplní
    * Konečné předání díla (krycí list OCK); kalkulace ho nepřepisuje. */
   D('terminPlneni', 'Předpokládané datum ukončení realizace', 'datum', { ock: 'terminPredani' }, 'cteni'),
-  D('zpusobFakturace', 'Způsob fakturace', 'volba', { ock: 'zpusobFakturace', proj: 'zpusobFakturace' }, 'zapis', {
+  /* PD2 (J. V. 25. 11. 2026): u PROJ se Způsob fakturace do Pipedrive NEZAPISUJE —
+   * platby projekce nese jen nový plán (Platební kalendář, Platba 1–8). Pole KL
+   * PROJ „Způsob fakturace“ zůstalo jen jako doklad starých odeslaných nabídek.
+   * Synonyma PROJ níž zůstávají kvůli přehledu voleb, zdroj PROJ ne. */
+  D('zpusobFakturace', 'Způsob fakturace', 'volba', { ock: 'zpusobFakturace' }, 'zapis', {
     /* P10.5 (J. V. 29. 9. 2026): „náš standard je 50, 40, 10" — tedy po
      * milnících; dřívější výchozí „Náš standard / měsíční" aplikace čte
      * jako „Po milnících". */
@@ -142,12 +146,19 @@ export const POLE_DEALU = [
   D('priplatkyNabidka', 'Příplatky v nabídce', 'text', { ock: 'priplatkyNabidka' }, 'zapis', { typ: ['text'] }),
   D('hlavniProjektant', 'Hlavní projektant', 'text', { proj: 'hlavniProjektant' }, 'zapis'),
   D('odpovednaOsoba', 'Odpovědná osoba za projekci', 'uzivatel', { proj: 'odpovednyEmail' }, 'zapis'),
+  /* PD2 (#782, J. V. 25. 11. 2026): kontakty z krycího listu JEN DO PRÁZDNÝCH
+   * polí dealu (`jenPrazdne`) — osoba Pipedrive podle e-mailu z KL (`hledej`;
+   * druhé id v `kl` je e-mail). Nic se nezakládá; nenalezená / víc shod = řádek
+   * „nelze“ s důvodem (lib/pd_dohledani.mjs). Vyplněné pole se nepřepisuje. */
   D('kontaktSmluvni', 'Kontakt – ve věcech smluvních', 'osoba',
-    { ock: 'zastSmluvniJmeno', proj: 'zastSmluvniJmeno' }, 'cteni'),
+    { ock: ['zastSmluvniJmeno', 'zastSmluvniEmail'], proj: ['zastSmluvniJmeno', 'zastSmluvniEmail'] }, 'zapis',
+    { prevod: 'dohledani', jenPrazdne: true, hledej: 'osobaEmail' }),
   D('kontaktObchodni', 'Kontakt – ve věcech obchodních', 'osoba',
-    { ock: 'zastObchodniJmeno', proj: 'zastObchodniJmeno' }, 'cteni'),
+    { ock: ['zastObchodniJmeno', 'zastObchodniEmail'], proj: ['zastObchodniJmeno', 'zastObchodniEmail'] }, 'zapis',
+    { prevod: 'dohledani', jenPrazdne: true, hledej: 'osobaEmail' }),
   D('kontaktTechnicky', 'Kontakt – ve věcech technických', 'osoba',
-    { ock: 'zastTechnickyJmeno', proj: 'zastTechnickyJmeno' }, 'cteni'),
+    { ock: ['zastTechnickyJmeno', 'zastTechnickyEmail'], proj: ['zastTechnickyJmeno', 'zastTechnickyEmail'] }, 'zapis',
+    { prevod: 'dohledani', jenPrazdne: true, hledej: 'osobaEmail' }),
   D('typSmlouvy', 'Typ smlouvy', 'volba', { ock: 'typSmlouvy', proj: 'typSmlouvy' }, 'zapis',
     { synonyma: { 'cizi': 'Smlouva zákazníka' } }),
   D('typProjektu', 'Typ projektu', 'volba', { ock: 'typProjektu', proj: 'typProjektu' }, 'zapis'),
@@ -182,7 +193,8 @@ export const POLE_DEALU = [
   D('terminPovoleni', 'Předpoklad povolení záměru', 'datum', { proj: 'terminPovoleni' }, 'zapis'),
   D('terminDps', 'Odevzdání DPS', 'datum', { proj: 'terminDps' }, 'zapis'),
   D('terminJine', 'Jiné termíny', 'text', { ock: 'terminJine', proj: 'terminJine' }, 'zapis'),
-  D('odchylky', 'Odchylky oproti smluvnímu standardu', 'text', { ock: 'odchylky' }, 'zapis'),
+  /* PD2: odchylky i u PROJ (pole KL PROJ „Jiné odchylky…“ přibylo v PD2). */
+  D('odchylky', 'Odchylky oproti smluvnímu standardu', 'text', { ock: 'odchylky', proj: 'odchylky' }, 'zapis'),
   /* Odvozené z kalkulace (3D sken, sekce DPZ/DPS) — z CRM se nečtou. */
   D('zamereniStrojovna', 'Zaměření strojovny', 'volba', { ock: 'zamereniStrojovna' }, 'zapis'),
   D('situacniFoto', 'Situační fotografie', 'volba', { ock: 'situacniFoto' }, 'zapis'),
@@ -190,18 +202,22 @@ export const POLE_DEALU = [
     { prevod: 'dokumentace' }),
   D('cenaNezahrnuje', 'Cena nezahrnuje', 'text', { ock: 'cenaNezahrnuje', proj: 'cenaNezahrnuje' }, 'zapis'),
   D('rozsahJine', 'Jiné dohodnuté činnosti', 'text', { proj: 'rozsahJine' }, 'zapis'),
-  /* Platby 1–8 kalkulátor NEPLNÍ — ani u nabídky PROJ z doby před plánem
-   * plateb (rozhodnutí J. V. 23. 10. 2026, #512). Nové nabídky mají proměnný
-   * plán, osm pevných částek by u nich lhalo. Pole zůstávají v mapě, aby je
-   * přehled nehlásil jako nezařazená; platby nese kalendář níž. */
-  D('platba1', 'Platba 1 – po podpisu smlouvy', 'mena', null, 'nic'),
-  D('platba2', 'Platba 2 – při předání 2D výstupů ze zaměření', 'mena', null, 'nic'),
-  D('platba3', 'Platba 3 – DPZ pro podání na dotčené orgány', 'mena', null, 'nic'),
-  D('platba4', 'Platba 4 – DPZ pro podání na stavební úřad', 'mena', null, 'nic'),
-  D('platba5', 'Platba 5 – po vydání pravomocného povolení záměru', 'mena', null, 'nic'),
-  D('platba6', 'Platba 6 – po předání kompletní DPS', 'mena', null, 'nic'),
-  D('platba7', 'Platba 7 – po dokončení ekonomické zadávací části', 'mena', null, 'nic'),
-  D('platba8', 'Platba 8 – po doporučení dodavatele realizace', 'mena', null, 'nic'),
+  /* PLATBY 1–8 (PD2, J. V. 25. 11. 2026; do té doby se neplnily — #512). Milníky
+   * NOVÉHO plánu plateb PROJ se přiřadí podle typu (pořadí PLAN_SODP_STARE
+   * v src/plan_plateb.js = názvy polí): podpis, výstupy ze zaměření, DPZ pro
+   * dotčené orgány, DPZ pro stavební úřad, povolení záměru, DPS, EZC, výběr
+   * dodavatele. Částky = TÝŽ dopočet jako text Platebního kalendáře (snímek
+   * plánu zamčené varianty); co žádnému poli neodpovídá, zůstane jen v textu
+   * kalendáře (řádek „Mimo pole Platba 1–8“). Plán z doby před plánem plateb
+   * nebo nesedící součet = nic. Jen zápis prodeje (sekce SoD). */
+  D('platba1', 'Platba 1 – po podpisu smlouvy', 'mena', { proj: '@platba1' }, 'zapis', { prevod: 'platba' }),
+  D('platba2', 'Platba 2 – při předání 2D výstupů ze zaměření', 'mena', { proj: '@platba2' }, 'zapis', { prevod: 'platba' }),
+  D('platba3', 'Platba 3 – DPZ pro podání na dotčené orgány', 'mena', { proj: '@platba3' }, 'zapis', { prevod: 'platba' }),
+  D('platba4', 'Platba 4 – DPZ pro podání na stavební úřad', 'mena', { proj: '@platba4' }, 'zapis', { prevod: 'platba' }),
+  D('platba5', 'Platba 5 – po vydání pravomocného povolení záměru', 'mena', { proj: '@platba5' }, 'zapis', { prevod: 'platba' }),
+  D('platba6', 'Platba 6 – po předání kompletní DPS', 'mena', { proj: '@platba6' }, 'zapis', { prevod: 'platba' }),
+  D('platba7', 'Platba 7 – po dokončení ekonomické zadávací části', 'mena', { proj: '@platba7' }, 'zapis', { prevod: 'platba' }),
+  D('platba8', 'Platba 8 – po doporučení dodavatele realizace', 'mena', { proj: '@platba8' }, 'zapis', { prevod: 'platba' }),
   /* Seznam plateb smlouvy o dílo PROJ, jedna věta na platbu („Platba ve výši
    * … Kč + DPH proběhne <milník>.") — tentýž text jako {{SODP_PLATEBNI_KALENDAR}}
    * ze stejného dopočtu (planPdKalendar v src/plan_plateb.js). Jen Velký
@@ -213,17 +229,25 @@ export const POLE_DEALU = [
     { proj: 'sodpSpravniPoplatky' }, 'zapis'),
   D('pokutaSoucinnost', 'Pokuta za prodlení zákazníka se součinností (Kč / den)', 'mena',
     { ock: 'sodPokutaDenni', proj: 'sodpPokutaDenni' }, 'zapis'),
+  /* PD2: podpisy a zmocnitel jen do prázdných polí dealu. Firma podle přesného
+   * názvu (jediná shoda), druhý podepisující a zmocnitel podle přesného jména
+   * MEZI OSOBAMI ORGANIZACE DEALU (KL nemá e-mail; deal bez organizace = nelze). */
   D('podpisFirma', 'Podepisující firma (pokud jiná)', 'organizace',
-    { ock: 'objPodpisFirma', proj: 'objPodpisFirma' }, 'cteni'),
-  D('podpis2', 'Druhý podepisující za zákazníka', 'osoba', { ock: 'objPodpis2Jmeno', proj: 'objPodpis2Jmeno' }, 'cteni'),
+    { ock: 'objPodpisFirma', proj: 'objPodpisFirma' }, 'zapis', { prevod: 'dohledani', jenPrazdne: true, hledej: 'organizace' }),
+  D('podpis2', 'Druhý podepisující za zákazníka', 'osoba', { ock: 'objPodpis2Jmeno', proj: 'objPodpis2Jmeno' }, 'zapis',
+    { prevod: 'dohledani', jenPrazdne: true, hledej: 'osobaJmeno' }),
   D('kopie1', 'Faktury v kopii na (1)', 'text', { ock: 'objKopie1', proj: 'objKopie1' }, 'zapis'),
   D('kopie2', 'Faktury v kopii na (2)', 'text', { ock: 'objKopie2', proj: 'objKopie2' }, 'zapis'),
   /* Datum narození a bydliště zmocnitele jsou osobní údaje plné moci — do CRM
    * je kalkulátor nekopíruje (rozbor 6. 10., P6). */
-  D('zmocnitel', 'Zmocnitel (plná moc)', 'osoba', null, 'nic'),
-  /* Krycí list drží, KDO byl informován (text); datum plní automatizace. */
-  D('informovanoBo', 'Informováno Backoffice', 'datum', null, 'nic'),
-  D('informovanoTech', 'Informováno Technické odd.', 'datum', null, 'nic'),
+  D('zmocnitel', 'Zmocnitel (plná moc)', 'osoba', { proj: 'pmZmocnitel' }, 'zapis',
+    { prevod: 'dohledani', jenPrazdne: true, hledej: 'osobaJmeno' }),
+  /* Krycí list drží, KDO byl informován (text); pole Pipedrive je datum →
+   * datum zápisu (Praha), jen do prázdného (J. V. 25. 11. 2026, PD2). */
+  D('informovanoBo', 'Informováno Backoffice', 'datum', { ock: 'podpisInformovanBo', proj: 'podpisInformovanBo' }, 'zapis',
+    { prevod: 'informovano', jenPrazdne: true }),
+  D('informovanoTech', 'Informováno Technické odd.', 'datum', { ock: 'podpisInformovanTech', proj: 'podpisInformovanTech' }, 'zapis',
+    { prevod: 'informovano', jenPrazdne: true }),
   /* Webhook „Vygenerovat nabídku" (#553, 3. 11. 2026). Obě pole zakládá
    * integrátor. Spouštěcí pole kalkulátor nečte (automatizace ho jen sleduje
    * a pošle ID dealu, typ volí integrátor); do odkazu píše webhook adresu

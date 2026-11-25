@@ -442,7 +442,9 @@ function prodPdUiTabulka(d) {
   const radky = (d.radky || []).filter(r => r.stav !== 'prazdne');
   const tr = radky.map(r => {
     const nova = r.stav === 'zapise' ? `<b>${esc(r.hodnotaText)}</b>` : '<span class="note">—</span>';
+    /* PD2: „ponechá se“ = vyplněné pole dealu se nepřepisuje / platby mimo pole. */
     const stitekHtml = r.posle ? '<span class="pill">zapíše se</span>' : r.bezeZmeny ? '<span class="pill mut">beze změny</span>'
+      : r.stav === 'ponechano' ? `<span class="pill mut">ponechá se</span>${r.duvod ? `<div class="note">${esc(r.duvod)}</div>` : ''}`
       : `<span class="pill bad">nezapíše se</span>${r.duvod ? `<div class="note">${esc(r.duvod)}</div>` : ''}`;
     return `<tr data-prodpd-pole="${esc(r.klic)}" data-prodpd-posle="${r.posle ? 1 : 0}"><td>${esc(r.nazev)}</td>
       <td class="note">${esc(r.vCrm || '')}</td><td>${nova}</td><td>${stitekHtml}</td></tr>`;
