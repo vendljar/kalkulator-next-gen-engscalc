@@ -66,7 +66,12 @@ const FIRMA_POLE = [
    * neseděla ani na jedno. */
   { id: 'platnostNabidky', sekce: 'Smluvní standardy', label: 'Platnost nabídky', symbol: 'FIRMA_PLATNOST_NABIDKY' },
   { id: 'zpusobFakturaceOck', sekce: 'Smluvní standardy', label: 'Způsob fakturace — OCK', symbol: 'FIRMA_FAKTURACE_OCK' },
-  { id: 'zpusobFakturaceProj', sekce: 'Smluvní standardy', label: 'Způsob fakturace — projekce', symbol: 'FIRMA_FAKTURACE_PROJ' },
+  /* PD2 (#782, J. V. 25. 11. 2026): nastavení ZRUŠENO — platby projekce nese
+   * jen plán plateb. Pole se v Nastavení neukazuje (`zruseno`), uložená
+   * hodnota se nečte; symbol zůstává s výchozí větou, aby šablona, která by ho
+   * snad nesla, nevytiskla syrové {{…}}. Odeslané nabídky čtou svou větu ze
+   * snímku krycího listu (kryciProj.zmrazeno). */
+  { id: 'zpusobFakturaceProj', sekce: 'Smluvní standardy', label: 'Způsob fakturace — projekce', symbol: 'FIRMA_FAKTURACE_PROJ', zruseno: true },
   { id: 'rozsahDefinice', sekce: 'Smluvní standardy', label: 'Rozsah díla — čím je definován', symbol: 'FIRMA_ROZSAH' },
   /* Termín dodání OCK (21. 8. 2026, zadání J. V. „atyp = + 4 týdny v CN
    * termín"). Standardní lhůta je firemní údaj, ne údaj zakázky — mění se
@@ -454,7 +459,10 @@ function firmaAktualni() {
 }
 
 function firmaPole(id) { return FIRMA_POLE.find(p => p.id === id) || null; }
+const FIRMA_ZRUSENA = { zpusobFakturaceProj: 'po dokončení jednotlivých stupňů dokumentace' };
 function firmaHodnota(f, id) {
+  /* Zrušené nastavení (PD2): uložená hodnota se nečte, platí pevná věta. */
+  if (Object.prototype.hasOwnProperty.call(FIRMA_ZRUSENA, id)) return FIRMA_ZRUSENA[id];
   const v = (f || {})[id];
   return v == null ? '' : (typeof v === 'boolean' ? v : String(v).trim());
 }

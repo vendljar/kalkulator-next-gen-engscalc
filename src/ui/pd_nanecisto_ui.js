@@ -99,7 +99,7 @@ function pdnUiObsah(kde) {
     ${d.rezim === 'simulator' ? `<div class="note" id="pdnSimulator_${kde}" style="color:var(--red, #c0392b)"><b>SIMULÁTOR PIPEDRIVE</b> — porovnání „dnes v Pipedrive" je ze smyšlených dat.</div>` : ''}
     ${stare}${chybaBlok}
     <div id="pdnSouhrn_${kde}" style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0">
-      ${stitek('zapise')} ${stitek('nelze')} ${stitek('chybiPole')} ${stitek('neovereno')} ${stitek('prazdne')}
+      ${stitek('zapise')} ${stitek('nelze')} ${stitek('chybiPole')} ${stitek('neovereno')} ${stitek('prazdne')}${s.ponechano ? ' ' + stitek('ponechano') : ''}
       <span class="pill warn" data-pdn-souhrn="kolize">kolize: ${esc(s.kolize || 0)}</span></div>
     ${upoz ? `<ul class="note" id="pdnUpozorneni_${kde}">${upoz}</ul>` : ''}
     <div class="btns" style="margin:8px 0">${btn}

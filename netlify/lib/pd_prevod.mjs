@@ -145,7 +145,7 @@ function mena(text, spolecne) {
   if (/%/.test(text)) return { duvod: '„' + text + '" je procento, pole čeká částku' };
   if (MENA_ZAPORNA.test(String(text))) return { duvod: 'částka je záporná — do pole se nezapíše' };
   if (MENA_TECKA_TISICE.test(String(text)))
-    return { duvod: 'částka má tečku jako oddělovač tisíců („5.000“) — nejde poznat, jestli jde o tisíce; napište „5 000 Kč“' };
+    return { duvod: 'částka má tečku jako oddělovač tisíců (např. „5.000“) — nejde poznat, jestli jde o tisíce; napište „5 000 Kč“' };
   if (!menaJenCastka(text)) return { duvod: '„' + text + '" není částka (čeká se číslo, případně s Kč / EUR / bez DPH)' };
   const j = jedno(text, false);
   if (j.duvod) return j;

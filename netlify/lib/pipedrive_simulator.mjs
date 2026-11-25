@@ -428,6 +428,38 @@ async function pdSimFetchVnitrni(url, init = {}) {
    * organizace jako při zpožděném indexu (D.hledaniSkryt = [id…]).
    * POST /api/v2/organizations: `name` povinně, `owner_id`, `address.value`,
    * `custom_fields` jen známá pole (neznámé → 400, pole se nezakládá). */
+  /* HLEDÁNÍ OSOB (PD2 #782): GET /api/v2/persons/search — `term`, `fields`
+   * (email, name, phone, notes, custom_fields), `exact_match`, `organization_id`,
+   * `limit` (max 100); odpověď { items: [{ result_score, item: { id, type, name,
+   * emails: [text], phones, organization: { id, name } } }] }. Test smí přimíchat
+   * kandidáty, kteří hledání „tvrdí“, ale nesedí (D.hledaniOsobNavic = [id…]) —
+   * server je musí ověřit znovu. D.hledaniVisi = true: hledání (osob i
+   * organizací) neodpoví nikdy, jen zrušení ho ukončí (časová mez U5). */
+  if (metoda === 'GET' && (cesta === '/api/v2/persons/search' || cesta === '/api/v2/organizations/search') && D.hledaniVisi) {
+    return new Promise((_, ne) => {
+      if (init.signal) init.signal.addEventListener('abort', () => ne(new Error('aborted')), { once: true });
+    });
+  }
+  if (metoda === 'GET' && cesta === '/api/v2/persons/search') {
+    const term = String(u.searchParams.get('term') || '');
+    const presne = u.searchParams.get('exact_match') === 'true';
+    if (term.length < (presne ? 1 : 2)) return chyba(400, 'Invalid term');
+    const pole = String(u.searchParams.get('fields') || 'custom_fields,email,notes,phone,name').split(',');
+    const org = parseInt(u.searchParams.get('organization_id'), 10);
+    const limit = Math.min(Math.max(parseInt(u.searchParams.get('limit'), 10) || 100, 1), 100);
+    const sedi = (v) => { const t = String(v == null ? '' : v).toLowerCase(); const q = term.toLowerCase(); return presne ? t === q : t.includes(q); };
+    const nalez = D.osoby.filter((o) => o.active_flag !== false && (!(org > 0) || o.org_id === org)
+      && ((pole.includes('name') && sedi(o.name)) || (pole.includes('email') && (o.emails || []).some((e) => sedi(e.value)))));
+    const navic = (Array.isArray(D.hledaniOsobNavic) ? D.hledaniOsobNavic : []).map((id) => D.osoby.find((o) => o.id === id))
+      .filter((o) => o && !nalez.includes(o));
+    const items = nalez.concat(navic).slice(0, limit).map((o) => {
+      const f = D.organizace.find((x) => x.id === o.org_id);
+      return { result_score: 1, item: { id: o.id, type: 'person', name: o.name, phones: (o.phones || []).map((x) => x.value),
+        emails: (o.emails || []).map((x) => x.value), visible_to: 3, owner: { id: 1 },
+        organization: f ? { id: f.id, name: f.name, address: null } : null, custom_fields: [], notes: [] } };
+    });
+    return data({ items }, { additional_data: { next_cursor: null } });
+  }
   if (metoda === 'GET' && cesta === '/api/v2/organizations/search') {
     const term = String(u.searchParams.get('term') || '');
     const presne = u.searchParams.get('exact_match') === 'true';

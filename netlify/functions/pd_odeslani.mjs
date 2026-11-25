@@ -34,7 +34,7 @@ import { pdDohledej } from '../lib/pd_dohledani.mjs';
 import { pdDealPatriZakazce } from '../lib/pd_overeni.mjs';
 import { pdWebhookOdkaz } from '../lib/pd_webhook.mjs';
 import { pdRejstrikZapis, pdProtokol } from '../lib/pd_vazba.mjs';
-import { pdPoznamkaObsah, pdPoznamkaZnacka, pdPoznamkaOtisk, pdPoznamkaZapisDruhu, PD_POZNAMKA_DRUH_ODESLANI } from '../lib/pd_poznamka.mjs';
+import { pdPoznamkaObsah, pdPoznamkaZnackaOdeslani, pdPoznamkaOtisk, pdPoznamkaZapisDruhu, PD_POZNAMKA_DRUH_ODESLANI } from '../lib/pd_poznamka.mjs';
 import { pdPoleMapa } from './pd_pole.mjs';
 import { pdNanecistoStrana } from './pd_nanecisto.mjs';
 import { pdProdejZmeny, pdProdejCnSedi, pdProdejOznacRadky, pdProdejChybaVeta } from '../lib/pd_prodej.mjs';
@@ -264,7 +264,7 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
   });
   const zpr = v.zamek.zpracovatel && typeof v.zamek.zpracovatel === 'object' ? v.zamek.zpracovatel : null;
   const poznamkaText = pdOdeslaniPoznamkaText({ cislo: cisloPapir, datum, varianty, sachty: podklad.sachty,
-    vypracoval: zpr ? [zpr.titul, zpr.jmeno].filter(Boolean).join(' ') : '', odkaz: pdWebhookOdkaz(soubor, req), znacka: pdPoznamkaZnacka(ulozena) });
+    vypracoval: zpr ? [zpr.titul, zpr.jmeno].filter(Boolean).join(' ') : '', odkaz: pdWebhookOdkaz(soubor, req), znacka: pdPoznamkaZnackaOdeslani(ulozena, G) });
   const otisk = pdOdeslaniOtisk(deal, dealData.update_time, zmeny.patch, zamekKdy, poznamkaText);
   const zapsanoNazvy = radky.filter((r) => r.posle).map((r) => r.nazev);
 

@@ -25,6 +25,8 @@ const PDN_STAVY = {
   chybiPole: { text: 'chybí pole v CRM', pill: 'bad', popis: 'pole v Pipedrive není (nebo má jiný typ) — nic se nezapíše' },
   neovereno: { text: 'dohledá zápis', pill: 'warn', popis: 'uživatele Pipedrive dohledá až zápis podle e-mailu nebo jména' },
   prazdne: { text: 'nevyplněno', pill: 'mut', popis: 'v kalkulaci prázdné — do Pipedrive nic (zápis nikdy nemaže)' },
+  /* PD2: pole „jen do prázdného“ je v dealu vyplněné, platby mimo pole Platba 1–8. */
+  ponechano: { text: 'ponechá se', pill: 'mut', popis: 'v Pipedrive zůstane, co tam je — kalkulátor doplňuje jen prázdné pole' },
 };
 
 /* Popisky polí krycího listu pro sloupec „Zdroj": „Krycí list OCK › Sekce › Pole". */
