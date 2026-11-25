@@ -8,16 +8,25 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | prostředí | verze |
 |---|---|
 | ostrý web (`main`) | **v24.11.7** (`4e69c276`, 24. 11. 2026) |
-| testovací web (`test`) | **v25.11.4** (`6e002036`, 25. 11. 2026) |
+| testovací web (`test`) | **v25.11.5** (`f9b31b8c`, 25. 11. 2026) |
 
-Test je proti main napřed o 158 commitů.
+Test je proti main napřed o 172 commitů.
 
 ## V testu, ještě ne v main
 
 | # | typ | co | verze |
 |---|---|---|---|
+| #804 (dřív K61-I3) | nález | Krycí list tiskne „Dne“ a datum podpisu ve tvaru 2026-11-25 místo 25. 11. 2026 | v25.11.5 |
+| #803 (dřív K61-N4) | nález | Skloňování „4 položek“ v kartě Cenová nabídka | v25.11.5 |
+| #802 (dřív K61-N3) | nález | Kontrola před odesláním míchá SoD OCK a PROJ (zakázka jen PROJ hlásí 28 míst SoD realizace a obráceně) | v25.11.5 |
+| #801 (dřív K61-N2) | nález | Uložit zakázku bez čísla / názvu přepne na Přehled, hláška „Vyplňte v hlavičce…“ zůstane na skryté stránce Kalkulace (i main od #727) | v25.11.5 |
 | #795 | úkol | Jazykové verze šablony SoD projekce v4 (EN/DE/FR, 16 kB, o měsíc starší) proti české (124 kB) — ověřit úplnost | v25.11.3 |
 | #794 | úkol | Vlastnosti Wordu ze šablon: Company → „ENGINEERS CZ s.r.o.“, název dokumentu (dc:title) vymazat (revize G1 N1) | v25.11.4 |
+| #793 | úkol | Sekce „Co by se zapsalo do Pipedrive (náhled)“ jen pro administrátory (OCK i PROJ) | v25.11.5 |
+| #792 | úkol | Krycí list PROJ: objednávka (PDF i Word) ve společné sekci se smlouvou o dílo a plnou mocí; Vytvořit smlouvu o dílo PROJ jako poslední tlač… | v25.11.5 |
+| #791 | úkol | Objednávka PROJ: datum a podpis objednatele až na konec 2. strany (za Termíny a Vystavil) | v25.11.5 |
+| #781 | úkol | Připomínky: obchodník označí na obrazovce, kde je problém (zvýraznění na snímku) | v25.11.5 |
+| #780 | úkol | Připomínky: snímek obrazovky jde zvětšit (otevřít v plné velikosti, přiblížit a posouvat) | v25.11.5 |
 | #776 | otázka | K58-I2 (#775) mění cenu i rozpracovaným neodeslaným kalkulacím s kalkVerze 2 (revize MD S1) | v25.11.3 |
 | #775 (dřív K58-I2) | nález | Nová kalkulace: šachta bez opláštění bez plastových kotev, cestovného a čištění | v25.11.3 |
 | #774 | úkol | Ceník OCK: řádek Engineering v sekci Příplatkové položky (jen zobrazení) | v25.11.3 |
@@ -79,6 +88,8 @@ Test je proti main napřed o 158 commitů.
 | #637 | úkol | Ověřit hledání organizace (itemSearch) proti ostrému účtu Pipedrive — jen čtení | ověření (automat na ostrý účet nesmí) |
 | #643 | úkol | Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6) | nahrát upravený skill (mimo repo) |
 | #730 | dávka | Spuštění propojení s Pipedrive na main — procedura (podklady/PIPEDRIVE_SPUSTENI.md) | seznam polí pro #597 a uživatel tokenu (B1, B2) |
+| #771 | úkol | Vady tisku cenové nabídky CN (posudek CN-432): V1–V6 | V4 znění a překlady (v kódu jako návrh, v25.11.6), V5/V6 způsob (šablona CN) |
+| #782 | dávka | PD2: doplnění polí krycího listu do dealu Pipedrive + vady tisku CN + nálezy revizí | #771 V4 znění + překlady EN/DE/FR (J1), V5/V6 (šablona), tabulka zmrazení KL — Odchylky PROJ (J2); PD2 jinak v25.11.6 |
 | #805 (dřív K61-I4) | nález | Překlep „PROVDITELNOSTI“ v šabloně nabídky PROJ | opravit v šabloně PROJ a zveřejnit |
 | #806 (dřív K60-I1) | otázka | Automatizace Pipedrive „Pojmenování nového dealu v4“ přepíše při založení dealu „Číslo nabídky (CN)“ na CN-<id> → existující kalkulaci nejd… | návod pro obchodníky (CN změnit až po založení) nebo úprava automatizace v Pipedrive |
 | #810 (dřív K62-I1) | otázka | Šablona SoD PROJ v4 (z LibreOffice) nemá ve vlastnostech prvek Company → Společnost zůstane prázdná (generátor chybějící prvek nepřidává) | nechat prázdné (doporučeno), nebo doplnit firmu i tam, kde šablona prvek nemá |
@@ -87,4 +98,4 @@ K tomu 14 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --ziv
 
 ## Nehotové položky evidence
 
-Celkem 49: J. V. 33, kolega 4, koordinace 5, dávka 7. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 46: J. V. 35, kolega 4, koordinace 7. Výpis: `python3 roadmapa/roadmapa.py --zive`.

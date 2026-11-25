@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## PD2 (verzi přidělí koordinace) — pole krycího listu do dealu Pipedrive, vady tisku CN, nálezy revizí PV a MD, větev claude/pd2-pole-kl
+## v25.11.6 — PD2 — pole krycího listu do dealu Pipedrive, vady tisku CN, nálezy revizí PV a MD, větev claude/pd2-pole-kl
 
 Nad integrací `5c42ca16`. Rozhodnutí J. V. 25. 11. 2026 (ROZHODNUTI_LOG: PD2 rozsah, Informováno, starý plán PROJ,
 #777, posudek CN-432; doplňky přes koordinaci: Informováno = datum zápisu, V3 vypuštěn, Platby bez milníku vymazat,

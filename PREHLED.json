@@ -7,12 +7,48 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "6e002036",
-  "verze": "v25.11.4",
+  "sha": "f9b31b8c",
+  "verze": "v25.11.5",
   "datum": "25. 11. 2026"
  },
- "test_navic_commitu": 158,
+ "test_navic_commitu": 172,
  "v_testu_ne_v_main": [
+  {
+   "id": "804",
+   "typ": "nalez",
+   "nazev": "Krycí list tiskne „Dne“ a datum podpisu ve tvaru 2026-11-25 místo 25. 11. 2026",
+   "alias": [
+    "K61-I3"
+   ],
+   "verze": "v25.11.5"
+  },
+  {
+   "id": "803",
+   "typ": "nalez",
+   "nazev": "Skloňování „4 položek“ v kartě Cenová nabídka",
+   "alias": [
+    "K61-N4"
+   ],
+   "verze": "v25.11.5"
+  },
+  {
+   "id": "802",
+   "typ": "nalez",
+   "nazev": "Kontrola před odesláním míchá SoD OCK a PROJ (zakázka jen PROJ hlásí 28 míst SoD realizace a obráceně)",
+   "alias": [
+    "K61-N3"
+   ],
+   "verze": "v25.11.5"
+  },
+  {
+   "id": "801",
+   "typ": "nalez",
+   "nazev": "Uložit zakázku bez čísla / názvu přepne na Přehled, hláška „Vyplňte v hlavičce…“ zůstane na skryté stránce Kalkulace (i main od #727)",
+   "alias": [
+    "K61-N2"
+   ],
+   "verze": "v25.11.5"
+  },
   {
    "id": "795",
    "typ": "ukol",
@@ -24,6 +60,36 @@
    "typ": "ukol",
    "nazev": "Vlastnosti Wordu ze šablon: Company → „ENGINEERS CZ s.r.o.“, název dokumentu (dc:title) vymazat (revize G1 N1)",
    "verze": "v25.11.4"
+  },
+  {
+   "id": "793",
+   "typ": "ukol",
+   "nazev": "Sekce „Co by se zapsalo do Pipedrive (náhled)“ jen pro administrátory (OCK i PROJ)",
+   "verze": "v25.11.5"
+  },
+  {
+   "id": "792",
+   "typ": "ukol",
+   "nazev": "Krycí list PROJ: objednávka (PDF i Word) ve společné sekci se smlouvou o dílo a plnou mocí; Vytvořit smlouvu o dílo PROJ jako poslední tlač…",
+   "verze": "v25.11.5"
+  },
+  {
+   "id": "791",
+   "typ": "ukol",
+   "nazev": "Objednávka PROJ: datum a podpis objednatele až na konec 2. strany (za Termíny a Vystavil)",
+   "verze": "v25.11.5"
+  },
+  {
+   "id": "781",
+   "typ": "ukol",
+   "nazev": "Připomínky: obchodník označí na obrazovce, kde je problém (zvýraznění na snímku)",
+   "verze": "v25.11.5"
+  },
+  {
+   "id": "780",
+   "typ": "ukol",
+   "nazev": "Připomínky: snímek obrazovky jde zvětšit (otevřít v plné velikosti, přiblížit a posouvat)",
+   "verze": "v25.11.5"
   },
   {
    "id": "776",
@@ -428,6 +494,18 @@
    "cekaNa": "seznam polí pro #597 a uživatel tokenu (B1, B2)"
   },
   {
+   "id": "771",
+   "typ": "ukol",
+   "nazev": "Vady tisku cenové nabídky CN (posudek CN-432): V1–V6",
+   "cekaNa": "V4 znění a překlady (v kódu jako návrh, v25.11.6), V5/V6 způsob (šablona CN)"
+  },
+  {
+   "id": "782",
+   "typ": "davka",
+   "nazev": "PD2: doplnění polí krycího listu do dealu Pipedrive + vady tisku CN + nálezy revizí",
+   "cekaNa": "#771 V4 znění + překlady EN/DE/FR (J1), V5/V6 (šablona), tabulka zmrazení KL — Odchylky PROJ (J2); PD2 jinak v25.11.6"
+  },
+  {
    "id": "805",
    "typ": "nalez",
    "nazev": "Překlep „PROVDITELNOSTI“ v šabloně nabídky PROJ",
@@ -457,10 +535,9 @@
  ],
  "ceka_na_jv_odlozene": 14,
  "nehotove_podle_kdo": {
-  "J. V.": 33,
+  "J. V.": 35,
   "kolega": 4,
-  "koordinace": 5,
-  "dávka": 7
+  "koordinace": 7
  },
- "nehotovych": 49
+ "nehotovych": 46
 }
