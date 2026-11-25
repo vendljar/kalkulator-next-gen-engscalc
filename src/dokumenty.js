@@ -67,6 +67,7 @@ async function dokumentVygeneruj(typ, templateArrayBuffer, zak, varianta, jekly,
       studieBezZamereni: data.studieBezZamereni === true,   // #569: Word nabídky PROJ bez zaměření ve studii
       dpzBezZamereni: data.dpzBezZamereni === true,         // #573: Word nabídky PROJ — DPZ bez zaměření
       sachty: data.sachtyWord || null,                       // VS-E4 #570: smyčka šachet šablony CN v17 (null = jedna šachta)
+      odstavceTextPryc: data.odstavceTextPryc || null,       // PD2 #771 V1, V2: popisek bez hodnoty (nadpis fotky, „Tel:“)
       nevyplnene: Array.isArray(data.nevyplnene) ? data.nevyplnene : null, nevyplneneVDokumentu });
   if (Array.isArray(data.nevyplnene)) data.nevyplneneVDokumentu = nevyplneneVDokumentu;
   return { blob, nazevSouboru: data.nazevSouboru, data };

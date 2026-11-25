@@ -1431,6 +1431,13 @@ const PREKLAD_VZORY = [
     en: (m, n, p) => 'After completion of production, delivery of the material to the site and commencement of the works, the ' + prekladPoradiEn(n) + ' partial tax invoice will be issued in the amount of ' + p.replace(',', '.') + ' % (excl. VAT) of the total contract price. Payment of this invoice is a condition for the handover of the work to the client.',
     de: (m, n, p) => 'Nach Abschluss der Fertigung, Lieferung des Materials auf die Baustelle und Beginn der Arbeiten wird die ' + n + '. Teilrechnung in Höhe von ' + p + ' % (zzgl. MwSt.) des Gesamtpreises ausgestellt. Die Bezahlung dieser Rechnung ist Voraussetzung für die Übergabe des Werks an den Auftraggeber.',
     fr: (m, n, p) => 'Après l’achèvement de la fabrication, la livraison du matériel sur le chantier et le début des travaux, la ' + prekladPoradiFr(n) + ' facture partielle sera émise pour un montant de ' + p + ' % (hors TVA) du prix total de l’ouvrage. Le paiement de cette facture conditionne la remise de l’ouvrage au client.' },
+  /* PD2 #771 V4 (posudek CN-432): konečná faktura s pořadím a procentem
+   * (kryci.js KRYCI_VETA_KONECNA_PROC). NÁVRH PŘEKLADU ve stylu vět záloh
+   * výš — znění schválí J. V. spolu s českou větou. */
+  { re: /^Po ukončení všech výše uvedených prací a po řádném předání a převzetí celého díla předávacím protokolem bude vystaven (\d+)\. konečný daňový doklad ve výši (\d+(?:[.,]\d+)?) % \(bez DPH\) z celkové ceny díla s vyúčtováním DPH v zákonné výši\.$/,
+    en: (m, n, p) => 'After completion of all the above work and proper handover and acceptance of the entire work by a handover report, the ' + prekladPoradiEn(n) + ' final tax invoice will be issued in the amount of ' + p.replace(',', '.') + ' % (excl. VAT) of the total contract price, with VAT charged at the statutory rate.',
+    de: (m, n, p) => 'Nach Abschluss aller oben genannten Arbeiten und ordnungsgemäßer Übergabe und Abnahme des gesamten Werks mit Übergabeprotokoll wird die ' + n + '. Schlussrechnung in Höhe von ' + p + ' % (zzgl. MwSt.) des Gesamtpreises mit Abrechnung der MwSt. in gesetzlicher Höhe ausgestellt.',
+    fr: (m, n, p) => 'Après l’achèvement de tous les travaux susmentionnés et la réception en bonne et due forme de l’ensemble de l’ouvrage par procès-verbal, la ' + prekladPoradiFr(n) + ' facture finale sera émise pour un montant de ' + p + ' % (hors TVA) du prix total de l’ouvrage, avec la TVA au taux légal.' },
   /* Plán plateb projekce (etapa B, 30. 9. 2026): „30 % z nabídkové ceny za DPZ",
    * „12,5 % z nabídkové ceny za tuto činnost" — procento libovolné. */
   { re: /^(\d+(?:,\d+)?)\s*%\s+z nabídkové ceny za (zaměření|studii|projednání|DPZ|IČ|DPS|EZC|tuto činnost|geodetické zaměření)$/,

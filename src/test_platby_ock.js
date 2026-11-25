@@ -69,6 +69,10 @@ const V2 = (n, p) => 'Po ukončení výroby, dodání materiálu na stavbu a po 
   + p + ' (bez DPH) z celkové ceny díla. Úhrada tohoto daňového dokladu je podmínkou pro předání díla objednateli.';
 const V3 = 'Po ukončení všech výše uvedených prací a po řádném předání a převzetí celého díla předávacím protokolem bude vystaven '
   + 'konečný daňový doklad na zbývající část celkové ceny díla s vyúčtováním DPH v zákonné výši.';
+/* PD2 #771 V4 (posudek CN-432, J. V. 25. 11. 2026): konečná faktura s pořadím
+ * a procentem — výchozí věta Firmy a známé procento. V3 zůstává znění šablony v13. */
+const V3N = (n, p) => 'Po ukončení všech výše uvedených prací a po řádném předání a převzetí celého díla předávacím protokolem bude vystaven '
+  + n + '. konečný daňový doklad ve výši ' + p + ' (bez DPH) z celkové ceny díla s vyúčtováním DPH v zákonné výši.';
 const MES = 'Fakturace probíhá měsíčně podle skutečně provedených prací.';
 /* Šablonové věty v13 se symbolem (klíče slovníku, z nich vznikla EN/DE/FR v13). */
 const V1S = V1(1, '{{PODM_ZALOHA1_PROC}}'), V2S = V2(2, '{{PODM_FAKTURA2_PROC}}');
@@ -99,7 +103,7 @@ test('procento splátky: „Bez zálohy" = 0, „50 % – …" = 50, text bez % 
   test('výchozí: tři splátky po milnících, ne měsíčně', k && !k.stary && k.mesicne === false && Array.isArray(k.splatky)
     && k.splatky.map(x => x.id).join(',') === 'zaloha1,faktura2,fakturaKonc', k);
   test('výchozí: {{PODM_PLATEBNI_KALENDAR}} = přesně tři věty šablony v13 (50 % a 40 %)',
-    JSON.stringify(radky(s.PODM_PLATEBNI_KALENDAR)) === JSON.stringify([V1(1, '50 %'), V2(2, '40 %'), V3]), s.PODM_PLATEBNI_KALENDAR);
+    JSON.stringify(radky(s.PODM_PLATEBNI_KALENDAR)) === JSON.stringify([V1(1, '50 %'), V2(2, '40 %'), V3N(3, '10 %')]), s.PODM_PLATEBNI_KALENDAR);
   test('výchozí: {{PODM_FAKTURACE_MESICNE}} je prázdný (tabulka měsíční fakturace zmizí)', s.PODM_FAKTURACE_MESICNE === '', s.PODM_FAKTURACE_MESICNE);
   test('kalendář čte tytéž hodnoty jako symboly {{PODM_…}} (lehký kontext bez výpočtu)',
     k && k.hodnoty && k.hodnoty.zaloha1 === s.PODM_ZALOHA1 && k.hodnoty.faktura2 === s.PODM_FAKTURA2
@@ -116,7 +120,7 @@ test('procento splátky: „Bez zálohy" = 0, „50 % – …" = 50, text bez % 
   test('Bez zálohy: splátka s 0 % se vynechá', k && k.splatky && k.splatky.map(x => x.id).join(',') === 'faktura2,fakturaKonc'
     && JSON.stringify(k.vynechane) === '["zaloha1"]', k);
   test('Bez zálohy: dílčí faktura 2 se tiskne jako 1. dílčí daňový doklad (90 %), konečná zůstává',
-    JSON.stringify(radky(s.PODM_PLATEBNI_KALENDAR)) === JSON.stringify([V2(1, '90 %'), V3]), s.PODM_PLATEBNI_KALENDAR);
+    JSON.stringify(radky(s.PODM_PLATEBNI_KALENDAR)) === JSON.stringify([V2(1, '90 %'), V3N(2, '10 %')]), s.PODM_PLATEBNI_KALENDAR);
   test('Bez zálohy: žádná věta „ve výši  (bez DPH)" bez procenta', !/ve výši\s+\(bez DPH\)/.test(s.PODM_PLATEBNI_KALENDAR || 've výši  (bez DPH)'));
   test('Bez zálohy: symboly šablony v13 se nemění (dosavadní chování, _PROC prázdné)', s.PODM_ZALOHA1_PROC === '' && s.PODM_FAKTURA2_PROC === '90 %',
     [s.PODM_ZALOHA1_PROC, s.PODM_FAKTURA2_PROC]);
@@ -126,7 +130,7 @@ test('procento splátky: „Bez zálohy" = 0, „50 % – …" = 50, text bez % 
   test('Bez zálohy EN: „the 1st partial tax invoice … 90 % (excl. VAT)" a konečná věta ze slovníku',
     radky(en.PODM_PLATEBNI_KALENDAR)[0] === 'After completion of production, delivery of the material to the site and commencement of the works, '
       + 'the 1st partial tax invoice will be issued in the amount of 90 % (excl. VAT) of the total contract price. Payment of this invoice is a condition for the handover of the work to the client.'
-    && radky(en.PODM_PLATEBNI_KALENDAR)[1] === PR.tr(V3, 'en'), en.PODM_PLATEBNI_KALENDAR);
+    && radky(en.PODM_PLATEBNI_KALENDAR)[1] === PR.tr(V3N(2, '10 %'), 'en'), en.PODM_PLATEBNI_KALENDAR);
   test('Bez zálohy DE: „die 1. Teilrechnung … 90 % (zzgl. MwSt.)"', /wird die 1\. Teilrechnung in Höhe von 90 % \(zzgl\. MwSt\.\)/.test(de.PODM_PLATEBNI_KALENDAR || ''), de.PODM_PLATEBNI_KALENDAR);
   test('Bez zálohy FR: „la 1re facture partielle … 90 % (hors TVA)"', /la 1re facture partielle sera émise pour un montant de 90 % \(hors TVA\)/.test(fr.PODM_PLATEBNI_KALENDAR || ''), fr.PODM_PLATEBNI_KALENDAR);
 }
@@ -134,16 +138,16 @@ test('procento splátky: „Bez zálohy" = 0, „50 % – …" = 50, text bez % 
 /* ---------------- 3) další tvary kalendáře ---------------- */
 {
   const s1 = sym(novaZ({ zaloha1: '90 % – po podpisu smlouvy', faktura2: '0 % – po zahájení montáže' }));
-  test('dílčí faktura 2 s 0 %: vynechá se, záloha zůstane 1. dokladem', JSON.stringify(radky(s1.PODM_PLATEBNI_KALENDAR)) === JSON.stringify([V1(1, '90 %'), V3]), s1.PODM_PLATEBNI_KALENDAR);
+  test('dílčí faktura 2 s 0 %: vynechá se, záloha zůstane 1. dokladem', JSON.stringify(radky(s1.PODM_PLATEBNI_KALENDAR)) === JSON.stringify([V1(1, '90 %'), V3N(2, '10 %')]), s1.PODM_PLATEBNI_KALENDAR);
   const s2 = sym(novaZ({ faktura2: '50 % – po zahájení montáže', fakturaKonc: '0 % – po předání' }));
   test('konečná 0 %: konečný doklad se vynechá, dílčí 1. a 2. zůstanou', JSON.stringify(radky(s2.PODM_PLATEBNI_KALENDAR)) === JSON.stringify([V1(1, '50 %'), V2(2, '50 %')]), s2.PODM_PLATEBNI_KALENDAR);
   const z3 = novaZ({ zaloha1: 'dle rámcové smlouvy' });
   const k3 = kal(z3), s3 = sym(z3);
   test('vlastní znění bez procenta: řádek „1. dílčí faktura: <text>", nic se nedopočítává',
-    JSON.stringify(radky(s3.PODM_PLATEBNI_KALENDAR)) === JSON.stringify(['1. dílčí faktura: dle rámcové smlouvy', V2(2, '40 %'), V3])
+    JSON.stringify(radky(s3.PODM_PLATEBNI_KALENDAR)) === JSON.stringify(['1. dílčí faktura: dle rámcové smlouvy', V2(2, '40 %'), V3N(3, '10 %')])
     && k3 && JSON.stringify(k3.necitelne) === '["zaloha1"]', s3.PODM_PLATEBNI_KALENDAR);
   const s4 = sym(novaZ({ zaloha1: '30 % – po podpisu smlouvy', faktura2: '60 % – po zahájení montáže' }));
-  test('záloha 30 %: věty 30 % / 60 % / konečná', JSON.stringify(radky(s4.PODM_PLATEBNI_KALENDAR)) === JSON.stringify([V1(1, '30 %'), V2(2, '60 %'), V3]), s4.PODM_PLATEBNI_KALENDAR);
+  test('záloha 30 %: věty 30 % / 60 % / konečná', JSON.stringify(radky(s4.PODM_PLATEBNI_KALENDAR)) === JSON.stringify([V1(1, '30 %'), V2(2, '60 %'), V3N(3, '10 %')]), s4.PODM_PLATEBNI_KALENDAR);
 }
 
 /* ---------------- 4) D2: měsíční fakturace ---------------- */
@@ -175,7 +179,7 @@ test('procento splátky: „Bez zálohy" = 0, „50 % – …" = 50, text bez % 
   z.varianty[0].data.cenik.kurzEurKc = 25;
   ['en', 'de', 'fr'].forEach(L => {
     const s = sym(z, L);
-    const v13 = [PR.tr(V1S, L).replace('{{PODM_ZALOHA1_PROC}}', '50 %'), PR.tr(V2S, L).replace('{{PODM_FAKTURA2_PROC}}', '40 %'), PR.tr(V3, L)];
+    const v13 = [PR.tr(V1S, L).replace('{{PODM_ZALOHA1_PROC}}', '50 %'), PR.tr(V2S, L).replace('{{PODM_FAKTURA2_PROC}}', '40 %'), PR.tr(V3N(3, '10 %'), L)];
     test('výchozí ' + L.toUpperCase() + ': věty jsou tytéž, jaké tiskne přeložená šablona v13',
       JSON.stringify(radky(s.PODM_PLATEBNI_KALENDAR)) === JSON.stringify(v13), [s.PODM_PLATEBNI_KALENDAR, v13]);
   });
@@ -374,7 +378,7 @@ if (cnOk) {
   (async () => {
     const dStd = await vyplnV14(sym(novaZ()));
     test('vyplněná v14 (výchozí): tři řádky vět s odrážkou, tabulka měsíční fakturace zmizela',
-      (dStd.match(/<w:numId w:val="2"\/>/g) || []).length === 3 && text(dStd).indexOf(V1(1, '50 %')) >= 0 && text(dStd).indexOf(V3) >= 0
+      (dStd.match(/<w:numId w:val="2"\/>/g) || []).length === 3 && text(dStd).indexOf(V1(1, '50 %')) >= 0 && text(dStd).indexOf(V3N(3, '10 %')) >= 0
       && !/Způsob fakturace:/.test(dStd), text(dStd));
     test('vyplněná v14: žádná značka ani symbol platebních podmínek nezůstal, XML platné',
       !/PLATBY_(SPLATKY|MESICNE)_(ZAC|KON)|PODM_PLATEBNI_KALENDAR|PODM_FAKTURACE_MESICNE/.test(dStd) && !dg.xmlStrukturaVada(dStd), dg.xmlStrukturaVada(dStd));

@@ -500,6 +500,34 @@ function odstranOdstavceSeSymboly(xml, klice) {
   return xml.replace(/<w:p[\s>](?:(?!<\/w:p>)[\s\S])*?<\/w:p>/g, (p, pos) =>
     (klicePlaceholderu(p).some(x => k.indexOf(x) >= 0) ? (docxVBunce(xml, pos) ? '<w:p/>' : '') : p));
 }
+/* PRÁZDNÝ POPISEK PRYČ (PD2 #771, posudek CN-432 V1, V2). Volba
+ * `odstavceTextPryc` = texty, jejichž odstavec se smaže, když je jeho CELÝ
+ * text (po dosazení symbolů, bez okrajových mezer) právě tímhle popiskem —
+ * nadpis „Pohled na objekt z ulice:“ bez fotky, „Tel:“ bez čísla. Odstavec
+ * s jiným obsahem (Tel a Email v jednom odstavci, nadpis s textem) zůstane.
+ * Odstavec s obrázkem nebo tvarem se nemaže nikdy. */
+function docxTextNorm(t) { return String(t == null ? '' : t).replace(/[\u00a0\u202f\t]/g, ' ').replace(/\s+/g, ' ').trim(); }
+function odstranOdstavceSTextem(xml, texty) {
+  const k = new Set((Array.isArray(texty) ? texty : []).map(docxTextNorm).filter(Boolean));
+  if (!k.size) return xml;
+  return xml.replace(/<w:p[\s>](?:(?!<\/w:p>)[\s\S])*?<\/w:p>/g, (p, pos) =>
+    (!/<w:drawing|<w:pict|<v:shape|<w:object/.test(p) && k.has(docxTextNorm(odstavecText(p)))
+      ? (docxVBunce(xml, pos) ? '<w:p/>' : '') : p));
+}
+/* Texty odstavců „popisek bez hodnoty“ pro nabídku OCK i PROJ (V1, V2):
+ * `foto` = je úvodní fotka, `tel` = telefon zpracovatele, P = překlad slovníkem.
+ * Popisky jsou v češtině i v jazyce dokumentu (šablona se překládá po úsecích:
+ * „Tel: {{ZPRAC_TEL}}“ → „Phone: …“). */
+function docxPopiskyBezHodnoty(o) {
+  const P = (o && typeof o.P === 'function') ? o.P : (x => x);
+  const out = [];
+  if (!(o && o.foto)) out.push('Pohled na objekt z ulice:', P('Pohled na objekt z ulice:'));
+  if (!(o && String(o.tel == null ? '' : o.tel).trim())) {
+    const t = P('Tel');
+    out.push('Tel:', 'Tel.:', t + ':', t + ' :');
+  }
+  return Array.from(new Set(out.map(docxTextNorm).filter(Boolean)));
+}
 function docxVBunce(xml, pos) {
   const pred = xml.slice(0, pos);
   return (pred.match(/<w:tc[\s>]/g) || []).length > (pred.match(/<\/w:tc>/g) || []).length;
@@ -1440,6 +1468,7 @@ async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky, v
       /* SL (L1, L2): v dokumentu s tečkami je žluté PRÁVĚ nevyplněné místo — i když nic nechybí */
       if (volby && Array.isArray(volby.nevyplnene)) po = docxPodbarveniTecek(po, tecky);
       if (tecky) po = docxTecky(po, tecky, volby.nevyplneneVDokumentu);   // C3 #584: nevyplněná místa smlouvy → „……" (až po všech mazáních)
+      if (volby && volby.odstavceTextPryc) po = odstranOdstavceSTextem(po, volby.odstavceTextPryc);   // PD2 #771 V1, V2: popisek bez hodnoty
       if (po !== pred) nahrad++;
       p.data = enkoder.encode(po);
     }
@@ -1856,7 +1885,7 @@ function docxCisloStrankyVarovani(c) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { docxCisloStranky, docxCisloStrankyXml, docxCisloStrankyVarovani, docxPodbarveniTecek, docxBehRozdel, docxRPrZluta, docxStudieBezZamereni, docxDpzBezZamereni, DOCX_DPZ_STAVAJICI, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
+  module.exports = { odstranOdstavceSTextem, docxPopiskyBezHodnoty, docxCisloStranky, docxCisloStrankyXml, docxCisloStrankyVarovani, docxPodbarveniTecek, docxBehRozdel, docxRPrZluta, docxStudieBezZamereni, docxDpzBezZamereni, DOCX_DPZ_STAVAJICI, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
     odstranPrazdneTsRadky, docxSmyckaSachet, DOCX_CENA_CASTI, DOCX_TECKY, docxTecky, docxTeckySada, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,

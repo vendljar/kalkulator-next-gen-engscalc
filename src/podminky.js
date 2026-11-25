@@ -605,6 +605,9 @@ function podminkySnimek(firma, casti) {
     if (PODMINKY_ZMRAZ_CASTI.indexOf(k) >= 0) out[k] = podmKopie(ef[k]);
   });
   /* D8: s texty nabídky PROJ zamrzne i tabulka lhůt (čísla v termínech). */
+  /* PD2 #771 V4: značka „konečná faktura s pořadím a procentem“ — nabídka
+   * odeslaná před PD2 (snímek bez značky) se dotiskne s větou, se kterou odešla. */
+  if (out.vety) out.konecnaPoradi = 1;
   const lm = podmLhutyModul();
   if (out.nabidkaProj && lm) out.lhutyProj = lm.lhutyProjEf(firma && typeof firma === 'object' ? firma.lhutyProj : undefined);
   return out;
@@ -652,7 +655,7 @@ function podminkyTerminyDpzVarovani(p) {
 
 /* Jeden objekt pro ostatní moduly — v prohlížeči jsou soubory v jednom
  * scope, v Node se načte přes require (vzor firmaPlanModul). */
-const PODMINKY = { PODMINKY_VYCHOZI, PODMINKY_TERMIN_DPZ_BEZ_STUDIE, PODMINKY_TERMIN_DPZ, PODMINKY_TERMIN_STUDIE, PODMINKY_SOUCET_BLOKUJE, PODMINKY_JAZYKY, PODMINKY_TYPY_SMLOUVY, podminkyEf, podminkyUpraveno,
+const PODMINKY = { podmDosad, PODMINKY_VYCHOZI, PODMINKY_TERMIN_DPZ_BEZ_STUDIE, PODMINKY_TERMIN_DPZ, PODMINKY_TERMIN_STUDIE, PODMINKY_SOUCET_BLOKUJE, PODMINKY_JAZYKY, PODMINKY_TYPY_SMLOUVY, podminkyEf, podminkyUpraveno,
   podminkyVeta, podminkyVetaJenVychoziPreklad, podminkyTextProj, podminkyNastavVetu, podminkyNastavTextProj, podmPoradi,
   podminkyZalohaText, podminkyZalohyVolby, podminkyZalohaVychozi, podminkyFaktura2, podminkyKonecna,
   podminkyLimitVolby, podminkyLimitText, podminkySoucetOck, podminkyVady, podminkyCiste, podminkyNastav,

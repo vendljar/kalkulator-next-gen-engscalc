@@ -1303,6 +1303,9 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     obrazky: Object.assign({},
       typeof zpracovatelObrazky === 'function' ? zpracovatelObrazky(varianta) : {},
       typeof uvodniFotoObrazky === 'function' ? uvodniFotoObrazky(zak, 'proj') : {}),
+    /* PD2 #771 V1, V2: nadpis fotky bez fotky a „Tel:“ bez čísla pryč (jako OCK) */
+    odstavceTextPryc: typeof docxPopiskyBezHodnoty === 'function' ? docxPopiskyBezHodnoty({ P,
+      foto: typeof uvodniFotoObrazky === 'function' && !!uvodniFotoObrazky(zak, 'proj').UVODNI_FOTO, tel: placeholders.ZPRAC_TEL }) : [],
     souhrn: { bezDph: celkemBezDph, bezDphPred: soucetSekci, zaokrKc: 0,
               soucetSekci, slevaPct: slevaPodilProj, slevaKc: slevaKcNum,
               dphPct: dphPct, dphKc: dphKc, sDph: celkemBezDph + dphKc } };
