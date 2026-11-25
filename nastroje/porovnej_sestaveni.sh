@@ -19,11 +19,16 @@
 #                           „." = pracovní kopie (i necommitnuté změny, bez worktree)
 #   --cenik <soubor>        jiný ceník než zkušební ({cenik, cenikProj}); MIMO repo
 #   --ocekavane <soubor>    seznam očekávaných rozdílů (formát v porovnani_sada.js);
-#                           jiný rozdíl = kód 1
+#                           jiný rozdíl = kód 1; víckrát = sjednocení seznamů (K56-2)
 #   --fuzz N                počet fuzz zadání (výchozí 300)
 #   --bez-sestaveni         nespouštět build.py (jen výpočet ze src/)
 #   --repo <složka>         repozitář, ze kterého se berou reference (výchozí tenhle)
 #   --max N                 kolik rozdílných případů vypsat (výchozí 40)
+#   --pd-webhook            navíc kalkulace z webhooku Pipedrive (#733, #729) nad každým
+#                           stromem (nastroje/porovnani_pd_webhook.mjs: serverové funkce
+#                           v paměti, simulátor PD, Chromium; stromy POSTUPNĚ, ne souběžně)
+#                           a porovnání obou výstupů (jen pole a shoda). Chce dist/ —
+#                           nejde s --bez-sestaveni; „." musí mít dist sestavené.
 #
 # Kód: 0 shoda nebo jen očekávané rozdíly, 1 neočekávaný rozdíl,
 #      2 chybné použití / nejde postavit nebo spočítat.
@@ -39,17 +44,18 @@ if [ -z "${NODE_PATH:-}" ] && command -v npm >/dev/null 2>&1; then
   NODE_PATH="$(npm root -g 2>/dev/null)"; export NODE_PATH
 fi
 
-napoveda() { sed -n '2,34p' "$0"; }
-REPO="$NASTROJ"; CENIK=""; OCEK=""; FUZZ=300; SESTAVIT=1; MAX=40
+napoveda() { sed -n '2,39p' "$0"; }
+REPO="$NASTROJ"; CENIK=""; OCEKY=(); FUZZ=300; SESTAVIT=1; MAX=40; PDW=0
 REFY=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --cenik) CENIK="${2:-}"; shift ;;
-    --ocekavane) OCEK="${2:-}"; shift ;;
+    --ocekavane) OCEKY+=("${2:-}"); shift ;;
     --fuzz) FUZZ="${2:-}"; shift ;;
     --repo) REPO="${2:-}"; shift ;;
     --max) MAX="${2:-}"; shift ;;
     --bez-sestaveni) SESTAVIT=0 ;;
+    --pd-webhook) PDW=1 ;;
     -h|--help) napoveda; exit 0 ;;
     --*) echo "neznámá volba: $1 (viz --help)" >&2; exit 2 ;;
     *) REFY+=("$1") ;;
@@ -59,10 +65,14 @@ done
 [ "${#REFY[@]}" -eq 2 ] || { echo "chci právě dvě reference (A B), dostal jsem ${#REFY[@]} (viz --help)" >&2; exit 2; }
 case "$FUZZ" in ''|*[!0-9]*) echo "--fuzz chce číslo" >&2; exit 2 ;; esac
 case "$MAX" in ''|*[!0-9]*) echo "--max chce číslo" >&2; exit 2 ;; esac
+[ "$PDW" -eq 0 ] || [ "$SESTAVIT" -eq 1 ] || { echo "--pd-webhook chce sestavení (dist/), nejde s --bez-sestaveni" >&2; exit 2; }
 [ -z "$CENIK" ] || [ -f "$CENIK" ] || { echo "ceník neexistuje: $CENIK" >&2; exit 2; }
-[ -z "$OCEK" ] || [ -f "$OCEK" ] || { echo "soubor očekávaných rozdílů neexistuje: $OCEK" >&2; exit 2; }
 [ -z "$CENIK" ] || CENIK="$(cd "$(dirname "$CENIK")" && pwd)/$(basename "$CENIK")"
-[ -z "$OCEK" ] || OCEK="$(cd "$(dirname "$OCEK")" && pwd)/$(basename "$OCEK")"
+OCEK_ARGS=()
+for f in ${OCEKY[@]+"${OCEKY[@]}"}; do
+  [ -f "$f" ] || { echo "soubor očekávaných rozdílů neexistuje: $f" >&2; exit 2; }
+  OCEK_ARGS+=(--ocekavane "$(cd "$(dirname "$f")" && pwd)/$(basename "$f")")
+done
 REPO="$(cd "$REPO" 2>/dev/null && git rev-parse --show-toplevel 2>/dev/null)" || { echo "--repo není repozitář gitu" >&2; exit 2; }
 
 PRAC="$(mktemp -d "${TMPDIR:-/tmp}/kng_porovnani.XXXXXX")"
@@ -113,5 +123,22 @@ if [ $ka -ne 0 ] || [ $kb -ne 0 ]; then
   exit 2
 fi
 POR=(porovnej "$PRAC/a.json" "$PRAC/b.json" --popis-a "$POPIS_A" --popis-b "$POPIS_B" --max "$MAX")
-[ -n "$OCEK" ] && POR+=(--ocekavane "$OCEK")
+[ "${#OCEK_ARGS[@]}" -gt 0 ] && POR+=("${OCEK_ARGS[@]}")
 node "$SADA" "${POR[@]}"
+KOD=$?
+[ "$PDW" -eq 1 ] || exit $KOD
+
+# --pd-webhook (K56-5): kalkulace z webhooku Pipedrive nad každým stromem, POSTUPNĚ (prohlížeč)
+echo ""
+PDN="$NASTROJ/nastroje/porovnani_pd_webhook.mjs"
+for x in A B; do
+  k="KOREN_$x"
+  [ -f "${!k}/dist/kalkulacka.html" ] || { echo "--pd-webhook: ${!k} nemá dist/kalkulacka.html (sestavit)" >&2; exit 2; }
+  ( cd "${!k}" && KOREN="${!k}" timeout 300 node "$PDN" >"$PRAC/pd_$x.json" 2>"$PRAC/pd_$x.err" ) \
+    || { echo "--pd-webhook: běh nad stranou $x selhal:" >&2; tail -5 "$PRAC/pd_$x.err" >&2; exit 2; }
+done
+node "$PDN" --porovnej "$PRAC/pd_A.json" "$PRAC/pd_B.json" --popis-a "$POPIS_A" --popis-b "$POPIS_B"
+KPD=$?
+[ "$KPD" -eq 2 ] && exit 2
+[ "$KOD" -ne 0 ] && exit $KOD
+exit $KPD
