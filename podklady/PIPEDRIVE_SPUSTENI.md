@@ -16,7 +16,7 @@ Stav k 25. 11. 2026. Stav: ☐ čeká · ◐ rozpracováno · ☑ hotovo. Roadma
 | A6b | Autor kalkulace z webhooku = vlastník dealu (#734) | dávka → test | ☑ v23.11.7, ověřeno na testu (kolo 55) |
 | A7 | Kontaktní osoba z dealu jen jméno, bez e-mailu a telefonu (#729) | dávka → test | ☑ v23.11.5, ověřeno (K56-D) |
 | A9b | Odeslání nabídky do dealu (#116, J. V. 24. 11.): první tisk CN → tabulka „dnes / nově“ → potvrzení → pole krycího listu, CN, hodnota, fáze 22 → 23 (jen dopředu), poznámka „Nabídka odeslána“, Word jako soubor | dávka → test, pak testovací sezení | ☑ test v25.11.1, ověřeno na dealu TEST 432 (OCK) i 437 (PROJ), kola 55 a 58 |
-| A8 | Vazba „čeká / V pořádku“ a vypnutý zápis (dosud neověřeno bez zásahu do nastavení) | testovací sezení | ☐ |
+| A8 | Vazba „čeká / V pořádku“ a vypnutý zápis (dosud neověřeno bez zásahu do nastavení) | testovací sezení | ☑ kolo 60 (25. 11., TESTOVÁNÍ 5): vazba čeká / V pořádku jen admin, Zrušit vazbu, vypnutý zápis 503 se srozumitelnou hláškou, po zapnutí 200 |
 | A9 | Plný průchod: deal → kalkulace → tisk nabídky → Prodáno → potvrzení tabulky → zápis prodeje (#597) | J. V. + testovací sezení | ☑ test v25.11.1, plný průchod 25. 11. (kola 55 a 58), zápis prodeje 31/35 polí |
 | A10 | Doplnění polí: Datum nabídky (#763), K58-N1/N2 (dávka MD); kontakty, podpisy, Informováno, Platba 1–8, Nabídku vypracoval (dávka PD2) | dávky MD → PD2, pak testovací sezení | ◐ MD běží, PD2 po ní |
 

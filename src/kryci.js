@@ -913,7 +913,7 @@ function kryciData(zak, varianta, jekly, verze) {
   const c = kryciCtx(zak, varianta, jekly);
   const kl = varianta.data.kryci || { hodnoty: {} };
   const sekce = KRYCI_SEKCE.map(s => {
-    const radky = s.pole.filter(p => p.verze.includes(verze) && (!p.jenKdyz || p.jenKdyz(c))).map(p => [p.label, kryciHodnota(p, kl, c)]);
+    const radky = s.pole.filter(p => p.verze.includes(verze) && (!p.jenKdyz || p.jenKdyz(c))).map(p => [p.label, kryciTiskHodnota(p, kryciHodnota(p, kl, c))]);
     return radky.length ? { sekce: s.sekce, radky } : null;
   }).filter(Boolean);
   const sachty = kryciSachtySekce(c);    // VS-E5: za Základními údaji, jen víc šachet
@@ -1068,6 +1068,15 @@ function kryciZKrycihoListuProj(c, id) {
   const h = (d.kryciProj && d.kryciProj.hodnoty) || {};
   return String(h[id] == null ? '' : h[id]).trim();
 }
+/* #804 (K61-I3, 25. 11. 2026): pole typu datum (Dne, Datum podpisu smlouvy, termíny) se ve
+ * výstupu krycího listu (tisk, Word, náhled zápisu prodeje) píše česky „25. 11. 2026", ne
+ * ISO 2026-11-25 z pole formuláře. Uložená hodnota i symboly smlouvy (kryciDatumCz) beze změny;
+ * jiný než ISO text (ruční přepis) projde, jak je. */
+function kryciDatumTisk(iso) {
+  const m = String(iso == null ? '' : iso).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? (+m[3]) + '. ' + (+m[2]) + '. ' + m[1] : (iso == null ? '' : iso);
+}
+function kryciTiskHodnota(pole, v) { return pole && pole.typ === 'date' ? kryciDatumTisk(v) : v; }
 function kryciDatumCz(iso) {
   const m = String(iso == null ? '' : iso).match(/^(\d{4})-(\d{2})-(\d{2})$/);
   return m ? m[3] + '.' + m[2] + '.' + m[1] : String(iso == null ? '' : iso);
@@ -1491,4 +1500,4 @@ if (typeof module !== 'undefined')
     kryciFaktura2Dopocet, kryciFaktura2Sync,
     KRYCI_PRAVIDLA_PLATEB, KRYCI_FAKTURACE_MESICNE_VETA, KRYCI_VETY_V13, KRYCI_VETA_KONECNA_PROC, kryciVetaKonecna, kryciPlatbaProcento, kryciPlatbyStary,
     kryciPlatebniKalendar, kryciPlatebniSymboly, kryciSodPlatby, kryciSodMilnik,
-    KRYCI_MISTO_PLNENI, KRYCI_DPH_REZIMY, KRYCI_EU_DIC, kryciDphRezimVychozi, kryciDnesIso, kryciDatumNabidky, kryciPokutaStav, kryciPoleHodnota };
+    KRYCI_MISTO_PLNENI, KRYCI_DPH_REZIMY, KRYCI_EU_DIC, kryciDphRezimVychozi, kryciDnesIso, kryciDatumNabidky, kryciPokutaStav, kryciPoleHodnota, kryciDatumTisk, kryciTiskHodnota };

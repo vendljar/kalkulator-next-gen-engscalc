@@ -38,8 +38,8 @@ await s.goto(KDE);
 await s.waitForTimeout(700);
 
 /* Smyšlená zakázka TEST (zkušební ceník, žádné skutečné údaje); `jen` = klíče činností. */
-async function priprav(jen) {
-  return s.evaluate(([c, cp, jen]) => {
+async function priprav(jen, navic) {
+  return s.evaluate(([c, cp, jen, navic]) => {
     Object.assign(DEFAULT_CENIK, c); delete DEFAULT_CENIK.prazdny;
     Object.assign(DEFAULT_CENIK_PROJ, cp); delete DEFAULT_CENIK_PROJ.prazdny;
     ZAK = novaZakazka(); syncVarianta();
@@ -56,10 +56,13 @@ async function priprav(jen) {
     const vt = vzTiskVstup('objednavkaProj', v);
     const o = objednavkaProjData(vt.zak, vt.varianta);
     if (o.chyba) return { chyba: o.chyba };
+    /* #791 S1 sonda: víc řádků Termínů (jako delší varianta) a Vystavil */
+    if (navic) { o.vystavil = 'TEST Vystavitel'; for (let i = 0; i < navic; i++) o.terminy.push(['Zkušební termín ' + i, 'do 1. 1. 2027']); }
+    window.__objO = o;
     const html = `<!DOCTYPE html><html lang="cs"><head><meta charset="utf-8"><style>${objednavkaProjCss()}</style></head>
       <body><div id="dok">${objednavkaProjHtml(o)}</div></body></html>`;
     return { html, radky: o.radky.length, sekce: o.radky.map(x => x.sekce) };
-  }, [ZC.zkusebniCenik(), ZC.zkusebniCenikProj(), jen || null]);
+  }, [ZC.zkusebniCenik(), ZC.zkusebniCenikProj(), jen || null, navic || 0]);
 }
 async function word() {
   return s.evaluate(async () => {
@@ -112,6 +115,40 @@ for (const sada of SADY) {
       console.log(`  · ${sada.jm}: Word (LibreOffice, orientačně) ${stranPdf(fs.readFileSync(path.join(TMP, 'obj.pdf')))} stran`);
     } catch (e) { console.log('  · Word: převod LibreOffice selhal (' + e.message.slice(0, 80) + ')'); }
   } else console.log('  · Word: LibreOffice není — stránkování Wordu přeskočeno');
+}
+
+/* #791 S1 (revize Fable 25. 11. 2026): podpis objednatele NIKDY sám na poslední straně — při
+ * přetečení jde na novou stranu s posledním blokem textu (keepNext ve Wordu, break-after: avoid
+ * v tisku). Sonda: 7 činností + 0…14 řádků Termínů navíc. Text poslední strany z pdftotext
+ * (bez něj se kontrola přeskočí s vysvětlením). Pojistka: na 92973f3 Word při +6 a víc
+ * řádcích nese na 3. straně jen „Datum / Podpis objednatele“ → FAIL. */
+const pdftotext = (() => { try { execFileSync('pdftotext', ['-v'], { stdio: 'ignore' }); return true; } catch (e) { return false; } })();
+const posledniStrana = (buf) => {
+  const f = path.join(TMP, 'sonda.pdf'); fs.writeFileSync(f, buf);
+  const n = stranPdf(buf);
+  return String(execFileSync('pdftotext', ['-f', String(n), '-l', String(n), f, '-'])).replace(/\s+/g, ' ').trim();
+};
+const sam = t => /Podpis objednatele/.test(t) && !/Vystavil|Termíny|Zkušební termín/.test(t);
+if (!pdftotext) console.log('  · S1: pdftotext není — sonda osamoceného podpisu přeskočena');
+else for (const navic of [0, 4, 6, 10, 14]) {
+  const p = await priprav(null, navic);
+  if (p.chyba) { ok('S1 +' + navic + ': objednávka vznikla', false, p.chyba); continue; }
+  const okno = await b.newPage();
+  await okno.setContent(p.html, { waitUntil: 'load' });
+  const t = posledniStrana(await okno.pdf({ format: 'A4', preferCSSPageSize: true }));
+  await okno.close();
+  ok(`S1 tisk/PDF (+${navic} termínů): podpis není sám na poslední straně`, !sam(t), t.slice(0, 120));
+  if (soffice) {
+    const docx = Buffer.from(await s.evaluate(async () => {
+      const b = new Uint8Array(await objednavkaProjDocxBlob(window.__objO).arrayBuffer());
+      let t = ''; for (let i = 0; i < b.length; i++) t += String.fromCharCode(b[i]); return btoa(t); }), 'base64');
+    const f = path.join(TMP, 'sonda.docx'); fs.writeFileSync(f, docx);
+    try {
+      execFileSync('soffice', ['--headless', '--convert-to', 'pdf', '--outdir', TMP, f], { stdio: 'ignore', timeout: 120000 });
+      const tw = posledniStrana(fs.readFileSync(path.join(TMP, 'sonda.pdf')));
+      ok(`S1 Word/LibreOffice (+${navic} termínů): podpis není sám na poslední straně`, !sam(tw), tw.slice(0, 120));
+    } catch (e) { console.log('  · S1 Word: převod LibreOffice selhal (' + e.message.slice(0, 80) + ')'); }
+  }
 }
 
 await b.close();

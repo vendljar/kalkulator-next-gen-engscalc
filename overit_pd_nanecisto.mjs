@@ -67,10 +67,25 @@ const bez = await stranka.evaluate(() => {
 zkus('karta je v krycím listu OCK', bez.je);
 zkus('bez přihlášení jen poznámka, na server se neptá', /přihlaste se online/.test(bez.text) && bez.dotazy === 0, bez.text.slice(0, 120));
 
-console.log('\nNáhled pro přihlášeného obchodníka');
+console.log('\n#793: náhled jen pro administrátora (J. V. 25. 11. 2026)');
+const role793 = await stranka.evaluate(() => {
+  window.onlineMozne = () => true;
+  const vidi = (role) => { ONLINE_STAV.ja = { email: 'x@priklad.cz', role, jmeno: 'X' };
+    prepniTab('kryci'); renderKryci(); const ock = !!document.getElementById('pdnKarta_ock');
+    /* KL PROJ nad novou zakázkou (číslo …-OPR-… = jen OCK, PROJ by byl vyřazený) */
+    const puv = ZAK; ZAK = novaZakazka();
+    prepniTab('kryciproj'); renderKryciProj(); const proj = !!document.getElementById('pdnKarta_proj');
+    ZAK = puv; prepniTab('kryci'); return [ock, proj]; };
+  return { obch: vidi('Obchodník'), ved: vidi('Vedoucí'), admin: vidi('Administrátor') };
+});
+zkus('#793: obchodník kartu nevidí (KL OCK ani PROJ)', JSON.stringify(role793.obch) === '[false,false]', JSON.stringify(role793));
+zkus('#793: vedoucí kartu nevidí', JSON.stringify(role793.ved) === '[false,false]', JSON.stringify(role793));
+zkus('#793: administrátor kartu vidí (KL OCK i PROJ)', JSON.stringify(role793.admin) === '[true,true]', JSON.stringify(role793));
+
+console.log('\nNáhled pro přihlášeného administrátora');
 await stranka.evaluate(() => {
   window.onlineMozne = () => true;
-  ONLINE_STAV.ja = { email: 'obchodnik@priklad.cz', role: 'Obchodník', jmeno: 'O' };
+  ONLINE_STAV.ja = { email: 'spravce@priklad.cz', role: 'Administrátor', jmeno: 'S' };
   renderKryci();
 });
 zkus('tlačítko „Ukázat, co by se zapsalo" a věta „Nic se neodesílá"', /Ukázat, co by se zapsalo/.test(await karta()) && /Nic se neodesílá/.test(await karta()));
@@ -148,7 +163,14 @@ const prod = await stranka.evaluate(async () => {
     tabulka: document.querySelectorAll('#pdnTabulka_prod_ock tbody tr').length,
     karta: (document.getElementById('prodejKarta_ock') || {}).textContent || '' };
 });
-zkus('karta Prodej má tlačítko náhledu (online, s právem)', prod.tl);
+zkus('karta Prodej má tlačítko náhledu (online, s právem, administrátor)', prod.tl);
+const prodObch = await stranka.evaluate(() => {
+  const puv = ONLINE_STAV.ja; ONLINE_STAV.ja = { email: 'obchodnik@priklad.cz', role: 'Obchodník', jmeno: 'O' };
+  renderKryci(); const el = document.getElementById('prodejKarta_ock');
+  const r = { tl: !!document.getElementById('prodNahled_ock'), det: /Co by se zapsalo do Pipedrive/.test(el ? el.textContent : ''), karta: !!el };
+  ONLINE_STAV.ja = puv; renderKryci(); return r;
+});
+zkus('#793: obchodník u Prodeje sbalovací náhled nevidí (karta Prodej zůstává)', prodObch.karta && !prodObch.tl && !prodObch.det, JSON.stringify(prodObch));
 zkus('#545: náhled jde jen na /api/pd/nanecisto s fází prodano (bez stavu) a číslem prodávané nabídky', JSON.stringify(prod.cesty) === '["/api/pd/nanecisto"]'
   && prod.faze === 'prodano' && prod.stav === undefined && prod.cislo === '2026 - OPR - CN - 0902', JSON.stringify(prod));
 zkus('karta Prodej ukáže tabulku zápisu a „Nic se neodeslalo"', prod.tabulka === 3 && /Nic se neodeslalo/.test(prod.karta), String(prod.tabulka));

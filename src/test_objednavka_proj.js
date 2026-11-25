@@ -270,6 +270,40 @@ const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 768
     && text.indexOf('Zakázka: Z2026-TEST-01') >= 0 && text.indexOf('SOD-TEST-1') < 0 && text.indexOf('Datum případu: 19. 11. 2026') >= 0);
   test('Word: řádky, sleva, Celkem Kč a podpis', o.radky.every(x => text.indexOf(x.nazev) >= 0) && text.indexOf('Sleva 10 %') >= 0
     && text.indexOf('Celkem Kč') >= 0 && text.indexOf(nbsp(o.texty.sDph)) >= 0 && /Podpis objednatele/.test(text));
+  /* #791 (J. V. 25. 11. 2026): datum a podpis objednatele až na konci — za Poznámkou, Platebním
+   * kalendářem, Termíny a Vystavil. Pojistka: na ebca8ebd je podpis hned pod rámečkem Celkem Kč → FAIL. */
+  {
+    const o2 = Object.assign({}, o, { vystavil: 'TEST Vystavitel' });
+    const d2 = new TextDecoder().decode((await DG.zipPrecti(new Uint8Array(await O.objednavkaProjDocxBlob(o2).arrayBuffer())))
+      .find(p => p.nazev === 'word/document.xml').data);
+    const t2 = nbsp(d2.replace(/<[^>]+>/g, ''));
+    const poz = ['Celkem Kč', 'Poznámka', 'Platební kalendář', 'Termíny', 'Vystavil: TEST Vystavitel', 'Podpis objednatele'].map(x => t2.lastIndexOf(x));
+    test('#791 Word: Poznámka → Platební kalendář → Termíny → Vystavil → Datum a podpis objednatele (poslední)',
+      o2.platebniKalendar.length > 0 && o2.terminy.length > 0 && poz.every((x, i) => x >= 0 && (i === 0 || x > poz[i - 1]))
+      && /Podpis objednatele: …+\s*$/.test(t2.trim()) && (t2.match(/Podpis objednatele/g) || []).length === 1, poz);
+  }
+  /* #791 S1 (revize Fable): podpis nikdy sám na straně — poslední blok, „Vystavil" a odstup před podpisem
+   * nesou w:keepNext, podpis sám ne. Pojistka: na 92973f3 bez keepNext → FAIL. */
+  {
+    const o3 = Object.assign({}, o, { vystavil: 'TEST Vystavitel' });
+    const d3 = new TextDecoder().decode((await DG.zipPrecti(new Uint8Array(await O.objednavkaProjDocxBlob(o3).arrayBuffer())))
+      .find(p => p.nazev === 'word/document.xml').data);
+    const odst = d3.slice(0, d3.indexOf('<w:sectPr')).match(/<w:p>[\s\S]*?<\/w:p>/g) || [];
+    const iP = odst.findIndex(x => /Podpis objednatele/.test(x));
+    const keep = x => /<w:keepNext\/>/.test(x);
+    const iT = odst.findIndex(x => />Termíny</.test(x));
+    test('#791 S1 Word: Termíny (nadpis i text), Vystavil a odstup drží s podpisem (keepNext), podpis poslední',
+      iP === odst.length - 1 && iT >= 0 && odst.slice(iT, iP).every(keep) && !keep(odst[iP])
+      && /Vystavil: TEST Vystavitel/.test(odst[iP - 2]), { iP, iT, n: odst.length });
+    const o4 = Object.assign({}, o, { vystavil: '', terminy: [], platebniKalendar: [] });
+    const d4 = new TextDecoder().decode((await DG.zipPrecti(new Uint8Array(await O.objednavkaProjDocxBlob(o4).arrayBuffer())))
+      .find(p => p.nazev === 'word/document.xml').data);
+    const od4 = d4.slice(0, d4.indexOf('<w:sectPr')).match(/<w:p>[\s\S]*?<\/w:p>/g) || [];
+    const iP4 = od4.findIndex(x => /Podpis objednatele/.test(x)), iN4 = od4.findIndex(x => />Poznámka</.test(x));
+    test('#791 S1 Word: bez termínů a kalendáře drží s podpisem Poznámka', iP4 === od4.length - 1 && iN4 >= 0
+      && od4.slice(iN4, iP4).every(keep), { iP4, iN4 });
+    test('#791 S1 Word: dřívější bloky keepNext nemají (jen poslední blok)', !keep(odst[odst.findIndex(x => />Poznámka</.test(x))]));
+  }
   test('Word: poznámka k termínům bez osiřelé pomlčky', text.indexOf('nemůže zhotovitel z velké části ovlivnit. –') < 0 && text.indexOf('nemůže zhotovitel z velké části ovlivnit.') >= 0);
   test('Word: sloupce jako vzor (J. cena, C. cena, …)', O.OBJ_PROJ_SLOUPCE.every(t => text.indexOf(t) >= 0) && /Součet/.test(text));
   /* D3-N1: popis dodávky přes celou šířku (gridSpan 7) a čísla na samostatném řádku pod ním. */
@@ -310,7 +344,12 @@ const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 768
   const ui = cti('ui/objednavka_proj_ui.js');
   test('UI: vstup tisku volá vzTiskVstup a bránu dokumentZabranaHlas', /vzTiskVstup\('objednavkaProj'/.test(ui) && /dokumentZabranaHlas\('objednavkaProj'/.test(ui)
     && !/objednavkaProjData\(ZAK\b/.test(ui) && !/dokumentVygeneruj\([^;]*?,\s*ZAK\s*,/.test(ui));
-  test('UI: karta je v krycím listu PROJ hned pod SoD PROJ', /sodProjKarta\(\)\)}<\/div>` : ''}\s*\n\s*\$\{typeof objednavkaProjKarta === 'function'/.test(cti('ui/kryci_proj_ui.js')));
+  /* #792 (J. V. 25. 11. 2026): samostatná karta objednávky zrušena — tlačítka jsou ve společné kartě
+   * se SoD PROJ a plnou mocí (sodProjKarta); krycí list PROJ kreslí jen ji. */
+  test('UI: objednávka je ve společné kartě se SoD PROJ (#792), samostatná karta zrušena',
+    /card\(SOD_PROJ_KARTA_NAZEV, sodProjKarta\(\)\)/.test(cti('ui/kryci_proj_ui.js'))
+    && !/objednavkaProjKarta\(\)/.test(cti('ui/kryci_proj_ui.js')) && !/Objednávka \/ Smlouva \(PROJ\)/.test(cti('ui/kryci_proj_ui.js'))
+    && /objednavkaProjTlacitka\(\)/.test(cti('ui/sod_ui.js')));
   const build = fs.readFileSync(path.join(__dirname, '..', 'build.py'), 'utf8');
   test('build: modul i UI v sestavení', /'objednavka_proj\.js'/.test(build) && /'ui\/objednavka_proj_ui\.js'/.test(build));
   /* D3-N2: lišta kontrol v okně objednávky jen s nálezy, které se objednávky týkají.
@@ -340,6 +379,17 @@ const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 768
       && (h.match(/<tr class="radek-cisla">/g) || []).length === oo.radky.length
       && /<td class="popis" colspan="7">[\s\S]*?<\/tr>\s*<tr class="radek-cisla">/.test(h));
   }
+  {
+    const z3 = zakazka(); const o3 = Object.assign(obj(z3.zak, z3.v), { vystavil: 'TEST Vystavitel' });
+    const h = objednavkaProjHtml(o3);
+    const poz = ['Celkem Kč', '<b>Poznámka</b>', '<b>Platební kalendář</b>', '<b>Termíny</b>', 'Vystavil: TEST Vystavitel', 'Podpis objednatele'].map(x => h.lastIndexOf(x));
+    test('#791 náhled: Datum a podpis objednatele za Poznámkou, kalendářem, Termíny a Vystavil (poslední blok)',
+      poz.every((x, i) => x >= 0 && (i === 0 || x > poz[i - 1])) && /<div class="podpis">[^<]*Podpis objednatele[^<]*<\/div>\s*$/.test(h)
+      && (h.match(/Podpis objednatele/g) || []).length === 1, poz);
+  }
+  test('#791 S1 náhled: Vystavil a poslední odstavec poznámek break-after: avoid, podpis break-before: avoid',
+    /\.vystavil,\.pozn p:last-child,\.pozn b:last-of-type\{break-after:avoid;page-break-after:avoid\}/.test(ui)
+    && /\.vystavil,\.podpis\{break-before:avoid/.test(ui));
   test('náhled: escapuje text zákazníka', html.indexOf('<b>zlý</b>') < 0 && html.indexOf('&lt;b&gt;zlý') >= 0);
   test('náhled: poznámka k termínům bez osiřelé pomlčky', html.indexOf('ovlivnit. –') < 0 && html.indexOf('ovlivnit.') >= 0);
   test('náhled: číslo dokladu, Celkem Kč, podpis, poznámka', /id="objCislo">2026-OVP-OBJ-0376</.test(html) && /Celkem Kč/.test(html)

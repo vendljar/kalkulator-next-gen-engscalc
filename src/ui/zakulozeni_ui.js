@@ -202,6 +202,22 @@ function zakUlozeniRadek() {
   return radky.join('');
 }
 
+/* #801: stránka s hlavičkou zakázky (a hláškou uložení) — ta, kde uživatel je, jinak
+ * Kalkulace OCK; u zakázky s vyřazenou OCK (jen PROJ) Kalkulace PROJ. */
+function zakUlozeniTabHlavicky() {
+  const tab = typeof TAB !== 'undefined' ? TAB : '';
+  if (tab === 'kalk' || tab === 'proj') return tab;
+  const vyr = (typeof zakazkaVyrazenaStrana === 'function' && typeof ZAK !== 'undefined') ? zakazkaVyrazenaStrana(ZAK) : '';
+  return vyr === 'ock' ? 'proj' : 'kalk';
+}
+/* Hláška a hlavička do zorného pole (po vykreslení). */
+function zakUlozeniUkazHlavicku() {
+  if (typeof document === 'undefined') return;
+  const str = document.getElementById('page-' + zakUlozeniTabHlavicky());
+  const h = str && (str.querySelector('.zak-ulozeni') || str.querySelector('.zak-bar'));
+  if (h && typeof h.scrollIntoView === 'function') h.scrollIntoView({ block: 'center' });
+}
+
 /* ---------- co tlačítka dělají ---------- */
 
 /* Uložení do databáze bez vyplněné hlavičky by založilo záznam „bez-cisla-…",
@@ -262,8 +278,12 @@ function zakUlozUI() {
     zakUlozeniZprava('Vyplňte v hlavičce: ' + s.chybi.join(', ')
       + ' – pak zakázku uložte. Než ji vyplníte, uložte si práci do souboru '
       + 'tlačítkem „Uložit do souboru (JSON)" na konci Přehledu cenových nabídek.', 'varovani');
-    prepniTab('zakazka');
+    /* #801 (K61-N2): hláška (zakUlozeniRadek) je jen v hlavičce Kalkulace OCK / PROJ. Dřív se
+     * přepnulo na Přehled cenových nabídek — hláška zůstala na skryté stránce a uživatel nevěděl,
+     * proč se nic neuložilo. Teď zůstane (nebo přejde) na stránku s hlavičkou a ukáže ji. */
+    prepniTab(zakUlozeniTabHlavicky());
     render();
+    zakUlozeniUkazHlavicku();
     return Promise.resolve(false);
   }
   zakUlozeniZprava('');

@@ -27,10 +27,12 @@ const PRIP = {
   typ: '', text: '', misto: null, snimekPrilozit: true, nahled: '', nahledBezi: false,
   odesilam: false, odeslano: null, hlaska: '', zvyraznit: [],
   vybira: false,
+  znacky: [], zn: null,       // #781: značky na náhledu snímku a rozpracovaný editor
   sp: { seznam: [], pocty: {}, neprectenych: 0, nacteno: false, nacita: false, filtr: 'nove', zdroj: 'oba', hledej: '',
-    vybrana: '', odpoved: '', dupS: '', snimky: {}, nastaveni: null, klic: null, zaznam: [], novyKlic: '', hlaska: '', hlaskaTyp: '' },
+    vybrana: '', odpoved: '', dupS: '', snimky: {}, znacky: {}, nastaveni: null, klic: null, zaznam: [], novyKlic: '', hlaska: '', hlaskaTyp: '' },
 };
 const PRIP_FAB_ID = 'prip-fab', PRIP_PANEL_ID = 'prip-panel', PRIP_LISTA_ID = 'prip-vyber-lista', PRIP_RAM_ID = 'prip-vyber-ram';
+const PRIP_ZN_ID = 'prip-zn-editor', PRIP_ZOOM_ID = 'prip-zoom';   // #781 editor značek, #780 zvětšení snímku
 
 function pripPrihlasen() { return typeof ONLINE_STAV !== 'undefined' && !!ONLINE_STAV.ja; }
 function pripJeSpravce() { return typeof jeAdminOnline === 'function' && jeAdminOnline(); }
@@ -42,11 +44,12 @@ function pripSmiOdesilat() { return pripPrihlasen() && !!(PRIP.nastaveni && PRIP
  * záznam a nový klíč koordinace. Panel a výběr místa se zavřou. */
 function pripominkyReset() {
   if (PRIP.vybira && typeof pripMistoKonec === 'function') { try { pripMistoKonec(null); } catch (e) { /* nic */ } }
+  if (typeof document !== 'undefined') { pripZnackyZavriTicho(); pripZoomZavri(); }
   Object.assign(PRIP, { nastaveni: null, moje: [], novych: 0, mojeNacteno: false, panel: false, zalozka: 'nova',
     typ: '', text: '', misto: null, snimekPrilozit: true, nahled: '', nahledBezi: false,
-    odesilam: false, odeslano: null, hlaska: '', zvyraznit: [], vybira: false,
+    odesilam: false, odeslano: null, hlaska: '', zvyraznit: [], vybira: false, znacky: [], zn: null,
     sp: { seznam: [], pocty: {}, neprectenych: 0, nacteno: false, nacita: false, filtr: 'nove', zdroj: 'oba', hledej: '',
-      vybrana: '', odpoved: '', dupS: '', snimky: {}, nastaveni: null, klic: null, zaznam: [], novyKlic: '', hlaska: '', hlaskaTyp: '' } });
+      vybrana: '', odpoved: '', dupS: '', snimky: {}, znacky: {}, nastaveni: null, klic: null, zaznam: [], novyKlic: '', hlaska: '', hlaskaTyp: '' } });
   if (typeof document !== 'undefined') {
     [PRIP_PANEL_ID, PRIP_LISTA_ID, PRIP_RAM_ID].forEach(id => { const e = document.getElementById(id); if (e) { e.style.display = 'none'; if (id === PRIP_PANEL_ID) e.innerHTML = ''; } });
     pripFabKresli();
@@ -130,7 +133,10 @@ function pripPanelOtevri(zalozka) {
   pripPanelKresli(); pripFabKresli();
 }
 function pripPanelZavri() {
-  PRIP.panel = false; PRIP.nahled = '';   // N6: po návratu se snímek pořídí znovu
+  PRIP.panel = false;
+  /* N6: po návratu se snímek pořídí znovu — ale ne, když na něm obchodník už
+   * vyznačil místa (#781): značky patří k tomuhle snímku. */
+  if (!PRIP.znacky.length) PRIP.nahled = '';
   const p = document.getElementById(PRIP_PANEL_ID); if (p) p.style.display = 'none';
   pripFabKresli();
 }
@@ -166,6 +172,7 @@ function pripSnimekPrepni(v) {
 function pripNahledObnov() {
   if (PRIP.nahledBezi) return;
   PRIP.nahledBezi = true;
+  PRIP.znacky = [];          // #781: nový snímek = značky starého neplatí
   pripSnimekPoriz().then(d => { PRIP.nahled = d || ''; }).catch(() => { PRIP.nahled = ''; })
     .then(() => { PRIP.nahledBezi = false; if (PRIP.panel) pripPanelKresli(); });
 }
@@ -196,13 +203,19 @@ function pripOdeslat() {
   PRIP.odesilam = true; PRIP.hlaska = ''; pripPanelKresli();
   /* N6 revize (22. 11. 2026): snímek se pořizuje ČERSTVÝ při odeslání — ten
    * z otevření panelu mohl být z jiné obrazovky. Selže-li, použije se náhled. */
-  const snimek = PRIP.snimekPrilozit ? pripSnimekPoriz().then(d => d || PRIP.nahled) : Promise.resolve('');
+  /* #781: s vyznačenými místy jde PRÁVĚ ten snímek, na který obchodník kreslil
+   * (značky jsou v jeho souřadnicích), ne čerstvý. */
+  const znacky = PRIP.snimekPrilozit && PRIP.nahled ? PRIP.znacky.slice() : [];
+  const snimek = !PRIP.snimekPrilozit ? Promise.resolve('')
+    : (znacky.length ? Promise.resolve(PRIP.nahled) : pripSnimekPoriz().then(d => d || PRIP.nahled));
   snimek.catch(() => '').then(obr => {
     const sn = pripominkaSnimekZkontroluj(obr || '');
-    return onlineApi('/api/pripominky', { typ: PRIP.typ, text: PRIP.text, kontext: pripKontext(), snimek: sn.ok ? sn.obrazek : '' });
+    const telo = { typ: PRIP.typ, text: PRIP.text, kontext: pripKontext(), snimek: sn.ok ? sn.obrazek : '' };
+    if (telo.snimek && znacky.length) telo.znacky = znacky;
+    return onlineApi('/api/pripominky', telo);
   }).then(d => {
     PRIP.odeslano = { id: d.id };
-    PRIP.typ = ''; PRIP.text = ''; PRIP.misto = null; PRIP.nahled = '';
+    PRIP.typ = ''; PRIP.text = ''; PRIP.misto = null; PRIP.nahled = ''; PRIP.znacky = [];
     PRIP.snimekPrilozit = !PRIP.nastaveni || PRIP.nastaveni.snimekVychozi !== false;
     if (d.pripominka) PRIP.moje.unshift(d.pripominka);
   }).catch(e => { PRIP.hlaska = e.message || 'Odeslání se nepovedlo.'; })
@@ -257,10 +270,17 @@ function pripPanelKresli() {
     const typ = pripominkaTyp(PRIP.typ);
     const misto = PRIP.misto
       ? `<span class="prip-cip">📍 ${esc(pripominkaMistoPopis(PRIP.misto))} <button type="button" title="Zrušit označení" onclick="pripMistoZrus()">×</button></span>`
-      : `<button type="button" class="mini" id="prip-misto" onclick="pripMistoZacni()">📍 Ukázat místo na obrazovce</button>`;
+      : `<button type="button" class="mini" id="prip-misto" onclick="pripMistoZacni()">📍 Kliknout na prvek</button>`;
+    /* #781: vyznačení přímo na snímku — hlavní cesta; výběr prvku (📍) zůstává jako doplněk. */
+    const lzeKreslit = PRIP.snimekPrilozit && !!PRIP.nahled;
+    const nZn = PRIP.znacky.length;
+    const vyznacit = `<button type="button" class="prip-vyznacit${nZn ? ' ma' : ''}" id="prip-vyznacit" onclick="pripZnackyOtevri()" ${lzeKreslit ? '' : 'disabled'}>
+        <span class="prip-vyznacit-ikona">✏️</span><span><b>${nZn ? 'Upravit vyznačení' : 'Zakroužkovat problém na snímku'}</b>
+        <small>${nZn ? esc(pripominkaZnackyText(nZn)) + ' — správce je uvidí přesně tam' : 'tažením myši nakreslíte rámeček nebo kroužek'}</small></span></button>`;
     const k = pripKontext();
     const nahled = PRIP.snimekPrilozit
-      ? (PRIP.nahled ? `<img class="prip-miniatura" src="${esc(PRIP.nahled)}" alt="Náhled snímku obrazovky">`
+      ? (PRIP.nahled ? `<button type="button" class="prip-mini-obal" onclick="pripZnackyOtevri()" title="Kliknutím vyznačíte, kde je problém">
+            <img class="prip-miniatura" src="${esc(PRIP.nahled)}" alt="Náhled snímku obrazovky">${pripominkaZnackySvg(PRIP.znacky)}</button>`
         : `<div class="prip-miniatura prazdna">${PRIP.nahledBezi ? 'Pořizuji snímek…' : 'Snímek se nepodařilo pořídít — odešle se jen popis obrazovky.'}</div>`)
       : `<div class="prip-miniatura prazdna">bez snímku</div>`;
     telo = `
@@ -270,7 +290,8 @@ function pripPanelKresli() {
       <textarea id="prip-text" rows="5" maxlength="${PRIPOMINKA_TEXT_MAX}" placeholder="${esc(typ ? typ.placeholder : 'Nejdřív zvolte, co chcete nahlásit.')}"
         oninput="pripTextZmena(this)">${esc(PRIP.text)}</textarea>
       <div class="sec-title">3 · Kde to je? <span style="text-transform:none;font-weight:400">(nepovinné)</span></div>
-      <div>${misto}</div>
+      <div class="prip-kde">${vyznacit}
+        <div class="prip-kde-jinak">${lzeKreslit ? 'nebo' : (PRIP.snimekPrilozit ? 'Vyznačit jde, až bude snímek. Zatím' : 'Bez snímku jen')} ${misto}</div></div>
       <div class="prip-auto">
         <div class="prip-auto-nadpis">Přiložíme automaticky — nic nevyplňujete</div>
         <div class="prip-auto-obsah">${nahled}
@@ -279,6 +300,8 @@ function pripPanelKresli() {
             Verze aplikace: <b>${esc(k.verze || '—')}</b></div></div>
         <label class="prip-chk"><input type="checkbox" id="prip-snimek-chk" ${PRIP.snimekPrilozit ? 'checked' : ''}
           onchange="pripSnimekPrepni(this.checked)"> Přiložit snímek obrazovky</label>
+        ${nZn && !PRIP.snimekPrilozit ? '<div class="note" style="margin:4px 0 0">Bez snímku se vyznačená místa neodešlou.</div>' : ''}
+        ${PRIP.snimekPrilozit && PRIP.nahled && !PRIP.nahledBezi ? `<button type="button" class="mini prip-novy-snimek" onclick="pripNahledZnovu()">📷 Pořídit nový snímek</button>` : ''}
       </div>
       ${PRIP.hlaska ? `<div class="prip-chyba">${esc(PRIP.hlaska)}</div>` : ''}
       <button class="primary prip-odeslat" id="prip-odeslat" ${pripominkaLzeOdeslat(PRIP.typ, PRIP.text) && !PRIP.odesilam ? '' : 'disabled'}
@@ -332,11 +355,17 @@ function pripMistoKonec(t) {
   PRIP.vybira = false;
   ['#' + PRIP_LISTA_ID, '#' + PRIP_RAM_ID].forEach(s => { const e = document.querySelector(s); if (e) e.style.display = 'none'; });
   if (t) PRIP.misto = pripMistoPopis(t);
-  PRIP.panel = true; PRIP.nahled = '';
-  if (PRIP.snimekPrilozit) pripNahledObnov();
+  PRIP.panel = true;
+  /* Nový snímek po výběru prvku (rámeček prvku v něm sedí) — ne, když už jsou na
+   * snímku vyznačená místa (#781): ta by se ztratila. */
+  if (!PRIP.znacky.length) { PRIP.nahled = ''; if (PRIP.snimekPrilozit) pripNahledObnov(); }
   pripPanelKresli(); pripFabKresli();
 }
-function pripMistoZrus() { PRIP.misto = null; PRIP.nahled = ''; if (PRIP.snimekPrilozit) pripNahledObnov(); pripPanelKresli(); }
+function pripMistoZrus() {
+  PRIP.misto = null;
+  if (!PRIP.znacky.length) { PRIP.nahled = ''; if (PRIP.snimekPrilozit) pripNahledObnov(); }
+  pripPanelKresli();
+}
 /* Popis místa: sekce (nadpis karty / záložka), popisek prvku, selektor,
  * obdélník vůči oknu (správce ho vyznačí ve snímku). Hodnota pole jen
  * u polí, která nejsou cenová (ceny ke koordinaci nesmí — B257). */
@@ -400,7 +429,8 @@ function pripSnimekPoriz() {
       /* Atribut s neplatným jménem (vadný title s uvozovkou uvnitř rozpadne
        * HTML parser na „—=“ apod.) by XML parser SVG odmítl → pryč. */
       klon.querySelectorAll('*').forEach(e => { for (const a of [...e.attributes]) if (!/^[A-Za-z_][\w.:-]*$/.test(a.name)) e.removeAttribute(a.name); });
-      klon.querySelectorAll('script,#' + PRIP_PANEL_ID + ',#' + PRIP_FAB_ID + ',#' + PRIP_LISTA_ID + ',#' + PRIP_RAM_ID + ',input[type=file]').forEach(e => e.remove());
+      klon.querySelectorAll('script,#' + PRIP_PANEL_ID + ',#' + PRIP_FAB_ID + ',#' + PRIP_LISTA_ID + ',#' + PRIP_RAM_ID
+        + ',#' + PRIP_ZN_ID + ',#' + PRIP_ZOOM_ID + ',input[type=file]').forEach(e => e.remove());
       /* skryté stránky aplikace ven — zmenší to snímek na zlomek */
       document.querySelectorAll('[id^="page-"]').forEach(e => { if (e.style.display === 'none') { const k = klon.querySelector('#' + CSS.escape(e.id)); if (k) k.remove(); } });
       const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n')
@@ -433,6 +463,190 @@ function pripSnimekPoriz() {
       img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
     } catch (e) { konec(''); }
   });
+}
+
+/* ---------- #781 vyznačení na snímku (obchodník) ----------
+ * Editor přes celé okno: snímek co největší, nástroje Rámeček / Kroužek, Zpět,
+ * Smazat vše, Hotovo / Zrušit (Esc). Tah myší (i dotykem) nakreslí značku; značky
+ * se ukládají jako vektor v promilích snímku (src/pripominky.js). Zrušit vrátí
+ * stav z otevření editoru. */
+function pripNahledZnovu() { PRIP.nahled = ''; PRIP.znacky = []; pripNahledObnov(); pripPanelKresli(); }
+function pripZnackyOtevri() {
+  if (!PRIP.snimekPrilozit || !PRIP.nahled) return;
+  PRIP.zn = { tvar: PRIP.znTvar || 'ramecek', puvodni: PRIP.znacky.slice(), znacky: PRIP.znacky.slice(), tah: null };
+  document.addEventListener('keydown', pripZnackyKlavesa, true);
+  pripZnackyKresli();
+}
+function pripZnackyKresli() {
+  const z = PRIP.zn; if (!z) return;
+  const el = pripEl(PRIP_ZN_ID, 'div', 'prip-zn-editor noprint');
+  el.style.display = '';
+  el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Vyznačte, kde je problém');
+  const n = z.znacky.length, plno = n >= PRIPOMINKA_ZNACKY_MAX;
+  const nastroj = (t, ikona, nazev) => `<button type="button" class="prip-zn-nastroj${z.tvar === t ? ' act' : ''}" data-tvar="${esc(t)}"
+      aria-pressed="${z.tvar === t}" onclick="pripZnackyTvar('${escJs(t)}')">${esc(ikona)} ${esc(nazev)}</button>`;
+  el.innerHTML = `<div class="prip-zn-lista">
+      <b class="prip-zn-nadpis">✏️ Vyznačte, kde je problém</b>
+      <span class="prip-zn-skupina">${nastroj('ramecek', '▭', 'Rámeček')}${nastroj('kruh', '◯', 'Kroužek')}</span>
+      <span class="prip-zn-skupina"><button type="button" id="prip-zn-zpet" onclick="pripZnackyZpet()" ${n ? '' : 'disabled'} title="Zpět (Ctrl+Z)">↶ Zpět</button>
+        <button type="button" id="prip-zn-smaz" onclick="pripZnackySmaz()" ${n ? '' : 'disabled'}>🗑 Smazat vše</button></span>
+      <span class="prip-zn-pocet" id="prip-zn-pocet">${n ? esc(pripominkaZnackyText(n)) : 'zatím nic'}${plno ? ' (víc už nejde)' : ''}</span>
+      <span style="flex:1"></span>
+      <button type="button" class="mini" onclick="pripZnackyKonec(false)">Zrušit</button>
+      <button type="button" class="primary" id="prip-zn-hotovo" onclick="pripZnackyKonec(true)">✓ Hotovo</button></div>
+    <div class="prip-zn-napoveda">Táhněte myší přes místo, kde je problém — nakreslí se ${z.tvar === 'kruh' ? 'kroužek' : 'rámeček'}.
+      Značek může být víc. Správce je uvidí na snímku přesně tam, kde jste je nakreslili.</div>
+    <div class="prip-zn-plocha"><div class="prip-zn-obraz" id="prip-zn-obraz">
+      <img src="${esc(PRIP.nahled)}" alt="Snímek obrazovky k vyznačení" draggable="false">
+      <div id="prip-zn-svg">${pripominkaZnackySvg(z.znacky)}</div></div></div>`;
+  const o = document.getElementById('prip-zn-obraz');
+  ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'].forEach(t => o.addEventListener(t, pripZnackyUkazatel));
+}
+function pripZnackySvgObnov() {
+  const z = PRIP.zn, el = document.getElementById('prip-zn-svg'); if (!z || !el) return;
+  const t = z.tah, rozkres = t ? pripominkaZnackaZTahu(t.x0, t.y0, t.x1, t.y1, z.tvar) : null;
+  el.innerHTML = pripominkaZnackySvg(rozkres ? z.znacky.concat([rozkres]) : z.znacky);
+}
+function pripZnackyUkazatel(ev) {
+  const z = PRIP.zn, o = ev.currentTarget; if (!z || !o) return;
+  const r = o.getBoundingClientRect();
+  const fx = r.width ? (ev.clientX - r.left) / r.width : 0, fy = r.height ? (ev.clientY - r.top) / r.height : 0;
+  if (ev.type === 'pointerdown') {
+    if (ev.button !== undefined && ev.button !== 0) return;
+    if (z.znacky.length >= PRIPOMINKA_ZNACKY_MAX) return;
+    ev.preventDefault();
+    try { o.setPointerCapture(ev.pointerId); } catch (e) { /* starší prohlížeč */ }
+    z.tah = { x0: fx, y0: fy, x1: fx, y1: fy };
+  } else if (!z.tah) return;
+  else if (ev.type === 'pointermove') { z.tah.x1 = fx; z.tah.y1 = fy; pripZnackySvgObnov(); }
+  else {
+    const t = z.tah; z.tah = null;
+    const nova = ev.type === 'pointerup' ? pripominkaZnackaZTahu(t.x0, t.y0, fx, fy, z.tvar) : null;
+    if (nova && z.znacky.length < PRIPOMINKA_ZNACKY_MAX) { z.znacky.push(nova); pripZnackyKresli(); } else pripZnackySvgObnov();
+  }
+}
+function pripZnackyTvar(t) { if (PRIP.zn && PRIPOMINKA_ZNACKA_TVARY.includes(t)) { PRIP.zn.tvar = PRIP.znTvar = t; pripZnackyKresli(); } }
+function pripZnackyZpet() { if (PRIP.zn && PRIP.zn.znacky.length) { PRIP.zn.znacky.pop(); pripZnackyKresli(); } }
+function pripZnackySmaz() { if (PRIP.zn) { PRIP.zn.znacky = []; pripZnackyKresli(); } }
+function pripZnackyKlavesa(ev) {
+  if (!PRIP.zn) return;
+  if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); pripZnackyKonec(false); }
+  else if ((ev.ctrlKey || ev.metaKey) && (ev.key === 'z' || ev.key === 'Z')) { ev.preventDefault(); pripZnackyZpet(); }
+}
+function pripZnackyZavriTicho() {
+  document.removeEventListener('keydown', pripZnackyKlavesa, true);
+  const el = document.getElementById(PRIP_ZN_ID); if (el) { el.style.display = 'none'; el.innerHTML = ''; }
+}
+function pripZnackyKonec(ulozit) {
+  if (!PRIP.zn) return;
+  PRIP.znacky = (ulozit ? PRIP.zn.znacky : PRIP.zn.puvodni).slice(0, PRIPOMINKA_ZNACKY_MAX);
+  pripZnackyZavriTicho();
+  PRIP.zn = null;
+  if (PRIP.panel) pripPanelKresli();
+}
+
+/* ---------- #780 zvětšení snímku (správce, detail připomínky) ----------
+ * Plná velikost přes celé okno, přiblížit / oddálit kolečkem myši (kolem
+ * kurzoru) i tlačítky +/−, Přizpůsobit a 1:1, posun tažením, Esc zavře.
+ * Bez knihoven: obsah (obrázek + rámeček místa + značky) je jeden prvek
+ * s transform translate + scale; značky (SVG v promilích) i rámeček (v %)
+ * se zvětšují spolu s obrázkem. */
+const PRIP_ZOOM = { s: 1, x: 0, y: 0, w: 0, h: 0, tah: null, MIN: 0.1, MAX: 8 };
+function pripSnimekRamHtml(m) {
+  const r = m && m.rect && m.rect.vw && m.rect.vh ? m.rect : null;
+  return r ? `<div class="prip-snimek-ram" style="left:${(r.x / r.vw * 100).toFixed(2)}%;top:${(r.y / r.vh * 100).toFixed(2)}%;width:${(r.w / r.vw * 100).toFixed(2)}%;height:${(r.h / r.vh * 100).toFixed(2)}%"></div>` : '';
+}
+function pripSpZoom(id) {
+  const p = PRIP.sp.seznam.find(x => x.id === id), obr = PRIP.sp.snimky[id];
+  if (!p || !obr) return;
+  pripZoomOtevri(obr, PRIP.sp.znacky[id] || [], pripSnimekRamHtml(p.kontext && p.kontext.misto), 'Snímek ' + id);
+}
+function pripZoomOtevri(src, znacky, ramHtml, nazev) {
+  const el = pripEl(PRIP_ZOOM_ID, 'div', 'prip-zoom noprint');
+  el.style.display = '';
+  el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', nazev || 'Snímek obrazovky');
+  el.innerHTML = `<div class="prip-zoom-lista">
+      <b>🔍 ${esc(nazev || 'Snímek obrazovky')}</b>
+      <button type="button" id="prip-zoom-mene" onclick="pripZoomKrok(1 / 1.25)" aria-label="Oddálit" title="Oddálit (−)">−</button>
+      <span id="prip-zoom-pct" class="prip-zoom-pct">100 %</span>
+      <button type="button" id="prip-zoom-vice" onclick="pripZoomKrok(1.25)" aria-label="Přiblížit" title="Přiblížit (+)">+</button>
+      <button type="button" onclick="pripZoomPrizpusob()" title="Celý snímek do okna (0)">Přizpůsobit</button>
+      <button type="button" onclick="pripZoomSkutecna()" title="Skutečná velikost (1)">1:1</button>
+      <span class="prip-zoom-napoveda">kolečko myši přibližuje · tažením posunete · Esc zavře</span>
+      <span style="flex:1"></span>
+      <button type="button" id="prip-zoom-zavrit" onclick="pripZoomZavri()" aria-label="Zavřít" title="Zavřít (Esc)">✕ Zavřít</button></div>
+    <div class="prip-zoom-plocha" id="prip-zoom-plocha"><div class="prip-zoom-obsah" id="prip-zoom-obsah">
+      <img id="prip-zoom-img" src="${esc(src)}" alt="${esc(nazev || 'Snímek obrazovky')}" draggable="false">${ramHtml || ''}${pripominkaZnackySvg(znacky)}</div></div>`;
+  const plocha = document.getElementById('prip-zoom-plocha'), img = document.getElementById('prip-zoom-img');
+  plocha.addEventListener('wheel', pripZoomKolecko, { passive: false });
+  ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'].forEach(t => plocha.addEventListener(t, pripZoomTah));
+  plocha.addEventListener('dblclick', ev => pripZoomKrok(PRIP_ZOOM.s < 1.5 ? 2 / PRIP_ZOOM.s : 1, ev));
+  document.addEventListener('keydown', pripZoomKlavesa, true);
+  const start = () => { PRIP_ZOOM.w = img.naturalWidth || 1280; PRIP_ZOOM.h = img.naturalHeight || 800; pripZoomPrizpusob(); };
+  if (img.complete && img.naturalWidth) start(); else img.onload = start;
+  const z = document.getElementById('prip-zoom-zavrit'); if (z) z.focus();
+}
+function pripZoomPouzij() {
+  const o = document.getElementById('prip-zoom-obsah'); if (!o) return;
+  Object.assign(o.style, { width: PRIP_ZOOM.w + 'px', height: PRIP_ZOOM.h + 'px',
+    transform: `translate(${PRIP_ZOOM.x}px, ${PRIP_ZOOM.y}px) scale(${PRIP_ZOOM.s})` });
+  const t = document.getElementById('prip-zoom-pct'); if (t) t.textContent = Math.round(PRIP_ZOOM.s * 100) + ' %';
+  const m = document.getElementById('prip-zoom-mene'), v = document.getElementById('prip-zoom-vice');
+  if (m) m.disabled = PRIP_ZOOM.s <= PRIP_ZOOM.MIN + 1e-9;
+  if (v) v.disabled = PRIP_ZOOM.s >= PRIP_ZOOM.MAX - 1e-9;
+}
+function pripZoomPlocha() { const p = document.getElementById('prip-zoom-plocha'); return p ? p.getBoundingClientRect() : { left: 0, top: 0, width: 0, height: 0 }; }
+function pripZoomPrizpusob() {
+  const r = pripZoomPlocha();
+  const s = Math.max(PRIP_ZOOM.MIN, Math.min(PRIP_ZOOM.MAX, Math.min((r.width - 24) / PRIP_ZOOM.w, (r.height - 24) / PRIP_ZOOM.h) || 1));
+  PRIP_ZOOM.s = s; PRIP_ZOOM.x = (r.width - PRIP_ZOOM.w * s) / 2; PRIP_ZOOM.y = (r.height - PRIP_ZOOM.h * s) / 2;
+  pripZoomPouzij();
+}
+function pripZoomSkutecna() { const r = pripZoomPlocha(); pripZoomNa(1, r.width / 2, r.height / 2); }
+/* Změna měřítka tak, aby bod (cx, cy) plochy zůstal na místě. */
+function pripZoomNa(s, cx, cy) {
+  const n = Math.max(PRIP_ZOOM.MIN, Math.min(PRIP_ZOOM.MAX, s));
+  PRIP_ZOOM.x = cx - (cx - PRIP_ZOOM.x) * (n / PRIP_ZOOM.s);
+  PRIP_ZOOM.y = cy - (cy - PRIP_ZOOM.y) * (n / PRIP_ZOOM.s);
+  PRIP_ZOOM.s = n; pripZoomPouzij();
+}
+function pripZoomKrok(k, ev) {
+  const r = pripZoomPlocha();
+  const cx = ev && ev.clientX !== undefined ? ev.clientX - r.left : r.width / 2, cy = ev && ev.clientY !== undefined ? ev.clientY - r.top : r.height / 2;
+  pripZoomNa(PRIP_ZOOM.s * k, cx, cy);
+}
+function pripZoomKolecko(ev) {
+  ev.preventDefault();
+  if (!ev.deltaY) return;
+  pripZoomKrok(ev.deltaY < 0 ? 1.15 : 1 / 1.15, ev);
+}
+function pripZoomTah(ev) {
+  if (ev.type === 'pointerdown') {
+    if (ev.button !== undefined && ev.button !== 0) return;
+    ev.preventDefault();
+    try { ev.currentTarget.setPointerCapture(ev.pointerId); } catch (e) { /* nic */ }
+    PRIP_ZOOM.tah = { sx: ev.clientX, sy: ev.clientY, x: PRIP_ZOOM.x, y: PRIP_ZOOM.y };
+    ev.currentTarget.classList.add('tahne');
+  } else if (!PRIP_ZOOM.tah) return;
+  else if (ev.type === 'pointermove') {
+    PRIP_ZOOM.x = PRIP_ZOOM.tah.x + ev.clientX - PRIP_ZOOM.tah.sx; PRIP_ZOOM.y = PRIP_ZOOM.tah.y + ev.clientY - PRIP_ZOOM.tah.sy;
+    pripZoomPouzij();
+  } else { PRIP_ZOOM.tah = null; ev.currentTarget.classList.remove('tahne'); }
+}
+function pripZoomKlavesa(ev) {
+  const el = document.getElementById(PRIP_ZOOM_ID);
+  if (!el || el.style.display === 'none') return;
+  if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); pripZoomZavri(); }
+  else if (ev.key === '+' || ev.key === '=') { ev.preventDefault(); pripZoomKrok(1.25); }
+  else if (ev.key === '-') { ev.preventDefault(); pripZoomKrok(1 / 1.25); }
+  else if (ev.key === '0') { ev.preventDefault(); pripZoomPrizpusob(); }
+  else if (ev.key === '1') { ev.preventDefault(); pripZoomSkutecna(); }
+}
+function pripZoomZavri() {
+  if (typeof document === 'undefined') return;
+  document.removeEventListener('keydown', pripZoomKlavesa, true);
+  PRIP_ZOOM.tah = null;
+  const el = document.getElementById(PRIP_ZOOM_ID); if (el) { el.style.display = 'none'; el.innerHTML = ''; }
 }
 
 /* ---------- správce ---------- */
@@ -469,7 +683,9 @@ function pripSpVyber(id) {
   }
   if (p && p.snimek && PRIP.sp.snimky[id] === undefined) {
     PRIP.sp.snimky[id] = null;
-    onlineApi('/api/pripominky?snimek=' + encodeURIComponent(id)).then(d => { PRIP.sp.snimky[id] = d.obrazek || ''; })
+    onlineApi('/api/pripominky?snimek=' + encodeURIComponent(id)).then(d => {
+      PRIP.sp.snimky[id] = d.obrazek || ''; PRIP.sp.znacky[id] = Array.isArray(d.znacky) ? d.znacky : [];
+    })
       .catch(() => { PRIP.sp.snimky[id] = ''; }).then(() => pripSpravcePrekresli());
   }
   pripSpravcePrekresli();
@@ -530,9 +746,13 @@ function pripSpravceDetail() {
   if (p.snimek) {
     if (snimek === null || snimek === undefined) snimekHtml = '<div class="note">Načítám snímek…</div>';
     else if (snimek) {
-      const r = m && m.rect && m.rect.vw && m.rect.vh ? m.rect : null;
-      const ram = r ? `<div class="prip-snimek-ram" style="left:${(r.x / r.vw * 100).toFixed(2)}%;top:${(r.y / r.vh * 100).toFixed(2)}%;width:${(r.w / r.vw * 100).toFixed(2)}%;height:${(r.h / r.vh * 100).toFixed(2)}%"></div>` : '';
-      snimekHtml = `<div class="prip-snimek"><img src="${esc(snimek)}" alt="Snímek obrazovky ${esc(p.id)}">${ram}</div>`;
+      const zn = sp.znacky[p.id] || [];
+      /* #780: kliknutím (i Enter / mezerníkem) se snímek otevře zvětšený; #781: značky obchodníka přes snímek. */
+      snimekHtml = `<div class="prip-snimek" role="button" tabindex="0" title="Kliknutím zvětšíte" onclick="pripSpZoom('${escJs(p.id)}')"
+          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pripSpZoom('${escJs(p.id)}')}">
+          <img src="${esc(snimek)}" alt="Snímek obrazovky ${esc(p.id)}">${pripSnimekRamHtml(m)}${pripominkaZnackySvg(zn)}
+          <span class="prip-snimek-lupa">🔍 Zvětšit</span></div>
+        ${zn.length ? `<div class="note prip-snimek-znacky">✏️ Obchodník vyznačil ${esc(pripominkaZnackyText(zn.length))} (červeně).</div>` : ''}`;
     } else snimekHtml = '<div class="note">Snímek se nepodařilo načíst.</div>';
   }
   const prubeh = (p.prubeh || []).map(x => `<li><b>${esc((pripominkaStav(x.stav) || {}).nazev || x.stav)}</b>

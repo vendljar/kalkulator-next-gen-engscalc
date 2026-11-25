@@ -49,6 +49,8 @@ const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
   : [/* PD2 (25. 11. 2026): pole KL do dealu jen do prázdného, dohledání, Platby, tisk CN (rychlé sady). */
      'test_pd2_pole.mjs', '../src/test_pd2_platby.js', '../src/test_pd2_tisk_cn.js',
+     /* PP (25. 11. 2026): #781 značky na snímku připomínky — ověření a uložení serverem (rychlá sada). */
+     'test_pp_znacky.mjs',
      /* MD (25. 11. 2026): K58-N1 číslo zámku PROJ (rychlá sada). */
      '../src/test_k58n1_cislo_proj.js',
      /* ZK (24. 11. 2026): #755 zákazníci ze zakázek podle ARES (rychlá sada). */
@@ -300,6 +302,33 @@ const filtr = filtrZArgv(process.argv.slice(2));
  * čím se nahradí, a proč nás zajímá — co by se v praxi stalo, kdyby tuhle
  * chybu někdo udělal doopravdy. */
 const MUTACE = [
+  /* PP (#781, 25. 11. 2026): značky na snímku připomínky — functions/pripominky.mjs ověří tvar
+   * a velikost (src/pripominky.js), uloží je SE SNÍMKEM, správci je vrátí jen platné.
+   * Hlídá netlify/test_pp_znacky.mjs. [PP] */
+  { nazev: "PP #781: server neověří značky [PP]", soubor: "functions/pripominky.mjs",
+    hledej: "    if (!zn.ok) return json({ ok: false, chyba: zn.chyba }, 400);\n",
+    nahrad: "",
+    proc: "neplatné značky (cizí tvar, přesah, 1000 kusů) by server přijal a připomínku uložil", sady: ["test_pp_znacky.mjs"] },
+  { nazev: "PP #781: značky bez snímku projdou [PP]", soubor: "functions/pripominky.mjs",
+    hledej: "    if (zn.znacky.length && !sn.obrazek)\n",
+    nahrad: "    if (false)\n",
+    proc: "značky bez snímku by se tiše zahodily — obchodník by si myslel, že je správce uvidí", sady: ["test_pp_znacky.mjs"] },
+  { nazev: "PP #781: značky se neuloží se snímkem [PP]", soubor: "functions/pripominky.mjs",
+    hledej: "zn.znacky.length ? { obrazek: sn.obrazek, znacky: zn.znacky } : { obrazek: sn.obrazek }",
+    nahrad: "{ obrazek: sn.obrazek }",
+    proc: "vyznačení obchodníka by se ztratilo při uložení", sady: ["test_pp_znacky.mjs"] },
+  { nazev: "PP #781: správce nedostane značky [PP]", soubor: "functions/pripominky.mjs",
+    hledej: "json({ ok: true, obrazek: sn.obrazek, znacky: zn.ok ? zn.znacky : [] })",
+    nahrad: "json({ ok: true, obrazek: sn.obrazek })",
+    proc: "správce by vyznačení v detailu neviděl", sady: ["test_pp_znacky.mjs"] },
+  { nazev: "PP #781: uložené značky se při čtení neověří [PP]", soubor: "functions/pripominky.mjs",
+    hledej: "json({ ok: true, obrazek: sn.obrazek, znacky: zn.ok ? zn.znacky : [] })",
+    nahrad: "json({ ok: true, obrazek: sn.obrazek, znacky: (sn && sn.znacky) || [] })",
+    proc: "poškozený nebo podvržený záznam značek by šel do stránky správce bez kontroly", sady: ["test_pp_znacky.mjs"] },
+  { nazev: "PP #781: značky do záznamu připomínky (záloha, koordinace) [PP]", soubor: "functions/pripominky.mjs",
+    hledej: "        p.snimek = true;\n      }",
+    nahrad: "        p.snimek = true; p.znacky = zn.znacky;\n      }",
+    proc: "značky by šly do zálohy a k pohledu bez snímku (B257: patří jen ke snímku)", sady: ["test_pp_znacky.mjs"] },
   /* ZK (#755, 24. 11. 2026): zákazníci ze zakázek podle ARES — functions/zakaznici_ze_zakazek.mjs,
    * lib/zakaznici_ze_zakazek.mjs. Hlídá netlify/test_zk_zakaznici_ze_zakazek.mjs. [ZK] */
   { nazev: "ZK D4: přerušená karta bez kontroly autora [ZK]", soubor: "functions/zakaznici_ze_zakazek.mjs",

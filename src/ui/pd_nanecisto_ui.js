@@ -17,6 +17,14 @@
 const PDN_UI = { nacita: false, chyba: '', data: null, zak: null, podklad: null, otisk: '' };
 
 function pdnUiSmi() { return typeof smiZobrazit !== 'function' || smiZobrazit('crm.pipedrive'); }
+/* #793 (J. V. 25. 11. 2026): náhled „Co by se zapsalo do Pipedrive" (krycí list OCK i PROJ
+ * a sbalovací náhled u Prodeje) vidí JEN administrátor — ostatním se nekreslí. Role podle
+ * zobrazeniRole(): administrátor v náhledu cizí role vidí totéž co ta role. Právo
+ * crm.pipedrive dál platí (bez něj nevidí nikdo). Zápis prodeje (#597) a odeslání (#116)
+ * se tím neomezují — mají vlastní brány. */
+function pdnUiNahledSmi() {
+  return pdnUiSmi() && typeof zobrazeniRole === 'function' && zobrazeniRole() === 'Administrátor';
+}
 function pdnUiOnline() {
   return (typeof onlineMozne !== 'function' || onlineMozne())
     && typeof ONLINE_STAV !== 'undefined' && !!(ONLINE_STAV && ONLINE_STAV.ja);
@@ -111,7 +119,7 @@ function pdnUiObsah(kde) {
  * Oba krycí listy jsou v dokumentu zároveň, proto id s příponou `kde`
  * ('ock' / 'proj') — jinak by stejná id byla v DOM dvakrát. */
 function pdnKarta(kde) {
-  if (!pdnUiSmi()) return '';
+  if (!pdnUiNahledSmi()) return '';
   kde = kde === 'proj' ? 'proj' : 'ock';
   return `<div class="noprint" style="margin-top:14px" id="pdnKarta_${kde}">${card('Co by se zapsalo do Pipedrive (náhled, nic se neodesílá)', pdnUiObsah(kde), false, 'pdnKartaObsah_' + kde)}</div>`;
 }

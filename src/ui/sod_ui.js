@@ -279,24 +279,33 @@ function sodDphNaVolbu() {
   el.focus();
 }
 
-/* ---------- karta v Kalkulaci PROJ: SoD projekce + plná moc ---------- */
+/* ---------- karta v krycím listu PROJ: objednávka + plná moc + SoD projekce ----------
+ * #792 (J. V. 25. 11. 2026): objednávka PROJ (PDF i Word) je ve společné kartě se
+ * smlouvou o dílo a plnou mocí. Pořadí tlačítek: Náhled a tisk objednávky (PDF),
+ * Vytvořit objednávku (Word), Vytvořit plnou moc (Word), Vytvořit smlouvu o dílo
+ * PROJ (Word) jako poslední; výběr jazyka tisku zůstává u smlouvy. */
+const SOD_PROJ_KARTA_NAZEV = 'Objednávka, smlouva o dílo a plná moc (PROJ)';
 function sodProjKarta() {
   /* #377: SoD PROJ hlídá zábrany projekce, plná moc jen prázdný ceník. */
   const zab = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr('sodProj') : '';
   const zabPm = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr('plnaMoc') : '';
-  return `<div class="note" style="font-weight:600;margin-top:14px">Smlouva o dílo a plná moc (Word):</div>
-    <div class="note">Smlouva o dílo na projekční práce nese <b>cenu z nabídky PROJ</b> (číslo nabídky, celkem
+  const obj = typeof objednavkaProjTlacitka === 'function';
+  return `<div class="note" style="font-weight:600;margin-top:14px">${obj ? 'Objednávka, plná moc a smlouva o dílo:' : 'Smlouva o dílo a plná moc (Word):'}</div>
+    ${obj ? objednavkaProjPopis() : ''}
+    <div class="note"><b>Plná moc</b> je administrativa k objektu – nese firemní údaje zmocněnce a adresu stavby (z hlavičky
+      PROJ, případně OCK); chybějící údaje zmocnitele mají tečky „……", doplní se ručně a varianta se <b>nezamyká</b>.
+      <b>Smlouva o dílo</b> na projekční práce nese <b>cenu z nabídky PROJ</b> (číslo nabídky, celkem
       bez DPH, podmínky z krycího listu PROJ). Co v zakázce chybí, dostane tečky <b>„……"</b> – místa označená ……
-      doplňte ve Wordu; vytištěná smlouva variantu <b>uzamkne</b>.
-      <b>Plná moc</b> je administrativa k objektu – nese firemní údaje zmocněnce a adresu stavby (z hlavičky
-      PROJ, případně OCK); chybějící údaje zmocnitele mají tečky „……", doplní se ručně a varianta se <b>nezamyká</b>.</div>
+      doplňte ve Wordu; vytištěná smlouva variantu <b>uzamkne</b>.</div>
     <div class="btns" style="margin-top:6px">
-      <button class="primary"${zab} onclick="sodWord('sodProj')">Vytvořit smlouvu o dílo PROJ (Word)</button>
+      ${obj ? objednavkaProjTlacitka() : ''}
       <button class="primary"${zabPm} onclick="sodWord('plnaMoc')">Vytvořit plnou moc (Word)</button>
+      <button class="primary"${zab} onclick="sodWord('sodProj')">Vytvořit smlouvu o dílo PROJ (Word)</button>
       ${typeof tiskJazykVyber === 'function' ? tiskJazykVyber() : ''}
     </div>
     <div class="note">Jazyk tisku platí pro smlouvu (anglicky jen s anglickou šablonou smlouvy PROJ, cena v eurech);
-      plná moc je vždy česky.</div>
+      objednávka a plná moc jsou vždy česky.</div>
+    ${obj && typeof objednavkaProjStavHtml === 'function' ? objednavkaProjStavHtml() : ''}
     <div class="note sodStav_sodProj" style="margin-top:4px"></div>
     <div class="note sodStav_plnaMoc"></div>`;
 }
@@ -357,6 +366,8 @@ function prodUiNahledP3(v, strana) {
     ${chybaBlok}${tab}<div class="btns" style="margin:6px 0">${btn}</div></details>`;
 }
 function prodUiNahledHtml(v, strana) {
+  /* #793: sbalovací „Co by se zapsalo do Pipedrive" u Prodeje jen pro administrátora. */
+  if (typeof pdnUiNahledSmi === 'function' && !pdnUiNahledSmi()) return '';
   const p3 = prodUiNahledP3(v, strana);
   if (p3) return p3;
   const z = prodPdZapis(ZAK, v, typeof JEKLY !== 'undefined' ? JEKLY : null);

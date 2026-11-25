@@ -57,6 +57,70 @@ sada VS přegenerována (V4), tabulka zmrazení KL doplněna o Odchylky PROJ (ed
 (PO, PV, RJ, #512, #536, MD #767) přepsány na nový kód. Kolo `--bez-mutaci --proti origin/claude/integrace-16-10`
 VŠE ZELENÉ (561/0, hodiny 459/0, statické 12/12); porovnání 395: jen očekávané rozdíly
 (`podklady/porovnani/ocekavane_pd2_2026-11-25.txt`), ceny a výsledky výpočtu beze změny. Nový záznam roadmapy #783.
+## v25.11.5 — PP — připomínky (zvětšení a značky na snímku), krycí list PROJ, větev claude/pp-pripominky-kl
+
+Nad integrací `ebca8ebd` (v25.11.3). Rozhodnutí J. V. 25. 11. 2026 (ROZHODNUTI_LOG). Číslo verze se nezvyšuje.
+
+- **#781 Připomínky: obchodník vyznačí problém přímo na snímku.** V panelu Připomínka je v kroku „3 · Kde to je?“
+  hlavní tlačítko „✏️ Zakroužkovat problém na snímku“ (i klik na miniaturu) → editor přes celé okno: Rámeček /
+  Kroužek tažením myši, víc značek (nejvýš 20), Zpět (Ctrl+Z), Smazat vše, Hotovo, Zrušit (Esc). Miniatura
+  i tlačítko ukazují počet („2 vyznačená místa“); „📷 Pořídit nový snímek“ začne znovu. 📍 výběr prvku zůstává
+  jako doplněk („nebo Kliknout na prvek“). S vyznačením se odešle právě snímek, na který obchodník kreslil.
+  Značky jsou vektor v promilích snímku a ukládají se se snímkem (jen správce, ne do zálohy ani ke koordinaci);
+  server ověří tvar a velikost (B257 doplněk PP). Správce je vidí v detailu i ve zvětšení.
+- **#780 Připomínky: snímek jde zvětšit.** V detailu (Nastavení → Připomínky) klik nebo Enter na snímek otevře
+  zvětšení přes celé okno: kolečko myši přibližuje kolem kurzoru, tlačítka +/−, Přizpůsobit, 1:1 (10–800 %),
+  posun tažením, Esc / ✕ zavře. Bez externích knihoven.
+- **#791 Objednávka PROJ (PDF i Word): datum a podpis objednatele na konci** — za Poznámkou, Platebním
+  kalendářem, Termíny a „Vystavil“. **Podpis nikdy sám na straně** (revize Fable S1): poslední blok textu,
+  „Vystavil“ a odstup drží s podpisem (Word `w:keepNext`, tisk `break-after: avoid`) — při přetečení jde na
+  novou stranu celý poslední blok s podpisem; počet stran se neslibuje (plný rozsah). Mění rozložení dokumentu
+  (porovnání sestavení: data objednávky `obj-proj` beze změny — viz `podklady/porovnani/ocekavane_pp_2026-11-25.txt`).
+- **#792 Krycí list PROJ: karta „Objednávka, smlouva o dílo a plná moc (PROJ)“** (popis objednávky už neříká
+  „jednostránková“ — revize N3). Samostatná karta
+  „Objednávka / Smlouva (PROJ)“ zrušena; tlačítka v pořadí Náhled a tisk objednávky (PDF), Vytvořit objednávku
+  (Word), Vytvořit plnou moc (Word), Vytvořit smlouvu o dílo PROJ (Word); Jazyk tisku zůstává u smlouvy.
+- **#793 „Co by se zapsalo do Pipedrive“ jen pro administrátora** — karta v krycím listu OCK i PROJ i sbalovací
+  náhled u Prodeje (rozhodnutí dávky: Prodej také jen admin). Zápis prodeje a odeslání nabídky beze změny.
+- **Kolo 61 (doplněk koordinace 25. 11.):** **#801** Uložit zakázku bez čísla / názvu zůstane na stránce s hlavičkou
+  (Kalkulace OCK / PROJ) a ukáže hlášku „Vyplňte v hlavičce…“ (dřív přepnulo na Přehled a hláška byla skrytá).
+  **#802** kontrola před tiskem hlásí nevyplněná místa jen té smlouvy, kterou zakázka tiskne (jen PROJ → bez SoD
+  realizace, s číslem OCK / jen OCK → bez SoD PROJ). **#803** „1 položka / 2–4 položky / 5 položek“ v kartě Cenová
+  nabídka. **#804** krycí list OCK i PROJ (tisk, Word, náhled prodeje) píše pole typu datum („Dne“, „Datum podpisu
+  smlouvy“) česky „25. 11. 2026“ — **mění text krycího listu** (porovnání: 390 / 390 očekávaných, jen kryci-*);
+  uložená hodnota a symboly SoD beze změny. Test `src/test_pp_k61.js`.
+- Testy: `src/test_pp_pripominky.js` (59), `netlify/test_pp_znacky.mjs` (29), `overit_pp_pripominky.mjs` (42), `src/test_pp_k61.js` (16),
+  doplněné `src/test_objednavka_proj.js`, `overit_objednavka_proj.mjs`, `overit_pd_nanecisto.mjs`,
+  `overit_zobrazeni.mjs`, `overit_controlling.mjs`, `src/test_vs_kontroly.js`; mutace [PP] jádra 24/24 (+ kolo 61) a serveru 6/6.
+
+## v25.11.4 — G1 — úklid nízkých nálezů vlny G, větev claude/g1-uklid
+
+Nad integrací `9776c346`. **Cenu kalkulací ani text dokumentů nemění**; jediná změna ve vygenerovaném Wordu jsou vlastnosti souboru (#754).
+
+- **#753 (revize SA R6, R9, R10) — kontrola šablon Word:**
+  R6 `zipPrecti` odmítne archiv, jehož adresář nekončí tam, kam ukazuje koncový záznam (položka skrytá počtem),
+  nesouhlasí počet „na disku“ a „celkem“, lokální hlavička nemá podpis nebo nese jiné jméno než adresář.
+  R9 `sablonaJeXmlBajty` přeskakuje BOM kdekoli v úvodu — část `.bin` v UTF-32 BE s BOM nebo s dvojím BOM se rozebere
+  (a UTF-32 odmítne). R10 výjimka dekodéru UTF-16 BE už kontrolu nevypne: část se odmítne jako „část nejde přečíst“.
+- **#754 — vlastnosti dokumentu:** generátor (`docxVyplnSablonu`) přepíše `dc:creator` a `cp:lastModifiedBy`
+  v `docProps/core.xml` na „ENGINEERS CZ s.r.o.“ (rozhodnutí J. V. 25. 11. 2026); jméno zaměstnance ze šablony se
+  k zákazníkovi nedostane. Prvek, který šablona nemá, se nepřidává; ostatní vlastnosti beze změny.
+- **#756 — kontrola „Ruční položka u ručně přepsaného řádku Hrubé OCK“** (`rucniPolozkaPomer`, varování, Kalkulace OCK):
+  ruční položka Spojovacího materiálu / Lakování (jen z importu) bere cenu z poměru řádku Hrubé OCK; je-li ten řádek
+  ručně přepsaný, kontrola na to upozorní. Cena ani tisk beze změny. Pravidel je 56.
+- Revize poradcem Fable (verdikt SLOUČIT): F1 adresář musí končit těsně před koncovým záznamem (mezi nimi smí být jen
+  záznamy ZIP64) — jinak cizí adresář vidí Python i unzip, kontrola ne; F2 jméno lokální hlavičky se porovnává po bajtech
+  (dva neplatné bajty UTF-8 se dekódovaly na totéž U+FFFD); F6 testy DEFLATE, data descriptor, komentář, bajty za koncem,
+  ZIP64, UTF-32 LE s BOM a přepis ceny řádku. F3, F4, F5, F7 návrhy pro koordinaci (zpráva).
+- Revize koordinace (`origin/claude/revize-g1`, REVIZE_G1.md): S1 #754 přepisuje KAŽDOU část vlastností dokumentu
+  (typ core-properties v `[Content_Types].xml`, vztah core-properties v `_rels/.rels`, vždy `docProps/core.xml`) — CN v18
+  má i `docProps/core0.xml` se jmény osob; S2 `nastroje/novinky.py` (a tím `release_odkaz.py --od`) na hotovou položku
+  s dočasnou značkou dávky skončí chybou „přepsat značku dávky na číslo verze“.
+- **#794 (J. V. 25. 11., revize G1 N1):** ve všech částech vlastností generovaného Wordu Company (`docProps/app.xml`
+  a vlastní vlastnost „Company“ v `docProps/custom.xml`) = „ENGINEERS CZ s.r.o.“, `dc:title` prázdný. Text dokumentu beze změny.
+- Testy: `src/test_g1_uklid.js` 45/0 (pojistky: nad 9776c346 15 FAIL, bez F1/F2 2 FAIL, bez S1 3 FAIL, bez #794 6 FAIL); `test_evidence.js` 71/0
+  (bez S2 2 FAIL); mutace `[G1]` 26/26, `[SA]` 23/23.
+  Porovnání sestavení čte jen `word/document.xml` — vlastnosti souboru nevidí (`podklady/porovnani/ocekavane_g1_2026-11-25.txt`).
 
 ## v25.11.3 — MD: malá dávka #766, #767, #768, „Dne“ podle Prahy, barvy záloh, větev claude/md-mala-davka
 

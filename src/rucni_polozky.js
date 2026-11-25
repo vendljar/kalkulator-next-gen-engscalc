@@ -79,6 +79,20 @@ function rpZdroj(Z, sekce, idx) {
  * mnozstvi, jednotka, dodatek, jazyky, sMarzi }. Prázdný název nebo nulové
  * množství = řádek „vypnutý", netiskne se. Pořadí: sekce kalkulace, pak
  * pořadí v sekci. */
+/* Řádek Hrubé OCK, uvnitř kterého jádro vede náklad sekce spojovacího
+ * materiálu / lakování (revize N2). */
+const RP_RADEK_HRUBE = {
+  spojovaci: 'SPOJOVACÍ MATERIÁL',
+  lakovani: 'LAKOVÁNÍ (ŠACHTA, PLECHY, ZASKLENÍ, OPLECHOVÁNÍ)',
+};
+function rpRadekHrube(r, nazev) {
+  let x = null;
+  if (!r || !r.sekce) return x;
+  Object.keys(r.sekce).forEach(k => (Array.isArray(r.sekce[k]) ? r.sekce[k] : []).forEach(row => {
+    if (row && (row.origNazev || row.nazev) === nazev) x = row;
+  }));
+  return x;
+}
 function rucniPolozkyVysledku(r, Z) {
   if (!r || !r.sekce) return [];
   const out = [];
@@ -108,18 +122,11 @@ function rucniPolozkyVysledku(r, Z) {
    * položka (bez kid) do nich nejde, jen u importovaného souboru; nesmí ale zvednout
    * cenu bez tisku. Cena s marží = náklad × poměr cena/náklad jejich řádku Hrubé OCK
    * (táž marže, žádný druhý výpočet). Pořadí řádků = pořadí v zadání. */
-  const radekSekce = nazev => {
-    let x = null;
-    Object.keys(r.sekce).forEach(k => (Array.isArray(r.sekce[k]) ? r.sekce[k] : []).forEach(row => {
-      if (row && (row.origNazev || row.nazev) === nazev) x = row;
-    }));
-    return x;
-  };
-  [['spojovaci', r.spojovaci && r.spojovaci.rows, 'SPOJOVACÍ MATERIÁL'],
-   ['lakovani', r.lakovani && r.lakovani.vlastniRows, 'LAKOVÁNÍ (ŠACHTA, PLECHY, ZASKLENÍ, OPLECHOVÁNÍ)']].forEach(([sek, rows, nazevRadku]) => {
+  [['spojovaci', r.spojovaci && r.spojovaci.rows],
+   ['lakovani', r.lakovani && r.lakovani.vlastniRows]].forEach(([sek, rows]) => {
     const vl = (Array.isArray(rows) ? rows : []).filter(x => x && x.vlastni);
     if (!vl.length) return;
-    const rs = radekSekce(nazevRadku);
+    const rs = rpRadekHrube(r, RP_RADEK_HRUBE[sek]);
     const pomer = (rs && +rs.naklad > 0) ? (+rs.sMarzi || 0) / (+rs.naklad) : 0;
     vl.forEach((row, i) => {
       const src = rpZdroj(Z, sek, i) || {};
@@ -214,6 +221,19 @@ function rpChybiVeWordu(polozky, symboly) {
 /* Kontrola před tiskem (bod 6): názvy položek, které v nabídce jazyka L
  * zůstanou česky — chybí jazyková varianta a slovník text nezná (název
  * i dodatkový text). Česká nabídka nic. */
+/* RUČNÍ POLOŽKA SPOJOVACÍHO MATERIÁLU / LAKOVÁNÍ U PŘEPSANÉHO ŘÁDKU HRUBÉ OCK
+ * (#756, dorevize RP D1, G1 25. 11. 2026). Cena takové položky = náklad ×
+ * poměr cena/náklad řádku Hrubé OCK. Je-li ten řádek ručně přepsaný (množství
+ * nebo jednotková cena), poměr už nepatří jen ruční položce a cena v rozpisu
+ * je jen orientační (součet rozpisu dál sedí). Cenu ani tisk to nemění —
+ * vrací tištěné položky, na které má kontrola „rucniPolozkaPomer" upozornit. */
+function rpPomerPrepsany(r, Z) {
+  return rucniPolozkyVysledku(r, Z).filter(p => {
+    if (!RP_RADEK_HRUBE[p.sekce]) return false;
+    const rs = rpRadekHrube(r, RP_RADEK_HRUBE[p.sekce]);
+    return !!(rs && (rs.prepsano || rs.cenaPrepsana));
+  });
+}
 function rpCeskeVCiziNabidce(polozky, L, trStavFn) {
   if (!L || L === 'cz') return [];
   const zna = t => (typeof trStavFn === 'function') ? trStavFn(t, L).prelozeno : false;
@@ -223,5 +243,5 @@ function rpCeskeVCiziNabidce(polozky, L, trStavFn) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { RP_JEDNOTKY, RP_SEKCE_TS, RP_SEKCE_KALK, RP_SEKCE_SACHTY, RP_KOTVY, rpKotva, rpJednotka, rpZdroj,
+  module.exports = { RP_RADEK_HRUBE, rpRadekHrube, rpPomerPrepsany, RP_JEDNOTKY, RP_SEKCE_TS, RP_SEKCE_KALK, RP_SEKCE_SACHTY, RP_KOTVY, rpKotva, rpJednotka, rpZdroj,
     rucniPolozkyVysledku, rpText, rpRadekTs, rpRadkyWord, rpRozpisCeny, rpKryciText, rpCeskeVCiziNabidce, rpChybiVeWordu };

@@ -576,7 +576,7 @@ test('krycí list PROJ: totéž',
     const h = document.getElementById('page-kryciproj').innerHTML;
     return /class="primary"[^>]*onclick="kryciProjTiskPohled\('bo'\)"/.test(h)
       && !h.includes('kryciProjWord()') && typeof kryciProjWord === 'function'
-      && h.indexOf("kryciProjTiskPohled('bo')") < h.indexOf('Smlouva o dílo a plná moc (PROJ)');
+      && h.indexOf("kryciProjTiskPohled('bo')") < h.indexOf('Objednávka, smlouva o dílo a plná moc (PROJ)');
   }));
 test('krycí listy mluví o ZÁKAZNÍKOVI, ne o objednateli (objednatel je pojem smluvní)',
   await page.evaluate(() => {
@@ -897,7 +897,8 @@ test('pole Dne se předvyplňuje dnešním datem (datum tisku)',
     const praha = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Prague' }).format(new Date());
     return kryciDnesIso() === praha && zamekDenPraha() === praha
       && kryciData(ZAK, aktivniVarianta(ZAK), JEKLY, 'bo').sekce
-           .some(s => s.radky.some(r => r[0] === 'Dne' && r[1] === praha));
+           /* #804 (K61-I3): ve výstupu krycího listu česky „25. 11. 2026“ (prefill zůstává ISO) */
+           .some(s => s.radky.some(r => r[0] === 'Dne' && r[1] === kryciDatumTisk(praha) && /^\d{1,2}\. \d{1,2}\. \d{4}$/.test(r[1])));
   }));
 test('krycí list PROJ má odpovědnou osobu za projekci (vyplňuje obchodník)',
   await page.evaluate(() => {
