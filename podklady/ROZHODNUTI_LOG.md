@@ -10,6 +10,7 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
+| 25. 11. 2026 | #771 V3 (odrážka „Zajištění montážního lešení“ v kapitole IV): zatím nechat, jak je — z PD2 vypuštěno; chování z 22. 9. platí. | #771, PD2 |
 | 25. 11. 2026 | Objednávku OCK (#790) nechce a nepotřebuje — odloženo do F (předchozí pokyn „založ“ byl nedorozumění). PD2: Informováno BO/Tech = datum zápisu (Praha), jen do prázdného pole. | #790, PD2 |
 | 25. 11. 2026 | Limit 4 souběžných sezení zrušen (byl historický). Vlastnosti Wordu (G1): Company → „ENGINEERS CZ s.r.o.“, dc:title vymazat. Ověřit jazykové verze SoD projekce v4 proti české. Objednávka OCK: založit a připravit návrh (#790). Krycí list PROJ: objednávka PROJ — datum a podpis objednatele na konec 2. strany (#791); tlačítka objednávky do společné sekce se smlouvou o dílo a plnou mocí, pořadí … plná moc, smlouva o dílo PROJ poslední (#792); sekce „Co by se zapsalo do Pipedrive“ jen pro administrátory (#793). | CLAUDE.md, G1, #790–#795 |
 | 25. 11. 2026 | K59-I1: stará chybná částka správních poplatků v testovacím dealu 437 se nemaže (jen test); kód #773 ji mazat nemá. | K59-I1, deal TEST 437 |
