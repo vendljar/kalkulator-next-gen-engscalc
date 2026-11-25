@@ -281,3 +281,37 @@ nezná. Smyšlené hodnoty „TEST K57 …“.
 | Titul před jménem | — | — |  |  | mimo mapu |
 | Status | — | — |  |  | mimo mapu |
 
+
+## D · K57-I2 — ceník main na test (souhlas J. V. 25. 11.)
+
+- Platný ceník main: verze 38 (platí od 24. 11., otisk 2e77c26a); test před: verze 11 (16. 11., otisk 1f2dcd41).
+- Rozdíl: marže (globální přirážka), 1 hodnota zahraniční řady, klíč `statikaOplKc` jen na main; test navíc 10 sazeb
+  můstků (`mustek*`) + 1 popis, které main nemá.
+- **J. V. zvolil „main + ponechat můstky“:** zveřejněno na testu `POST /api/program` → **verze 12, platí od 25. 11. 2026,
+  otisk 9b597128** (liší se od main jen o ponechané sazby můstků). Marže, zahraniční řada a statika opláštění = main;
+  ceník PROJ, katalog, slevy byly shodné. Bez `mustkyPotvrzeno` (kontrola můstků serveru prošla).
+
+## E · K57-I3 — sada nových kalkulací (návrh + první běh)
+
+**Návrh do plánu kol** (po každém nasazení, které mění výpočet nové kalkulace; harness `scratchpad/h3/sada_nove.js`,
+k převzetí do `overit_*`): přes „Nová zakázka“ na testu založit S1 interiérová výchozí, S2 exteriérová (opláštění),
+S3 2 kusy + engineering v nabídce, S4 rezerva příplatků 10 %, S5 nová PROJ (OVP); u každé ověřit `kalkVerze 2`, cenu > 0,
+shodu výsledku po uložení a znovuotevření, výstup ze zaměření (1 × sazba), statiku opláštění jen s opláštěním,
+engineering (1 řádek, sazba ceníku, výchozí mimo nabídku), rezervu v ceně položek a marže z platného ceníku.
+Ceny se do STAV nepíší; porovnání čísel main × test dělá porovnání sestavení (K56-1, 80 případů ER).
+
+**První běh (test v25.11.1, ceník v12): 17 / 18 OK.** Zakázky TEST OPR 9872–9875, TEST OVP 9870.
+
+| scénář | kalkVerze / cena / uložení | výstup ze zaměření | statika opláštění | engineering | rezerva |
+|---|---|---|---|---|---|
+| S1 interiérová | OK | 1 × OK | s opláštěním OK | mimo nabídku OK | — |
+| S2 exteriérová | OK | 1 × OK | OK | mimo nabídku OK | — |
+| S3 2 ks + engineering | OK | **2 ×** (K58-I1) | OK | v nabídce, množství 1 OK | — |
+| S4 rezerva 10 % | OK | 1 × OK | OK | mimo nabídku OK | v ceně položky OK |
+| S5 PROJ | marže PROJ z ceníku, uloženo OK | — | — | — | — |
+
+- **K58-I1** (otázka pro J. V., možný dopad na cenu u víc kusů): u nové kalkulace s 2 kusy šachty je „VÝSTUP ZE ZAMĚŘENÍ
+  PRO ZÁKAZNÍKA“ v Režii 2 × (za kus), engineering je podle #757 jednou za variantu. CHANGELOG #761 říká „řádek vždy
+  1 × C.vystupZamereniKc“ — je výstup ze zaměření za kus, nebo jednou za variantu? Doporučení: potvrdit J. V.; pokud jednou,
+  dávka ER doplněk + test s pojistkou.
+- Nepokryto v prvním běhu: šachta bez opláštění (statika opláštění se nemá objevit) — doplnit S6.
