@@ -1,0 +1,16 @@
+# Očekávané rozdíly PD2 (#782; #771 V1, V2, V4; #800 K61-N1; A3 odchylky PROJ; K53-N3) × integrace 5c42ca16 — 25. 11. 2026
+# Formát: <vzor případu> <pole,pole|*>  # důvod   (popis v nastroje/porovnani_sada.js)
+#
+# Odeslané nabídky ze sady (fixtury, dotisk:*, proj:prodana-*) se tisknou BEZE ZMĚNY: V1, V2, V4 a #800 platí
+#   jen pro neodeslanou nabídku a pro odeslanou po PD2 (značka pd2Tisk ve snímku podmínek). U nich se mění jen
+#   krycí list PROJ (nové pole Odchylky).
+# Ceny ani výsledky výpočtu se nemění (cena, radky, vyp, vypZ, proj-vyp, proj-cena beze změny ve všech 395).
+# SoD (sod, sod-en, sod-de) nese v datech symboly nabídky — mění se jen PODM_PLATEBNI_KALENDAR (V4); šablony SoD
+#   ho nepoužívají (mají SOD_PLATEBNI_KALENDAR), text smlouvy se nemění. Mazání popisků V1/V2 smlouva nedědí.
+*                                   kryci-proj-bo                                   # A3: KL PROJ (Backoffice) má nové pole „Jiné odchylky oproti smluvnímu standardu“
+*                                   ph-cz,ph-en,docx,docx-en,docx-de,sod,sod-en,sod-de   # V4: konečná faktura „3. konečný daňový doklad ve výši 10 % (bez DPH)…“ (EN/DE/FR slovník)
+*                                   nahled-np-cz/ramecek:*,nahled-np-en/ramecek:*   # V4: rámeček splátek online tisku
+*                                   nahled-np-cz/podpis,nahled-np-en/podpis         # V2: bez telefonu zpracovatele žádný řádek „Tel:“
+*                                   nahled-np-cz/popis,nahled-np-en/popis           # V1: bez úvodní fotky žádný nadpis „Pohled na objekt z ulice:“
+k58:bez-oplasteni-*                 nahled-cz,nahled-en,nahled-np-cz/ts:*,nahled-np-en/ts:*   # #800 (K61-N1): bez opláštění jen „TYP OPLÁŠTĚNÍ: bez opláštění“
+dotisk:se-snimkem-zpracovatele:*    pd                                              # K53-N3: „Nabídku vypracoval“ ze snímku zpracovatele v zámku (e-mail) → uživatel Pipedrive
