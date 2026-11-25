@@ -7,12 +7,87 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "7144623e",
-  "verze": "v25.11.1",
+  "sha": "63d1d9ee",
+  "verze": "v25.11.3",
   "datum": "25. 11. 2026"
  },
- "test_navic_commitu": 86,
+ "test_navic_commitu": 138,
  "v_testu_ne_v_main": [
+  {
+   "id": "776",
+   "typ": "otazka",
+   "nazev": "K58-I2 (#775) mění cenu i rozpracovaným neodeslaným kalkulacím s kalkVerze 2 (revize MD S1)",
+   "verze": "v25.11.3"
+  },
+  {
+   "id": "775",
+   "typ": "nalez",
+   "nazev": "Nová kalkulace: šachta bez opláštění bez plastových kotev, cestovného a čištění",
+   "alias": [
+    "K58-I2"
+   ],
+   "verze": "v25.11.3"
+  },
+  {
+   "id": "774",
+   "typ": "ukol",
+   "nazev": "Ceník OCK: řádek Engineering v sekci Příplatkové položky (jen zobrazení)",
+   "verze": "v25.11.3"
+  },
+  {
+   "id": "773",
+   "typ": "nalez",
+   "nazev": "Pipedrive: částka převzatá jako jediné číslo z libovolného textu",
+   "alias": [
+    "K58-N2"
+   ],
+   "verze": "v25.11.3"
+  },
+  {
+   "id": "772",
+   "typ": "nalez",
+   "nazev": "Zámek nabídky PROJ nese číslo OCK (předlohu) místo čísla PROJ",
+   "alias": [
+    "K58-N1"
+   ],
+   "verze": "v25.11.3"
+  },
+  {
+   "id": "770",
+   "typ": "ukol",
+   "nazev": "Nastavení → Databáze: barvy stavových řádků záloh (zelená / oranžová / červená)",
+   "verze": "v25.11.3"
+  },
+  {
+   "id": "769",
+   "typ": "ukol",
+   "nazev": "Krycí list: pole „Dne“ podle pražského dne (kryciDnesIso)",
+   "verze": "v25.11.3"
+  },
+  {
+   "id": "768",
+   "typ": "ukol",
+   "nazev": "Mapa polí Pipedrive: „Příplatky v nabídce“ jen pole typu text",
+   "verze": "v25.11.3"
+  },
+  {
+   "id": "767",
+   "typ": "ukol",
+   "nazev": "Víc šachet: příplatek zaškrtnutý jen v šachtě 2 je na krycím listu a v Pipedrive, ale ne v nabídce",
+   "alias": [
+    "ER-MIMO"
+   ],
+   "verze": "v25.11.3"
+  },
+  {
+   "id": "766",
+   "typ": "ukol",
+   "nazev": "Ruční značky ATYP jsou na variantu, ne na šachtu (víc šachet)",
+   "alias": [
+    "ER-N4"
+   ],
+   "verze": "v25.11.3"
+  },
   {
    "id": "765",
    "typ": "otazka",
@@ -130,6 +205,30 @@
    "verze": "v24.11.6"
   },
   {
+   "id": "640",
+   "typ": "otazka",
+   "nazev": "Role jen ke čtení: „kdo smí ukládat“ je dnes každý přihlášený",
+   "alias": [
+    "B221"
+   ],
+   "verze": "v25.11.3"
+  },
+  {
+   "id": "639",
+   "typ": "otazka",
+   "nazev": "Ruční cena: příloha PDF nabídky dodavatele a ruční cena v ceníku PROJ",
+   "verze": "v25.11.3"
+  },
+  {
+   "id": "624",
+   "typ": "otazka",
+   "nazev": "Zakázka bez autora dostane autora z relace prvního ukládajícího (B73)",
+   "alias": [
+    "K40c-N5"
+   ],
+   "verze": "v25.11.3"
+  },
+  {
    "id": "510",
    "typ": "ukol",
    "nazev": "Pipedrive: zkušební zápis na testovacím dealu",
@@ -170,7 +269,7 @@
    ],
    "verze": "v25.11.3",
    "kolo": "58",
-   "stav": "oprava ve verzi v25.11.3, v testu ještě ne",
+   "stav": "opraveno v testu (v25.11.3), v main ne",
    "cekaNa": "—"
   }
  ],
@@ -218,12 +317,6 @@
    "cekaNa": "rozhodnutí J. V. — sloupec „Rozhodnutí J. V.“ na listu Nálezy (sešit VYHODNOCENI_TESTU_KALKULACE); testem se do té doby jen potvrzuje, že se chování nezměnilo"
   },
   {
-   "id": "598",
-   "typ": "ukol",
-   "nazev": "VZ: Víc zákazníků na jedné zakázce (souhrn etap E0–E6, zkušební funkce viceZakazniku)",
-   "cekaNa": "zapnutí na main zatím ne (25. 11. 2026); znovu na pokyn"
-  },
-  {
    "id": "617",
    "typ": "rozhodnuti",
    "nazev": "Víc šachet na ostrém webu (main) — po ruční zkoušce na testu se zapnutým vypínačem",
@@ -231,16 +324,7 @@
     "B3",
     "B0.1"
    ],
-   "cekaNa": "ruční zkouška víc šachet na testu; rozhodnutí odloženo do 25. 11. 2026"
-  },
-  {
-   "id": "624",
-   "typ": "otazka",
-   "nazev": "Zakázka bez autora dostane autora z relace prvního ukládajícího (B73)",
-   "alias": [
-    "K40c-N5"
-   ],
-   "cekaNa": "zvážit nedoplňovat autora u existující zakázky (na později)"
+   "cekaNa": "zapnutí víc šachet na main zatím ne (25. 11. 2026); znovu na pokyn"
   },
   {
    "id": "625",
@@ -291,21 +375,6 @@
    "cekaNa": "ověření (automat na ostrý účet nesmí)"
   },
   {
-   "id": "639",
-   "typ": "otazka",
-   "nazev": "Ruční cena: příloha PDF nabídky dodavatele a ruční cena v ceníku PROJ",
-   "cekaNa": "rozhodnout, zda je potřeba"
-  },
-  {
-   "id": "640",
-   "typ": "otazka",
-   "nazev": "Role jen ke čtení: „kdo smí ukládat“ je dnes každý přihlášený",
-   "alias": [
-    "B221"
-   ],
-   "cekaNa": "zavést roli jen ke čtení? (doporučeno až s kolegou s rolí administrátora)"
-  },
-  {
    "id": "643",
    "typ": "ukol",
    "nazev": "Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6)",
@@ -316,26 +385,14 @@
    "typ": "davka",
    "nazev": "Spuštění propojení s Pipedrive na main — procedura (podklady/PIPEDRIVE_SPUSTENI.md)",
    "cekaNa": "seznam polí pro #597 a uživatel tokenu (B1, B2)"
-  },
-  {
-   "id": "776",
-   "typ": "otazka",
-   "nazev": "K58-I2 (#775) mění cenu i rozpracovaným neodeslaným kalkulacím s kalkVerze 2 (revize MD S1)",
-   "cekaNa": "potvrdit, že platí i pro rozpracované kalkulace kalkVerze 2 (doporučeno ano, jako #761)"
-  },
-  {
-   "id": "777",
-   "typ": "ukol",
-   "nazev": "Částka „…“ (tečka jako oddělovač tisíců) jde do Pipedrive jako …; „-…“ jako 500 (revize MD S2)",
-   "cekaNa": "odmítnout s důvodem (doporučeno), nebo číst jako tisíce; pak dávka PD2"
   }
  ],
  "ceka_na_jv_odlozene": 13,
  "nehotove_podle_kdo": {
-  "J. V.": 35,
+  "J. V.": 29,
   "kolega": 4,
-  "koordinace": 3,
-  "dávka": 5
+  "koordinace": 2,
+  "dávka": 7
  },
- "nehotovych": 47
+ "nehotovych": 42
 }

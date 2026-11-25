@@ -10,6 +10,7 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
+| 25. 11. 2026 | Vlna G a revize MD: #617 víc šachet na main zatím ne; #624 autor z prvního uložení ponechat (uzavřeno); #639 ruční cena s PDF dodavatele nepotřebujeme (uzavřeno); #640 role jen ke čtení nezavádět (uzavřeno); #776 nové ceny bez opláštění (#775) platí i pro rozpracované neodeslané kalkulace kalkVerze 2 (staré = kalkVerze 1); #777 částka „5.000 Kč“ a záporná částka v polích Pokuta za prodlení a Správní poplatky se do dealu nezapíše, tabulka „dnes / nově“ řekne důvod (PD2). | #617, #624, #639, #640, #776, #777 |
 | 25. 11. 2026 | Vlna G: #754 autor a „naposledy uložil“ ve vlastnostech generovaných Wordů = „ENGINEERS CZ s.r.o.“ (dávka G1); #631 revize S7 schválena; #636 souběh založení organizace přijat jako zbytková mez B226; #621 řádek slevy SoD varianta a) (hotovo dávkou SL). | #754, #631, #636, #621 |
 | 25. 11. 2026 | Posudek nabídky CN-432: vady tisku CN V1–V6 (nadpis fotky bez fotky, prázdný Tel:, rozpor lešení v bodu IV, číslování splátek a konečné %, záruka jako vlastní bod, poznámky k ceně jako seznam) do dávky PD2 (#771). Novinky 7–12 (platnost datem, příplatky s DPH, akceptační blok, souhrn, podmínka DPH 12 %, strana X z Y) nezavádět. | text nabídky CN, PD2 |
 | 25. 11. 2026 | Víc zákazníků (#598) na main zatím nespouštět. Dokončit připomínky (MD, PD2) a poslat na test; ve větší míře rozběhnout vlnu G (úklid). | #598, vlna G |
