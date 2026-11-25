@@ -576,7 +576,7 @@ function zamekLista() {
   const modra = st.lista === 'odeslana' && st.modra;
   return `<div class="zamek-lista">
     <span class="ikona">🔒</span>
-    <span><b>Odeslaná nabídka ${esc(v.nazev)} (${esc((typeof vzCisloDokladu === 'function' && vzCisloDokladu(ZAK, v)) || (typeof zamekCisloZobraz === 'function' && zamekCisloZobraz(ZAK, v)) || variantaCislo(ZAK, v))})</b>
+    <span><b>Odeslaná nabídka ${esc(v.nazev)} (${esc((typeof vzCisloDokladu === 'function' && vzCisloDokladu(ZAK, v)) || (typeof zamekCisloPapir === 'function' && zamekCisloPapir(ZAK, v, v.zamek && v.zamek.typ)) || variantaCislo(ZAK, v))})</b>
       (vytištěno ${esc(kdy)} jako ${esc(z.popis || 'cenová nabídka')}${pocet > 1 ? `, výtisků: ${pocet}` : ''}) — needituje se.${overeni
         ? `<span class="zamek-overeni">⚠ ${esc(overeni)}</span>` : ''}${dnesText
         ? `<span class="zamek-overeni zamek-dnes">⚠ ${esc(dnesText)}</span>` : ''}</span>

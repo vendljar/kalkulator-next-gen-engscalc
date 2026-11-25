@@ -52,6 +52,7 @@ console.log('===== 3. klient a server berou totéž =====');
 {
   const ui = fs.readFileSync(__dirname + '/ui/zamek_ui.js', 'utf8');
   test('zamekPoTisku: cislo: zamekCisloPapir(ZAK, v, typ)', /cislo: zamekCisloPapir\(ZAK, v, typ\)/.test(ui));
+  test('lišta odeslané nabídky: číslo z papíru podle dokumentu (#320 — ne číslo ze zámku)', /zamekCisloPapir\(ZAK, v, v\.zamek && v\.zamek\.typ\)\) \|\| variantaCislo\(ZAK, v\)\)/.test(ui));
   const kz = fs.readFileSync(__dirname + '/../netlify/lib/zakazka_kontrola.mjs', 'utf8');
   test('server B56 a nový zámek přes zamekCisloSedi', (kz.match(/zamekCisloSedi\(/g) || []).length >= 2, (kz.match(/zamekCisloSedi\(/g) || []).length);
   const po = fs.readFileSync(__dirname + '/../netlify/functions/pd_odeslani.mjs', 'utf8');

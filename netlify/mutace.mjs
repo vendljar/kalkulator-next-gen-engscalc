@@ -47,7 +47,9 @@ if (!process.env.ADMIN_EMAIL) process.env.ADMIN_EMAIL = 'spravce@priklad.cz';
  * je soubor zmutovaný. Běžný běh ji nenastavuje. */
 const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
-  : [/* ZK (24. 11. 2026): #755 zákazníci ze zakázek podle ARES (rychlá sada). */
+  : [/* MD (25. 11. 2026): K58-N1 číslo zámku PROJ (rychlá sada). */
+     '../src/test_k58n1_cislo_proj.js',
+     /* ZK (24. 11. 2026): #755 zákazníci ze zakázek podle ARES (rychlá sada). */
      'test_zk_zakaznici_ze_zakazek.mjs',
      /* UT (24. 11. 2026): #741 nápověda u Opláštění, #742 popisek práva Pipedrive (rychlé sady). */
      '../src/test_ut_741_napoveda_opl.js', '../src/test_ut_742_popisek_pd.js',
