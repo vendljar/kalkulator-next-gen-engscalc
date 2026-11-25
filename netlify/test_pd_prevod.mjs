@@ -187,6 +187,23 @@ test('částka: měna z textu má přednost', P('spravniPoplatky', 'proj', { sod
 test('částka: bez měny v textu platí měna zakázky',
   P('pokutaSoucinnost', 'ock', { sodPokutaDenni: '500' }, {}, { mena: 'EUR' }).hodnota.currency === 'EUR');
 test('částka: procento do pole s měnou nepatří', !!P('pokutaSoucinnost', 'ock', { sodPokutaDenni: '0,05 % z ceny díla' }).duvod);
+/* K58-N2 (kolo 58, J. V. 25. 11. 2026): částka jen jako číslo s nepovinnou měnou / „Kč“, „bez DPH“, „za den“ —
+ * jediné číslo v libovolném textu („TEST K57 – Správní poplatky…“ → 57) se nepošle. */
+{
+  const S = (t) => P('spravniPoplatky', 'proj', { sodpSpravniPoplatky: t });
+  const D = (t) => P('pokutaSoucinnost', 'ock', { sodPokutaDenni: t });
+  test('K58-N2: „TEST K57 – Správní poplatky stavebnímu úřadu…“ → nelze převést s důvodem',
+    !!S('TEST K57 – Správní poplatky stavebnímu úřadu dle sazebníku').duvod && S('TEST K57 – Správní poplatky stavebnímu úřadu dle sazebníku').hodnota === undefined,
+    S('TEST K57 – Správní poplatky stavebnímu úřadu dle sazebníku'));
+  test('K58-N2: „dle sazebníku, cca 2 týdny“ → nelze převést', !!S('dle sazebníku, cca 2 týdny').duvod, S('dle sazebníku, cca 2 týdny'));
+  test('K58-N2: důvod říká, že to není částka', /není částka/.test(S('dle sazebníku, cca 2 týdny').duvod || ''), S('dle sazebníku, cca 2 týdny').duvod);
+  const ok = [['125 000 Kč', 125000, 'CZK'], ['125 000,- Kč', 125000, 'CZK'], ['125 000 Kč bez DPH', 125000, 'CZK'], ['5 000 EUR', 5000, 'EUR'],
+    ['€ 5 000', 5000, 'EUR'], ['12500', 12500, 'CZK'], ['1 500,50 CZK', 1500.5, 'CZK']];
+  for (const [t, v, m] of ok) test('K58-N2: „' + t + '“ → ' + v + ' ' + m, J(S(t).hodnota) === J({ value: v, currency: m }), S(t));
+  test('K58-N2: pokuta „1 000 Kč / den“ i „1 000 Kč za den“ projde', J(D('1 000 Kč / den').hodnota) === J({ value: 1000, currency: 'CZK' })
+    && J(D('1 000 Kč za den').hodnota) === J({ value: 1000, currency: 'CZK' }), [D('1 000 Kč / den'), D('1 000 Kč za den')]);
+  test('K58-N2: „500 Kč (viz SoD čl. 7)“ → nelze převést', !!D('500 Kč (viz SoD čl. 7)').duvod, D('500 Kč (viz SoD čl. 7)'));
+}
 /* #512 (J. V. 23. 10. 2026): Platby 1–8 kalkulátor neplní vůbec, ani zpětně
  * u nabídky PROJ z doby před plánem plateb; PROJ neposílá ani zálohu. */
 const PLATBY = POLE_DEALU.filter((d) => /^platba[1-8]$/.test(d.klic));
