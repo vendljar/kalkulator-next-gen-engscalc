@@ -8,6 +8,14 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v25.11.1 — TZ-1: test „pole Dne“ v noci (jen test), větev claude/test-dne-praha
+
+- `overit_zobrazeni.mjs`: test „pole Dne se předvyplňuje dnešním datem“ porovnává
+  `kryciDnesIso()` s dnem prohlížeče a řádek „Dne“ neodeslané nabídky
+  s pražským dnem (DT #745). V UTC kontejneru padal každou noc 0–1 h SEČ.
+  Pojistka: s hodinami 24. 11. 23:30 UTC starý 158/1 FAIL, nový 159/0.
+  Aplikace beze změny (svěřené rozhodnutí TZ-1).
+
 ## v24.11.10 — PO: odeslání nabídky do dealu v Pipedrive (#116 CRM-17), větev claude/po-odeslani-pipedrive
 
 Nad integrací `7339a9e` (v24.11.6), sloučeno s `0d8a95f` (v24.11.9, ER). Rozhodnutí J. V. 24. 11. 2026. Poradce Fable navrhl postup; revize Fable před

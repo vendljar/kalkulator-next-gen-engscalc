@@ -59,7 +59,7 @@ Stav 24. 11. 2026 21:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74
 - **main: J. V. 24. 11. — zítra ráno 25. 11. společně** (test → main na jeho pokyn; PIPEDRIVE_ZAPIS na main zůstává vypnutý do zkoušky prodeje na dealu TEST). Porovnání main × test: stará sada SHODA, rozšířená (kolo 56) 387 očekávaných, 0 neočekávaných.
 - **ER** (claude/er-engineering-rezerva, 3f3162f, #757 engineering příplatek 1× za variantu, #758 rezerva v položkách + automat ATYP, #761 přepínače; jen nové kalkulace kalkVerze 2): opravy po revizi Fable (N1 engineering víc šachet, N3 server hlídá příznak, N5, N6) → dorevize (session_018mwHQEfyWwjwB8mdLvYCpJ). J. V.: N2 a N3 ano.
 - **ZK** (claude/zk-zakaznici-ze-zakazek, 62403a4, #755 naplnění zákazníků podle ARES): dorevize běží (session_018mwHQJYxTLw32SuMNrUtwJ). J. V.: R7, R9 a ostatní ponechat.
-- **PO** (claude/po-odeslani-pipedrive, #116): revize i dorevize Fable SLOUČIT, sloučeno s 0d8a95f jako v24.11.10; čeká na fast-forward. J. V. založí pole „Datum nabídky“ (#763).
+- **PO** (claude/po-odeslani-pipedrive, #116): revize i dorevize Fable SLOUČIT, sloučeno s 0d8a95f jako v24.11.10; v integraci, TZ-1 = v25.11.1. J. V. založí pole „Datum nabídky“ (#763).
 - **Fronta:** K56-D (doplnění porovnání; potřebuje větev claude/testovani-kolo56 e221781f — bundle od J. V.); doprava a přesun hmot OCK (PDF návrh u majitele); R1 RP Word na skutečných šablonách CN v18 před main (testovací sezení).
 - Sloučené dnes: PV, MT2, UT, R3, DT, K54-N1, RP — předávky v `podklady/predavky/2026-11.md`.
 - Sloučené dávky (SA, PD, CN, RA, LAK, JT, NN, PR, BZ, HN, RJ, VZD, MT) — oddíly přesunuty do `podklady/predavky/2026-11.md` (23. 11. 2026). Běží: PV (#734 + #597), RP (prototyp ručních položek, čeká na J. V.).
