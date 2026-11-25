@@ -1,0 +1,19 @@
+# Očekávané rozdíly main v19.11.11 (cda289e) → test v24.11.5 (6722ad9), kolo 56 (24. 11. 2026)
+# Rozšířená sada (svěřené K56-1): krycí list s verzí, PROJ, Kompletní náhled podkladů, cizí jazyky SoD,
+# smyčka šachet Wordu, scénáře lak:*, vs:*, dotisk:*, proj:*. Vše ostatní je nález.
+#
+# NPT-N1 #690, NPT-N2 a NPT-N3 #691 (v21.11.4 DOS) + PG-N1 (v21.11.2): náhled podkladů bez řádku SVĚTLÍKY
+# U ŠACHETNÍCH DVEŘÍ, popisky specifikace bez CSS verzálek, EN/DE/FR nadpisy s dvojtečkou, vlastní řádek
+# SOUČÁSTÍ DODÁVKY NENÍ skrytý — týká se téměř každé kalkulace. Pravidlo je hrubé (celé pole); surové
+# výstupy kola 56 prošly ručně a jiný rozdíl v náhledu podkladů nenesly (STAV_KOLO56, K56-I3).
+*                     nahled-np-cz,nahled-np-en      # NPT-N1, NPT-N3 (v21.11.4)
+# LAK #666 (v22.11.8): cena lakování z nabídky lakovny — main klíč C.lak.nabidkaKc nezná a počítá z ceníku.
+lak:*                 *                              # LAK #666: nová funkce, v main data s částkou nevzniknou
+# DS #648 (v21.11.3): výchozí název šachty v EN/DE (Shaft N / Schacht N) — SoD a smyčka šachet Wordu.
+vs:vychozi-nazvy:*    sod-en,sod-de,vs-word-en       # DS #648
+# #665 (v22.11.1) a #715 (v22.11.7): dotisk odeslané nabídky tiskne zpracovatele ze snímku zámku.
+# Projeví se i v SoD, SoD projekce a objednávce PROJ (ZPRAC_* = „zpracovatel nabídky“) — viz K56-I2.
+dotisk:se-snimkem-*   ph-cz,ph-en,docx,sod,sod-en,sod-de,proj-ph-cz,proj-ph-en,sod-proj,obj-proj   # #665/#715
+# #683 (v22.11.1): krycí list PROJ při slevě PROJ 100 % — činnost „nabízí“ podle ceny před slevou.
+proj:sleva-100:*      kryci-proj-bo,kryci-proj-tech  # #683
+proj:prodana-sleva-100:* kryci-proj-bo,kryci-proj-tech  # #683 (rozsah i termíny D8)

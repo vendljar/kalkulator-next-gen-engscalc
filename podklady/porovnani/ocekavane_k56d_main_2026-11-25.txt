@@ -1,0 +1,32 @@
+# Očekávané rozdíly main v19.11.11 (cda289e) → main v24.11.7 (4e69c27), K56-D (25. 11. 2026), rozšířená sada K56-D.
+# Nahrazuje pro tuto dvojici ocekavane_main_test_2026-11-24.txt (kolo 56, test v24.11.5) + ocekavane_pt-zab_2026-11-24.txt:
+# Kompletní náhled podkladů je po BLOCÍCH (K56-I3), takže pravidlo už nekryje celé pole nahled-np-cz/en, ale jen
+# bloky, které NPT-N1 a NPT-N3 opravdu mění. Rozdíl v jiném bloku (cena, podpis, …) je nález.
+# Rozebráno na surových výstupech obou stran (mimo repozitář, STAV K56-D v podklady/kola/STAV_KOLO56.md).
+#
+# NPT-N1 #690 (v21.11.4): náhled podkladů bez řádku SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ (sekce opláštění; u víc šachet i #2).
+*                     nahled-np-cz/ts:OPLASTENI-SACHTY*,nahled-np-en/ts:SHAFT-CLADDING*   # NPT-N1
+# NPT-N3 #691 (v21.11.4): EN popisky a nadpisy s dvojtečkou — hlavička, popis záměru, „vertical distance:“ v konstrukčním
+# řešení, III. BILLING PLAN:, „compiled by:“ v podpisu. CZ beze změny. (NPT-N2 je jen CSS, PG-N1 sada nemá — bez rozdílu.)
+*                     nahled-np-en/hlavicka,nahled-np-en/popis,nahled-np-en/podpis,nahled-np-en/nadpis:III-BILLING-PLAN,nahled-np-en/ts:SHAFT-SOLUTION*   # NPT-N3
+# #682 (v21.11.2): Word CN EN/DE — prázdný PŘELOŽENÝ pruh sekce (BRIDGES… / BRÜCKEN…) u šachty bez skladebných můstků
+# zmizí. Týká se každé kalkulace bez skladebných můstků; surové výstupy: jiný řádek Wordu EN/DE se mimo případy níže nemění.
+*                     docx-en,docx-de        # #682
+# LAK #666 (v22.11.8): cena lakování z nabídky lakovny — main klíč C.lak.nabidkaKc nezná a počítá z ceníku.
+lak:*                 *                      # LAK #666
+# DS #648 (v21.11.3): výchozí název šachty v EN/DE (Shaft N / Schacht N) — SoD, smyčka šachet Wordu, náhled podkladů
+# (pruh šachty a cenový řádek šachty).
+vs:vychozi-nazvy:*    sod-en,sod-de,vs-word-en,nahled-np-en/cena,nahled-np-en/ts:sachta*   # DS #648
+# #665 (v22.11.1) a #715 (v22.11.7): dotisk odeslané nabídky tiskne zpracovatele ze snímku zámku — nabídka OCK i PROJ,
+# Word CZ/EN/DE, podpis v náhledu. SoD a objednávka PROJ od v24.11.7 nesou tiskaře (K56-I2, #760) → beze změny.
+dotisk:se-snimkem-*   ph-cz,ph-en,docx,docx-en,docx-de,proj-ph-cz,proj-ph-en,nahled-np-cz/podpis   # #665/#715
+# #683 (v22.11.1): krycí list PROJ při slevě PROJ 100 % — činnost „nabízí“ podle ceny před slevou.
+proj:sleva-100:*      kryci-proj-bo,kryci-proj-tech  # #683
+proj:prodana-sleva-100:* kryci-proj-bo,kryci-proj-tech  # #683 (rozsah i termíny D8)
+# PT-ZAB #759 (v24.11.7): výčet víc skupin můstků přeložený do EN/DE (TS_MUSTKY) — symbol, online náhled, SoD EN/DE,
+# náhled podkladů (sekce doplňkových konstrukcí).
+scenar:skladebne-2:*  ph-en,nahled-en,sod-en,sod-de,nahled-np-en/ts:ADDITIONAL-STRUCTURAL-ELEMENTS   # PT-ZAB #759
+# VZD #673 (v22.11.1): podklad pro Pipedrive z pohledu řídícího — main nese ruční pole krycích listů zákazníků B a C.
+# VZD #674 (v22.11.1): plná moc ze surové zakázky s víc zákazníky zastaví hlídač vzTiskHlidej (main ji vyrobí s cizím
+# zmocnitelem). Plná moc z pohledu řídícího (pm-ridici) beze změny.
+vz:*                  pd,pm                  # VZD #673, #674

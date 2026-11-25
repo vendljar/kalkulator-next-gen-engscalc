@@ -1,0 +1,23 @@
+# Očekávané rozdíly main v24.11.7 (4e69c27) → test v25.11.1 (7144623), kolo 57 (25. 11. 2026), rozšířená sada K56-1.
+# Ověřeno na surových výstupech obou stran (kolo 57): 387 případů, 220 rozdílných, žádný jiný rozdíl než níže.
+#
+# ER #757/#758/#761 (v24.11.9): NOVÁ kalkulace (novaZakazka, kalkVerze 2) — řádek ENGINEERING mezi příplatky,
+# výstup ze zaměření „ano" 1 ×, rezerva příplatků v cenách položek → cena, řádky, výsledek, zámek, všechny dokumenty,
+# Pipedrive, controlling. Sada staví přes novaZakazka() scénáře #560, K29, K36, K40, K50, LAK, víc šachet, dotisk, PROJ
+# a ukázkové zakázky. Fixtury a fuzz (staré kalkulace) cenu nemění.
+scenar:*    *   # ER (nová kalkulace)
+k29:*       *   # ER
+k36:*       *   # ER
+k40:*       *   # ER
+k50:*       *   # ER
+lak:*       *   # ER (+ RP: vlastní položka lakování v textu)
+vs:*        *   # ER
+dotisk:*    *   # ER
+proj:*      *   # ER
+ukazka:*    *   # ER
+# RP #736/#740 (v24.11.6): ruční položky v technické specifikaci, rozpis ceny šachta / ruční položky
+# (CENA_SACHTA_BEZ_DPH, CENA_BEZ_DPH_CELKEM místo CENA_BEZ_DPH_SACHTA), řádek „Ruční položky v ceně" v krycím
+# listu OCK (BO i techdata) a v Kompletním náhledu podkladů; SoD CZ/EN/DE. Cena ani výsledek se nemění.
+fuzz:*      docx,kryci-bo,kryci-tech,nahled-np-cz,nahled-np-en,ph-cz,ph-en,radky-cz,radky-en,sod,sod-en,sod-de   # RP
+# DT #745/#746 (v24.11.4): odeslaná nabídka drží datum zámku (DATUM v CN, PROJ, SoD, SoD PROJ, náhledech) + RP.
+fixtura:*   docx,kryci-bo,kryci-tech,nahled-cz,nahled-np-cz,ph-cz,proj-ph-cz,proj-ph-en,radky-cz,sod,sod-proj   # DT + RP

@@ -7,12 +7,126 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "4e69c276",
-  "verze": "v24.11.7",
-  "datum": "24. 11. 2026"
+  "sha": "7144623e",
+  "verze": "v25.11.1",
+  "datum": "25. 11. 2026"
  },
- "test_navic_commitu": 0,
- "v_testu_ne_v_main": [],
+ "test_navic_commitu": 86,
+ "v_testu_ne_v_main": [
+  {
+   "id": "765",
+   "typ": "otazka",
+   "nazev": "PO-O4: odeslání do dealu jiné nabídky, vyhraného a ztraceného",
+   "verze": "v24.11.10"
+  },
+  {
+   "id": "764",
+   "typ": "otazka",
+   "nazev": "PO-O3: Word jako soubor k dealu (koncept) a mez B279",
+   "verze": "v24.11.10"
+  },
+  {
+   "id": "763",
+   "typ": "otazka",
+   "nazev": "PO-O2: pole „Datum nabídky“ v Pipedrive",
+   "verze": "v24.11.10"
+  },
+  {
+   "id": "762",
+   "typ": "otazka",
+   "nazev": "PO-O1: odeslání do Pipedrive — která varianta a dotisk",
+   "verze": "v24.11.10"
+  },
+  {
+   "id": "761",
+   "typ": "ukol",
+   "nazev": "Nová kalkulace bez přepínačů Výstup ze zaměření (vždy 1 ×) a Statické posouzení opláštění (podle opláštění)",
+   "alias": [
+    "ER-REZIE"
+   ],
+   "verze": "v24.11.9"
+  },
+  {
+   "id": "758",
+   "typ": "ukol",
+   "nazev": "REZERVA příplatky v cenách příplatků (nové kalkulace); automat ATYP nepřepíše ruční pole",
+   "alias": [
+    "ER-REZ"
+   ],
+   "verze": "v24.11.9"
+  },
+  {
+   "id": "757",
+   "typ": "ukol",
+   "nazev": "Engineering jako příplatková položka (nové kalkulace); staré dál v Režii",
+   "alias": [
+    "ER-ENG"
+   ],
+   "verze": "v24.11.9"
+  },
+  {
+   "id": "755",
+   "typ": "ukol",
+   "nazev": "Zákazníci ze zakázek: hromadné naplnění databáze zákazníků jen tam, kde data sedí podle ARES (nástroj správce)",
+   "alias": [
+    "ZK"
+   ],
+   "verze": "v24.11.8"
+  },
+  {
+   "id": "743",
+   "typ": "nalez",
+   "nazev": "test_sablona_obsah: zastaralý seznam firemních šablon — CN v18 a PROJ v9 se přeskočily",
+   "alias": [
+    "K54-I1",
+    "UT-3"
+   ],
+   "verze": "v24.11.2"
+  },
+  {
+   "id": "742",
+   "typ": "ukol",
+   "nazev": "Popisek práva crm.pipedrive: „Pipedrive: čtení a zápis do vlastních obchodních případů“",
+   "alias": [
+    "UT-2",
+    "O2"
+   ],
+   "verze": "v24.11.2"
+  },
+  {
+   "id": "741",
+   "typ": "ukol",
+   "nazev": "Nápověda u volby Opláštění podle zvolené hodnoty (standard / po stěnách)",
+   "alias": [
+    "UT-1"
+   ],
+   "verze": "v24.11.2"
+  },
+  {
+   "id": "740",
+   "typ": "ukol",
+   "nazev": "Ruční položka: jednotka, dodatkový text do nabídky a překlad EN/DE/FR s kontrolou před tiskem",
+   "alias": [
+    "RP-2"
+   ],
+   "verze": "v24.11.6"
+  },
+  {
+   "id": "736",
+   "typ": "ukol",
+   "nazev": "Ruční položky kalkulace OCK v nabídce CN (specifikace a cenový blok) a v krycím listu",
+   "alias": [
+    "RP"
+   ],
+   "verze": "v24.11.6"
+  },
+  {
+   "id": "116",
+   "typ": "ukol",
+   "nazev": "CRM-17 — Odeslání vygenerované nabídky do případu",
+   "verze": "v24.11.10"
+  }
+ ],
  "vady_ceny": [
   {
    "id": "614",
