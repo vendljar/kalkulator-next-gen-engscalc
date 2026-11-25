@@ -10,6 +10,7 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
+| 25. 11. 2026 | Engineering v ceníku do sekce Příplatkové položky (bez poznámky) — do MD. Kolo 58: K58-N1 (číslo zámku PROJ) a K58-N2 (převod částky z textu) do MD; po MD samostatná dávka K53-N3 (Nabídku vypracoval / Odpovědná osoba → uživatel Pipedrive); ceník main zkopírovat na test (K57-I2); do kol sada nových kalkulací (K57-I3); po revizi MD integrace → test a opakovaný zápis na dealy 432 a 437. Srovnávací tabulka KL × Pipedrive (testovací sezení). | MD, K53-N3, K57, K58 |
 | 25. 11. 2026 | MD: #767 nabídka = součet jen zaškrtnutých šachet (shodně se SoD a krycím listem); zamčené nabídky beze změny (nový zámek se značkou). #766 kopie šachty zdědí ruční značky ATYP; šachty 2+ založené před nasazením bez migrace. Pole dealu „Datum nabídky“ v Pipedrive založeno (J. V.) → napojení #763 v dávce MD. | #766, #767, #763 |
 | 25. 11. 2026 | Nastavení → Databáze: stavové řádky záloh barevně — zeleně platné a správné, oranžově problém do 5 dnů, červeně nad 5 dnů (koordinace upřesnila: zelená = stáří ≤ 36 h bez chyby). Do dávky MD. | zálohy, UI |
 | 25. 11. 2026 | Pole „Dne“ na krycím listu podle pražského data (kryciDnesIso → Europe/Prague) — ANO, do dávky MD. Spuštění Pipedrive na main (C3–C9) zatím NE — J. V. chce víc testovat. Zkoušky na testu v25.11.1 (PO, PV #597, ZK, RP R1, ER) rozběhnout hned v TESTOVÁNÍ 3. | krycí list, PIPEDRIVE_SPUSTENI |
