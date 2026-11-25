@@ -290,13 +290,18 @@ function objednavkaProjDocxTelo(o) {
     + objDocxBunka(objDocxTabulka([2000, 1900], R('Celkem bez DPH', o.texty.bezDph) + R('DPH ' + o.souhrn.dphPct + ' %', o.texty.dph)
       + R('Celkem Kč', o.texty.sDph, true)) + objDocxOdst(''), 3900) + '</w:tr>', false);
   body += objDocxOdst('', { after: 240 });
-  body += B('Poznámka', { sz: 16 }) + objDocxOdst(o.poznamka, { after: 80 });
-  if (o.platebniKalendar.length) body += B('Platební kalendář') + objDocxOdst(o.platebniKalendar.join('\n'), { after: 80 });
-  if (o.terminy.length) body += B('Termíny') + objDocxOdst(o.terminy.map(x => x[0] + (x[1] ? ' – ' + x[1] : '')).join('\n'), { after: 80 });
-  if (o.vystavil) body += objDocxOdst('Vystavil: ' + o.vystavil, { after: 0 });
+  /* #791 S1 (revize Fable 25. 11.): podpis nikdy sám na straně — poslední blok textu (Poznámka /
+   * Platební kalendář / Termíny, podle toho, co je poslední), „Vystavil" a odstup před podpisem drží
+   * s následujícím odstavcem (w:keepNext). Počet stran se neslibuje (plný rozsah, J. V. 19. 11.). */
+  const posledni = o.terminy.length ? 'terminy' : (o.platebniKalendar.length ? 'kalendar' : 'poznamka');
+  const drzP = k => (k === posledni ? { keep: true } : {});
+  body += B('Poznámka', Object.assign({ sz: 16 }, drzP('poznamka'))) + objDocxOdst(o.poznamka, Object.assign({ after: 80 }, drzP('poznamka')));
+  if (o.platebniKalendar.length) body += B('Platební kalendář', drzP('kalendar')) + objDocxOdst(o.platebniKalendar.join('\n'), Object.assign({ after: 80 }, drzP('kalendar')));
+  if (o.terminy.length) body += B('Termíny', drzP('terminy')) + objDocxOdst(o.terminy.map(x => x[0] + (x[1] ? ' – ' + x[1] : '')).join('\n'), Object.assign({ after: 80 }, drzP('terminy')));
+  if (o.vystavil) body += objDocxOdst('Vystavil: ' + o.vystavil, { after: 0, keep: true });
   /* #791 (J. V. 25. 11. 2026): datum a podpis objednatele až na konci — za Poznámkou,
    * Platebním kalendářem, Termíny a „Vystavil" (prázdný odstavec = odstup jako v náhledu). */
-  body += objDocxOdst('', { after: 240 });
+  body += objDocxOdst('', { after: 240, keep: true });
   body += objDocxOdst('Datum: ……………………………        Podpis objednatele: ………………………………………', { sz: 18, after: 0 });
   return body;
 }

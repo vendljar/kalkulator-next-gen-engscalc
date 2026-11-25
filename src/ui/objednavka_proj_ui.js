@@ -14,7 +14,7 @@
  * popis a tlačítka objednávky stojí ve společné kartě se smlouvou o dílo a plnou
  * mocí (sodProjKarta v ui/sod_ui.js, krycí list PROJ). Tady jen jejich kusy. */
 function objednavkaProjPopis() {
-  return `<div class="note"><b>Objednávka</b> je jednostránková, zákazník ji jen podepíše. Číslo vznikne z čísla nabídky
+  return `<div class="note"><b>Objednávka</b> je stručný doklad, který zákazník jen podepíše (podpis je na konci, za termíny). Číslo vznikne z čísla nabídky
       (<code>…-CN-…</code> → <code>…-OBJ-…</code>), řádky jsou nabízené činnosti varianty PROJ s rozsahem prací z nabídky,
       ceny, sleva, cestovné i DPH jsou <b>tytéž jako v cenové nabídce PROJ</b>. Pod tabulkou je odkaz na cenovou nabídku,
       platební kalendář a termíny.</div>`;
@@ -137,6 +137,9 @@ function objednavkaProjCss() {
     table.ramecek tr.celkem td{font-weight:700;font-size:13px;background:#eef2f8;border-top:1px solid #2b3850}
     .podpis{margin:28px 0 0;page-break-inside:avoid;break-inside:avoid}
     .pozn{font-size:10px} .pozn p{margin:2px 0 8px} .vystavil{font-size:10px;margin-top:10px}
+    /* #791 S1: podpis nikdy sám na straně — poslední odstavec poznámek a „Vystavil" drží s podpisem */
+    .vystavil,.pozn p:last-child,.pozn b:last-of-type{break-after:avoid;page-break-after:avoid}
+    .vystavil,.podpis{break-before:avoid;page-break-before:avoid}
     ${dokHlavickaCss()}
     .bar{position:sticky;top:0;background:#fff;border-bottom:1px solid #e5e9f0;padding:8px 0;margin-bottom:8px;z-index:5}
     .bar button{font:13px "Segoe UI";padding:6px 14px;border:1px solid #1d4ed8;background:#1d4ed8;color:#fff;border-radius:6px;cursor:pointer}
