@@ -123,3 +123,46 @@ na ostrém a už uložené člověkem oprava zpětně nezmění — doporučení
 | LAK přes UI a server na testengscalc | ⬜ (bez souhlasu se zápisem; serverovou mez hlídá sada) |
 | PV #597 na dealu TEST | ⬜ (ruční zkouška před zapnutím zápisu) |
 | Push větve | viz zpráva sezení |
+
+## K56-D — doplnění porovnání (25. 11. 2026, větev `claude/k56-porovnani`)
+
+Vývojové sezení nad e221781f + integrace 6ae9b6d (v25.11.1). Vše lokálně (serverové funkce v paměti, simulátor PD),
+testengscalc ani ostrý web se nepoužily. Svěřená rozhodnutí **K56-2 … K56-5** (`podklady/SVERENA_ROZHODNUTI.md`).
+Po změně ve stavu: main = v24.11.7 (4e69c27), test = v25.11.1 (7144623) — nástroj teď slouží hlavně integrace × test.
+
+| co přibylo | počet / pole |
+|---|---|
+| náhled podkladů po blocích (K56-I3) | `nahled-np-<L>/<blok>` ~45 bloků na jazyk; pravidla kryjí jen bloky (hvězdička, základní pole = vše) |
+| Word EN/DE (#682) | `docx-en`, `docx-de` (zkušební šablona přeložená `docxPrelozSablonu`) |
+| víc zákazníků (#673, #674) | scénáře `vz:ridici`, `vz:ridici-vymena`, `vz:ico-nula`; pole `pm-ridici`, `stavba` → sada 390 kalkulací |
+| kontrola sady | 8 kontrol neprázdnosti (krycí listy OCK/PROJ BO+techdata, náhled CZ/EN, docx-en/de, PROJ zamčená) |
+| #733 / #729 | snímek Kontaktní osoby (jen jméno + příznaky), `--porovnej`, `porovnej_sestaveni.sh --pd-webhook` |
+| `--ocekavane` víckrát | sjednocení seznamů dávek |
+
+**Výsledky** (rozšířená sada, se sestavením, fuzz 300):
+
+| porovnání | seznam | výsledek |
+|---|---|---|
+| main v19.11.11 (cda289e) × main v24.11.7 (4e69c27) | `ocekavane_k56d_main_2026-11-25.txt` (úplný, po blocích) | 390 rozdílných, **0 neočekávaných** |
+| test v24.11.7 (4e69c27) × integrace v25.11.1 (7144623) | `ocekavane_test_integrace_2026-11-25.txt` + doplněk `ocekavane_k56d_test_integrace_2026-11-25.txt` | 223 rozdílných, **0 neočekávaných** |
+| test × test (7144623) | — | **SHODA 390/390** |
+| #733 webhook cda289e × 4e69c27 | — | main v19.11.11: marže, zábrany, cena, 5 cenových symbolů ≠ Nová zakázka, kontakt s e-mailem a telefonem; v24.11.7 = Nová zakázka, kontakt jen jméno |
+| #733 webhook 4e69c27 × 7144623 | — | obě = Nová zakázka; strany se liší jen zadáním o ER (`kalkVerze`, engineering) |
+
+Rozbor na surových výstupech (mimo repozitář): NPT-N1 = jen `ts:OPLASTENI-SACHTY` (EN `ts:SHAFT-CLADDING`); NPT-N3 =
+EN hlavička, popis, `ts:SHAFT-SOLUTION` („vertical distance:“), nadpis III, podpis; NPT-N2 (CSS) a PG-N1 (sada nemá
+vlastní řádek NENÍ) se v datech neprojeví. `docx-en/de` mění jen pruh BRIDGES…/BRÜCKEN… (#682), zpracovatele u dotisku
+(#665) a TS_MUSTKY u `skladebne-2` (PT-ZAB #759). `vz:*`: main nese v podkladu PD ruční pole zákazníků B a C a plnou
+moc ze surové zakázky vyrobí; test podklad za řídícího, plnou moc zastaví hlídač; `pm-ridici` shodná. Test × integrace:
+nová pole jen RP #736/#740 (krycí list „Objednané příplatky“, Word/SoD EN/DE, náhled), DT #745 (DATUM PROJ, SoD PROJ,
+hlavička náhledu) a ER u scénářů K56 (s očistou `predEr` jsou `dotisk`, `proj`, `vz` SHODA; `vs` jen prázdné
+`rucni/rucniTs` v SoD = RP).
+
+**Pojistky:** stará sada (e221781) nad cda289e × 4e69c27 neměla `docx-en` ani `vz:*` (#682/#673/#674 neviditelné);
+nová vidí `docx-en/de` v 199, `pd`+`pm` ve 3 VZ případech. Test nástroje 37/0; s náhledem jako celkem 4 FAIL, s kontrolou
+bez zápisu 3 FAIL; mutace bloku ceny náhledu je se seznamem jen `ts:*` neočekávaná, s hrubým pravidlem kola 56 skrytá.
+
+**K56-D-I1 (informativní):** fixtury mají uložený ceník bez kurzu EUR → cizojazyčný tisk (ph-en, náhled EN, docx-en/de,
+SoD EN/DE) je u nich i v aplikaci chyba „chybí Kurz EUR“; porovnání je u fixtur vidí jen česky (kontrola je vynechá).
+**K56-D-I2 (informativní):** seznam kola 56 pro main × main v24.11.7 už nestačí — PT-ZAB #759 (v24.11.7) mění i SoD EN/DE
+`skladebne-2`; platí nový `ocekavane_k56d_main_2026-11-25.txt`. **Nálezy (neočekávané rozdíly): žádné.**
