@@ -50,6 +50,19 @@ uložení (Varianta 2) ji zapsalo znovu ze staré kopie; webhook pak jen aktuali
 - Doporučení J. V.: smazat CN-432 v Seznamu zakázek, hned Ctrl+F5 (smazanou neupravovat), ověřit, že v Seznamu není,
   pak v dealu 432 „Vygenerovat nabídku“ = Ano.
 
+## Doplněk 25. 11. — rozhodnutí J. V. k reportu a ověření (test v24.11.7)
+
+| bod | výsledek | poznámka |
+|---|---|---|
+| CN-432 smazána | OK | `GET CN-432` = 404, v rejstříku není (J. V. smazal) |
+| Kalkulace z Pipedrive s marží 0 | OK podle J. V. | oprava #733 v testu |
+| Druhá automatizace (Make) | UZAVŘENO | J. V. ji v Pipedrive zastavil (bod 1j kola 53) |
+| R3 | ROZHODNUTO | J. V.: zakázat USERINITIALS, USERADDRESS, LASTSAVEDBY, TEMPLATE, INFO, DOCPROPERTY — předáno koordinaci do dávky a ROZHODNUTI_LOG |
+| „Příplatky v nabídce“ | OK | J. V. změnil pole v Pipedrive na Velký text; po obnovení mapy polí (`/api/pd/pole?obnovit=1`, bez chybějících a nesouhlasných typů) náhled nanečisto s výčtem 858 znaků na deal 432 = „zapíše“ (dřív „nelze, pojme 255“) → K53-I3 vyřešen |
+| SoD projekce EN/DE/FR na test | PŘEDÁNO | prosba J. V. koordinaci (dohrát šablony z main) |
+| Poznámky 1110/1111 v dealu 432 | ponechány | dle návrhu |
+| RJ #715 podpis při dotisku | **OK 6/6** | testovací obchodník: smyšlené jméno a zkušební podpis (souhlas J. V. v sezení). Zakázka `TEST - 2026 - OPR - CN - 9860`: CN obchodníka → zámek nese snímek zpracovatele s otiskem podpisu; dotisk správcem obsahuje tentýž obrázek podpisu a jméno obchodníka, sada obrázků shodná s originálem |
+
 ## Úklid
 
-Nic — na test se nezapisovalo. Harnessy kola v kontejneru sezení (`scratchpad/h/k54_word.js`, `sa_kontrola.js`, `pole_scan.py`), do repa se nedávají.
+Kolo 54 na test nezapisovalo. Doplněk 25. 11.: mapa polí Pipedrive obnovena; testovací obchodník má smyšlené jméno a zkušební podpis (ponechat pro další zkoušky); zakázka `TEST - 2026 - OPR - CN - 9860` (odeslaná CN) zůstává. Harnessy kola v kontejneru sezení (`scratchpad/h/k54_word.js`, `sa_kontrola.js`, `pole_scan.py`), do repa se nedávají.
