@@ -138,7 +138,6 @@ const CENIK_DEF = [
   ['REŽIE', [
     ['C.sken3dKc', 'Zaměření 3D skenerem', 'Kč', ''],
     ['C.vystupZamereniKc', 'Výstup ze zaměření pro zákazníka', 'Kč', 'bez výstupu se účtuje 50 %'],
-    ['C.engineeringKc', 'Engineering', 'Kč', ''],
     ['C.projekceHodKc', 'Dílenská dokumentace', 'Kč/hod', ''],
     /* 9. 9. 2026, zadání J. V.: sklo do rámečku znamená navrhnout a zakreslit
      * lišty. Hodiny se přičtou k zadání „Projekce – základ", nepřepisují ho. */
@@ -216,6 +215,10 @@ const CENIK_DEF = [
     ['C.priplatky.prosklenaStenaKc', 'Prosklená stěna vedle šachty', 'Kč', 'za akci'],
     ['C.priplatky.demontazVytahuKc', 'Demontáž stávajícího výtahu', 'Kč', 'za akci'],
     ['C.priplatky.destovySvodKc', 'Dešťový svod', 'Kč', 'za akci'],
+    /* MD (J. V. 25. 11. 2026): Engineering se v editoru ukazuje mezi příplatky
+     * (#757: v nové kalkulaci je to příplatková položka). Jen zobrazení — klíč
+     * C.engineeringKc i výpočet beze změny; stará kalkulace ho dál počítá v Režii. */
+    ['C.engineeringKc', 'Engineering', 'Kč', ''],
 ]],
   /* Kurz EUR (#155, 19. 8. 2026): jediná položka sekce Cizí měna. Kurz je
    * součást ceníku — verzuje se a zveřejňuje jako každá cena, takže u staré
