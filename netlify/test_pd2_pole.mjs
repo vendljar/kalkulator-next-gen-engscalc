@@ -373,13 +373,16 @@ puvodniLog('\n===== 4. K53-N3 NABÍDKU VYPRACOVAL =====\n');
   n = await prodej({ soubor: F.soubor, akce: 'nahled' }, cP);
   test('K53-N3: zámek bez snímku → dřívější chování (hodnota z předvyplnění, ne uživatel Petra)',
     n.status === 200 && radek(n, 'nabidkuVypracoval').hodnota !== U[1].id, radek(n, 'nabidkuVypracoval'));
-  const g2 = zakazka(F.soubor);
-  g2.varianty[0].data.kryci.hodnoty.dodZpracoval = 'Tomáš Zkušební, ' + U[2].email;   // ruční hodnota KL má přednost
-  zapisZakazku(F.soubor, g2);
-  n = await prodej({ soubor: F.soubor, akce: 'nahled' }, cP);
+  /* Ruční hodnota KL má přednost i před snímkem zámku (zakázka se snímkem Petry). */
+  const F2 = await prodanaZakazka(true);
+  const g2 = zakazka(F2.soubor);
+  test('(příprava: zámek nese snímek zpracovatele)', !!(g2.varianty[0].zamek && g2.varianty[0].zamek.zpracovatel && g2.varianty[0].zamek.zpracovatel.email));
+  g2.varianty[0].data.kryci.hodnoty.dodZpracoval = 'Tomáš Zkušební, ' + U[2].email;
+  zapisZakazku(F2.soubor, g2);
+  n = await prodej({ soubor: F2.soubor, akce: 'nahled' }, cP);
   test('K53-N3: ruční hodnota KL má přednost před snímkem zámku', radek(n, 'nabidkuVypracoval').hodnota === U[2].id, radek(n, 'nabidkuVypracoval'));
   D().uzivatele[2].active_flag = false;
-  n = await prodej({ soubor: F.soubor, akce: 'nahled' }, cP);
+  n = await prodej({ soubor: F2.soubor, akce: 'nahled' }, cP);
   test('U6: neaktivní uživatel Pipedrive se nebere (nelze)', radek(n, 'nabidkuVypracoval').stav === 'nelze', radek(n, 'nabidkuVypracoval'));
   D().uzivatele[2].active_flag = true;
 }
