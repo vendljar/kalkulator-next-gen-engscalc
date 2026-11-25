@@ -662,8 +662,9 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
     if (!zamcena(v)) continue;
     const bylo = String((v.zamek && v.zamek.cislo) || '');
     if (!bylo) continue;
-    const ted = cisloVarianty(zak, v);
-    const sedi = v.zamek.cisloPapir ? bylo === ted : globalThis.zamekCisloZakladSedi(bylo, zak);
+    /* K58-N1: zámek PROJ podle papíru PROJ; starý zámek PROJ s číslem OCK se toleruje (nemigruje). */
+    const ted = String(globalThis.zamekCisloPapir(zak, v, v.zamek.typ) || '');
+    const sedi = globalThis.zamekCisloSedi(zak, v);
     if (!sedi) jineCislo.push({ v, bylo, ted });
   }
   if (jineCislo.length) {
@@ -825,8 +826,10 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
     if (v.zamek.datumNabidky !== undefined && typeof globalThis.zamekDatumNabidkyProblem === 'function'
       && globalThis.zamekDatumNabidkyProblem(v.zamek.datumNabidky, v.zamek.kdy))
       v.zamek.datumNabidky = globalThis.zamekDenPraha(Date.parse(v.zamek.kdy));
-    const cisloMaBy = cisloVarianty(zak, v);
-    if (String(v.zamek.cislo || '') !== cisloMaBy || v.zamek.cisloPapir !== true)
+    /* K58-N1: číslo z papíru podle dokumentu (PROJ = projCisloNabidky); starý klient
+     * s číslem OCK u zámku PROJ se toleruje (J. V. 25. 11. 2026). */
+    const cisloMaBy = String(globalThis.zamekCisloPapir(zak, v, v.zamek.typ) || '');
+    if (v.zamek.cisloPapir !== true || !globalThis.zamekCisloSedi(zak, v))
       return odmitni(409, 'Neuloženo: nová odeslaná (uzamčená) nabídka nese jiné číslo ('
         + (v.zamek.cislo || 'prázdné') + '), než dávají údaje zakázky (' + (cisloMaBy || 'prázdné')
         + '). Obnovte stránku (Ctrl+F5) a nabídku vytiskněte znovu.');

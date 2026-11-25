@@ -108,11 +108,49 @@ function dalsiPriponaVarianty(zak) {
 /* Číslo nabídky konkrétní varianty = číslo na papíře. Bez přípony vrací
  * HOLÉ číslo zakázky. Tutéž příponu tisknou dokumenty (cisloSVariantou). */
 function variantaCislo(zak, v) {
-  const zaklad = String((zak && zak.cislo) || '');
+  return variantaCisloZ(zak, v, zak && zak.cislo);
+}
+/* Totéž nad zadaným základem čísla (K58-N1: základ PROJ). */
+function variantaCisloZ(zak, v, zakladCisla) {
+  const zaklad = String(zakladCisla || '');
   const p = variantaPriponaVZakazce(zak, v);
   const c = p ? zaklad.replace(/\s+$/, '') + '.' + p : zaklad;
   /* VZ-E2 (#601): v pohledu dalšího zákazníka číslo s písmenem (…9940.2-B). */
   return (typeof vzPismenoPohledu === 'function' && vzPismenoPohledu(zak)) ? vzCisloSPismenem(c, vzPismenoPohledu(zak)) : c;
+}
+
+/* ČÍSLO ZÁMKU PODLE DOKUMENTU (K58-N1, J. V. 25. 11. 2026). Zámek nabídky
+ * PROJ a SoD projekce nese číslo z PAPÍRU PROJ — základ projCisloNabidky
+ * (číslo OCK, je-li vyplněné, jinak číslo hlavičky PROJ) s příponou varianty,
+ * jako nabidka_proj.js. Do K58-N1 bral variantaCislo i PROJ: kalkulace PROJ
+ * z webhooku (OCK jen předloha „2026 - OPR - CN - “) tak zamkla předlohu
+ * a CRM (poznámka, název Wordu) neslo ji. Kombinovaná zakázka s číslem OCK
+ * vyjde beze změny. Objednávka PROJ nezamyká. */
+const ZAMEK_TYPY_PROJ = ['nabidkaProj', 'nabidkaProjTisk', 'sodProj'];
+function zamekCisloPapir(zak, v, typ) {
+  if (ZAMEK_TYPY_PROJ.indexOf(typ) >= 0 && typeof projCisloNabidky === 'function')
+    return variantaCisloZ(zak, v, projCisloNabidky(zak));
+  return variantaCislo(zak, v);
+}
+/* Sedí číslo uloženého zámku (cisloPapir) s údaji zakázky? Zámek PROJ
+ * pořízený před K58-N1 (nebo starým klientem) nese číslo OCK (variantaCislo)
+ * — toleruje se, nemigruje (J. V. 25. 11. 2026). Bez cisloPapir jen základ. */
+function zamekCisloSedi(zak, v) {
+  const z = (v && v.zamek) || {};
+  const bylo = String(z.cislo || '');
+  if (!bylo) return true;
+  if (!z.cisloPapir) return zamekCisloZakladSedi(bylo, zak);
+  if (bylo === zamekCisloPapir(zak, v, z.typ)) return true;
+  return ZAMEK_TYPY_PROJ.indexOf(z.typ) >= 0 && bylo === variantaCislo(zak, v);
+}
+/* Číslo odeslané nabídky k zobrazení (CRM, lišta, razítko VZ): zámek PROJ
+ * se starým číslem OCK ukáže číslo z papíru PROJ; jinak zamek.cislo. */
+function zamekCisloZobraz(zak, v) {
+  const z = (v && v.zamek) || {};
+  const bylo = String(z.cislo || '');
+  if (!bylo || ZAMEK_TYPY_PROJ.indexOf(z.typ) < 0) return bylo;
+  const p = zamekCisloPapir(zak, v, z.typ);
+  return (p && bylo !== p && bylo === variantaCislo(zak, v)) ? p : bylo;
 }
 
 /* Patří uložené číslo z odeslané nabídky k tomuto číslu zakázky? Pro zámky
@@ -662,7 +700,7 @@ function zamekCisloProdaneZmena(stara, nova) {
   for (const nv of ((nova && nova.varianty) || [])) {
     if (!variantaProdana(nv)) continue;
     const bylo = String((nv.zamek && nv.zamek.cislo) || '');
-    if (bylo && !(nv.zamek.cisloPapir ? bylo === variantaCislo(nova, nv) : zamekCisloZakladSedi(bylo, nova)))
+    if (bylo && !zamekCisloSedi(nova, nv))   // K58-N1: PROJ podle papíru PROJ, starý zámek tolerován
       return ZAMEK_CISLO_PRODANE_HLASKA;
     const sv = ((stara && stara.varianty) || []).find(x => x && x.id === nv.id);
     if (sv && variantaProdana(sv) && String(variantaCislo(stara, sv) || '') !== String(variantaCislo(nova, nv) || ''))
@@ -1543,7 +1581,7 @@ function listaZakazkyRozhodni(zak, zaloha, ja, prava, ctx) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { nabidkaDatum, zamekDatumZeSymbolu, zamekDenPraha, zamekDatumPlatne, zamekDatumNabidkyProblem, ZAMEK_DATUM_NABIDKY_ZPET_DNI, zamekNesouhlasiText, zamekZpracovatelSnimek, zamekZakVzOdeslano, variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, ZAMEK_PRODANO_TERMINY, zamekProdanoTerminVolny, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
+  module.exports = { variantaCisloZ, ZAMEK_TYPY_PROJ, zamekCisloPapir, zamekCisloSedi, zamekCisloZobraz, nabidkaDatum, zamekDatumZeSymbolu, zamekDenPraha, zamekDatumPlatne, zamekDatumNabidkyProblem, ZAMEK_DATUM_NABIDKY_ZPET_DNI, zamekNesouhlasiText, zamekZpracovatelSnimek, zamekZakVzOdeslano, variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, ZAMEK_PRODANO_TERMINY, zamekProdanoTerminVolny, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
                      zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, ZAMEK_OVERENI_JADRO, ZAMEK_OVERENI_JADRO_PRISNE, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
                      zamekCteniSmiOdemknout, zamekCteniDuvod, priponaPrvniNalez, priponaPrvniOprav,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,

@@ -92,6 +92,35 @@ const dnes = dnesPraha();
 
 const CN = (k) => '2026 - OPR - CN - ' + k + ' - TEST';
 
+/* K58-N1 (kolo 58, J. V. 25. 11. 2026): zámek nabídky PROJ nese číslo z papíru PROJ
+ * (projCisloNabidky — u kalkulace PROJ z webhooku číslo hlavičky PROJ), ne předlohu OCK.
+ * Starý zámek / starý klient s předlohou se toleruje (nemigruje), cizí číslo ne. */
+console.log('\n===== K58-N1: ČÍSLO ZÁMKU NABÍDKY PROJ =====\n');
+{
+  const projZ = (k) => { const z = nova('K58 PROJ ' + k); z.cislo = zk.ZAK_CISLO_PREDLOHA || '2026 - OPR - CN - '; z.projHlavicka.cislo = 'CN-' + k; return z; };
+  const zamkniProj = (z, cislo) => { const v = z.varianty[0];
+    zam.zamkniVariantu(v, { typ: 'nabidkaProj', kdy: new Date().toISOString(), kdo: 'Obch CN', cislo,
+      vysledek: zam.zamekVysledekSpocti(v, JEKLY, 'CN'), snimek: zam.zamekSnimekSpocti(v) }); return z; };
+  let z = projZ(4370); zamkniProj(z, typeof zam.zamekCisloPapir === 'function' ? zam.zamekCisloPapir(z, z.varianty[0], 'nabidkaProj') : 'CN-4370');
+  let r = await uloz(z, cO);
+  test('K58-N1: nový zámek PROJ s číslem CN-4370 (papír PROJ) → 200', r.status === 200, r.status + ' ' + (r.chyba || ''));
+  let g = r.soubor ? await nacti(r.soubor, cO) : null;
+  test('K58-N1: v zámku zůstane CN-4370', g && g.varianty[0].zamek.cislo === 'CN-4370', g && g.varianty[0].zamek.cislo);
+  z = projZ(4371); zamkniProj(z, zam.variantaCislo(z, z.varianty[0]));
+  r = await uloz(z, cO);
+  test('K58-N1: starý klient (zámek PROJ s předlohou OCK) se toleruje → 200', r.status === 200, r.status + ' ' + (r.chyba || ''));
+  g = r.soubor ? await nacti(r.soubor, cO) : null;
+  if (g) {
+    const a = kopie(g); a.poznamkaK58 = 1;
+    const x = await uloz(a, cO, g.uloRazitko);
+    test('K58-N1: obchodník uloží zakázku se starým zámkem PROJ (žádné 403, B56)', x.status === 200, x.status + ' ' + (x.chyba || ''));
+    test('K58-N1: … starý zámek se nemigruje', (await nacti(x.soubor || r.soubor, cO)).varianty[0].zamek.cislo === zam.variantaCislo(g, g.varianty[0]));
+  }
+  z = projZ(4372); zamkniProj(z, 'CN-9999');
+  r = await uloz(z, cO);
+  test('K58-N1: nový zámek PROJ s cizím číslem → odmítnut (403 B56 / 409)', r.status === 403 || r.status === 409, r.status + ' ' + (r.chyba || ''));
+}
+
 console.log('\n===== CN #727 bod 5: ČÍSLO ODESLANÉ A PRODANÉ NABÍDKY =====\n');
 {
   const z = nova('CN odeslaná'); zamkni(z, z.varianty[0], 'nabidka');

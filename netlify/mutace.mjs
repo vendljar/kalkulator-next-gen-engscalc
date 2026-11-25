@@ -764,7 +764,7 @@ const MUTACE = [
     nahrad: "    if (false) return odmitni(403, veta(d));\n  }\n\n  /* ČÍSLO ODESLANÉ",
     proc: "administrátor by změnil číslo prodané nabídky (výjimka B56)", sady: ["test_cn_cislo_nabidky.mjs"] },
   { nazev: "CN #727: číslo ze zámku prodané se nehlídá [CN]", soubor: "../src/zamek.js",
-    hledej: "    if (bylo && !(nv.zamek.cisloPapir ? bylo === variantaCislo(nova, nv) : zamekCisloZakladSedi(bylo, nova)))",
+    hledej: "    if (bylo && !zamekCisloSedi(nova, nv))   // K58-N1: PROJ podle papíru PROJ, starý zámek tolerován",   // K58-N1: přesměrováno
     nahrad: "    if (false)",
     proc: "nové číslo = nový záznam bez uložené verze; prodaná nabídka by se uložila pod jiným číslem", sady: ["test_cn_cislo_nabidky.mjs"] },
   { nazev: "CN #727: přípona prodané varianty se nehlídá [CN]", soubor: "../src/zamek.js",
@@ -4428,9 +4428,9 @@ const MUTACE = [
 
   /* Jedno číslo varianty (#320, 22. 9. 2026). */
   { nazev: '#320: u nového zámku se hlídá jen základ čísla',
-    soubor: 'lib/zakazka_kontrola.mjs',
-    hledej: "    const sedi = v.zamek.cisloPapir ? bylo === ted : globalThis.zamekCisloZakladSedi(bylo, zak);",
-    nahrad: "    const sedi = globalThis.zamekCisloZakladSedi(bylo, zak);",
+    soubor: '../src/zamek.js',   // K58-N1: logika ve zamekCisloSedi
+    hledej: "  if (bylo === zamekCisloPapir(zak, v, z.typ)) return true;",
+    nahrad: "  if (zamekCisloZakladSedi(bylo, zak)) return true;",
     proc: 'odeslanou nabídku .2 by šlo přečíslovat na .7 — dotisk by nesl jiné číslo, než má zákazník' },
 
   { nazev: '#320: stará zakázka se nepřečísluje podle papíru', soubor: '../src/zamek.js',
@@ -6063,7 +6063,7 @@ const MUTACE = [
     nahrad: "        if (false) { preskoc(bs, email,",
     proc: 'kniha by tvrdila, že je smazaný kolega, který pracuje' },
   { nazev: 'B61: nový zámek s prázdným nebo cizím číslem projde', soubor: 'lib/zakazka_kontrola.mjs',
-    hledej: "    if (String(v.zamek.cislo || '') !== cisloMaBy || v.zamek.cisloPapir !== true)",
+    hledej: "    if (v.zamek.cisloPapir !== true || !globalThis.zamekCisloSedi(zak, v))",   // K58-N1: přesměrováno
     nahrad: "    if (false)",
     proc: 'odeslaná nabídka by vznikla pod jiným číslem bez jakéhokoli porovnání' },
   { nazev: 'B62: razítka existujícího zámku bere server od klienta', soubor: 'lib/zakazka_kontrola.mjs',
@@ -6546,6 +6546,15 @@ const MUTACE = [
     hledej: "{ proj: '@kalendar' }, 'zapis', { typ: ['text'] }),",
     nahrad: "{ proj: '@kalendar' }, 'zapis'),",
     proc: 'delší plán plateb by se do pole na 255 znaků nevešel a zápis by ho jen ohlásil' },
+  /* MD K58-N1 (25. 11. 2026): číslo do Pipedrive u starého zámku PROJ přes zamekCisloZobraz. [MD] */
+  { nazev: 'MD K58-N1: odeslání bere syrové číslo zámku [MD]', soubor: 'functions/pd_odeslani.mjs',
+    hledej: "  const cisloPapir = String((typeof G.zamekCisloZobraz === 'function' ? G.zamekCisloZobraz(ulozena, v) : v.zamek.cislo)",
+    nahrad: "  const cisloPapir = String((v.zamek.cislo)",
+    proc: 'poznámka dealu a název Wordu by nesly předlohu čísla OCK', sady: ['../src/test_k58n1_cislo_proj.js'] },
+  { nazev: 'MD K58-N1: server čeká u PROJ číslo OCK [MD]', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "    const cisloMaBy = String(globalThis.zamekCisloPapir(zak, v, v.zamek.typ) || '');",
+    nahrad: "    const cisloMaBy = cisloVarianty(zak, v);",
+    proc: 'admin by starý zámek přečísloval špatně / hláška by uváděla číslo OCK', sady: ['test_cn_cislo_nabidky.mjs'] },
   /* MD K58-N2 (25. 11. 2026): částka do Pipedrive jen jako číslo s měnou / bez DPH / za den. [MD] */
   { nazev: 'MD K58-N2: částka z libovolného textu [MD]', soubor: 'lib/pd_prevod.mjs',
     hledej: "  if (!menaJenCastka(text)) return { duvod:",

@@ -132,7 +132,9 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
   if (!deal) return json({ ok: false, kod: 'bezDealu', chyba: 'Zakázka není navázaná na deal v Pipedrive — do Pipedrive se nic nezapsalo (nabídka platí).' }, 409);
   if (!pdNastaveno()) return json({ ok: false, chyba: 'Napojení na Pipedrive není nastavené — zápis nejde připravit.' }, 503);
   const kdo = String(relace.jmeno || relace.email || '');
-  const cisloPapir = String(v.zamek.cislo || (typeof G.variantaCislo === 'function' ? G.variantaCislo(ulozena, v) : '') || '');
+  /* K58-N1: číslo z papíru; starý zámek PROJ s číslem OCK ukáže číslo PROJ (zamekCisloZobraz). */
+  const cisloPapir = String((typeof G.zamekCisloZobraz === 'function' ? G.zamekCisloZobraz(ulozena, v) : v.zamek.cislo)
+    || (typeof G.variantaCislo === 'function' ? G.variantaCislo(ulozena, v) : '') || '');
 
   /* Výsledek kroku do zak.pdOdeslani (po variantách, R2) a protokolu.
    * Vrací nové razítko, nebo '' = nic se nezapsalo (zámek mezitím odemčen). */
@@ -250,7 +252,7 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
   const odeslane = (ulozena.varianty || []).filter((x) => x && x.zamek && x.zamek.zamceno === true && PD_ODESLANI_TYPY.includes(x.zamek.typ));
   const varianty = odeslane.map((x) => {
     const p = x.id === v.id ? podklad : pdOdeslaniStrany(ulozena, x, G, JEKLY);
-    return { nazev: x.nazev || '', cislo: x.zamek.cislo || '', ridici: x.id === v.id,
+    return { nazev: x.nazev || '', cislo: (typeof G.zamekCisloZobraz === 'function' ? G.zamekCisloZobraz(ulozena, x) : x.zamek.cislo) || '', ridici: x.id === v.id,
       ock: p.strany && p.strany.ock ? p.strany.ock.cena : undefined, proj: p.strany && p.strany.proj ? p.strany.proj.cena : undefined };
   });
   const zpr = v.zamek.zpracovatel && typeof v.zamek.zpracovatel === 'object' ? v.zamek.zpracovatel : null;

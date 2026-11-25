@@ -947,19 +947,25 @@ function vzTiskyVarianty(v) {
 }
 
 /* Číslo varianty bez písmene (číslo zámku / číslo z celé zakázky). */
-function vzCisloVarianty(zak, v) {
-  const c = v && v.zamek && v.zamek.zamceno && typeof v.zamek.cislo === 'string' && v.zamek.cislo.trim() ? v.zamek.cislo : '';
+/* K58-N1: `typ` = dokument prvního tisku (zámek ještě není) — PROJ bere číslo
+ * z papíru PROJ (zamekCisloPapir); zamčená varianta přes zamekCisloZobraz
+ * (starý zámek PROJ s číslem OCK ukáže číslo PROJ). */
+function vzCisloVarianty(zak, v, typ) {
+  const c = v && v.zamek && v.zamek.zamceno && typeof v.zamek.cislo === 'string' && v.zamek.cislo.trim()
+    ? ((typeof zamekCisloZobraz === 'function' && zamekCisloZobraz(zak, v)) || v.zamek.cislo) : '';
   if (c) return c;
-  return typeof variantaCislo === 'function' && v ? variantaCislo(Object.assign({}, zak, { vzPohledZakaznika: undefined }), v)
+  const bezPohledu = Object.assign({}, zak, { vzPohledZakaznika: undefined });
+  if (typ && v && typeof zamekCisloPapir === 'function') return zamekCisloPapir(bezPohledu, v, typ);
+  return typeof variantaCislo === 'function' && v ? variantaCislo(bezPohledu, v)
     : vzText(zak && zak.cislo);
 }
 
 /* SNÍMEK ADRESÁTA pro razítko tisku: { id, pismeno, cislo, objednatel, ico }
  * z ULOŽENÝCH údajů zákazníka (server ho skládá sám). Neznámý zákazník → null. */
-function vzRazitkoSnimek(zak, id, v) {
+function vzRazitkoSnimek(zak, id, v, typ) {
   const z = vzZakaznik(zak, id == null || id === '' ? vzRidiciId(zak) : id);
   if (!z) return null;
-  return { id: z.id, pismeno: z.pismeno, cislo: vzCisloSPismenem(vzCisloVarianty(zak, v), z.pismeno),
+  return { id: z.id, pismeno: z.pismeno, cislo: vzCisloSPismenem(vzCisloVarianty(zak, v, typ), z.pismeno),
     objednatel: z.hlavicka.objednatel, ico: z.hlavicka.ico };
 }
 

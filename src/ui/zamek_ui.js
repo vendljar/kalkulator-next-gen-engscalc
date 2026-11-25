@@ -514,7 +514,7 @@ function zamekPoTisku(typ, varId, sablona, navic) {
   if (typeof vzRezim === 'function' && vzRezim(ZAK) && typeof vzRazitkoSnimek === 'function') {
     const kid = (navic && typeof navic.zakaznik === 'string' && navic.zakaznik) ? navic.zakaznik
       : (typeof vzTiskId === 'function' ? vzTiskId() : '');
-    komu = vzRazitkoSnimek(ZAK, kid || vzRidiciId(ZAK), v);
+    komu = vzRazitkoSnimek(ZAK, kid || vzRidiciId(ZAK), v, typ);   // K58-N1: číslo podle dokumentu (PROJ)
   }
   /* #665: snímek zpracovatele (přihlášený) — server ho při uložení přepíše z relace. */
   const zpracovatel = (prvni && typeof zamekZpracovatelSnimek === 'function' && typeof zpracovatelAktualni === 'function')
@@ -525,7 +525,7 @@ function zamekPoTisku(typ, varId, sablona, navic) {
   const datumNabidky = !prvni ? null
     : (navic && typeof zamekDatumNabidkyProblem === 'function' && !zamekDatumNabidkyProblem(navic.datumNabidky, new Date().toISOString()))
       ? navic.datumNabidky : (typeof zamekDenPraha === 'function' ? zamekDenPraha() : null);
-  zamkniVariantu(v, Object.assign({ typ, kdo: zamekKdo(), cislo: variantaCislo(ZAK, v), otisk, vysledek, snimek, zpracovatel, datumNabidky,
+  zamkniVariantu(v, Object.assign({ typ, kdo: zamekKdo(), cislo: zamekCisloPapir(ZAK, v, typ), otisk, vysledek, snimek, zpracovatel, datumNabidky,
                       sablona: sablona || null, slovnik: zamekSlovnikTed(), sod: (navic && navic.sod) || null }, komu ? { zakaznik: komu } : {}));
   render();
   const ulozeni = zamekPoTiskuUloz() ? globalThis.ZAMEK_ULOZ_SLIB : null;
@@ -576,7 +576,7 @@ function zamekLista() {
   const modra = st.lista === 'odeslana' && st.modra;
   return `<div class="zamek-lista">
     <span class="ikona">🔒</span>
-    <span><b>Odeslaná nabídka ${esc(v.nazev)} (${esc((typeof vzCisloDokladu === 'function' && vzCisloDokladu(ZAK, v)) || variantaCislo(ZAK, v))})</b>
+    <span><b>Odeslaná nabídka ${esc(v.nazev)} (${esc((typeof vzCisloDokladu === 'function' && vzCisloDokladu(ZAK, v)) || (typeof zamekCisloZobraz === 'function' && zamekCisloZobraz(ZAK, v)) || variantaCislo(ZAK, v))})</b>
       (vytištěno ${esc(kdy)} jako ${esc(z.popis || 'cenová nabídka')}${pocet > 1 ? `, výtisků: ${pocet}` : ''}) — needituje se.${overeni
         ? `<span class="zamek-overeni">⚠ ${esc(overeni)}</span>` : ''}${dnesText
         ? `<span class="zamek-overeni zamek-dnes">⚠ ${esc(dnesText)}</span>` : ''}</span>
