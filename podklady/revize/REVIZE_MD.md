@@ -1,6 +1,8 @@
 # Revize dávky MD (poradce) — 25. 11. 2026
 
-- **Větev:** `claude/md-mala-davka`, HEAD `42717294e735bcc5201a595df680390b74447c3e`
+- **Větev:** `claude/md-mala-davka`, HEAD `f78a61dc0675c25fcaf66203f0a85342719018c6`
+  (kód revidován a zkoušen na `4271729`; `4271729..f78a61d` je jeden commit jen s dokumenty — CHANGELOG,
+  předávka, roadmapa #775 — ověřeno `git diff --stat`, kód beze změny)
 - **Základ:** integrace `claude/integrace-16-10` = `c5e8127` (merge-base; integrace je ve větvi sloučená)
 - **Rozsah:** #763, #766, #767, #768, #769, #770, #772 (K58-N1), #773 (K58-N2), #774, č. 775 (K58-I2)
 
