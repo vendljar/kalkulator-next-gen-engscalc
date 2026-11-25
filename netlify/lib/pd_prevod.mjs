@@ -170,6 +170,7 @@ function rucne(zdroj, id) {
  *   rucne      ruční přepisy (data.kryci.hodnoty) — kvůli `jenRucne`,
  *   atyp       true/false z kalkulace OCK (pole „ATYP"),
  *   kalendar   PROJ: seznam plateb smlouvy o dílo (planPdKalendar, #512),
+ *   datumNabidky  datum odeslané nabídky RRRR-MM-DD (jen odeslání, #763),
  *   cena, mena cena řídící varianty bez DPH a měna (hodnota dealu, #512).
  * `popis` = popisy[klic] z mapy polí (typ, volby, zapisovatelnost).
  * `spolecne` = { uzivatele, mena } pro celou zakázku. */
@@ -183,6 +184,7 @@ export function pdDoPd(def, strana, zdroj, popis, spolecne = {}) {
   const cti = (id) => {
     if (id === '@atyp') return (zdroj && zdroj.atyp === true) ? 'Ano' : (zdroj && zdroj.atyp === false) ? 'Ne' : '';
     if (id === '@kalendar') return String((zdroj && typeof zdroj.kalendar === 'string') ? zdroj.kalendar : '').trim();
+    if (id === '@datumNabidky') return String((zdroj && typeof zdroj.datumNabidky === 'string') ? zdroj.datumNabidky : '').trim();
     const h = zdroj && zdroj.hodnoty;
     return String(h && h[id] != null ? h[id] : '').trim();
   };
@@ -368,7 +370,8 @@ function pdZdrojText(def, strana, zdroj, zdroje) {
   const popisky = (zdroje && zdroje[strana]) || {};
   return [].concat(def.kl[strana]).map((id) => {
     const p = popisky[id] || (id === '@atyp' ? 'Kalkulace OCK › ATYP'
-      : id === '@kalendar' ? 'Plán plateb PROJ › platební kalendář smlouvy' : id);
+      : id === '@kalendar' ? 'Plán plateb PROJ › platební kalendář smlouvy'
+      : id === '@datumNabidky' ? 'Odeslaná nabídka › datum nabídky' : id);
     return strana.toUpperCase() + ': ' + p;
   }).join(' + ');
 }
@@ -377,6 +380,7 @@ function pdHodnotaText(def, strana, zdroj) {
   return [].concat(def.kl[strana]).map((id) => {
     if (id === '@atyp') return (zdroj && zdroj.atyp === true) ? 'Ano' : (zdroj && zdroj.atyp === false) ? 'Ne' : '';
     if (id === '@kalendar') return String((zdroj && zdroj.kalendar) || '').trim();
+    if (id === '@datumNabidky') return String((zdroj && zdroj.datumNabidky) || '').trim();
     const h = zdroj && zdroj.hodnoty;
     return String(h && h[id] != null ? h[id] : '').trim();
   }).filter(Boolean).join(' / ');

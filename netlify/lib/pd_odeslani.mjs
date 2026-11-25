@@ -63,7 +63,9 @@ export function pdOdeslaniVarianta(zak, varId, zamekKdy) {
 /* Podklad zápisu (krycí listy, cena) — odesílaná varianta jako řídící v kopii
  * zakázky, týž kód jako náhled v prohlížeči (pdnPodklad; vzor pdProdejStrany).
  * Cena zamčené varianty jde ze zmrazeného výsledku (vysledekStrany). */
-export function pdOdeslaniStrany(zak, v, G = globalThis, jekly = null) {
+/* `datumNabidky` (RRRR-MM-DD, #763) dostane každá strana — pole „Datum
+ * nabídky“ mapy polí ho zapíše; neplatné datum se nepřidá. */
+export function pdOdeslaniStrany(zak, v, G = globalThis, jekly = null, datumNabidky = '') {
   if (typeof G.pdnPodklad !== 'function') return { chyba: 'Serverová část pro zápis do Pipedrive se nenačetla.' };
   const kopie = JSON.parse(JSON.stringify(zak));
   (kopie.varianty || []).forEach((x) => { if (x) x.ridici = x.id === v.id; });
@@ -76,6 +78,7 @@ export function pdOdeslaniStrany(zak, v, G = globalThis, jekly = null) {
     if (!sv) continue;
     const s = { hodnoty: sv.hodnoty || {}, rucne: sv.rucne || {}, mena: 'CZK' };
     if (strana === 'ock') s.atyp = sv.atyp === true;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(String(datumNabidky || ''))) s.datumNabidky = String(datumNabidky);
     if (typeof sv.cena === 'number' && isFinite(sv.cena)) s.cena = Math.round(sv.cena * 100) / 100;
     strany[strana] = s;
   }

@@ -226,7 +226,9 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
     throw e;
   }
 
-  const podklad = pdOdeslaniStrany(ulozena, v, G, JEKLY);
+  /* Datum nabídky = datum zámku (nabidkaDatum, DT #745): poznámka i pole „Datum nabídky“ (#763). */
+  const datum = typeof G.nabidkaDatum === 'function' ? G.nabidkaDatum(ulozena, v) : String(v.zamek.datumNabidky || '');
+  const podklad = pdOdeslaniStrany(ulozena, v, G, JEKLY, datum);
   if (podklad.chyba) return json({ ok: false, chyba: podklad.chyba }, 409);
   const z = pdZamyslenyZapis(pdOdeslaniDefinice(POLE_DEALU), podklad.strany, pole, { uzivatele, mena: 'CZK', deal: dealData }, {}, zdroje);
   const faze = pdOdeslaniFaze(fazeSeznam, dealData, pdOdeslaniFazeKonfigurace(), pdFazeNajdi);
@@ -245,7 +247,6 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
   const radky = pdProdejOznacRadky(radkyVse, mapa, zmeny);
 
   /* Poznámka: všechny odeslané varianty s cenou, šachty, zpracovatel, odkaz. */
-  const datum = typeof G.nabidkaDatum === 'function' ? G.nabidkaDatum(ulozena, v) : String(v.zamek.datumNabidky || '');
   const odeslane = (ulozena.varianty || []).filter((x) => x && x.zamek && x.zamek.zamceno === true && PD_ODESLANI_TYPY.includes(x.zamek.typ));
   const varianty = odeslane.map((x) => {
     const p = x.id === v.id ? podklad : pdOdeslaniStrany(ulozena, x, G, JEKLY);
@@ -255,8 +256,6 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
   const zpr = v.zamek.zpracovatel && typeof v.zamek.zpracovatel === 'object' ? v.zamek.zpracovatel : null;
   const poznamkaText = pdOdeslaniPoznamkaText({ cislo: cisloPapir, datum, varianty, sachty: podklad.sachty,
     vypracoval: zpr ? [zpr.titul, zpr.jmeno].filter(Boolean).join(' ') : '', odkaz: pdWebhookOdkaz(soubor, req), znacka: pdPoznamkaZnacka(ulozena) });
-  radky.push({ klic: 'datumNabidky', nazev: 'Datum nabídky', vCrm: '', hodnotaText: datum, stav: 'nelze', posle: false, bezeZmeny: false,
-    duvod: 'pole „Datum nabídky“ v Pipedrive zatím není — datum je v poznámce dealu' });
   const otisk = pdOdeslaniOtisk(deal, dealData.update_time, zmeny.patch, zamekKdy, poznamkaText);
   const zapsanoNazvy = radky.filter((r) => r.posle).map((r) => r.nazev);
 

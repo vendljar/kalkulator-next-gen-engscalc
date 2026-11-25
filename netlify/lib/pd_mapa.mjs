@@ -123,6 +123,12 @@ export const POLE_DEALU = [
 
   /* --- nová pole od integrátora (21. 10. 2026) --- */
   D('cisloNabidky', 'Číslo nabídky (CN)', 'text', { ock: 'cisloCN', proj: 'cisloCN' }, 'zapis'),
+  /* #763 (J. V. 25. 11. 2026 založil pole dealu, typ datum): datum cenové
+   * nabídky = datum zámku odeslané varianty (nabidkaDatum, DT #745). Zapisuje
+   * ho jen odeslání nabídky (PO #116, pdOdeslaniStrany dodá `datumNabidky`);
+   * prodej a suchý běh ho nemají, takže ho nepošlou. Kalkulace z webhooku ho
+   * nečte (směr „zapis“). */
+  D('datumNabidky', 'Datum nabídky', 'datum', { ock: '@datumNabidky', proj: '@datumNabidky' }, 'zapis'),
   /* Uživatel, osoba, organizace: hodnotou je ID záznamu v Pipedrive. Krycí
    * list drží jména a kontakty jako text; uživatele dohledá až zápis (#115)
    * podle e-mailu, osoby a organizace kalkulátor jen čte (vrstva 2, §5.2).
@@ -242,7 +248,7 @@ export const POLE_ORGANIZACE = [
 /* Verze tvaru uložené mapy (cache v pd_pole.mjs). Mapa z doby párování
  * podle vzorů (do 21. 10. 2026) nesla tři pole spárovaná se špatným polem
  * CRM — po nasazení se nesmí číst ani do konce své jednodenní platnosti. */
-export const PD_POLE_VERZE = 4;   // 3: pole webhooku #553 (mapa bez nich by den platila); 4: DIČ organizace (K40c #581)
+export const PD_POLE_VERZE = 5;   // 3: pole webhooku #553 (mapa bez nich by den platila); 4: DIČ organizace (K40c #581); 5: Datum nabídky (#763)
 
 /* Vlastní pole, která čte detail dealu (pdDealNaNase). Jen o těchhle má
  * obchodník slyšet, když v CRM chybí — chybějící pole pro zápis řeší
