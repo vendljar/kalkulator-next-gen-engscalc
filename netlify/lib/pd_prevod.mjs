@@ -126,8 +126,18 @@ function datum(text) {
 
 /* Částka: Pipedrive chce { value, currency }. Procento do peněz nepatří —
  * „0,05 % z ceny díla" není částka a nic se z něj nedopočítává. */
+/* K58-N2 (kolo 58, J. V. 25. 11. 2026): částka = číslo s nepovinnou měnou
+ * a doplňky „bez DPH“, „za den“ / „/ den“, „,-“. Jiný text kolem čísla
+ * („TEST K57 – Správní poplatky…“ → dřív 57 CZK, „cca 2 týdny“ → 2 CZK) není
+ * částka — nepošle se a tabulka „dnes / nově“ řekne proč. */
+const MENA_SLOVA = ['kc', 'czk', 'eur', 'bez', 'dph', 'za', 'den'];
+function menaJenCastka(text) {
+  const zbytek = pdNorm(text).replace(/\d+/g, ' ').split(' ').filter((w) => w && !MENA_SLOVA.includes(w));
+  return zbytek.length === 0;
+}
 function mena(text, spolecne) {
   if (/%/.test(text)) return { duvod: '„' + text + '" je procento, pole čeká částku' };
+  if (!menaJenCastka(text)) return { duvod: '„' + text + '" není částka (čeká se číslo, případně s Kč / EUR / bez DPH)' };
   const j = jedno(text, false);
   if (j.duvod) return j;
   const n = pdNorm(text);
