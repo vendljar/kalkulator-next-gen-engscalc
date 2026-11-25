@@ -467,6 +467,21 @@ function vsPriplatkyVNabidce(vysl, ock) {
   return out;
 }
 
+/* ZADÁNÍ NOVÉ ŠACHTY (přidání / kopie, #766 J. V. 25. 11. 2026): hluboká
+ * kopie zadání zdrojové šachty. U nové kalkulace (kalkNova) dostane šachta
+ * vlastní ruční značky ATYP (`zadaniRucni`) — kopii značek zdroje (šachta 1 =
+ * mapa varianty), aby ruční pole jedné šachty neblokovalo automat ATYP v jiné.
+ * Stará kalkulace beze změny (značky dál na variantu). */
+function vsSachtaZadani(data, zdroj) {
+  const z = JSON.parse(JSON.stringify(zdroj || {}));
+  if (typeof kalkNova === 'function' && kalkNova(z)) {
+    const m = (typeof zadaniRucniVlastni === 'function' && zadaniRucniVlastni(data, zdroj)) ? zdroj.zadaniRucni
+      : ((data && data.zadaniRucni && typeof data.zadaniRucni === 'object') ? data.zadaniRucni : {});
+    z.zadaniRucni = JSON.parse(JSON.stringify(m));
+  } else delete z.zadaniRucni;
+  return z;
+}
+
 /* ZAMČENÁ VARIANTA A ŠACHTY (návrh 5.5): odeslanou nabídku nejde měnit —
  * přidat, kopírovat ani smazat šachtu; nová šachta = nová varianta (klon).
  * Pro UI (E2): vrací důvod, nebo ''. Server totéž drží porovnáním dat
@@ -479,7 +494,7 @@ function vsZamekZmenaSachet(v) {
 
 if (typeof module !== 'undefined' && module.exports)
   Object.assign(module.exports, { vsVariantText, vsPoctyPopis, vsMaMustky, vsVystup, vsSeznamText, vsPredmetText, vsAtyp,
-    vsPriplatkyVNabidce, vsZamekZmenaSachet });
+    vsPriplatkyVNabidce, vsZamekZmenaSachet, vsSachtaZadani });
 
 /* ============================================================
  * VS-E4 (#570 / roadmapa #594) — šablona cenové nabídky a víc šachet.

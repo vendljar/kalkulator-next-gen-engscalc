@@ -840,7 +840,7 @@ function set(path, v) {
   if (path === 'C.kurzEurKc' && typeof kurzZrcadli === 'function')
     kurzZrcadli(aktivniVarianta(ZAK).data);
   if (path.startsWith('Z.') && typeof zadaniRucniZnac === 'function')
-    zadaniRucniZnac(aktivniVarianta(ZAK).data, path.slice(2));
+    zadaniRucniZnac(aktivniVarianta(ZAK).data, path.slice(2), Z);   // #766: značka šachty, kterou obchodník edituje
   if (path.startsWith('C.') && typeof ZADANI_Z_CENIKU !== 'undefined'
     && typeof cenikDoZadani === 'function') {
     const klic = path.slice(2);

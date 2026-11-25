@@ -117,7 +117,7 @@ function dnesIso() { return new Date().toISOString().slice(0, 10); }
  * ručním značkám. Mutuje `Z` a nic nevrací — volající beztak překresluje. */
 function atypHodnoty(Z, data, zap, predloha, opts) {
   if (!Z) return;
-  const rucniJe = (k) => (typeof zadaniRucniJe === 'function') && zadaniRucniJe(data, k);
+  const rucniJe = (k) => (typeof zadaniRucniJe === 'function') && zadaniRucniJe(data, k, Z);   // #766: po šachtách
   if (zap) {
     Z.atypPredchozi = {};
     ATYP_POLE.forEach(k => { Z.atypPredchozi[k] = Z[k]; });
@@ -222,21 +222,35 @@ function vychoziZakladVolitelne(key, vychoziZadani) {
   return !!(ma(nv, key) ? nv[key] : (D.volitelne || {})[key]);
 }
 
-function zadaniRucniMapa(data) {
+/* RUČNÍ ZNAČKY PO ŠACHTÁCH (#766, J. V. 25. 11. 2026). Do té doby jedna mapa
+ * na variantu (`data.zadaniRucni`): ruční rezerva v šachtě 1 zabránila
+ * automatu ATYP dosadit předlohu i v šachtě 2. Šachta 2+ NOVÉ kalkulace
+ * (kalkNova, ER) nese vlastní mapu `zadani.zadaniRucni` — dostane ji při
+ * založení / kopii (vsSachtaZadani). Šachta 1, stará kalkulace a šachta 2+
+ * založená před #766 (bez vlastní mapy) dál čtou a značí mapu varianty.
+ * `Z` je nepovinné: bez něj (nebo pro šachtu 1) platí mapa varianty. */
+function zadaniRucniVlastni(data, Z) {
+  return !!(Z && typeof Z === 'object' && data && data.ock && Z !== data.ock.zadani
+    && typeof kalkNova === 'function' && kalkNova(Z)
+    && Z.zadaniRucni && typeof Z.zadaniRucni === 'object' && !Array.isArray(Z.zadaniRucni));
+}
+function zadaniRucniMapa(data, Z) {
+  if (zadaniRucniVlastni(data, Z)) return Z.zadaniRucni;
   if (!data || typeof data !== 'object') return {};
   if (!data.zadaniRucni || typeof data.zadaniRucni !== 'object') data.zadaniRucni = {};
   return data.zadaniRucni;
 }
-function zadaniRucniJe(data, klic) {
+function zadaniRucniJe(data, klic, Z) {
+  if (zadaniRucniVlastni(data, Z)) return !!Z.zadaniRucni[String(klic)];
   return !!(data && data.zadaniRucni && data.zadaniRucni[String(klic)]);
 }
-function zadaniRucniZnac(data, klic) {
+function zadaniRucniZnac(data, klic, Z) {
   if (ZADANI_RUCNI_KLICE.indexOf(String(klic)) < 0) return false;
-  zadaniRucniMapa(data)[String(klic)] = true;
+  zadaniRucniMapa(data, Z)[String(klic)] = true;
   return true;
 }
-function zadaniRucniZrus(data, klice) {
-  const m = zadaniRucniMapa(data);
+function zadaniRucniZrus(data, klice, Z) {
+  const m = zadaniRucniMapa(data, Z);
   (klice || ZADANI_RUCNI_KLICE).forEach(k => { delete m[String(k)]; });
 }
 
@@ -2034,7 +2048,7 @@ function zakazkaDuplikuj(zak, noveCislo) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { pdCerstvaPriprav, zakStatikaOplRucniDopln, zadaniCislaZTextu, svetlikyStavbaPrevod, svetlikyMaterialBezPocet, zakImportVzorCeniku, zakazkaBezCeniku, zakazkaCenikDopln, zakazkaCenikRozdil, zakazkaCenikPouzij, slevaRozhodnutiZahod, zakazkaDuplikuj, zakazkaCisloDalsi, sodCisloNavrh, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
+  module.exports = { pdCerstvaPriprav, zakStatikaOplRucniDopln, zadaniCislaZTextu, svetlikyStavbaPrevod, svetlikyMaterialBezPocet, zakImportVzorCeniku, zakazkaBezCeniku, zakazkaCenikDopln, zakazkaCenikRozdil, zakazkaCenikPouzij, slevaRozhodnutiZahod, zakazkaDuplikuj, zakazkaCisloDalsi, sodCisloNavrh, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe, zadaniRucniVlastni,
                      zadaniRucniZnac, zadaniRucniZrus, zadaniZCeniku, uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, obrazekDataUrlPlatny, uvodniFotoPlatna, uvodniFotoOcisti, uvodniFotoVarovani, OBRAZEK_TYPY_FOTO, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
                      nastavRidici, ridiciVarianta, aktivniVarianta, importZakazka, StorageAdapter,
                      zakazkaUnikatniId,

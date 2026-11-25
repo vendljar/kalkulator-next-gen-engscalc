@@ -221,7 +221,6 @@ function vsNoveId() {
   do { id = 's_' + Math.random().toString(36).slice(2, 8); } while (pouzite.has(id) || !/^s_[a-z0-9]+$/.test(id));
   return id;
 }
-const vsKopieDat = o => JSON.parse(JSON.stringify(o));
 
 /* Počet variant šachet (R17): zvýšení přidá kopie poslední šachty („Šachta N"),
  * snížení čeká na potvrzení na stránce (R18). */
@@ -244,7 +243,7 @@ function vsPocetVariant(t) {
   while (vsSachtyUI().length < n) {
     const vse = vsSachtyUI();
     const posl = vse[vse.length - 1];
-    OCK.dalsi.push({ id: vsNoveId(), nazev: 'Šachta ' + (vse.length + 1), ks: 1, zadani: vsKopieDat(posl.zadani) });
+    OCK.dalsi.push({ id: vsNoveId(), nazev: 'Šachta ' + (vse.length + 1), ks: 1, zadani: vsSachtaZadani(aktivniVarianta(ZAK).data, posl.zadani) });
   }
   VS_UI.potvrdit = null;
   VS_UI.akt = vsSachtyUI().length - 1;
@@ -306,7 +305,7 @@ function vsKopie() {
   if (vsStop('kopie šachty')) return;
   const s = l[VS_UI.akt] || l[0];
   if (!Array.isArray(OCK.dalsi)) OCK.dalsi = [];
-  OCK.dalsi.push({ id: vsNoveId(), nazev: (vsNazev(s, VS_UI.akt) + ' (kopie)').slice(0, VS_NAZEV_MAX), ks: s.ks, zadani: vsKopieDat(s.zadani) });
+  OCK.dalsi.push({ id: vsNoveId(), nazev: (vsNazev(s, VS_UI.akt) + ' (kopie)').slice(0, VS_NAZEV_MAX), ks: s.ks, zadani: vsSachtaZadani(aktivniVarianta(ZAK).data, s.zadani) });
   VS_UI.akt = vsSachtyUI().length - 1;
   VS_UI.pohled = 'akt';
   vsZmeneno();
