@@ -1,7 +1,7 @@
 /* Ověření v prohlížeči: OBJEDNÁVKA / SMLOUVA PROJ (D3, rozhodnutí J. V. 19. 11. 2026).
  *
  * Dělá to, co obchodník: smyšlená zakázka TEST (zkušební ceník), otevře
- * krycí list PROJ, najde kartu „Objednávka / Smlouva (PROJ)" pod smlouvou
+ * krycí list PROJ, najde společnou kartu „Objednávka, smlouva o dílo a plná moc (PROJ)" (#792; dřív samostatná karta pod smlouvou)
  * o dílo PROJ, klikne na „Náhled a tisk objednávky (PDF)" a v okně náhledu
  * zkontroluje číslo OBJ, řádky činností, Celkem Kč (= cenová nabídka PROJ),
  * poznámku s odkazem na CN a podpis. Pak vytvoří Word (dokumentVygeneruj
@@ -43,13 +43,17 @@ await s.evaluate(([c, cp]) => {
 
 await s.evaluate(() => { prepniTab('kryciproj'); render(); });
 await s.waitForTimeout(400);
-const karta = s.locator('#page-kryciproj .card').filter({ hasText: 'Objednávka / Smlouva (PROJ)' }).first();
-ok('krycí list PROJ: karta „Objednávka / Smlouva (PROJ)"', await karta.count() === 1);
+/* #792 (J. V. 25. 11. 2026): objednávka ve společné kartě se SoD PROJ a plnou mocí. */
+const karta = s.locator('#page-kryciproj .card').filter({ hasText: 'Objednávka, smlouva o dílo a plná moc (PROJ)' }).first();
+ok('krycí list PROJ: společná karta „Objednávka, smlouva o dílo a plná moc (PROJ)"', await karta.count() === 1);
 const poradi = await s.evaluate(() => {
   const t = document.getElementById('page-kryciproj').textContent;
-  return [t.indexOf('Smlouva o dílo a plná moc (PROJ)'), t.indexOf('Objednávka / Smlouva (PROJ)')];
+  return [t.indexOf('Objednávka / Smlouva (PROJ)'), (t.match(/Objednávka, smlouva o dílo a plná moc \(PROJ\)/g) || []).length];
 });
-ok('karta stojí pod smlouvou o dílo PROJ', poradi[0] >= 0 && poradi[1] > poradi[0], poradi);
+ok('samostatná karta „Objednávka / Smlouva (PROJ)" zrušena, společná je jednou', poradi[0] < 0 && poradi[1] === 1, poradi);
+const tlacitkaKarty = (await karta.locator('button').allInnerTexts()).map(t => t.trim());
+ok('#792 pořadí tlačítek: objednávka PDF, objednávka Word, plná moc, SoD PROJ poslední',
+  JSON.stringify(tlacitkaKarty) === JSON.stringify(['Náhled a tisk objednávky (PDF)', 'Vytvořit objednávku (Word)', 'Vytvořit plnou moc (Word)', 'Vytvořit smlouvu o dílo PROJ (Word)']), tlacitkaKarty);
 const tlacitko = karta.getByRole('button', { name: /Náhled a tisk objednávky/ });
 /* J. V. 19. 11.: z neodeslané (nevytištěné) CN objednávka nevznikne — tlačítko zhasne s důvodem. */
 ok('neodeslaná CN: tlačítka zhasnutá s důvodem v bublině', await tlacitko.count() === 1 && await tlacitko.isDisabled()
@@ -79,8 +83,9 @@ if (okno) {
   ok('náhled: poznámka s CN a podpis objednatele', /cenovou nabídkou č\. 2026-OVP-CN-0376 ze dne/.test(text) && /Podpis objednatele/.test(text));
   ok('náhled: objednatel z hlavičky', text.indexOf('TEST zákazník s.r.o.') >= 0);
   ok('náhled: Zakázka z krycího listu, blok Místo určení / Objednatel', text.indexOf('Zakázka: Z2026-TEST-01') >= 0 && /Místo určení \/ Objednatel/i.test(text));
-  /* pořadí bloků podle vzoru: dodavatel → objednatel → datum případu → tabulka → Celkem Kč → podpis → poznámka */
-  const poz = ['DODAVATEL', 'MÍSTO URČENÍ / OBJEDNATEL', 'Datum případu', 'Popis dodávky', 'Celkem Kč', 'Podpis objednatele', 'Poznámka']
+  /* pořadí bloků podle vzoru: dodavatel → objednatel → datum případu → tabulka → Celkem Kč → poznámka → … → podpis
+   * (#791: datum a podpis objednatele až na konci, za Poznámkou, Platebním kalendářem, Termíny a Vystavil) */
+  const poz = ['DODAVATEL', 'MÍSTO URČENÍ / OBJEDNATEL', 'Datum případu', 'Popis dodávky', 'Celkem Kč', 'Poznámka', 'Podpis objednatele']
     .map(t => text.toUpperCase().indexOf(t.toUpperCase()));
   ok('náhled: pořadí bloků jako vzor', poz.every((x, i) => x >= 0 && (i === 0 || x > poz[i - 1])), poz);
   ok('náhled: tlačítko tisku', await okno.locator('.bar button', { hasText: 'Tisk' }).count() >= 1);

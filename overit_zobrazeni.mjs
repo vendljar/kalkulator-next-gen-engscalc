@@ -576,7 +576,7 @@ test('krycí list PROJ: totéž',
     const h = document.getElementById('page-kryciproj').innerHTML;
     return /class="primary"[^>]*onclick="kryciProjTiskPohled\('bo'\)"/.test(h)
       && !h.includes('kryciProjWord()') && typeof kryciProjWord === 'function'
-      && h.indexOf("kryciProjTiskPohled('bo')") < h.indexOf('Smlouva o dílo a plná moc (PROJ)');
+      && h.indexOf("kryciProjTiskPohled('bo')") < h.indexOf('Objednávka, smlouva o dílo a plná moc (PROJ)');
   }));
 test('krycí listy mluví o ZÁKAZNÍKOVI, ne o objednateli (objednatel je pojem smluvní)',
   await page.evaluate(() => {
