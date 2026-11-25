@@ -166,6 +166,10 @@ test('fáze 22 → 23 „Nabídka odeslána“', radek(n, 'fazeDealu').hodnota =
 test('pole smlouvy o dílo v tabulce nejsou', !(n.radky || []).some((r) => PO.PD_ODESLANI_BEZ_SOD.includes(r.klic)), (n.radky || []).map((r) => r.klic));
 test('Číslo nabídky (CN) mezi zapisovanými poli', radek(n, 'cisloNabidky').posle === true, radek(n, 'cisloNabidky'));
 test('datum nabídky = datum zámku v náhledu i poznámce', n.datum === DEN && n.poznamka.includes('ze dne ' + DEN_TEXT), [n.datum, DEN, n.poznamka]);
+/* #763 (MD bod 6, J. V. 25. 11. 2026): pole dealu „Datum nabídky“ (typ date) se zapisuje datem zámku. */
+test('#763: řádek „Datum nabídky“ = datum zámku, zapíše se (pole z mapy, ne natvrdo)',
+  radek(n, 'datumNabidky').posle === true && radek(n, 'datumNabidky').hodnota === DEN && radek(n, 'datumNabidky').typ === 'date',
+  radek(n, 'datumNabidky'));
 test('poznámka: číslo, cena, Vypracoval (jméno), odkaz, značka zakázky', n.poznamka.startsWith('Nabídka odeslána: ') && /Vypracoval: .*Petra Ukázková/.test(n.poznamka)
   && /Kalkulace: https?:\/\/.*zakazka=/.test(n.poznamka) && /OCK [\d ]+ Kč bez DPH/.test(n.poznamka)
   && n.poznamka.endsWith('\n— nabídka ' + zakazka(A.soubor).cislo) && n.poznamka.includes(zakazka(A.soubor).varianty[0].zamek.cislo), n.poznamka);
@@ -191,6 +195,8 @@ test('jediný PATCH: stage_id 23, value = cena, NIKDY status, jen změněná pol
 const dealPo = D().dealy.find((d) => d.id === A.deal.id);
 test('deal v simulátoru: fáze 23, stav open, CN zapsáno', dealPo.stage_id === 23 && dealPo.status === 'open'
   && String(dealPo.custom_fields[HASH_CN] || '').length > 0, [dealPo.stage_id, dealPo.status, dealPo.custom_fields[HASH_CN]]);
+test('#763: deal v simulátoru nese Datum nabídky = datum zámku', dealPo.custom_fields[pdHashZNazvu('Datum nabídky')] === DEN,
+  dealPo.custom_fields[pdHashZNazvu('Datum nabídky')]);
 const pozn = () => (D().poznamky || []).filter((p) => p.deal_id === A.deal.id && /^Nabídka odeslána/.test(p.content));
 test('k dealu právě jedna poznámka „Nabídka odeslána“, HTML escapované řádky', pozn().length === 1 && /<br>/.test(pozn()[0].content), pozn());
 test('zak.pdOdeslani: pole i poznámka zapsáno, id poznámky', stav(A.soubor) && stav(A.soubor).pole.stav === 'zapsano'

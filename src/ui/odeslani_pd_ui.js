@@ -176,7 +176,7 @@ function odeslPdKrokText(k, nazev) {
 
 function odeslPdTabulka(d) {
   const tr = (d.radky || []).filter(r => r.stav !== 'prazdne').map(r => {
-    const nova = r.stav === 'zapise' || r.klic === 'datumNabidky' ? `<b>${esc(r.hodnotaText || '')}</b>` : '<span class="note">—</span>';
+    const nova = r.stav === 'zapise' ? `<b>${esc(r.hodnotaText || '')}</b>` : '<span class="note">—</span>';
     const stitek = r.posle ? '<span class="pill">zapíše se</span>' : r.bezeZmeny ? '<span class="pill mut">beze změny</span>'
       : r.stav === 'ponechano' ? `<span class="pill mut">ponechá se</span>${r.duvod ? `<div class="note">${esc(r.duvod)}</div>` : ''}`
       : `<span class="pill bad">nezapíše se</span>${r.duvod ? `<div class="note">${esc(r.duvod)}</div>` : ''}`;

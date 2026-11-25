@@ -32,7 +32,10 @@ Nad integrací `cad7d93` (v25.11.1). Rozhodnutí J. V. 25. 11. 2026 (ROZHODNUTI_
   5 dní, červená chybí nebo starší než 5 dní; štítek slovy („V pořádku (před 3 h)“, „Starší (před 3 dny) —
   zkontrolujte“). Meze `ULO_ZALOHA_OK_HODIN`, `ULO_ZALOHA_CERVENA_DNU`. Příručka správce doplněna.
   Test `src/test_md5_zalohy_barvy.js`.
-- Mutace `[MD]` (jádro, server #768); staré mutace VS-E5, VS-E2, ER N1/#757, K18-N96 a #512 přesměrované
+- **#763 Pipedrive: pole dealu „Datum nabídky“** (J. V. pole založil 25. 11., typ datum): mapa polí ho páruje
+  podle názvu (jen typ date, verze mapy 5 — uložená mapa se obnoví); odeslání nabídky (PO #116) do něj zapíše datum
+  zámku (= datum nabídky) a řádek je v tabulce „Dnes v Pipedrive / Nově“. Prodej ani webhook ho nepíšou / nečtou.
+- Mutace `[MD]` (jádro, server #768, #763); staré mutace VS-E5, VS-E2, ER N1/#757, K18-N96 a #512 přesměrované
   na nové místo kódu.
 
 ## v25.11.1 — TZ-1: test „pole Dne“ v noci (jen test), větev claude/test-dne-praha
