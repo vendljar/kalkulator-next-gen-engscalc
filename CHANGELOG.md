@@ -36,7 +36,7 @@ Nad integrací `cad7d93` (v25.11.1). Rozhodnutí J. V. 25. 11. 2026 (ROZHODNUTI_
   podle názvu (jen typ date, verze mapy 5 — uložená mapa se obnoví); odeslání nabídky (PO #116) do něj zapíše datum
   zámku (= datum nabídky) a řádek je v tabulce „Dnes v Pipedrive / Nově“. Prodej ani webhook ho nepíšou / nečtou.
 - **Ceník OCK: Engineering mezi Příplatkovými položkami** (J. V. 25. 11., jen zobrazení v editoru; klíč, sazba
-  a výpočet beze změny, #771).
+  a výpočet beze změny, #774).
 - **K58-N1 (#772): zámek nabídky PROJ nese číslo z papíru PROJ** (kalkulace PROJ z webhooku: CN-437 místo předlohy
   OCK). Staré zámky PROJ se nemigrují — server je toleruje, Pipedrive (poznámka, název Wordu), lišta a razítko víc
   zákazníků ukážou číslo PROJ. Cenu ani tištěný dokument nemění.
