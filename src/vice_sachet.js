@@ -445,26 +445,53 @@ function vsAtyp(ock) {
   return sachtyZ(ock).some(s => !!(s.zadani && s.zadani.atyp));
 }
 
-/* Příplatky v nabídce po šachtách (R13): příplatek patří do nabídky, má-li
- * ho aspoň jedna šachta zaškrtnutý ve sloupci Nabídka (`priplatkyVynechat`
- * je po šachtách). Vrací [{ nazev, sachty: [názvy] }] v pořadí prvního
- * výskytu (jako R8: šachta 1, pak ostatní). */
-function vsPriplatkyVNabidce(vysl, ock) {
+/* VÝBĚR PŘÍPLATKŮ DO NABÍDKY U VÍC ŠACHET — JEDNO PRAVIDLO (R13; #767, J. V.
+ * 25. 11. 2026). Příplatek patří do nabídky, má-li ho aspoň jedna šachta
+ * zaškrtnutý ve sloupci Nabídka (`priplatkyVynechat` je po šachtách) —
+ * sjednocení šachet. Částky (sčítaná pole) = Σ ks × šachta jen přes šachty,
+ * které ho zaškrtly; příplatek „jednou za variantu" (#757) = řádek
+ * vsPriplatekJednou. Čte ho nabídka (nabidka.js), krycí list
+ * (vsPriplatkyVNabidce → Pipedrive), objednané / SoD (objNabidnute)
+ * a kontrola dodatekCesky — nemůžou se rozejít.
+ * Vrací null (jedna šachta) nebo [{ klic, key, nazev, sachty: [názvy], radek }]
+ * v pořadí prvního zaškrtnutého výskytu (šachta 1, pak ostatní); `radek` je
+ * kopie řádku příplatku s částkami výběru. */
+function vsPriplatkyVyber(vysl, ock) {
   const vo = vsVystup(vysl);
   if (!vo) return null;
   const l = sachtyZ(ock);
+  const zad = vo.sachty.map((s, i) => (l[i] && l[i].zadani) || {});
   const mapa = new Map(), out = [];
   vo.sachty.forEach((s, i) => {
-    const vyn = (l[i] && l[i].zadani && Array.isArray(l[i].zadani.priplatkyVynechat)) ? l[i].zadani.priplatkyVynechat : [];
+    const vyn = Array.isArray(zad[i].priplatkyVynechat) ? zad[i].priplatkyVynechat : [];
     ((s.vysl && s.vysl.priplatky) || []).forEach(p => {
-      if (!p || vyn.indexOf(p.key) >= 0) return;
-      const k = vsKlicPriplatku(p) + '|' + vsSazba(p);
+      if (!p || typeof p !== 'object' || vyn.indexOf(p.key) >= 0) return;
+      const jednou = VS_PRIPLATKY_JEDNOU.indexOf(String(p.key)) >= 0;
+      const k = jednou ? 'jednou:' + String(p.key) : vsKlicPriplatku(p) + '|' + vsSazba(p);
       let x = mapa.get(k);
-      if (!x) { x = { nazev: String(p.nazev || ''), sachty: [] }; mapa.set(k, x); out.push(x); }
+      if (!x) {
+        const radek = JSON.parse(JSON.stringify(p));
+        VS_SCITANA_POLE.forEach(f => { if (typeof radek[f] === 'number') radek[f] = 0; });
+        x = { klic: k, key: String(p.key || ''), nazev: String(p.nazev || ''), sachty: [], radek };
+        mapa.set(k, x); out.push(x);
+      }
       if (x.sachty.indexOf(s.nazev) < 0) x.sachty.push(s.nazev);
+      VS_SCITANA_POLE.forEach(f => { if (typeof p[f] === 'number' && typeof x.radek[f] === 'number') x.radek[f] += s.ks * p[f]; });
     });
   });
+  /* #757: jednou za variantu — hodnoty šachty podle vsPriplatekJednou, ne × ks. */
+  out.forEach(x => {
+    if (VS_PRIPLATKY_JEDNOU.indexOf(x.key) < 0) return;
+    const v1 = vsPriplatekJednou(vo.sachty.map(t => t.vysl), zad, x.key);
+    if (v1) VS_SCITANA_POLE.forEach(f => { if (typeof v1.radek[f] === 'number') x.radek[f] = v1.radek[f]; });
+  });
   return out;
+}
+
+/* Příplatky v nabídce po šachtách pro krycí list (VS-E5): [{ nazev, sachty }]. */
+function vsPriplatkyVNabidce(vysl, ock) {
+  const v = vsPriplatkyVyber(vysl, ock);
+  return v ? v.map(x => ({ nazev: x.nazev, sachty: x.sachty })) : null;
 }
 
 /* ZADÁNÍ NOVÉ ŠACHTY (přidání / kopie, #766 J. V. 25. 11. 2026): hluboká
@@ -494,7 +521,7 @@ function vsZamekZmenaSachet(v) {
 
 if (typeof module !== 'undefined' && module.exports)
   Object.assign(module.exports, { vsVariantText, vsPoctyPopis, vsMaMustky, vsVystup, vsSeznamText, vsPredmetText, vsAtyp,
-    vsPriplatkyVNabidce, vsZamekZmenaSachet, vsSachtaZadani });
+    vsPriplatkyVNabidce, vsPriplatkyVyber, vsZamekZmenaSachet, vsSachtaZadani });
 
 /* ============================================================
  * VS-E4 (#570 / roadmapa #594) — šablona cenové nabídky a víc šachet.

@@ -73,29 +73,18 @@ function objNabidnute(v, jekly) {
   if (!r || !Array.isArray(r.priplatky)) return [];
   /* VS-E5 (#595, R13): víc šachet — příplatek je jedna volba pro všechny
    * šachty, které ho mají ve sloupci Nabídka (výběr je po šachtách); cena
-   * a náklad = Σ ks × šachta. Objednává se po klíči, stejně jako u jedné šachty. */
-  const vo = (typeof vsVystup === 'function') ? vsVystup(r) : null;
-  if (vo) {
-    const l = (typeof sachtyZ === 'function') ? sachtyZ(v.data && v.data.ock) : [];
+   * a náklad = Σ ks × šachta. Objednává se po klíči, stejně jako u jedné šachty.
+   * #767: týž výběr jako nabídka a krycí list (vsPriplatkyVyber), engineering
+   * jednou za variantu (#757). */
+  const vyberFn = (typeof vsPriplatkyVyber === 'function') ? vsPriplatkyVyber : require('./vice_sachet.js').vsPriplatkyVyber;
+  const vyber = vyberFn(r, v.data && v.data.ock);
+  if (vyber) {
     const mapa = new Map();
-    const jednouKlice = (typeof VS_PRIPLATKY_JEDNOU !== 'undefined') ? VS_PRIPLATKY_JEDNOU : require('./vice_sachet.js').VS_PRIPLATKY_JEDNOU;
-    const jednou = (typeof vsPriplatekJednou === 'function') ? vsPriplatekJednou : require('./vice_sachet.js').vsPriplatekJednou;
-    vo.sachty.forEach((s, i) => {
-      const z = (l[i] && l[i].zadani) || {};
-      const vyn = Array.isArray(z.priplatkyVynechat) ? z.priplatkyVynechat : [];
-      ((s.vysl && s.vysl.priplatky) || []).forEach(p => {
-        if (!p || !p.key || vyn.includes(p.key)) return;
-        const k = String(p.key);
-        if (!mapa.has(k)) mapa.set(k, { key: k, nazev: String(p.nazev || p.key), sMarzi: 0, naklad: 0 });
-        const x = mapa.get(k);
-        /* #757: engineering jednou za variantu — tatáž šachta jako v součtu (vsPriplatekJednou). */
-        if (jednouKlice.indexOf(k) >= 0) {
-          const v1 = jednou(vo.sachty.map(t => t.vysl), l.map(t => t && t.zadani), k);
-          x.sMarzi = v1 ? (+v1.radek.sMarzi || 0) : 0; x.naklad = v1 ? (+v1.radek.naklad || 0) : 0;
-          return;
-        }
-        x.sMarzi += s.ks * (+p.sMarzi || 0); x.naklad += s.ks * (+p.naklad || 0);
-      });
+    vyber.forEach(x => {
+      if (!x.key) return;
+      if (!mapa.has(x.key)) mapa.set(x.key, { key: x.key, nazev: String(x.radek.nazev || x.key), sMarzi: 0, naklad: 0 });
+      const o = mapa.get(x.key);
+      o.sMarzi += (+x.radek.sMarzi || 0); o.naklad += (+x.radek.naklad || 0);
     });
     return Array.from(mapa.values());
   }

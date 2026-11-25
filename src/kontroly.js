@@ -864,7 +864,9 @@ const KONTROLY = [
       const r = ctx.vysledek;
       if (!r || !Array.isArray(r.priplatky)) return null;
       const vynech = (ctx.zadani && ctx.zadani.priplatkyVynechat) || [];
-      const vNabidce = r.priplatky.filter(p => p && !vynech.includes(p.key));
+      /* #767: víc šachet — týž výběr, jaký tiskne nabídka (sjednocení šachet). */
+      const vyber = (ctx.__vs && ctx.__vs.ock && typeof vsPriplatkyVyber === 'function') ? vsPriplatkyVyber(r, ctx.__vs.ock) : null;
+      const vNabidce = vyber ? vyber.map(x => x.radek) : r.priplatky.filter(p => p && !vynech.includes(p.key));
       const plechy = ['prechMat', 'prechMont'];
       const slouceny = plechy.every(k => vNabidce.some(p => p.key === k));
       const cesky = vNabidce.filter(p => !(slouceny && plechy.includes(p.key)))

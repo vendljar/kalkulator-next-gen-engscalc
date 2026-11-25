@@ -407,6 +407,10 @@ function zamekSnimekSpocti(v) {
   if (d.ock && typeof rezimViceSachet === 'function' && rezimViceSachet(d.ock)) {
     out.sachty = sachtyZ(d.ock).map((x, i) => ({ id: x.id, nazev: vsNazev(x, i), ks: x.ks }));
     out.sachtyVerze = 1;
+    /* #767 (J. V. 25. 11. 2026): nabídka bere výběr příplatků sjednocením
+     * šachet (vsPriplatkyVyber). Značka odlišuje zámky od #767; starší
+     * odeslaná nabídka se dotiskne postaru (nabidkaPriplatkyVyberNovy). */
+    out.priplatkyVyber = 1;
   }
   return out;
 }

@@ -11,6 +11,15 @@
  * Pevný text šablony překládá docxPrelozSablonu (docxgen.js); tady se překládají
  * jen dosazované hodnoty, aby výsledný dokument byl jazykově konzistentní.
  * Neznámý výraz zůstává česky (viz preklad.js) – nikdy se nic nevymýšlí. */
+/* #767: tiskne nabídka víc šachet výběr příplatků sjednocením šachet?
+ * Neodeslaná ano; odeslaná (zamčená) jen se značkou `priplatkyVyber` ve
+ * snímku zámku (zamekSnimekSpocti) — starší odeslané se tisknou postaru. */
+function nabidkaPriplatkyVyberNovy(varianta) {
+  const z = varianta && varianta.zamek;
+  if (!z || !z.zamceno) return true;
+  const sn = (z.snimek && typeof z.snimek === 'object') ? z.snimek : null;
+  return !!(sn && sn.priplatkyVyber === 1);
+}
 function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
   if (typeof vzTiskHlidej === 'function') vzTiskHlidej(zak);   // VZ-E2 (revize U3): jen z pohledu zákazníka
   /* ODESLANÁ NABÍDKA ZŮSTÁVÁ ZMRAZENÁ (Z1, J. V. 22. 10. 2026): dotisk CN
@@ -506,7 +515,15 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
    * zůstane-li jedna, ukáže se sama a beze změny názvu. Množství se
    * neuvádí — kusy a kilogramy nejde sečíst do jednoho čísla. */
   const PLECHY = ['prechMat', 'prechMont'];
-  const vybrane = r.priplatky.filter(p => !vynech.includes(p.key));
+  /* VÍC ŠACHET (#767, J. V. 25. 11. 2026): výběr = sjednocení šachet jako krycí
+   * list, Pipedrive a objednané (vsPriplatkyVyber) — příplatek zaškrtnutý jen
+   * v šachtě 2 se vytiskne, částka řádku = Σ ks × šachta jen přes šachty, které
+   * ho zaškrtly. Do #767 platil výběr šachty 1 a částka všech šachet. Zamčená
+   * (odeslaná) nabídka bez značky `priplatkyVyber` ve snímku zámku se tiskne
+   * postaru — dotisk je týž papír, jaký má zákazník. */
+  const vyberVs = (typeof vsPriplatkyVyber === 'function' && nabidkaPriplatkyVyberNovy(varianta))
+    ? vsPriplatkyVyber(r, d.ock) : null;
+  const vybrane = vyberVs ? vyberVs.map(x => x.radek) : r.priplatky.filter(p => !vynech.includes(p.key));
   const plechy = vybrane.filter(p => PLECHY.includes(p.key));
   /* POPIS POLOŽKY V NABÍDCE (#267, 18. 9. 2026, zadání J. V.).
    *
@@ -1046,4 +1063,4 @@ if (typeof dokumentRegistruj === 'function')
     builder: (zak, varianta, jekly, lang, sablona) => nabidkaData(zak, varianta, jekly, lang, sablona),
   });
 
-if (typeof module !== 'undefined') module.exports = { nabidkaData, nabidkaKapitolyFirma, usazeniBocniSloucene, nabidkaNahledSekce, nabidkaPopisZameru, nabidkaVsData };
+if (typeof module !== 'undefined') module.exports = { nabidkaData, nabidkaPriplatkyVyberNovy, nabidkaKapitolyFirma, usazeniBocniSloucene, nabidkaNahledSekce, nabidkaPopisZameru, nabidkaVsData };

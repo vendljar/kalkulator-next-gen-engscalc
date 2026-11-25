@@ -70,6 +70,24 @@ console.log('===== B. neodeslaná nabídka = sjednocení šachet =====');
     [ob, n]);
 }
 
+console.log('===== B2. příplatek s jinou sazbou v každé šachtě (dva řádky výběru, jeden klíč) =====');
+{
+  const { v } = zakazka([], [], ['skn']);
+  const r = V.vypocetOckDat(v.data, J);
+  const b = r.sachty[1].vysl.priplatky.find(p => p.key === 'skn');
+  b.cena *= 2; b.sMarzi *= 2; b.naklad *= 2;            // šachta B s jinou jednotkovou cenou (např. ruční cena)
+  const a = r.sachty[0].vysl.priplatky.find(p => p.key === 'skn');
+  const vyb = V.vsPriplatkyVyber(r, v.data.ock).filter(x => x.key === 'skn');
+  test('výběr: dva řádky (sazba A a B)', vyb.length === 2, vyb.map(x => x.klic));
+  const puvodni = global.vypocetZ;
+  global.vypocetZ = () => r;
+  let ob;
+  try { const vz = kop(v); vz.zamek = { zamceno: true }; ob = O.objNabidnute(vz, J); } finally { global.vypocetZ = puvodni; }
+  const o = (ob || []).find(x => x.key === 'skn');
+  test('objednané: jeden klíč se součtem obou řádků (1 × A + 2 × B)', !!o && ob.filter(x => x.key === 'skn').length === 1
+    && o.sMarzi === a.sMarzi + 2 * b.sMarzi && o.naklad === a.naklad + 2 * b.naklad, [o, a.sMarzi, b.sMarzi]);
+}
+
 console.log('===== C. přechodové plechy rozdělené mezi šachty =====');
 {
   const { zak, v } = zakazka(['prechMat'], ['prechMont'], []);
