@@ -10,6 +10,7 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
+| 25. 11. 2026 | K58-I2: šachta bez opláštění má v nové kalkulaci (ER) plastové kotvy, cestovné a čištění opláštění = 0; staré kalkulace beze změny. Do dávky MD. | K58-I2, cena nových kalkulací |
 | 25. 11. 2026 | K58-I1: výstup ze zaměření se počítá tolikrát, kolik je kusů šachty (2 ks = 2×) — beze změny aplikace; engineering dál jednou za variantu. | K58-I1, ER |
 | 25. 11. 2026 | Kokpit koordinace VŽDY ukazuje počty commitů main → test → integrace (i bez slučovacích) na dlaždicích main, test a main × test × integrace; počítá je skript kokpitu z origin při každé aktualizaci, ne ručně (opakovaná připomínka J. V. 24. a 25. 11.). | kokpit |
 | 25. 11. 2026 | K58-N1 (číslo zámku PROJ): staré zámky nemigrovat (jen správné zobrazení v CRM a liště); starý klient po nasazení tolerovat; razítko víc zákazníků u zakázky jen PROJ opravit v MD, vejde-li se. | K58-N1, MD |
