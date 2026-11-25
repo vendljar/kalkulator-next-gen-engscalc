@@ -71,9 +71,10 @@ Stav 25. 11. 2026 15:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74
 - **B:** dotisk dřív odeslané nabídky beze změny (značka `pd2Tisk` ve snímku podmínek). V3 vypuštěn (J. V.).
   **Čeká: V5 a V6** — pevný text šablony CN; návrh (symbol {{NAB_ZARUKA}} / úprava šablony datovým úkolem)
   poslán koordinaci, odpověď nepřišla.
-- Testy s pojistkou: `netlify/test_pd2_pole.mjs` 60/0, `src/test_pd2_platby.js` 32/0, `src/test_pd2_tisk_cn.js` 31/0,
-  `src/test_pd2_md_nalezy.js` 4/0. Mutace [PD2] server 26/26, jádro 19/19. Kolo `--bez-mutaci --proti
-  origin/claude/integrace-16-10` VŠE ZELENÉ; porovnání 395 jen očekávané (`podklady/porovnani/ocekavane_pd2_2026-11-25.txt`).
+- Sloučeno s integrací f9b31b8c (v25.11.5, PP); revize Fable SLOUČIT (`claude/revize-pd2`): N1 (Platba 0 = vymazat),
+  N2 (test U8), N3 (očekávané rozdíly jmenovitě) hotové. Kolo `--bez-mutaci --proti origin/claude/integrace-16-10`
+  VŠE ZELENÉ (566/0, hodiny 463/0); porovnání 395 jen očekávané. Mutace [PD2] server 27/27, jádro 20/20.
+- J. V. potvrzuje: J1 znění V4 + překlady, J2 tabulka zmrazení KL (Odchylky PROJ), U7e mazání Plateb do ROZHODNUTI_LOG.
 - Po nasazení do testu: testovací sezení zkušební zápis na dealy 432 / 437 (kontakty, podpisy, Informováno, Platby,
   „ponechá se“); V4 překlad konečné faktury EN/DE/FR je návrh — ověřit s J. V.
 - Pro J. V. / koordinaci: Platby se při prodeji MAŽOU, když plán milník nemá (výjimka ze zásady „zápis nemaže“).
