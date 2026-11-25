@@ -135,8 +135,17 @@ function menaJenCastka(text) {
   const zbytek = pdNorm(text).replace(/\d+/g, ' ').split(' ').filter((w) => w && !MENA_SLOVA.includes(w));
   return zbytek.length === 0;
 }
+/* #777 (revize MD S2, J. V. 25. 11. 2026): „5.000 Kč“ (tečka jako oddělovač
+ * tisíců) by se četlo jako 5 CZK a „-500 Kč“ jako 500 — obojí se NEPOŠLE
+ * a tabulka „dnes / nově“ řekne proč. Desetinná tečka s jednou či dvěma
+ * číslicemi („12.5“) zůstává. Jen řádek „nelze“ — zápis ostatních polí běží. */
+const MENA_TECKA_TISICE = /\d\.\d{3}(?!\d)/;
+const MENA_ZAPORNA = /^\s*(?:(?:kč|czk|eur|€)\s*)?[-\u2212\u2013]\s*\d/i;
 function mena(text, spolecne) {
   if (/%/.test(text)) return { duvod: '„' + text + '" je procento, pole čeká částku' };
+  if (MENA_ZAPORNA.test(String(text))) return { duvod: 'částka je záporná — do pole se nezapíše' };
+  if (MENA_TECKA_TISICE.test(String(text)))
+    return { duvod: 'částka má tečku jako oddělovač tisíců („5.000“) — nejde poznat, jestli jde o tisíce; napište „5 000 Kč“' };
   if (!menaJenCastka(text)) return { duvod: '„' + text + '" není částka (čeká se číslo, případně s Kč / EUR / bez DPH)' };
   const j = jedno(text, false);
   if (j.duvod) return j;
@@ -169,6 +178,48 @@ function uzivatel(text, spolecne) {
   return { duvod: hit.length ? '„' + t + '" odpovídá víc uživatelům Pipedrive' : '„' + t + '" mezi uživateli Pipedrive není' };
 }
 
+/* PD2 (#782, J. V. 25. 11. 2026): pole, která kalkulace doplní JEN DO
+ * PRÁZDNÉHO pole dealu (`jenPrazdne` v mapě: kontakty, podpisy, zmocnitel,
+ * Informováno). Vyplněné v Pipedrive se nepřepisuje — rozhoduje server
+ * z dealu čteného ve výhradní sekci zápisu; rozdíl proti náhledu chytí otisk.
+ * „Prázdné“ podle typu pole (revize Fable U1): null / undefined, '' a jen
+ * mezery, číslo 0 (osoba, organizace, uživatel bez záznamu), prázdné pole,
+ * objekt bez id / value (people, org: { value: null }, částka bez value). */
+export function pdPrazdne(x) {
+  if (x === null || x === undefined) return true;
+  if (typeof x === 'number') return !isFinite(x) || x === 0;
+  if (typeof x === 'string') return x.trim() === '' || /^0+(?:\.0+)?$/.test(x.trim());
+  if (typeof x === 'boolean') return false;
+  if (Array.isArray(x)) return x.every(pdPrazdne);
+  if (typeof x === 'object') {
+    if (x.id !== undefined) return pdPrazdne(x.id);
+    if (x.value !== undefined) return pdPrazdne(x.value);
+    if (x.label !== undefined) return pdPrazdne(x.label);
+    return Object.keys(x).length === 0;
+  }
+  return false;
+}
+/* Dnešek v Europe/Prague jako RRRR-MM-DD (datum zápisu pro Informováno). */
+export function pdDnesPraha(d = new Date()) {
+  try { return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Prague' }).format(d); }
+  catch (e) { return d.toISOString().slice(0, 10); }
+}
+export const PD_JEN_PRAZDNE_DUVOD = 'v Pipedrive je pole vyplněné — kalkulátor doplňuje jen prázdné pole, nepřepisuje se';
+export const PD_JEN_PRAZDNE_BEZ_DEALU = 'deal se nenačetl — pole se doplňuje jen do prázdného, bez dealu nic';
+/* Platba 1–8 (PD2, U7e): pole Platba, které v Pipedrive hodnotu má, ale nový
+ * plán ten milník nemá. Do rozhodnutí J. V. se NEMAŽE (zápis nikdy nemaže). */
+export const PD_PLATBY_MAZAT = false;
+export const PD_PLATBA_BEZ_MILNIKU = 'nový plán plateb tento milník nemá — hodnota v Pipedrive zůstává (mazání čeká na rozhodnutí J. V.)';
+/* Je pole dealu `def` u zápisu jen do prázdného obsazené? → důvod, nebo ''. */
+export function pdJenPrazdneDuvod(def, pole, deal) {
+  if (!def || !def.jenPrazdne) return '';
+  if (!deal || typeof deal !== 'object') return PD_JEN_PRAZDNE_BEZ_DEALU;
+  const hash = pole && pole.mapa && pole.mapa[def.klic];
+  if (!hash) return '';
+  const cf = (deal.custom_fields && typeof deal.custom_fields === 'object') ? deal.custom_fields : {};
+  return pdPrazdne(cf[hash]) ? '' : PD_JEN_PRAZDNE_DUVOD;
+}
+
 function rucne(zdroj, id) {
   const r = zdroj && zdroj.rucne;
   return !!(r && Object.prototype.hasOwnProperty.call(r, id) && String(r[id] == null ? '' : r[id]).trim() !== '');
@@ -195,6 +246,8 @@ export function pdDoPd(def, strana, zdroj, popis, spolecne = {}) {
     if (id === '@atyp') return (zdroj && zdroj.atyp === true) ? 'Ano' : (zdroj && zdroj.atyp === false) ? 'Ne' : '';
     if (id === '@kalendar') return String((zdroj && typeof zdroj.kalendar === 'string') ? zdroj.kalendar : '').trim();
     if (id === '@datumNabidky') return String((zdroj && typeof zdroj.datumNabidky === 'string') ? zdroj.datumNabidky : '').trim();
+    const mp = /^@platba([1-8])$/.exec(id);
+    if (mp) { const c = zdroj && zdroj.platby && zdroj.platby[mp[1]]; return typeof c === 'number' && isFinite(c) ? String(c) : ''; }
     const h = zdroj && zdroj.hodnoty;
     return String(h && h[id] != null ? h[id] : '').trim();
   };
@@ -208,6 +261,29 @@ export function pdDoPd(def, strana, zdroj, popis, spolecne = {}) {
     return id === null ? { duvod: '„' + text + '" není mezi volbami Pipedrive (' + nabidka(volby) + ')' } : { hodnota: id };
   };
 
+  /* PD2 Platba 1–8: částka z dopočtu plánu plateb (planSodStareSymboly — tytéž
+   * částky jako text Platebního kalendáře), měna strany. */
+  if (def.prevod === 'platba') {
+    const c = Number(v[0]);
+    if (!isFinite(c) || c <= 0) return { duvod: 'platba plánu není kladná částka' };
+    return { hodnota: { value: Math.round(c * 100) / 100, currency: String((zdroj && zdroj.mena) || spolecne.mena || 'CZK').toUpperCase() } };
+  }
+  /* PD2 Informováno BO / Tech (J. V. 25. 11. 2026): krycí list drží, KDO byl
+   * informován; pole Pipedrive je datum → datum zápisu (Praha, `spolecne.dnes`). */
+  if (def.prevod === 'informovano') {
+    const d = String(spolecne.dnes || '');
+    return /^\d{4}-\d{2}-\d{2}$/.test(d) ? { hodnota: d } : { duvod: 'datum zápisu není k dispozici' };
+  }
+  /* PD2 osoba / organizace: ID dohledá server v Pipedrive (lib/pd_dohledani.mjs)
+   * a předá v `spolecne.dohledano[klic]` = { id, text } | { duvod } | { neovereno }.
+   * Bez dohledání (suchý běh, náhled bez napojení) = „dohledá zápis“. Důvod
+   * nikdy neopakuje hledaný e-mail ani jméno (U4). */
+  if (def.prevod === 'dohledani') {
+    const d = spolecne.dohledano && spolecne.dohledano[def.klic];
+    if (d && Number.isInteger(d.id) && d.id > 0) return { hodnota: d.id };
+    if (d && d.duvod) return { duvod: String(d.duvod) };
+    return { duvod: 'osobu / organizaci dohledá v Pipedrive až zápis', neovereno: true };
+  }
   if (def.prevod === 'zadrzne') {
     const [ano, proc] = v;
     const n = pdNorm(ano);
@@ -309,6 +385,9 @@ export function pdZapisDealu(definice, strany, pole, spolecne = {}) {
       if (!strany || !strany[strana]) continue;
       const r = pdDoPd(def, strana, strany[strana], mapa[def.klic] ? popisy[def.klic] : null, spolecne);
       if (r.prazdne) continue;
+      /* PD2: jen do prázdného pole — obsazené (nebo deal neznámý) se neposílá. */
+      const obsazeno = pdJenPrazdneDuvod(def, pole, spolecne.deal);
+      if (obsazeno) break;
       if (r.duvod) duvody.push({ klic: def.klic, nazev: def.nazev, strana, duvod: r.duvod });
       else { custom_fields[mapa[def.klic]] = r.hodnota; zapsano.push(def.klic); }
       break;
@@ -347,7 +426,7 @@ export function pdZapisDealu(definice, strany, pole, spolecne = {}) {
  * `zdroje` = { ock: { id → popis pole v kalkulaci }, proj: {…} } — popisky
  * posílá klient (zná krycí list), server je jen opisuje.
  * ============================================================ */
-export const PD_NANECISTO_STAVY = ['zapise', 'nelze', 'chybiPole', 'neovereno', 'prazdne'];
+export const PD_NANECISTO_STAVY = ['zapise', 'nelze', 'chybiPole', 'neovereno', 'prazdne', 'ponechano'];
 
 /* Hodnota pole Pipedrive jako text pro člověka: volba podle ID → text,
  * částka → „12 300 CZK", uživatel → jméno. Rozumí hodnotě k zápisu
@@ -376,12 +455,24 @@ export function pdZobraz(hodnota, popis, spolecne = {}) {
   return String(hodnota);
 }
 
+/* Hodnota osoby / organizace v dealu pro sloupec „dnes v Pipedrive“: API v2
+ * vrací u vlastního pole typu people / org číslo, u v1 objekt { name, value }.
+ * Bez jména se ukáže „vyplněno (záznam N)“ — jméno se kvůli tomu nedohledává. */
+function pdZobrazDohledane(surova, popis, spolecne) {
+  const t = popis && popis.typ;
+  if (t !== 'people' && t !== 'org') return pdZobraz(surova, popis, spolecne);
+  if (surova && typeof surova === 'object' && surova.name) return String(surova.name);
+  const id = surova && typeof surova === 'object' ? (surova.value !== undefined ? surova.value : surova.id) : surova;
+  return 'vyplněno (záznam ' + String(id) + ')';
+}
+
 function pdZdrojText(def, strana, zdroj, zdroje) {
   const popisky = (zdroje && zdroje[strana]) || {};
   return [].concat(def.kl[strana]).map((id) => {
     const p = popisky[id] || (id === '@atyp' ? 'Kalkulace OCK › ATYP'
       : id === '@kalendar' ? 'Plán plateb PROJ › platební kalendář smlouvy'
-      : id === '@datumNabidky' ? 'Odeslaná nabídka › datum nabídky' : id);
+      : id === '@datumNabidky' ? 'Odeslaná nabídka › datum nabídky'
+      : /^@platba[1-8]$/.test(id) ? 'Plán plateb PROJ › platba „' + def.nazev.replace(/^Platba \d – /, '') + '“' : id);
     return strana.toUpperCase() + ': ' + p;
   }).join(' + ');
 }
@@ -391,6 +482,8 @@ function pdHodnotaText(def, strana, zdroj) {
     if (id === '@atyp') return (zdroj && zdroj.atyp === true) ? 'Ano' : (zdroj && zdroj.atyp === false) ? 'Ne' : '';
     if (id === '@kalendar') return String((zdroj && zdroj.kalendar) || '').trim();
     if (id === '@datumNabidky') return String((zdroj && zdroj.datumNabidky) || '').trim();
+    const mp = /^@platba([1-8])$/.exec(id);
+    if (mp) { const c = zdroj && zdroj.platby && zdroj.platby[mp[1]]; return typeof c === 'number' && isFinite(c) ? pdKcText({ value: c, currency: (zdroj && zdroj.mena) || 'CZK' }) : ''; }
     const h = zdroj && zdroj.hodnoty;
     return String(h && h[id] != null ? h[id] : '').trim();
   }).filter(Boolean).join(' / ');
@@ -430,8 +523,11 @@ export function pdNanecisto(definice, strany, pole, spolecne = {}, zdroje = {}) 
       } else {
         r.stav = 'zapise';
         r.hodnota = vybrano.v.hodnota;
-        r.hodnotaText = vybrano.v.hodnota === null ? '(vyprázdnit výběr)' : pdZobraz(vybrano.v.hodnota, popis, spolecne);
+        const dohl = def.prevod === 'dohledani' && spolecne.dohledano && spolecne.dohledano[def.klic];
+        r.hodnotaText = vybrano.v.hodnota === null ? '(vyprázdnit výběr)'
+          : (dohl && dohl.text) ? String(dohl.text) : pdZobraz(vybrano.v.hodnota, popis, spolecne);
       }
+      if (def.prevod === 'dohledani' && vybrano.v.neovereno && popis) r.stav = 'neovereno';
     } else if (!mapa[def.klic]) {
       r.duvod = 'pole „' + def.nazev + '" v Pipedrive chybí nebo má jiný typ';
     }
@@ -441,9 +537,19 @@ export function pdNanecisto(definice, strany, pole, spolecne = {}, zdroje = {}) 
       r.kolize.push('OCK „' + texty.ock + '" × PROJ „' + texty.proj + '" — zapíše se hodnota OCK');
     /* Kolize s CRM: v dealu je dnes něco jiného, zápis by to přepsal. */
     if (cf && mapa[def.klic]) {
-      r.vCrm = pdZobraz(cf[mapa[def.klic]], popis, spolecne);
-      if (r.stav === 'zapise' && r.vCrm && pdNorm(r.vCrm) !== pdNorm(r.hodnotaText))
+      const surova = cf[mapa[def.klic]];
+      r.vCrm = def.jenPrazdne && !pdPrazdne(surova) ? pdZobrazDohledane(surova, popis, spolecne) : pdZobraz(surova, popis, spolecne);
+      /* PD2 Platba 1–8 (U7e): milník v novém plánu není, v dealu hodnota je — nemaže se. */
+      if (def.prevod === 'platba' && r.stav === 'prazdne' && !pdPrazdne(surova) && !PD_PLATBY_MAZAT) {
+        r.stav = 'ponechano'; r.duvod = PD_PLATBA_BEZ_MILNIKU;
+      }
+      if (r.stav === 'zapise' && !def.jenPrazdne && r.vCrm && pdNorm(r.vCrm) !== pdNorm(r.hodnotaText))
         r.kolize.push('v Pipedrive je dnes „' + r.vCrm + '" — zápis ji přepíše');
+    }
+    /* PD2: jen do prázdného pole (U1) — vyplněné v dealu zůstává, bez dealu nic. */
+    if (def.jenPrazdne && r.stav !== 'prazdne' && r.stav !== 'chybiPole') {
+      const obsazeno = pdJenPrazdneDuvod(def, pole, spolecne.deal);
+      if (obsazeno) { r.stav = 'ponechano'; r.duvod = obsazeno; r.hodnota = null; r.hodnotaText = ''; }
     }
     radky.push(r);
   }
@@ -459,6 +565,17 @@ export function pdNanecisto(definice, strany, pole, spolecne = {}, zdroje = {}) 
       if (hd.stara) { r.vCrm = pdKcText(hd.stara); if (hd.zmena) r.kolize.push('v Pipedrive je dnes „' + r.vCrm + '" — zápis ji přepíše'); }
     }
     radky.push(r);
+  }
+  /* PD2 Platba 1–8 (U7d): platby plánu, které žádnému poli Platba 1–8
+   * neodpovídají (studie, památkáři, podání na úřad, kolaudace, geodet,
+   * vlastní milník) — zůstanou jen v textu Platebního kalendáře SoD PROJ. */
+  const mimo = s.proj && Array.isArray(s.proj.platbyMimo) ? s.proj.platbyMimo : [];
+  if (mimo.length && (definice || []).some((d) => d && d.prevod === 'platba')) {
+    const t = mimo.length + (mimo.length === 1 ? ' platba' : mimo.length < 5 ? ' platby' : ' plateb') + ' ('
+      + mimo.map((x) => String(x.text || 'milník') + ' ' + pdKcText({ value: x.castka, currency: s.proj.mena || 'CZK' })).join('; ') + ')';
+    radky.push({ klic: 'platbyMimo', nazev: 'Mimo pole Platba 1–8', typ: 'info', strana: 'proj',
+      zdroj: 'PROJ: Plán plateb PROJ › platby bez pole Platba 1–8', hodnotaKalkulace: t, hodnota: null, hodnotaText: '',
+      stav: 'ponechano', duvod: 'žádné pole Platba 1–8 jim neodpovídá — jsou jen v textu „Platební kalendář SoD PROJ“', kolize: [], vCrm: '' });
   }
   /* VÍC ŠACHET (VS-E5 #595, R6): seznam šachet do POZNÁMKY dealu. J. V.
    * 11. 11. 2026: jde jako poznámka (Note) u dealu, ne jako pole — píše ji

@@ -29,7 +29,8 @@ import {
   pdPristup, pdNastaveno, pdRezim, pdZavolej, PdChyba, pdStropCerstvych, pdZapisPovolen, PD_ZAPIS_VYPNUTY, PD_DEAL_MAX, PD_CACHE_ULOZISTE,
 } from '../lib/pipedrive.mjs';
 import { POLE_DEALU, pdHodnota } from '../lib/pd_mapa.mjs';
-import { pdZamyslenyZapis, pdFazeNajdi } from '../lib/pd_prevod.mjs';
+import { pdZamyslenyZapis, pdFazeNajdi, pdDnesPraha } from '../lib/pd_prevod.mjs';
+import { pdDohledej } from '../lib/pd_dohledani.mjs';
 import { pdDealPatriZakazce } from '../lib/pd_overeni.mjs';
 import { pdWebhookOdkaz } from '../lib/pd_webhook.mjs';
 import { pdRejstrikZapis, pdProtokol } from '../lib/pd_vazba.mjs';
@@ -220,7 +221,9 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
   let uzivatele, fazeSeznam;
   try {
     const u = await zavolej('/api/v1/users');
-    uzivatele = Array.isArray(u) ? u.map((x) => ({ id: x.id, name: String(x.name || '') || ('uživatel Pipedrive ' + x.id), email: x.email })) : undefined;
+    /* PD2 U6 (a PV N1): uživatel Pipedrive jen aktivní (active_flag). */
+    uzivatele = Array.isArray(u) ? u.filter((x) => x && x.active_flag !== false)
+      .map((x) => ({ id: x.id, name: String(x.name || '') || ('uživatel Pipedrive ' + x.id), email: x.email })) : undefined;
     const f = await zavolej('/api/v2/stages', { dotaz: { limit: 500 } });
     fazeSeznam = Array.isArray(f) ? f.map((x) => ({ id: x.id, name: x.name, pipeline_id: x.pipeline_id, order_nr: x.order_nr })) : [];
   } catch (e) {
@@ -232,7 +235,11 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
   const datum = typeof G.nabidkaDatum === 'function' ? G.nabidkaDatum(ulozena, v) : String(v.zamek.datumNabidky || '');
   const podklad = pdOdeslaniStrany(ulozena, v, G, JEKLY, datum);
   if (podklad.chyba) return json({ ok: false, chyba: podklad.chyba }, 409);
-  const z = pdZamyslenyZapis(pdOdeslaniDefinice(POLE_DEALU), podklad.strany, pole, { uzivatele, mena: 'CZK', deal: dealData }, {}, zdroje);
+  /* PD2: kontakty zákazníka jen do prázdných polí — osoby dohledá server (U1, U2). */
+  const definice = pdOdeslaniDefinice(POLE_DEALU);
+  const dohl = await pdDohledej(definice, podklad.strany, pole, dealData, (c, o) => zavolej(c, o));
+  const z = pdZamyslenyZapis(definice, podklad.strany, pole,
+    { uzivatele, mena: 'CZK', deal: dealData, dohledano: dohl.dohledano, dnes: pdDnesPraha() }, {}, zdroje);
   const faze = pdOdeslaniFaze(fazeSeznam, dealData, pdOdeslaniFazeKonfigurace(), pdFazeNajdi);
   /* R3 (doporučení revize, rozhodne J. V. #765): prodaná zakázka nebo vyhraný
    * deal — hodnotu ani pole krycího listu NEPOSÍLAT (deal nese prodej / SoD),

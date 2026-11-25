@@ -50,6 +50,11 @@ export function pdProdejStrany(zak, G = globalThis, jekly = null) {
     const s = { hodnoty: sv.hodnoty || {}, rucne: sv.rucne || {}, mena: 'CZK' };
     if (strana === 'ock') s.atyp = sv.atyp === true;
     if (strana === 'proj' && typeof sv.kalendar === 'string') s.kalendar = sv.kalendar;
+    /* PD2 Platba 1–8 (U7): částky ze snímku plánu prodané varianty (pdnPlatby). */
+    if (strana === 'proj' && sv.platby && typeof sv.platby === 'object') {
+      s.platby = sv.platby;
+      s.platbyMimo = Array.isArray(sv.platbyMimo) ? sv.platbyMimo : [];
+    }
     let cena = typeof sv.cena === 'number' && isFinite(sv.cena) ? sv.cena : null;
     zdrojCeny[strana] = 'nabidka';
     if (strana === 'ock' && typeof G.ctrlCenaDilaSod === 'function') {

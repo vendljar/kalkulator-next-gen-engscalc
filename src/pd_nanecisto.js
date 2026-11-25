@@ -38,6 +38,48 @@ function pdnPopisky(sekce, nadpis) {
 
 function pdnText(v) { return v === null || v === undefined ? '' : String(v).trim(); }
 
+/* K53-N3 (PD2 #782): „Nabídku vypracoval“ jde do Pipedrive jako UŽIVATEL
+ * podle e-mailu. Předvyplnění krycího listu bere přihlášeného uživatele
+ * (zpracovatelKontaktProKryci) — na serveru, který zápis skládá, přihlášený
+ * „není“ a hodnota spadla na Firmu (jméno bez e-mailu → „mezi uživateli
+ * Pipedrive není“, kola 53–58). Pro Pipedrive proto platí: ruční hodnota
+ * krycího listu > snímek zpracovatele ze zámku zapisované varianty (#665 —
+ * kdo nabídku odeslal: jméno, telefon, e-mail) > dnešní předvyplnění.
+ * Varianta bez snímku (starší zámek, nezamčená) = beze změny. */
+function pdnZpracovatelZeZamku(v) {
+  const z = v && v.zamek;
+  const s = z && z.zamceno === true && z.zpracovatel;
+  if (!s || typeof s !== 'object' || Array.isArray(s)) return '';
+  const t = x => pdnText(x).replace(/[\u0000-\u001f\u007f,]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const email = t(s.email);
+  if (!email) return '';
+  return [[t(s.titul), t(s.jmeno)].filter(Boolean).join(' '), t(s.telefon), email].filter(Boolean).join(', ');
+}
+function pdnVypracoval(hodnoty, kl, v) {
+  const ruc = kl && kl.hodnoty && kl.hodnoty.dodZpracoval;
+  if (ruc !== undefined && ruc !== null && String(ruc).trim() !== '') return;
+  const zz = pdnZpracovatelZeZamku(v);
+  if (zz) hodnoty.dodZpracoval = zz;
+}
+
+/* PD2 Platba 1–8: platby dopočtu plánu (TÝŽ dopočet jako text Platebního
+ * kalendáře, planPdKalendar) podle milníku do polí Platba 1–8 — pořadí
+ * PLAN_SODP_STARE (planSodStareSymboly). Co poli neodpovídá → `mimo` (jen
+ * v textu kalendáře). Plán z doby před plánem plateb, nesedící součet nebo
+ * EUR (pole jsou v Kč) = nic. */
+function pdnPlatby(pl) {
+  if (!pl || pl.stary || pl.eur || !pl.dopocet || !pl.dopocet.sedi || typeof planSodStareSymboly !== 'function') return null;
+  const r = planSodStareSymboly(pl.dopocet, n => String(n));
+  const platby = {};
+  Object.keys(r.symboly).forEach(k => {
+    const m = /^SODP_PLATBA([1-8])_KC$/.exec(k);
+    const c = Number(r.symboly[k]);
+    if (m && isFinite(c)) platby[m[1]] = c;
+  });
+  const mimo = (r.navic || []).map(x => ({ text: pdnText(x.text).replace(/[.\s]+$/, ''), castka: Number(x.castka) }));
+  return { platby, mimo };
+}
+
 function pdnStranaOck(zak, v, jekly) {
   const c = kryciCtx(zak, v, jekly);
   const kl = (v.data && v.data.kryci) || { hodnoty: {} };
@@ -62,6 +104,7 @@ function pdnStranaOck(zak, v, jekly) {
    * poznámky dealu (`sachty`; náhled — poznámku do Pipedrive píše server
    * při uložení zakázky z uložených dat, VSD lib/pd_poznamka.mjs; tenhle
    * text se nikam nezapisuje). Jedna šachta = podklad beze změny. */
+  pdnVypracoval(hodnoty, kl, v);
   const out = { hodnoty, rucne: pdnRucne(kl, zak),
     atyp: vo ? vsAtyp(v.data && v.data.ock) : !!zad.atyp, mena: 'CZK' };
   if (cena !== null) out.cena = cena;
@@ -81,7 +124,8 @@ function pdnStranaProj(zak, v) {
     } catch (e) { x = ''; }
     hodnoty[p.id] = pdnText(x);
   }));
-  let cena = null, kalendar = '';
+  pdnVypracoval(hodnoty, kl, v);
+  let cena = null, kalendar = '', platby = null;
   try {
     const d = v.data || {};
     const r = (typeof vysledekStrany === 'function') ? vysledekStrany(zak, v, 'proj') : vypocetProjZ(v);
@@ -90,10 +134,14 @@ function pdnStranaProj(zak, v) {
     if (cn && isFinite(+cn.cena)) cena = +cn.cena;
   } catch (e) { cena = null; }
   try {
-    if (typeof nabidkaProjPlatby === 'function' && typeof planPdKalendar === 'function')
-      kalendar = pdnText(planPdKalendar(nabidkaProjPlatby(zak, v, 'cz')));
-  } catch (e) { kalendar = ''; }
+    if (typeof nabidkaProjPlatby === 'function' && typeof planPdKalendar === 'function') {
+      const pl = nabidkaProjPlatby(zak, v, 'cz');
+      kalendar = pdnText(planPdKalendar(pl));
+      if (kalendar) platby = pdnPlatby(pl);
+    }
+  } catch (e) { kalendar = ''; platby = null; }
   const out = { hodnoty, rucne: pdnRucne(kl, zak), kalendar, mena: 'CZK' };
+  if (platby) { out.platby = platby.platby; out.platbyMimo = platby.mimo; }
   if (cena !== null) out.cena = cena;
   return out;
 }
@@ -219,4 +267,4 @@ function pdnCsv(vysledek, meta) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { PDN_STAVY, pdnPopisky, pdnPodklad, pdnPohledRidiciho, pdnRucne, pdnZakaznici, pdnTelo, pdnStranaOck, pdnStranaProj, pdnNazevSouboru, pdnCsv };
+  module.exports = { PDN_STAVY, pdnPopisky, pdnPodklad, pdnPlatby, pdnZpracovatelZeZamku, pdnVypracoval, pdnPohledRidiciho, pdnRucne, pdnZakaznici, pdnTelo, pdnStranaOck, pdnStranaProj, pdnNazevSouboru, pdnCsv };

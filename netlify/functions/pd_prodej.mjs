@@ -34,7 +34,8 @@ import {
   pdPristup, pdNastaveno, pdRezim, pdZavolej, PdChyba, pdStropCerstvych, pdZapisPovolen, PD_ZAPIS_VYPNUTY, PD_DEAL_MAX, PD_CACHE_ULOZISTE,
 } from '../lib/pipedrive.mjs';
 import { POLE_DEALU, pdHodnota } from '../lib/pd_mapa.mjs';
-import { pdZamyslenyZapis, pdFazeKonfigurace } from '../lib/pd_prevod.mjs';
+import { pdZamyslenyZapis, pdFazeKonfigurace, pdDnesPraha } from '../lib/pd_prevod.mjs';
+import { pdDohledej } from '../lib/pd_dohledani.mjs';
 import { pdDealPatriZakazce } from '../lib/pd_overeni.mjs';
 import { pdWebhookOdkaz } from '../lib/pd_webhook.mjs';
 import { pdRejstrikZapis, pdProtokol } from '../lib/pd_vazba.mjs';
@@ -180,7 +181,9 @@ async function zpracuj(req, relace, s, soubor, akce, otiskKlienta, prevzit, zdro
     dealData = await zavolej('/api/v2/deals/' + Number(deal));
     if (!dealData || typeof dealData !== 'object') throw new PdChyba('Pipedrive deal zakázky nezná.', 404);
     const u = await zavolej('/api/v1/users');
-    uzivatele = Array.isArray(u) ? u.map((x) => ({ id: x.id, name: String(x.name || '') || ('uživatel Pipedrive ' + x.id), email: x.email })) : undefined;
+    /* PD2 U6 (a PV N1): uživatel Pipedrive jen aktivní (active_flag). */
+    uzivatele = Array.isArray(u) ? u.filter((x) => x && x.active_flag !== false)
+      .map((x) => ({ id: x.id, name: String(x.name || '') || ('uživatel Pipedrive ' + x.id), email: x.email })) : undefined;
     const f = await zavolej('/api/v2/stages', { dotaz: { limit: 500 } });
     fazeSeznam = Array.isArray(f) ? f.map((x) => ({ id: x.id, name: x.name, pipeline_id: x.pipeline_id })) : [];
   } catch (e) {
@@ -190,7 +193,11 @@ async function zpracuj(req, relace, s, soubor, akce, otiskKlienta, prevzit, zdro
 
   const podklad = pdProdejStrany(ulozena, G, JEKLY);
   if (podklad.chyba) return json({ ok: false, chyba: podklad.chyba }, 409);
-  const v = pdZamyslenyZapis(POLE_DEALU, podklad.strany, pole, { uzivatele, mena: 'CZK', deal: dealData },
+  /* PD2: osoby / organizace pro pole „jen do prázdného“ (souběžně, pod lhůtou;
+   * při zápisu z dealu čteného ve výhradní sekci — ID jdou do PATCH a otisku). */
+  const dohl = await pdDohledej(POLE_DEALU, podklad.strany, pole, dealData, (c, o) => zavolej(c, o));
+  const v = pdZamyslenyZapis(POLE_DEALU, podklad.strany, pole,
+    { uzivatele, mena: 'CZK', deal: dealData, dohledano: dohl.dohledano, dnes: pdDnesPraha() },
     { faze: 'prodano', fazeSeznam, fazeKonfigurace: pdFazeKonfigurace() }, zdroje);
   const zmeny = v.patch ? pdProdejZmeny(v.patch, dealData) : { patch: null, klice: [], hodnota: false, faze: false };
   if (zmeny.patch && zmeny.patch.status !== undefined) delete zmeny.patch.status;   // #545: stav nikdy (pojistka)
@@ -242,8 +249,11 @@ async function zpracuj(req, relace, s, soubor, akce, otiskKlienta, prevzit, zdro
     }
   }
   const veta = 'Zápis prodeje do dealu ' + deal + ' (varianta ' + String((typeof G.variantaCislo === 'function' ? G.variantaCislo(ulozena, prod.v) : variantaId) || '')
-    + '): ' + (zapsanoNazvy.length ? 'zapsáno — ' + zapsanoNazvy.join(', ') : 'deal už měl všechny hodnoty, nic se neměnilo')
-    + (prevzetiOd ? '; deal PŘEVZAT od nabídky ' + prevzetiOd + (cizi ? '' : ' (dokončeno po nepotvrzeném pokusu)') : '');
+    + '): '
+    /* PD2: převzetí PŘED výčtem polí — protokol drží 600 znaků a dlouhý výčet
+     * (víc zapsaných polí) by větu o převzetí uřízl. */
+    + (prevzetiOd ? 'deal PŘEVZAT od nabídky ' + prevzetiOd + (cizi ? '' : ' (dokončeno po nepotvrzeném pokusu)') + '; ' : '')
+    + (zapsanoNazvy.length ? 'zapsáno — ' + zapsanoNazvy.join(', ') : 'deal už měl všechny hodnoty, nic se neměnilo');
   const razitko = await zaznamenej('zapsano', '', veta);
   return json({ ok: true, stav: 'zapsano', zapsano: zapsanoNazvy, prevzato: !!prevzetiOd, razitko, varovani });
 }

@@ -305,9 +305,9 @@ console.log('\n===== ODPOVĚĎ INTEGRÁTORA 2. 11. 2026 (čistá logika, dohodnu
     && r('hlavniProjektant').hodnotaText === 'Ing. Jan Vzorový, ČKAIT 0001234', J(r('hlavniProjektant')));
   test('Platební kalendář SoD PROJ: pole v dohodnuté tabulce je, zapíše se', r('platebniKalendar').stav === 'zapise'
     && r('platebniKalendar').hodnotaText === KAL, J(r('platebniKalendar')));
-  test('Způsob fakturace PROJ: „po milnících jednotlivých činností…" → „Po milnících činností (plán plateb)"',
-    r('zpusobFakturace').stav === 'zapise' && r('zpusobFakturace').hodnotaText === 'Po milnících činností (plán plateb)',
-    J(r('zpusobFakturace')));
+  /* PD2 (J. V. 25. 11. 2026): u PROJ se Způsob fakturace nezapisuje — řádek ani není. */
+  test('PD2: Způsob fakturace PROJ se do Pipedrive nezapisuje (žádný řádek u čistě PROJ zakázky)',
+    !n1.radky.some(x => x.klic === 'zpusobFakturace'), J(r('zpusobFakturace')));
   const n2 = pdNanecisto(defPd, { proj: { hodnoty: { hlavniProjektant: 'x'.repeat(256) } } }, poleDohoda);
   const hp = n2.radky.find(x => x.klic === 'hlavniProjektant') || {};
   test('Hlavní projektant nad 255 znaků: nezapíše se, s důvodem', hp.stav === 'nelze' && /255/.test(hp.duvod || ''), J(hp));
