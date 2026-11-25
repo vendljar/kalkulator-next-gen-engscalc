@@ -1277,7 +1277,11 @@ function kryciPlatebniKalendar(zak, varianta, jekly) {
    * snímkem podmínek, který nese značku `pd2Tisk` (odeslaná po PD2). */
   const sn = varianta && varianta.zamek && varianta.zamek.zamceno ? ((varianta.data && varianta.data.kryci && varianta.data.kryci.zmrazenoPodminky) || null) : undefined;
   const pd2Tisk = sn === undefined || !!(sn && sn.pd2Tisk === 1);
-  return { stary, mesicne, splatky, vynechane, necitelne, hodnoty, podmEf: kryciPodmEfVarianty(varianta), pd2Tisk };
+  const kal = { stary, mesicne, splatky, vynechane, necitelne, hodnoty, podmEf: kryciPodmEfVarianty(varianta) };
+  /* Neviditelná vlastnost: data kalendáře (platbyOck v datech nabídky, otisky
+   * porovnání) zůstanou u staré odeslané nabídky bajt po bajtu stejná. */
+  Object.defineProperty(kal, 'pd2Tisk', { value: pd2Tisk, enumerable: false });
+  return kal;
 }
 
 /* SPLÁTKY OCK = 100 % (SEC-S5, rozhodnutí J. V. 26. 10. 2026 = A, #517).

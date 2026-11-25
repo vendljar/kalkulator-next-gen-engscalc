@@ -222,8 +222,9 @@ function nwBloky(data, L, o) {
     { text: ph.OPLASTENI_VETA, styl: 'modry' },
     { text: T('popisSkladba') }].filter(x => !nwPrazdna(x.text)),
     pohled: T('pohled'), foto: o.foto || '',
-    /* PD2 #771 V1: nadpis bez fotky skrýt jen tam, kde ho skryje i Word (data.odstavceTextPryc) */
-    bezPohledu: (data.odstavceTextPryc || []).indexOf('Pohled na objekt z ulice:') >= 0 });
+    /* PD2 #771 V1: nadpis bez fotky skrýt jen tam, kde ho skryje i Word (data.odstavceTextPryc);
+     * klíč jen když platí — blok staré nabídky zůstane beze změny */
+    ...((data.odstavceTextPryc || []).indexOf('Pohled na objekt z ulice:') >= 0 ? { bezPohledu: true } : {}) });
   bloky.push({ typ: 'zlom' });
 
   /* 3) A. TECHNICKÁ ČÁST */
