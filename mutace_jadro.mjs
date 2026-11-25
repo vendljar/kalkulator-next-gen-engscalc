@@ -445,7 +445,7 @@ const MUTACE = [
   { nazev: "ER N1: objednané sčítají engineering × ks [ER]", soubor: "vice_sachet.js",   // #767
     hledej: "      const jednou = VS_PRIPLATKY_JEDNOU.indexOf(String(p.key)) >= 0;\n",
     nahrad: "      const jednou = false;\n",
-    proc: "SoD by účtovala engineering × ks", sady: ["test_er_nova_kalkulace.js"] },
+    proc: "SoD by účtovala engineering × ks", sady: ["test_er_nova_kalkulace.js", "test_767_priplatky_vic_sachet.js"] },
   { nazev: "ER N1: objednané berou šachtu z vlastního cyklu [ER]", soubor: "vice_sachet.js",   // #767
     hledej: "    const v1 = vsPriplatekJednou(vo.sachty.map(t => t.vysl), zad, x.key);",
     nahrad: "    const v1 = vsPriplatekJednou(vo.sachty.map(t => t.vysl), [], x.key);",

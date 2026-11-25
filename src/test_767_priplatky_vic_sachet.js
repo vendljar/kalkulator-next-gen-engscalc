@@ -88,6 +88,23 @@ console.log('===== B2. příplatek s jinou sazbou v každé šachtě (dva řádk
     && o.sMarzi === a.sMarzi + 2 * b.sMarzi && o.naklad === a.naklad + 2 * b.naklad, [o, a.sMarzi, b.sMarzi]);
 }
 
+console.log('===== B3. engineering s jinou sazbou v každé šachtě — pořád jednou za variantu =====');
+{
+  const { v } = zakazka(['engineering'], ['engineering'], []);
+  const r = V.vypocetOckDat(v.data, J);
+  const b = r.sachty[1].vysl.priplatky.find(p => p.key === 'engineering');
+  b.cena *= 2; b.sMarzi *= 2; b.naklad *= 2;
+  const a = r.sachty[0].vysl.priplatky.find(p => p.key === 'engineering');
+  const vyb = V.vsPriplatkyVyber(r, v.data.ock).filter(x => x.key === 'engineering');
+  test('výběr: engineering jediný řádek s hodnotou šachty A', vyb.length === 1 && vyb[0].radek.sMarzi === a.sMarzi, vyb.map(x => [x.klic, x.radek.sMarzi]));
+  const puvodni = global.vypocetZ;
+  global.vypocetZ = () => r;
+  let ob;
+  try { const vz = kop(v); vz.zamek = { zamceno: true }; ob = O.objNabidnute(vz, J); } finally { global.vypocetZ = puvodni; }
+  const o = (ob || []).find(x => x.key === 'engineering');
+  test('objednané: engineering jednou (šachta A), ne součet sazeb', !!o && o.sMarzi === a.sMarzi, [o, a.sMarzi]);
+}
+
 console.log('===== C. přechodové plechy rozdělené mezi šachty =====');
 {
   const { zak, v } = zakazka(['prechMat'], ['prechMont'], []);
