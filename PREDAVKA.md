@@ -90,8 +90,8 @@ Stav 25. 11. 2026 15:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74
 - #753: R6 `zipPrecti` (skrytá položka, počty, lokální hlavička), R9 BOM kdekoli v úvodu, R10 dekodér selže = vada.
 - #754: `docxVlastnostiAutor` — `dc:creator`, `cp:lastModifiedBy` = „ENGINEERS CZ s.r.o.“ (J. V. 25. 11.).
 - #756: kontrola `rucniPolozkaPomer` (varování; pravidel 56), cena ani tisk beze změny.
-- `src/test_g1_uklid.js` 27/0 (pojistka 15 FAIL), mutace `[G1]` 14/14; kolo nad 8800beb7 VŠE ZELENÉ, S3 SHODA 390/390; porovnání: `podklady/porovnani/ocekavane_g1_2026-11-25.txt`.
-- Další: revize Fable → koordinace (sloučení, přepis „G1“ na číslo verze).
+- Revize Fable SLOUČIT; F1, F2, F6 opraveny. `src/test_g1_uklid.js` 35/0, mutace `[G1]` 18/18; porovnání: `podklady/porovnani/ocekavane_g1_2026-11-25.txt`.
+- Další: koordinace (sloučení, přepis „G1“ na číslo verze; návrhy F3, F4, F5, F7).
 
 ## Čeká na J. V.
 

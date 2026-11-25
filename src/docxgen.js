@@ -66,6 +66,20 @@ async function zipRozbal(komprimovana, zbyva, zprava) {
 /* STROP JEDNÉ XML ČÁSTI (B272, audit 20. 11. 2026): volby.xmlCastMax (kontrola
  * šablony, sablona_obsah.js SABLONA_XML_CAST_MAX) zastaví rozbalení položky
  * .xml / .rels nad strop hned — ne až po rozbalení celých 64 MB. */
+function zipStejneBajty(u8, a, na, b, nb) {
+  if (na !== nb) return false;
+  for (let i = 0; i < na; i++) if (u8[a + i] !== u8[b + i]) return false;
+  return true;
+}
+/* Úsek [od, eocd) je prázdný, nebo přesně konec adresáře ZIP64 (PK\x06\x06,
+ * délka = 12 + uint64 na +4) a za ním lokátor ZIP64 (PK\x06\x07, 20 B). */
+function zipMezeraZip64(u8, dv, od, eocd) {
+  if (od === eocd) return true;
+  if (od + 56 + 20 > eocd || dv.getUint32(od, true) !== 0x06064b50) return false;
+  const delka = 12 + dv.getUint32(od + 4, true) + dv.getUint32(od + 8, true) * 4294967296;
+  const lok = od + delka;
+  return lok + 20 === eocd && dv.getUint32(lok, true) === 0x07064b50;
+}
 async function zipPrecti(u8, volby) {
   const xmlMax = volby && volby.xmlCastMax > 0 ? volby.xmlCastMax : 0;
   const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
@@ -105,7 +119,9 @@ async function zipPrecti(u8, volby) {
     const lN = dv.getUint16(lokalOff + 26, true), lE = dv.getUint16(lokalOff + 28, true);
     /* R6: jméno v lokální hlavičce = jméno v adresáři (programy, které čtou
      * lokální hlavičky, by jinak rozbalily jiné jméno, třeba ../x.xml). */
-    if (lokalOff + 30 + lN > u8.length || dekoder.decode(u8.subarray(lokalOff + 30, lokalOff + 30 + lN)) !== nazev)
+    /* Revize G1 F2: porovnávají se bajty, ne dekódovaný text (dva různé
+     * neplatné bajty UTF-8 by se oba dekódovaly na U+FFFD a prošly). */
+    if (lokalOff + 30 + lN > u8.length || !zipStejneBajty(u8, lokalOff + 30, lN, off + 46, delkaNazvu))
       throw new Error('Jméno položky v lokální hlavičce ZIP nesouhlasí s adresářem (' + nazev + ').');
     const dataZac = lokalOff + 30 + lN + lE;
     const komprimovana = u8.subarray(dataZac, dataZac + velKomp);
@@ -130,6 +146,11 @@ async function zipPrecti(u8, volby) {
    * v koncovém záznamu o 1 menší skryl další položku (druhý document.xml),
    * kterou Python zipfile i unzip vidí, kontrola ne. */
   if (off !== cdZac + cdVel) throw new Error('ZIP adresář má víc položek, než udává jeho konec (skrytá položka).');
+  /* Revize G1 F1: adresář musí končit těsně před koncovým záznamem (tam ho
+   * hledají Python zipfile i unzip). Mezi nimi smí být jen záznamy ZIP64
+   * (konec adresáře ZIP64 + lokátor), které píše např. `zip` ze vstupu. */
+  if (!zipMezeraZip64(u8, dv, cdZac + cdVel, eocd))
+    throw new Error('Mezi ZIP adresářem a jeho koncem jsou cizí data (podvržený adresář).');
   /* Další věrohodný konec = nejednoznačný archiv (#395) — kromě podpisu
    * uvnitř dat položky (obrázek), který žádný program za konec nebere (R1). */
   if (kandidati.slice(1).some(i => !rozsahy.some(([a, b]) => i >= a && i + 4 <= b)))

@@ -23,8 +23,11 @@ Nad integrací `9776c346`. **Cenu kalkulací ani text dokumentů nemění**; jed
 - **#756 — kontrola „Ruční položka u ručně přepsaného řádku Hrubé OCK“** (`rucniPolozkaPomer`, varování, Kalkulace OCK):
   ruční položka Spojovacího materiálu / Lakování (jen z importu) bere cenu z poměru řádku Hrubé OCK; je-li ten řádek
   ručně přepsaný, kontrola na to upozorní. Cena ani tisk beze změny. Pravidel je 56.
-- Testy: `src/test_g1_uklid.js` 27/0 (pojistka: nad kódem 9776c346 15 FAIL); mutace `[G1]` 14/14, `[SA]` 23/23 chycených.
-  Kolo `--bez-mutaci --proti origin/claude/integrace-16-10` nad 8800beb7: VŠE ZELENÉ (551/0, hodiny 449/0, statické 12/12, S3 SHODA 390/390).
+- Revize poradcem Fable (verdikt SLOUČIT): F1 adresář musí končit těsně před koncovým záznamem (mezi nimi smí být jen
+  záznamy ZIP64) — jinak cizí adresář vidí Python i unzip, kontrola ne; F2 jméno lokální hlavičky se porovnává po bajtech
+  (dva neplatné bajty UTF-8 se dekódovaly na totéž U+FFFD); F6 testy DEFLATE, data descriptor, komentář, bajty za koncem,
+  ZIP64, UTF-32 LE s BOM a přepis ceny řádku. F3, F4, F5, F7 návrhy pro koordinaci (zpráva).
+- Testy: `src/test_g1_uklid.js` 35/0 (pojistka: nad 9776c346 15 FAIL, nad opravou bez F1/F2 2 FAIL); mutace `[G1]` 18/18, `[SA]` 23/23.
   Porovnání sestavení čte jen `word/document.xml` — vlastnosti souboru nevidí (`podklady/porovnani/ocekavane_g1_2026-11-25.txt`).
 
 ## v25.11.2 — K56-D: doplnění porovnání sestavení (jen nástroje kola), větev claude/k56-porovnani

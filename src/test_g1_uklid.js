@@ -55,10 +55,64 @@ const CT = '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.o
     test('A R6 lokální hlavička bez podpisu → odmítnuto', await odmitne(bezPodpisu, /lokální hlavička/));
   }
 
+  /* ---------- A2) revize Fable F1, F2 a kladné případy (F6) ---------- */
+  {
+    const zlib = require('zlib');
+    /* Vlastní zápis ZIPu: DEFLATE, data descriptor (bit 3), komentář, bajty za koncem, ZIP64 záznamy. */
+    const zip = (pol, o) => {
+      o = o || {};
+      const ven = [], cd = []; let off = 0;
+      const u16 = v => [v & 255, (v >> 8) & 255], u32 = v => [v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >>> 24) & 255];
+      for (const p of pol) {
+        const jm = Array.from(enc.encode(p.nazev)), data = enc.encode(p.text);
+        const crc = crc32(data), komp = p.deflate ? Array.from(zlib.deflateRawSync(data)) : Array.from(data);
+        const fl = 0x800 | (p.dd ? 8 : 0), met = p.deflate ? 8 : 0;
+        const hl = [...u32(0x04034b50), ...u16(20), ...u16(fl), ...u16(met), 0, 0, 0, 0,
+          ...u32(p.dd ? 0 : crc), ...u32(p.dd ? 0 : komp.length), ...u32(p.dd ? 0 : data.length), ...u16(jm.length), 0, 0, ...jm, ...komp,
+          ...(p.dd ? [...u32(0x08074b50), ...u32(crc), ...u32(komp.length), ...u32(data.length)] : [])];
+        cd.push([...u32(0x02014b50), ...u16(20), ...u16(20), ...u16(fl), ...u16(met), 0, 0, 0, 0, ...u32(crc), ...u32(komp.length),
+          ...u32(data.length), ...u16(jm.length), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...u32(off), ...jm]);   // extra, komentář, disk, int. a ext. atributy
+        ven.push(...hl); off += hl.length;
+      }
+      const cdZac = off, cdB = cd.flat();
+      ven.push(...cdB);
+      if (o.zip64) {
+        const z = [...u32(0x06064b50), ...u32(44), 0, 0, 0, 0, ...u16(45), ...u16(45), ...u32(0), ...u32(0),
+          ...u32(pol.length), 0, 0, 0, 0, ...u32(pol.length), 0, 0, 0, 0, ...u32(cdB.length), 0, 0, 0, 0, ...u32(cdZac), 0, 0, 0, 0];
+        const lok = [...u32(0x07064b50), ...u32(0), ...u32(cdZac + cdB.length), 0, 0, 0, 0, ...u32(1)];
+        ven.push(...z, ...lok);
+      }
+      const kom = Array.from(enc.encode(o.komentar || ''));
+      ven.push(...u32(0x06054b50), 0, 0, 0, 0, ...u16(pol.length), ...u16(pol.length), ...u32(cdB.length), ...u32(cdZac), ...u16(kom.length), ...kom);
+      if (o.za) ven.push(...o.za);
+      return new Uint8Array(ven);
+    };
+    const DVE = [{ nazev: '[Content_Types].xml', text: CT }, { nazev: 'word/document.xml', text: '<w:document/>' }];
+    let v;
+    const cte = async (u8, n) => { try { const p = await zipPrecti(u8); return p.length === n && dec.decode(p[1].data) === '<w:document/>'; } catch (e) { return e.message; } };
+    test('A2 F6 DEFLATE se přečte', (v = await cte(zip(DVE.map(p => Object.assign({ deflate: true }, p))), 2)) === true, v);
+    test('A2 F6 data descriptor (bit 3) se přečte', (v = await cte(zip(DVE.map(p => Object.assign({ deflate: true, dd: true }, p))), 2)) === true, v);
+    test('A2 F6 komentář archivu a bajty za koncem se přečtou', (v = await cte(zip(DVE, { komentar: 'vyrobeno', za: [1, 2, 3] }), 2)) === true, v);
+    test('A2 F1 záznamy ZIP64 mezi adresářem a koncem (zip ze vstupu) se přečtou', (v = await cte(zip(DVE, { zip64: true }), 2)) === true, v);
+    /* F1: [lokál A][lokál B][adresář A][adresář B][konec → jen adresář A] — Python i unzip čtou B */
+    const tri = await bajty(zipZapis([{ nazev: '[Content_Types].xml', data: enc.encode(CT) }, { nazev: 'word/document.xml', data: enc.encode(POLE) }]));
+    const e2 = eocdOff(tri), dv = new DataView(tri.buffer);
+    const cdA = 46 + dv.getUint16(dv.getUint32(e2 + 16, true) + 28, true);
+    const mezera = new Uint8Array(tri); u16le(mezera, e2 + 8, 1); u16le(mezera, e2 + 10, 1);
+    mezera[e2 + 12] = cdA & 255; mezera[e2 + 13] = cdA >> 8; mezera[e2 + 14] = 0; mezera[e2 + 15] = 0;
+    test('A2 F1 cizí adresář mezi adresářem a koncem → odmítnuto', await odmitne(mezera, /cizí data/));
+    /* F2: jména stejné délky s různými neplatnými bajty UTF-8 (obě → U+FFFD) */
+    const f2 = await bajty(zipZapis([{ nazev: 'word/a.xml', data: enc.encode('<a/>') }]));
+    const t = dec.decode(f2), i1 = t.indexOf('word/a.xml'), i2 = t.indexOf('word/a.xml', i1 + 1);
+    const neplatne = new Uint8Array(f2); neplatne[i1 + 5] = 0xFE; neplatne[i2 + 5] = 0xFF;
+    test('A2 F2 jména liší se jen neplatným bajtem → odmítnuto', await odmitne(neplatne, /lokální hlavičce/));
+  }
+
   /* ---------- B) R9 ---------- */
   {
     const t = '<w:hdr/>';
     test('B R9 UTF-32 BE s BOM je XML', sablonaJeXmlBajty(utf32be(t, true)) === true);
+    test('B R9 UTF-32 LE s BOM je XML', sablonaJeXmlBajty(new Uint8Array([0xFF, 0xFE, 0, 0, 0x3C, 0, 0, 0])) === true);
     test('B R9 dvojí BOM UTF-8 je XML', sablonaJeXmlBajty(new Uint8Array([0xEF, 0xBB, 0xBF, 0xEF, 0xBB, 0xBF, 0x3C])) === true);
     test('B R9 BOM UTF-8 + BOM UTF-16 LE je XML', sablonaJeXmlBajty(new Uint8Array([0xEF, 0xBB, 0xBF, 0xFF, 0xFE, 0x3C, 0])) === true);
     test('B R9 obrázek (PNG) dál není XML', sablonaJeXmlBajty(new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A])) === false);
@@ -132,6 +186,9 @@ const CT = '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.o
     const lak = zakazka({ lakovani: [{ nazev: 'Lak navíc', mnozstvi: 2, cena: 500 }] }, { mnozstviPrepis: { 'LAKOVÁNÍ (ŠACHTA, PLECHY, ZASKLENÍ, OPLECHOVÁNÍ)': 5 } });
     const nl = nalez(lak.v);
     test('E #756 lakování: přepsaný řádek LAKOVÁNÍ → varování', nl && /„Lak navíc"/.test(nl.text) && /LAKOVÁNÍ/.test(nl.text), nl);
+    const cenaPr = zakazka(RUC, { cenyPrepis: { 'SPOJOVACÍ MATERIÁL': 1 } });
+    const rsc = vypocetZ(cenaPr.v, J).sekce.hrubaOck.find(x => x.origNazev === 'SPOJOVACÍ MATERIÁL');
+    test('E #756 (F6) přepis jednotkové ceny řádku → varování', rsc && rsc.cenaPrepsana && !rsc.prepsano && !!nalez(cenaPr.v), rsc && [rsc.prepsano, rsc.cenaPrepsana]);
     const trvala = zakazka({ spojovaci: [{ nazev: 'Trvalá', mnozstvi: 1, cena: 50, kid: 'k9' }] }, { mnozstviPrepis: { 'SPOJOVACÍ MATERIÁL': 3 } });
     test('E #756 trvalá položka z ceníku (kid) → bez varování', !nalez(trvala.v));
     const jinaSekce = zakazka({ hrubaOck: [{ nazev: 'Výztuha', mnozstvi: 1, cena: 100 }] }, { mnozstviPrepis: { 'SPOJOVACÍ MATERIÁL': 3 } });
