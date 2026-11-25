@@ -1,6 +1,67 @@
 /* K56 — #733 lokálně: kalkulace z webhooku Pipedrive vs. Nová zakázka, nad stromem KOREN
  * (main nebo test): skutečné serverové funkce nad paměťovým úložištěm, simulátor PD, dist z KOREN.
- * Vypíše JSON: snímek Nové zakázky, snímek kalkulace z odkazu a cenové symboly nabídky obou. */
+ * Vypíše JSON: snímek Nové zakázky, snímek kalkulace z odkazu a cenové symboly nabídky obou.
+ * K56-D (25. 11. 2026, svěřené K56-5): snímek nese i Kontaktní osobu zakázky (#729) — jen jméno
+ * (text bez e-mailu a telefonu) a příznaky „má e-mail“ / „má telefon“ / „= jméno osoby dealu“.
+ *
+ * Použití:
+ *   KOREN=<strom s dist> node nastroje/porovnani_pd_webhook.mjs > a.json     (prohlížeč; NE souběžně)
+ *   node nastroje/porovnani_pd_webhook.mjs --porovnej <a.json> <b.json> [--popis-a T] [--popis-b T]
+ *        Porovná dva výstupy: v každé straně „kalkulace z webhooku = Nová zakázka“ po polích a strany
+ *        mezi sebou. Vypíše JEN pole a shodu (✓/✗), žádné částky ani jména.
+ *        Kód 0 = v B je kalkulace z webhooku ve všech cenových polích = Nová zakázka a kontakt bez
+ *        e-mailu a telefonu; 1 = není (vada #733 / #729 v B); 2 = chybné použití. */
+if (process.argv[2] === '--porovnej') porovnejVystupy(process.argv.slice(3));
+function porovnejVystupy(argv) {
+  const fs = createRequire(import.meta.url)('fs');
+  const soubory = [], popis = {};
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === '--popis-a' || argv[i] === '--popis-b') popis[argv[i].slice(-1)] = argv[++i];
+    else if (argv[i].startsWith('--')) { console.error('neznámá volba: ' + argv[i]); process.exit(2); }
+    else soubory.push(argv[i]);
+  }
+  if (soubory.length !== 2) { console.error('--porovnej chce dva soubory výstupu'); process.exit(2); }
+  let A, B;
+  try { [A, B] = soubory.map(f => JSON.parse(fs.readFileSync(f, 'utf8'))); } catch (e) { console.error('nečitelný výstup: ' + e.message); process.exit(2); }
+  if (![A, B].every(x => x && x.nova && x.wh)) { console.error('výstup nemá snímky nova/wh'); process.exit(2); }
+  /* Cenová pole (#733) a ostatní; symboly po klíčích (bez NAZEV_AKCE — ten je z dealu) */
+  const CENOVA = ['marze', 'pmarze', 'zabrany', 'hod', 'cena', 'symboly'];
+  const POLE = CENOVA.concat(['zadani', 'proj']);
+  const Z_DEALU = ['NAZEV_AKCE'];   // název akce je z dealu, ne z ceny (filtr symbolů ho chytí přes „KC“ v „AKCE“)
+  const sym = x => { const o = (x && typeof x === 'object') ? Object.assign({}, x) : { '(chyba)': String(x) }; Z_DEALU.forEach(k => delete o[k]); return o; };
+  const shodaPole = (x, y, k) => {
+    if (k !== 'symboly') return JSON.stringify(x[k]) === JSON.stringify(y[k]);
+    const a = sym(x[k]), b = sym(y[k]);
+    return Object.keys(Object.assign({}, a, b)).every(q => a[q] === b[q]);
+  };
+  const jineSym = (x, y) => { const a = sym(x.symboly), b = sym(y.symboly); return Object.keys(Object.assign({}, a, b)).filter(q => a[q] !== b[q]).sort(); };
+  const z = c => c ? '✓' : '✗';
+  const r = [];
+  r.push('POROVNÁNÍ KALKULACE Z WEBHOOKU (#733, #729) — jen pole a shoda, bez částek');
+  r.push('  A = ' + (popis.a || soubory[0]) + '   B = ' + (popis.b || soubory[1]));
+  r.push('');
+  r.push('  pole                       A: webhook = Nová   B: webhook = Nová   webhook A = B');
+  const radek = (jm, a, b, ab) => r.push('  ' + jm.padEnd(27) + String(a).padEnd(20) + String(b).padEnd(20) + ab);
+  radek('webhook (stav, akce)', A.webhook && A.webhook.join(' '), B.webhook && B.webhook.join(' '), z(JSON.stringify(A.webhook) === JSON.stringify(B.webhook)));
+  POLE.forEach(k => radek(k + (CENOVA.includes(k) ? ' (cena)' : ''), z(shodaPole(A.wh, A.nova, k)), z(shodaPole(B.wh, B.nova, k)), z(shodaPole(A.wh, B.wh, k))));
+  const kont = x => x.wh && x.wh.kontakt || {};
+  radek('kontakt: má e-mail', kont(A).maEmail ? 'ano ✗' : 'ne ✓', kont(B).maEmail ? 'ano ✗' : 'ne ✓', z(kont(A).maEmail === kont(B).maEmail));
+  radek('kontakt: má telefon', kont(A).maTelefon ? 'ano ✗' : 'ne ✓', kont(B).maTelefon ? 'ano ✗' : 'ne ✓', z(kont(A).maTelefon === kont(B).maTelefon));
+  radek('kontakt = jméno osoby', z(kont(A).jeJmenoOsoby), z(kont(B).jeJmenoOsoby), z(kont(A).jmeno === kont(B).jmeno));
+  radek('otevřeno jen ke čtení', A.wh.cteni ? 'ano' : 'ne', B.wh.cteni ? 'ano' : 'ne', z(A.wh.cteni === B.wh.cteni));
+  radek('chyby stránky', (A.chyby || []).length, (B.chyby || []).length, '');
+  const ja = jineSym(A.wh, A.nova), jb = jineSym(B.wh, B.nova);
+  if (ja.length || jb.length) {
+    r.push('');
+    if (ja.length) r.push('  A: symboly webhook ≠ Nová: ' + ja.join(', '));
+    if (jb.length) r.push('  B: symboly webhook ≠ Nová: ' + jb.join(', '));
+  }
+  const vadaB = CENOVA.some(k => !shodaPole(B.wh, B.nova, k)) || kont(B).maEmail || kont(B).maTelefon || !(B.webhook && B.webhook[0] === 200);
+  r.push('');
+  r.push('Výsledek B: ' + (vadaB ? 'VADA — kalkulace z webhooku není Nová zakázka (#733) nebo kontakt nese e-mail/telefon (#729)' : 'kalkulace z webhooku = Nová zakázka, kontakt jen jméno'));
+  console.log(r.join('\n'));
+  process.exit(vadaB ? 1 : 0);
+}
 const KOREN = require_koren();
 function require_koren() { const k = process.env.KOREN || process.cwd(); return k.replace(/\/$/, ""); }
 process.env.TAJEMSTVI_RELACE = 'zkusebni-tajemstvi-pro-k56-733';
@@ -59,12 +120,20 @@ await page.evaluate(async () => { prepniTab('cenik'); set('C.marze', 0.3); set('
   set('C.priplatky.zabranyPadKc', 777); await onlineZverejni('pokus'); });
 await page.waitForTimeout(1500);
 /* Snímek: marže, cena dle nabídky, cena nabídky OCK a cenové symboly nabídky (CZ). */
-const snimek = () => page.evaluate(() => { const v = aktivniVarianta(ZAK), d = v.data; let cena = null, sym = {};
+const snimekStrana = () => page.evaluate(() => { const v = aktivniVarianta(ZAK), d = v.data; let cena = null, sym = {};
   try { const c = cenaNabidkyOck(vypocetAkt(), d.sleva, d.zaokrouhleni); cena = c && (c.cenaKc != null ? c.cenaKc : c); } catch (e) { cena = 'CHYBA ' + e.message; }
   try { const ph = nabidkaData(ZAK, v, JEKLY, 'cz').placeholders; Object.keys(ph).filter(k => /CENA|KC|CELKEM|SUMA|MARZ/i.test(k)).sort().forEach(k => { sym[k] = ph[k]; }); } catch (e) { sym = 'CHYBA ' + e.message; }
   return { marze: d.cenik.marze, pmarze: d.proj && d.proj.cenik && d.proj.cenik.marze, zabrany: d.cenik.priplatky && d.cenik.priplatky.zabranyPadKc,
     hod: d.cenik.montazHodKc, cena: JSON.stringify(cena), symboly: sym, cteni: typeof zamekCteniJe === 'function' ? zamekCteniJe() : null,
-    zadani: JSON.stringify(d.ock.zadani), proj: JSON.stringify(d.proj) }; });
+    zadani: JSON.stringify(d.ock.zadani), proj: JSON.stringify(d.proj), kontakt: ZAK.kontakt }; });
+/* #729: Kontaktní osoba — do snímku jde jen jméno (části textu bez e-mailu a telefonu) a příznaky
+ * „má e-mail“ / „má telefon“; e-mail ani telefon se nikam nezapíšou. */
+function kontaktSnimek(t) {
+  const s = String(t == null ? '' : t), TEL = /\+?\d{3}\s?\d{3}\s?\d{3}/;
+  return { jmeno: s.split(',').map(x => x.trim()).filter(x => x && !/@/.test(x) && !TEL.test(x)).join(', '),
+    maEmail: /@/.test(s), maTelefon: TEL.test(s) };
+}
+const snimek = async () => { const x = await snimekStrana(); x.kontakt = kontaktSnimek(x.kontakt); return x; };
 await page.evaluate(() => { window.potvrd = () => Promise.resolve(true); return novaZakazkaUI(); }); await page.waitForTimeout(500);
 const nova = await snimek();
 const d = SIM.pdSimStav().data.dealy.find((x) => x.status === 'open' && x.org_id && x.person_id && /^CN-\d+ /.test(x.title));
@@ -79,6 +148,9 @@ await page.waitForFunction(() => ONLINE_STAV.soubor && ONLINE_STAV.ja, null, { t
 await page.waitForTimeout(500);
 await page.evaluate(() => { window.__povol = true; render(); }); await page.waitForTimeout(800);
 const wh = await snimek();
+/* = jméno osoby dealu (simulátor), porovnané tady — jméno se jinam nevypisuje */
+const osobaDealu = (SIM.pdSimStav().data.osoby || []).find((o) => o.id === d.person_id) || {};
+if (wh.kontakt) wh.kontakt.jeJmenoOsoby = wh.kontakt.jmeno === [osobaDealu.first_name, osobaDealu.last_name].filter(Boolean).join(' ') && !wh.kontakt.maEmail && !wh.kontakt.maTelefon;
 const vysl = { koren: KOREN, webhook: [rw.status, j.akce], nova, wh, chyby };
 puvLog(JSON.stringify(vysl));
 await b.close(); server.close(); process.exit(0);
