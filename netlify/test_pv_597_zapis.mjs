@@ -371,11 +371,16 @@ puvodniLog('\n===== 7. HODNOTA DEALU A PŘEVODY =====\n');
   const v7 = OBJ.prodStav(zk7).v;
   v7.data.kryci = v7.data.kryci || { hodnoty: {} }; v7.data.kryci.hodnoty = v7.data.kryci.hodnoty || {};
   v7.data.kryci.hodnoty.priplatkyNabidka = 'x'.repeat(300);
+  v7.data.kryci.hodnoty.objKopie1 = 'y'.repeat(300);
   v7.data.kryci.hodnoty.sodDphRezim = 'přenesená daňová povinnost (tuzemsko)';
   zapisZakazku(B.soubor, zk7);
   n = await prodej({ soubor: B.soubor, akce: 'nahled', ...podB }, cP);
   const rp = radek(n, 'priplatkyNabidka');
-  test('text nad 255 znaků (Příplatky v nabídce): nezkracuje se a nepošle, důvod', rp.stav === 'nelze' && /255/.test(rp.duvod) && rp.posle === false, rp);
+  /* #768: Příplatky v nabídce jsou Velký text — 300 znaků se pošle celé; mez 255 platí dál pro krátké pole. */
+  test('#768: Příplatky v nabídce (Velký text) nad 255 znaků se pošlou celé', rp.posle === true && rp.hodnota === 'x'.repeat(300), rp);
+  const rk = radek(n, 'kopie1');
+  test('text nad 255 znaků v krátkém poli (Faktury v kopii na 1): nezkracuje se a nepošle, důvod',
+    rk.stav === 'nelze' && /255/.test(rk.duvod) && rk.posle === false, rk);
   test('Sazba DPH: přenesená → „0 % – přenesená daňová povinnost“', /^0 %/.test(radek(n, 'sazbaDph').hodnotaText || ''), radek(n, 'sazbaDph'));
 }
 

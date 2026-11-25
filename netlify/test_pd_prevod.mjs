@@ -48,7 +48,7 @@ const VOLBY = {
 };
 /* Velké textové pole (`text`) tam, kde ho má účet; jinak první dovolený typ. */
 const VELKY_TEXT = ['adresaStavby', 'podminkyJine', 'terminJine', 'odchylky', 'cenaNezahrnuje', 'rozsahJine',
-  'platebniKalendar'];
+  'platebniKalendar', 'priplatkyNabidka'];
 const POLE = POLE_DEALU.map((d, i) => ({
   field_code: h(i + 1), field_name: d.nazev, is_custom_field: true, is_writable: true,
   field_type: VELKY_TEXT.includes(d.klic) ? 'text' : d.typ[0], options: VOLBY[d.klic] || null,
@@ -303,6 +303,16 @@ test('#512: kalendář v celém zápisu kombinované zakázky',
   const kratke = pdMapaZPoli(POLE.map((p) => p.field_name === 'Platební kalendář SoD PROJ' ? { ...p, field_type: 'varchar' } : p), POLE_DEALU);
   test('#512: kalendář v krátkém textu (255 znaků) se nespáruje',
     !kratke.mapa.platebniKalendar && kratke.typNesedi.some((x) => x.klic === 'platebniKalendar'));
+}
+{
+  /* #768: Příplatky v nabídce jen jako Velký text (výčet má i přes 800 znaků) — krátké pole hlásí typNesedi. */
+  test('#768: Příplatky v nabídce mají povolený jen typ text', J(DEF.priplatkyNabidka.typ) === '["text"]', J(DEF.priplatkyNabidka.typ));
+  const kratkeP = pdMapaZPoli(POLE.map((p) => p.field_name === 'Příplatky v nabídce' ? { ...p, field_type: 'varchar' } : p), POLE_DEALU);
+  test('#768: Příplatky v nabídce v krátkém textu (255 znaků) se nespárují → typNesedi',
+    !kratkeP.mapa.priplatkyNabidka && kratkeP.typNesedi.some((x) => x.klic === 'priplatkyNabidka'), J(kratkeP.typNesedi));
+  const velkeP = pdMapaZPoli(POLE.map((p) => p.field_name === 'Příplatky v nabídce' ? { ...p, field_type: 'text' } : p), POLE_DEALU);
+  test('#768: Příplatky v nabídce ve Velkém textu se spárují', !!velkeP.mapa.priplatkyNabidka
+    && !velkeP.typNesedi.some((x) => x.klic === 'priplatkyNabidka'));
 }
 {
   /* Text = planPdKalendar ze stejného dopočtu jako smlouva o dílo (src/plan_plateb.js). */

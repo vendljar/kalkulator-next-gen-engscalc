@@ -131,7 +131,9 @@ export const POLE_DEALU = [
    * projektant nemusí být uživatelem Pipedrive. Nad 255 znaků se nepošle
    * (důvod jako u ostatních krátkých textů). */
   D('nabidkuVypracoval', 'Nabídku vypracoval', 'uzivatel', { ock: 'dodZpracoval', proj: 'dodZpracoval' }, 'zapis'),
-  D('priplatkyNabidka', 'Příplatky v nabídce', 'text', { ock: 'priplatkyNabidka' }, 'zapis'),
+  /* #768: výčet příplatků má i přes 800 znaků → jen Velký text (jako platební
+   * kalendář); krátké pole (`varchar`, 255 znaků) přehled hlásí jako typNesedi. */
+  D('priplatkyNabidka', 'Příplatky v nabídce', 'text', { ock: 'priplatkyNabidka' }, 'zapis', { typ: ['text'] }),
   D('hlavniProjektant', 'Hlavní projektant', 'text', { proj: 'hlavniProjektant' }, 'zapis'),
   D('odpovednaOsoba', 'Odpovědná osoba za projekci', 'uzivatel', { proj: 'odpovednyEmail' }, 'zapis'),
   D('kontaktSmluvni', 'Kontakt – ve věcech smluvních', 'osoba',
@@ -513,7 +515,7 @@ export const PD_VOLBY_UCTU = {
 };
 /* Pole, která má účet jako Velký text (ostatní textová jsou krátký text). */
 const PD_VELKY_TEXT = ['adresaStavby', 'podminkyJine', 'terminJine', 'odchylky', 'cenaNezahrnuje', 'rozsahJine',
-  'platebniKalendar'];
+  'platebniKalendar', 'priplatkyNabidka'];
 /* Pole, která integrátor ještě nezaložil. Platební kalendář SoD PROJ je
  * založený (ověřeno čtením 2. 11. 2026) — dohodnutá pole má účet všechna. */
 export const PD_DOSUD_NEZALOZENA = ['dic'];   // DIČ organizace (K40c) — v účtu není; simulátor ho bez `vsechna` nemá
