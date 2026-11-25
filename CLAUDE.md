@@ -21,6 +21,8 @@ Evidence (úkoly, nálezy, otázky, rozhodnutí, dávky) je jen `roadmapa/roadma
 - `main` musí být předkem integrace. Kontrola: `git rev-list --count
   <integrace>..origin/main` je 0 (krok `staticke` jinak upozorní).
 - Nejvýš 4 souběžná sezení (limit účtu 5 h).
+- **Testovací sezení a poradce Fable se nikdy nearchivují** (J. V. 25. 11. 2026) —
+  používají se průběžně. Archivovat jde jen sezení hotové dávky a její revize.
 - U složitých a rizikových úkolů (výpočet ceny, bezpečnost, dokumenty) nejdřív
   poradce navrhne postup a před sloučením zreviduje rozdíl.
 - `test-draft` se už nepoužívá (stojí od 25. 10. 2026).
