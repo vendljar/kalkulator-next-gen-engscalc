@@ -10,6 +10,9 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
+| 25. 11. 2026 | Vlna G: #754 autor a „naposledy uložil“ ve vlastnostech generovaných Wordů = „ENGINEERS CZ s.r.o.“ (dávka G1); #631 revize S7 schválena; #636 souběh založení organizace přijat jako zbytková mez B226; #621 řádek slevy SoD varianta a) (hotovo dávkou SL). | #754, #631, #636, #621 |
+| 25. 11. 2026 | Posudek nabídky CN-432: vady tisku CN V1–V6 (nadpis fotky bez fotky, prázdný Tel:, rozpor lešení v bodu IV, číslování splátek a konečné %, záruka jako vlastní bod, poznámky k ceně jako seznam) do dávky PD2 (#771). Novinky 7–12 (platnost datem, příplatky s DPH, akceptační blok, souhrn, podmínka DPH 12 %, strana X z Y) nezavádět. | text nabídky CN, PD2 |
+| 25. 11. 2026 | Víc zákazníků (#598) na main zatím nespouštět. Dokončit připomínky (MD, PD2) a poslat na test; ve větší míře rozběhnout vlnu G (úklid). | #598, vlna G |
 | 25. 11. 2026 | PD2 doplněk: Informováno Backoffice / Technické odd. z krycího listu do dealu jen do prázdných polí. Starý plán plateb PROJ: vést jen nový plán — zrušit nastavení Firma „Způsob fakturace — projekce“, pole starého plánu v KL PROJ ponechat jen jako doklad u starých odeslaných nabídek; do Pipedrive u PROJ nezapisovat Způsob fakturace; milníky nového plánu přiřadit do Platba 1–8 podle typu, co nesedí, zůstane jen v textu Platebního kalendáře. | PD2, plán plateb PROJ |
 | 25. 11. 2026 | K58-I2: šachta bez opláštění má v nové kalkulaci (ER) plastové kotvy, cestovné a čištění opláštění = 0; staré kalkulace beze změny. Do dávky MD. | K58-I2, cena nových kalkulací |
 | 25. 11. 2026 | K58-I1: výstup ze zaměření se počítá tolikrát, kolik je kusů šachty (2 ks = 2×) — beze změny aplikace; engineering dál jednou za variantu. | K58-I1, ER |

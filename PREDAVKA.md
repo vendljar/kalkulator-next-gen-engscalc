@@ -11,7 +11,6 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `main` | 6c4bc80 | v11.11.1 | ostrý web; víc šachet vypnuto |
 | `test` | dcb1678 | v18.11.3 | = integrace |
 | `claude/integrace-16-10` (integrace) | dcb1678 | v18.11.3 | C9 #608 (v18.11.1), víc zákazníků VZ #598 E0–E6 (v18.11.2, vypínač výchozí VYP), S3 #611 porovnání sestavení (v18.11.3); `main` je předkem |
-| `claude/rychla-k40n1` | b4a9622 | — | rychlá cesta K40-N1 nad main 6c4bc80 (cherry-pick b4e2023) |
 | `claude/navrh-rezie` | e6c1020 | — | návrh režie vývoje (S1–S8) + rozhodnutí J. V. 18. 11.; kopie návrhu v `podklady/NAVRH_REZIE_2026-11-18.md` |
 | `claude/s7-podklady` | (tato dávka) | v18.11.4 | S7 startovní podklady #612, sloučeno s integrací dcb1678 |
 | `claude/s6s8-evidence` | (tato dávka) | v18.11.5 | S6 + S8 #613: jedna evidence, PREHLED.md, NOVINKY; nad integrací 9bd6dc8 |
@@ -21,13 +20,10 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/np-nahled` | (tato dávka) | v19.11.9 | NP: Kompletní náhled podkladů OCK ve vzhledu Wordu CN v17 (#681 prac.); nad 6092af3 |
 | `claude/on-online` | (tato dávka) | v19.11.8 | #ON kdo je online (Nastavení → Uživatelé) nad 042fcbc; verzi přečísluje koordinace |
 | `claude/d8-lhuty` | (tato dávka) | v19.11.7 | D8 #677 (pracovní) lhůty PROJ → termíny krycího listu; nad integrací 042fcbc; verzi přečísluje koordinace |
-| `claude/vz-f1` | (tato dávka) | v18.11.8 | VZ-F1 #659 opravy nálezů ruční zkoušky VZ; nad ec5bbac, sloučeno s integrací 41bbe99 |
 | `claude/rj-rozhodnuti` | (tato dávka) | v22.11.9 | RJ (#714, #715); v22.11.9 revize N1/N2/I3 (#717), sloučeno s 60086f7 |
 | `claude/jt-jazyk-tisku` | (tato dávka) | v22.11.6 | JT #713 prac.: jazyk specifikace OCK = Jazyk tisku; nad 05a496d |
 | `claude/pr-pripominky` | (tato dávka) | v22.11.5 | PR #707–#712 Připomínky z aplikace, sloučeno s integrací 6fa67af |
 | `claude/hn-harnessy` | (tato dávka) | v22.11.2 | HN zpevnění testů kola (#638, #644, #646, #647, #695) nad cda289e; aplikace beze změny; verzi přečísluje koordinace |
-| `claude/vzd-drobnosti` | (tato dávka) | v22.11.1 | VZD #673 #674 #665 #683 #635, sloučeno s integrací 885577e; viz CHANGELOG |
-| `claude/dos-drobnosti` | (tato dávka) | v21.11.4 | DOS #680 #690 #691 nad cda289e |
 | `claude/pg-tisk` | (tato dávka) | v19.11.10 | PG #684–#687 nad integrací 042fcbc; čísla a verzi přečísluje koordinace |
 | `claude/ds-sablony` | (tato dávka) | v21.11.3 | DS #648–#650 nad cda289e; verzi přečísluje koordinace |
 | `claude/op1-drobnosti` | (tato dávka) | v21.11.2 | OP1: PG-N1, #682, D3-N1, D3-N2 nad cda289e; kolo --bez-mutaci VŠE ZELENÉ, S3 SHODA 359/359, mutace [OP1] 9/9, [D3] 18/18, [NP] 16/16, [PG] 16/16; #692–#694 a verzi přečísluje koordinace |
@@ -53,14 +49,13 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 
 ZK #755 (v24.11.8, `claude/zk-zakaznici-ze-zakazek`): předávka dávky v `podklady/predavky/2026-11.md` (nahoře).
 
-Stav 24. 11. 2026 21:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74 % → doporučeno nové sezení; kokpit https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2):
-- **main** v24.11.7 (4e69c27, 25. 11. — test → main na pokyn J. V.; release v24.11.7 čeká na J. V.). **test** v24.11.7 (4e69c27). **integrace** v25.11.1 = UT, R3, DT, RP, ZK, ER, PO, TZ-1; Actions nad aa8f651 ZELENÉ 36/36.
-- **v24.11.7 pro test** (lokálně v pracovní kopii koordinace, NEpushnuto): test 6722ad9 + claude/rychla-PT-ZAB (7d1b3d1, #759 překlad zábradlí + výčet víc skupin můstků) + claude/rychla-K56-I2 (7ddb87f, #760 SoD a objednávka PROJ = kdo tiskne, CN snímek zámku). Postup: sloučit obě větve nad origin/test (konflikty jen přidané řádky — sjednotit), verze 24.11.7, kolo `--bez-mutaci --proti origin/test --ocekavane podklady/porovnani/ocekavane_pt-zab_2026-11-24.txt`, push do test, /api/zdravi, pak test sloučit do integrace.
+Stav 25. 11. 2026 15:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74 % → doporučeno nové sezení; kokpit https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2):
+- **main** v24.11.7 (4e69c27, tag a release vydány 25. 11.). **test** v25.11.1 (7144623). **integrace** v25.11.2 (K56-D) + podklady; počty commitů ukazuje kokpit.
 - **Kokpit:** vždy počty commitů main → test → integrace (J. V.).
-- **Další:** integrace v25.11.1 → test (pokyn); pak testovací sezení: PO na deal TEST, ZK naplnění, R1 RP Word na CN v18. PIPEDRIVE_ZAPIS na main vypnutý.
-- **ER** (claude/er-engineering-rezerva, 3f3162f, #757 engineering příplatek 1× za variantu, #758 rezerva v položkách + automat ATYP, #761 přepínače; jen nové kalkulace kalkVerze 2): opravy po revizi Fable (N1 engineering víc šachet, N3 server hlídá příznak, N5, N6) → dorevize (session_018mwHQEfyWwjwB8mdLvYCpJ). J. V.: N2 a N3 ano.
-- **ZK** (claude/zk-zakaznici-ze-zakazek, 62403a4, #755 naplnění zákazníků podle ARES): dorevize běží (session_018mwHQJYxTLw32SuMNrUtwJ). J. V.: R7, R9 a ostatní ponechat.
-- **PO** (claude/po-odeslani-pipedrive, #116): revize i dorevize Fable SLOUČIT, sloučeno s 0d8a95f jako v24.11.10; v integraci, TZ-1 = v25.11.1. J. V. založí pole „Datum nabídky“ (#763).
+- **MD** (`claude/md-mala-davka`, session_018mwHQK79SjnYBqnyzH8Q5t: #766–#770, #763, engineering v Příplatcích, K58-N1/N2/I2): finální kolo nad d27a980 běží; pak revize PORADCE FABLE → integrace → test (J. V. 25. 11.: dokončit připomínky a poslat na test) → testovací sezení zopakuje zápisy na deal 432/437.
+- **PD2** po MD: K53-N3, kontakty/podpisy/Informováno jen do prázdných polí, odchylky i PROJ, starý plán PROJ pryč (Platba 1–8), #752 PV N1–N6, #771 vady tisku CN V1–V6. Novinky CN 7–12 J. V. zamítl.
+- **G1** (`claude/g1-uklid`): úklid vlny G — #753, #754, #756. Víc zákazníků (#598) na main zatím ne (J. V. 25. 11.).
+- **Roadmapa:** rozpracované položky mají pole `bezi` (ikona ve vlnách); při spuštění / sloučení dávky doplnit / smazat.
 - **Fronta:** K56-D hotovo (`claude/k56-porovnani`, předávka v `podklady/predavky/2026-11.md`); doprava a přesun hmot OCK (PDF návrh u majitele); R1 RP Word na skutečných šablonách CN v18 před main (testovací sezení).
 - Sloučené dnes: PV, MT2, UT, R3, DT, K54-N1, RP — předávky v `podklady/predavky/2026-11.md`.
 - Sloučené dávky (SA, PD, CN, RA, LAK, JT, NN, PR, BZ, HN, RJ, VZD, MT) — oddíly přesunuty do `podklady/predavky/2026-11.md` (23. 11. 2026). Běží: PV (#734 + #597), RP (prototyp ručních položek, čeká na J. V.).
