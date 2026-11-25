@@ -892,14 +892,10 @@ test('sekce Podpis se jmenuje Ostatní a má obě „Informováno"',
   }));
 test('pole Dne se předvyplňuje dnešním datem (datum tisku)',
   await page.evaluate(() => {
-    // kryciDnesIso = den v pásmu prohlížeče; řádek „Dne" neodeslané nabídky
-    // = den tisku v Europe/Prague (DT #745, nabidkaDatum → zamekDenPraha).
-    // V kontejneru (UTC) se mezi 0 a 1 h SEČ (2 h SELČ) liší → porovnávat zvlášť.
-    const d = new Date();
-    const dva = n => String(n).padStart(2, '0');
-    const mistni = d.getFullYear() + '-' + dva(d.getMonth() + 1) + '-' + dva(d.getDate());
-    const praha = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Prague' }).format(d);
-    return kryciDnesIso() === mistni && zamekDenPraha() === praha
+    // kryciDnesIso (prefill „Dne") i řádek „Dne" neodeslané nabídky = den tisku
+    // v Europe/Prague (DT #745, MD-4 25. 11. 2026) — i v kontejneru v UTC.
+    const praha = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Prague' }).format(new Date());
+    return kryciDnesIso() === praha && zamekDenPraha() === praha
       && kryciData(ZAK, aktivniVarianta(ZAK), JEKLY, 'bo').sekce
            .some(s => s.radky.some(r => r[0] === 'Dne' && r[1] === praha));
   }));

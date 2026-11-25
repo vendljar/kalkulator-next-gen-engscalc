@@ -39,6 +39,22 @@ const hodiny = (cas, args) => spawnSync(process.execPath,
 const h = hodiny('2026-11-23T23:30:00Z', ['-e', 'process.stdout.write(new Date().toISOString().slice(0, 16) + "|" + new Date(Date.now()).toISOString().slice(0, 10) + "|" + new Date(0).toISOString().slice(0, 4))']);
 test('falešné hodiny: new Date(), Date.now a pevné datum', h.stdout === '2026-11-23T23:30|2026-11-23|1970', h.stdout + h.stderr);
 
+/* MD-4 (J. V. 25. 11. 2026): prefill pole „Dne" krycího listu (kryciDnesIso) = den v Europe/Prague,
+ * ne den prohlížeče. Prohlížeč v UTC ve 23:30 UTC (00:30 Praha) → pražský zítřek. */
+const kryciDen = (cas, tz) => spawnSync(process.execPath,
+  ['--import', './netlify/pomoc_falesne_hodiny.mjs', '-e',
+    'globalThis.zamekDenPraha = require("./src/zamek.js").zamekDenPraha;'
+    + 'process.stdout.write(require("./src/kryci.js").kryciDnesIso())'],
+  { cwd: KOREN, env: { ...process.env, KNG_FALESNE_HODINY: cas, TZ: tz }, encoding: 'utf8', timeout: 60000 });
+{
+  const z = kryciDen('2026-11-24T23:30:00Z', 'UTC');
+  test('MD-4: kryciDnesIso ve 23:30 UTC (prohlížeč v UTC) = pražský den 2026-11-25', z.stdout === '2026-11-25', z.stdout + z.stderr);
+  const l = kryciDen('2026-07-14T22:30:00Z', 'America/New_York');
+  test('MD-4: kryciDnesIso v létě 22:30 UTC (prohlížeč v New Yorku) = pražský den 2026-07-15', l.stdout === '2026-07-15', l.stdout + l.stderr);
+  const p = kryciDen('2026-11-24T11:00:00Z', 'Asia/Tokyo');
+  test('MD-4: kryciDnesIso v poledne UTC (prohlížeč v Tokiu) = 2026-11-24', p.stdout === '2026-11-24', p.stdout + p.stderr);
+}
+
 const SADY = ['test_bz_bezpecnost.mjs', 'test_cn_cislo_nabidky.mjs', 'test_nn_nizke.mjs', 'test_ra_rozhodnuti.mjs'];
 const CASY = [['zima 23:30 UTC (00:30 Praha)', '2026-11-23T23:30:00Z'],
   ['léto 22:30 UTC (00:30 Praha)', '2026-07-14T22:30:00Z'],

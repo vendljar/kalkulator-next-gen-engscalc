@@ -107,8 +107,11 @@ function kryciDphRezimVychozi(zak) {
 }
 
 /* Datum tisku pro předvyplnění pole „Dne" (20. 8. 2026). Formát YYYY-MM-DD,
- * protože pole je typu date; ruční přepis má přednost jako u všech prefillů. */
+ * protože pole je typu date; ruční přepis má přednost jako u všech prefillů.
+ * MD-4 (J. V. 25. 11. 2026): den v Europe/Prague (zamekDenPraha, jako datum
+ * nabídky DT #745), ne den v pásmu prohlížeče. Bez zamek.js den prohlížeče. */
 function kryciDnesIso() {
+  if (typeof zamekDenPraha === 'function') return zamekDenPraha();
   const d = new Date();
   const dva = n => String(n).padStart(2, '0');
   return d.getFullYear() + '-' + dva(d.getMonth() + 1) + '-' + dva(d.getDate());
