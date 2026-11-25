@@ -310,8 +310,15 @@ Ceny se do STAV nepíší; porovnání čísel main × test dělá porovnání s
 | S4 rezerva 10 % | OK | 1 × OK | OK | mimo nabídku OK | v ceně položky OK |
 | S5 PROJ | marže PROJ z ceníku, uloženo OK | — | — | — | — |
 
-- **K58-I1** (otázka pro J. V., možný dopad na cenu u víc kusů): u nové kalkulace s 2 kusy šachty je „VÝSTUP ZE ZAMĚŘENÍ
+- **K58-I1** — ✅ **uzavřeno, J. V. 25. 11.: výstup ze zaměření se počítá tolikrát, kolik je kusů** (2 × u 2 ks = správně;
+  sadu S3 upravit na „× ks“). Původní otázka: u nové kalkulace s 2 kusy šachty je „VÝSTUP ZE ZAMĚŘENÍ
   PRO ZÁKAZNÍKA“ v Režii 2 × (za kus), engineering je podle #757 jednou za variantu. CHANGELOG #761 říká „řádek vždy
   1 × C.vystupZamereniKc“ — je výstup ze zaměření za kus, nebo jednou za variantu? Doporučení: potvrdit J. V.; pokud jednou,
   dávka ER doplněk + test s pojistkou.
-- Nepokryto v prvním běhu: šachta bez opláštění (statika opláštění se nemá objevit) — doplnit S6.
+- **S6 šachta bez opláštění** (TEST OPR 9876, všechny stěny „bez opláštění“): řádek STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ
+  **chybí — OK** (#761), STATICKÉ POSOUZENÍ šachty zůstává, uloženo 200.
+- **K58-I2** (otázka pro J. V., dopad na cenu u šachet bez opláštění): i když jsou všechny stěny „bez opláštění“, sekce
+  Opláštění dál počítá 3 položky po 1 ×: PLASTOVÉ KOTVY, CESTOVNÍ NÁKLADY, ČIŠTĚNÍ. Nesouvisí s ER (pevné položky sekce).
+  Jsou to paušály, které patří ke každé šachtě, nebo se bez opláštění nemají počítat? Doporučení: ověřit v ceníku / u J. V.;
+  pokud nemají, nález s dopadem na cenu a oprava v jádře (+ test s pojistkou).
+- Sada po úpravě S3 a s S6: **19 / 19 OK** (S3 výstup × ks dle J. V.).
