@@ -136,6 +136,64 @@ function pripominkaSnimekZkontroluj(obrazek) {
   return { ok: true, obrazek: s };
 }
 
+/* ---------- značky na snímku (#781, J. V. 25. 11. 2026) ----------
+ * Obchodník na snímku vyznačí, kde je problém: rámeček nebo kroužek tažením
+ * myši, víc značek. Značka je VEKTOR (ne domalovaný obrázek): tvar a obdélník
+ * v promilích snímku (celá čísla 0–1000, počátek vlevo nahoře), takže sedí
+ * na miniatuře, v detailu správce i ve zvětšení. Ukládá se SE SNÍMKEM
+ * (úložiště pripominky_snimky) — do zálohy ani ke koordinaci nejde (B257).
+ * Server vstup ověří a nic neopravuje: jiný tvar, pole navíc, souřadnice
+ * mimo snímek, příliš malá značka nebo víc než 20 značek = 400. */
+const PRIPOMINKA_ZNACKA_TVARY = ['ramecek', 'kruh'];
+const PRIPOMINKA_ZNACKY_MAX = 20;
+const PRIPOMINKA_ZNACKA_MIN = 5;          // ‰ — kratší tah je kliknutí, ne značka
+const _PZ_POLE = ['tvar', 'x', 'y', 'w', 'h'];
+function pripominkaZnackyZkontroluj(z) {
+  if (z === undefined || z === null) return { ok: true, znacky: [] };
+  const chyba = (t) => ({ ok: false, chyba: 'Značky na snímku: ' + t });
+  if (!Array.isArray(z)) return chyba('musí to být seznam.');
+  if (z.length > PRIPOMINKA_ZNACKY_MAX) return chyba('nejvýš ' + PRIPOMINKA_ZNACKY_MAX + ' značek.');
+  const out = [];
+  for (const x of z) {
+    if (!x || typeof x !== 'object' || Array.isArray(x)) return chyba('každá značka je objekt.');
+    if (Object.keys(x).some(k => !_PZ_POLE.includes(k))) return chyba('neznámé pole značky.');
+    if (!PRIPOMINKA_ZNACKA_TVARY.includes(x.tvar)) return chyba('tvar je rámeček nebo kroužek.');
+    for (const k of ['x', 'y', 'w', 'h'])
+      if (!Number.isInteger(x[k]) || x[k] < 0 || x[k] > 1000) return chyba('souřadnice jsou celá čísla 0–1000.');
+    if (x.w < PRIPOMINKA_ZNACKA_MIN || x.h < PRIPOMINKA_ZNACKA_MIN) return chyba('značka je příliš malá.');
+    if (x.x + x.w > 1000 || x.y + x.h > 1000) return chyba('značka přesahuje snímek.');
+    out.push({ tvar: x.tvar, x: x.x, y: x.y, w: x.w, h: x.h });
+  }
+  return { ok: true, znacky: out };
+}
+/* Tah myši → značka. Vstup jsou podíly snímku (0–1) začátku a konce tahu
+ * v libovolném směru; mimo snímek se ořízne. Krátký tah (kliknutí) = null. */
+function pripominkaZnackaZTahu(x0, y0, x1, y1, tvar) {
+  const p = v => Math.min(1000, Math.max(0, Math.round((Number.isFinite(+v) ? +v : 0) * 1000)));
+  const a = p(x0), b = p(y0), c = p(x1), d = p(y1);
+  const z = { tvar: PRIPOMINKA_ZNACKA_TVARY.includes(tvar) ? tvar : 'ramecek',
+    x: Math.min(a, c), y: Math.min(b, d), w: Math.abs(c - a), h: Math.abs(d - b) };
+  return z.w >= PRIPOMINKA_ZNACKA_MIN && z.h >= PRIPOMINKA_ZNACKA_MIN ? z : null;
+}
+/* Značky jako SVG přes snímek (viewBox v promilích, roztáhne se na obrázek;
+ * tah má stálou šířku i ve zvětšení). Jen čísla a tvar ze seznamu — nic
+ * z textu, escapovat není co. Neplatný vstup = žádné značky. */
+function pripominkaZnackySvg(znacky, trida) {
+  const z = pripominkaZnackyZkontroluj(znacky);
+  if (!z.ok || !z.znacky.length) return '';
+  const tvar = (m, styl) => m.tvar === 'kruh'
+    ? `<ellipse cx="${m.x + m.w / 2}" cy="${m.y + m.h / 2}" rx="${m.w / 2}" ry="${m.h / 2}" ${styl}/>`
+    : `<rect x="${m.x}" y="${m.y}" width="${m.w}" height="${m.h}" rx="4" ${styl}/>`;
+  const obrys = 'fill="none" stroke="#fff" stroke-width="6" stroke-opacity=".85" vector-effect="non-scaling-stroke"';
+  const cara = 'fill="rgba(225,29,72,.10)" stroke="#e11d48" stroke-width="3" vector-effect="non-scaling-stroke"';
+  return `<svg class="${trida || 'prip-znacky'}" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">`
+    + z.znacky.map(m => tvar(m, obrys) + tvar(m, cara)).join('') + '</svg>';
+}
+function pripominkaZnackyText(n) {
+  n = Math.max(0, Math.floor(+n) || 0);
+  return n === 1 ? '1 vyznačené místo' : (n >= 2 && n <= 4 ? n + ' vyznačená místa' : n + ' vyznačených míst');
+}
+
 /* ---------- kontext (přikládá se automaticky) ---------- */
 function _pcislo(v, min, max) { const n = Math.round(+v); return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : 0; }
 function pripominkaKontextOciste(v) {
@@ -394,7 +452,8 @@ if (typeof module !== 'undefined')
   module.exports = { PRIPOMINKA_TYPY, PRIPOMINKA_STAVY, PRIPOMINKA_KROKY, PRIPOMINKA_FILTRY, PRIPOMINKA_ZDROJE,
     PRIPOMINKA_ROLE, PRIPOMINKA_TEXT_MIN, PRIPOMINKA_TEXT_MAX, PRIPOMINKA_ODPOVED_MAX, PRIPOMINKA_SNIMEK_MAX,
     PRIPOMINKA_KONTEXT_MAX, PRIPOMINKA_LIMIT_DEN, PRIPOMINKA_LIMIT_DEN_MAX, PRIPOMINKA_UCHOVAT_DNI,
-    PRIPOMINKA_ID_TVAR, PRIPOMINKA_STAVY_KOORDINACE, PRIPOMINKA_UZAVRENE, pripominkaUzavrelSpravce,
+    PRIPOMINKA_ID_TVAR, PRIPOMINKA_STAVY_KOORDINACE, PRIPOMINKA_ZNACKA_TVARY, PRIPOMINKA_ZNACKY_MAX, PRIPOMINKA_ZNACKA_MIN,
+    pripominkaZnackyZkontroluj, pripominkaZnackaZTahu, pripominkaZnackySvg, pripominkaZnackyText, PRIPOMINKA_UZAVRENE, pripominkaUzavrelSpravce,
     pripominkaTyp, pripominkaStav, pripominkaCislo, pripominkaIdPlatne, pripominkaTextStaci, pripominkaLzeOdeslat,
     pripominkyNastaveniVychozi, pripominkyNastaveniOciste, pripominkySmiOdesilat, pripominkaSnimekZkontroluj,
     pripominkaKontextOciste, pripominkaMistoPopis, pripominkaMistoProKoordinaci, pripominkaSelektorProKoordinaci, pripominkaNova, pripominkaZmen, pripominkaProAutora,

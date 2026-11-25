@@ -4,6 +4,11 @@
  * místě. Právě jedna varianta je „řídící“ = aktuálně platná pro nabídku.
  * Vše se ukládá do jednoho JSON souboru zakázky (StorageAdapter). */
 
+/* #803 (K61-N4): „1 položka, 2–4 položky, 0 / 5+ položek“. */
+function zakPolozekText(n) {
+  const k = Math.max(0, Math.floor(+n) || 0);
+  return k + ' ' + (k === 1 ? 'položka' : (k >= 2 && k <= 4 ? 'položky' : 'položek'));
+}
 /* Nová varianta = klon otevřené. Od #34 jde přes klonujVariantu, aby dostala
  * vlastní příponu čísla nabídky (.1, .2 …) a nezdědila zámek zdroje. */
 function varNova() {
@@ -570,7 +575,7 @@ function nabidkaKarta() {
       ${pole('Cena bez DPH', ph.CENA_BEZ_DPH, false)}
       ${pole('DPH ' + ph.DPH_SAZBA + ' %', ph.DPH_KC, false)}
       ${pole('Celkem s DPH', ph.CENA_S_DPH, false)}
-      ${pole('Příplatky do nabídky', priplNahled + ' položek (výběr sloupcem „Nabídka" v kalkulaci OCK)', false)}
+      ${pole('Příplatky do nabídky', zakPolozekText(priplNahled) + ' (výběr sloupcem „Nabídka" v kalkulaci OCK)', false)}
     </table>` : `<div class="neg">Chyba výpočtu: ${esc(chyba)}</div>`;
   return `${typeof vzTiskPruhHtml === 'function' ? vzTiskPruhHtml() : ''}<div class="note">Nabídka se generuje z <b>otevřené varianty</b> („${esc(akt.nazev)}")${akt.id !== rid.id
       ? ` – pozor, řídící je „${esc(rid.nazev)}"; při generování dostanete na výběr` : ''} do šablony

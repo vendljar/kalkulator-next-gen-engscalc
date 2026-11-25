@@ -6,8 +6,9 @@
  *   GET   /api/pripominky?moje=1           → kdokoli: jen svoje (pohled autora)
  *   GET   /api/pripominky?nastaveni=1      → zapnuto / smí odesílat / výchozí snímek / limit;
  *                                            správce navíc celé nastavení a stav klíče
- *   GET   /api/pripominky?snimek=P-0001    → snímek obrazovky — JEN správce
- *   POST  { typ, text, kontext, snimek }   → nová připomínka (funkce zapnutá, role povolena,
+ *   GET   /api/pripominky?snimek=P-0001    → snímek obrazovky a značky na něm (#781) — JEN správce
+ *   POST  { typ, text, kontext, snimek, znacky } → nová připomínka; `znacky` = vyznačení na snímku
+ *                                            (#781: [{tvar:'ramecek'|'kruh', x,y,w,h v ‰}], ≤ 20, jen se snímkem) (funkce zapnutá, role povolena,
  *                                            nejvýš limitDen za den na uživatele)
  *   POST  { akce:'nastaveni', nastaveni }  → JEN správce
  *   POST  { akce:'klic' | 'klicZrusit', hesloSpravce } → JEN správce s vlastním heslem;
@@ -235,7 +236,10 @@ export default async (req) => {
       const id = q.get('snimek');
       if (!P.pripominkaIdPlatne(id)) return json({ ok: false, chyba: 'Neplatné číslo připomínky.' }, 400);
       const sn = await (await uloziste(PR_SNIMKY)).cti(id);
-      return sn && sn.obrazek ? json({ ok: true, obrazek: sn.obrazek })
+      /* #781: značky jdou jen správci spolu se snímkem; uložené se při čtení ověří znovu
+       * (cokoli jiného než platný seznam = žádné značky). */
+      const zn = P.pripominkaZnackyZkontroluj(sn && sn.znacky);
+      return sn && sn.obrazek ? json({ ok: true, obrazek: sn.obrazek, znacky: zn.ok ? zn.znacky : [] })
         : json({ ok: false, chyba: 'Připomínka nemá snímek.' }, 404);
     }
     let vse = await cteniVse(s);
@@ -285,6 +289,11 @@ export default async (req) => {
     if (!n.role.includes(relace.role)) return json({ ok: false, kod: 'role', chyba: 'Vaše role připomínky odesílat nemůže.' }, 403);
     const sn = P.pripominkaSnimekZkontroluj(t.snimek);
     if (!sn.ok) return json({ ok: false, chyba: sn.chyba }, 400);
+    /* #781: značky na snímku — tvar a velikost ověří jádro; bez snímku značky nedávají smysl. */
+    const zn = P.pripominkaZnackyZkontroluj(t.znacky);
+    if (!zn.ok) return json({ ok: false, chyba: zn.chyba }, 400);
+    if (zn.znacky.length && !sn.obrazek)
+      return json({ ok: false, chyba: 'Značky na snímku patří ke snímku obrazovky — bez snímku je nelze uložit.' }, 400);
     const sl = await uloziste(PR_LIMIT);
     const denKlic = 'den/' + denUtc() + '/' + relace.email;
     return vyhradne('pripominky-nova', async () => {
@@ -297,7 +306,10 @@ export default async (req) => {
       const r = P.pripominkaNova(t, relace, new Date().toISOString(), zdrojWebu(), cislo);
       if (!r.ok) return json({ ok: false, chyba: r.chyba }, 400);
       const p = r.pripominka;
-      if (sn.obrazek) { await (await uloziste(PR_SNIMKY)).zapis(p.id, { obrazek: sn.obrazek }); p.snimek = true; }
+      if (sn.obrazek) {
+        await (await uloziste(PR_SNIMKY)).zapis(p.id, zn.znacky.length ? { obrazek: sn.obrazek, znacky: zn.znacky } : { obrazek: sn.obrazek });
+        p.snimek = true;
+      }
       await s.zapis('citac', { n: cislo });
       await s.zapis('p/' + p.id, p);
       await sl.zapis(denKlic, { n: dnes + 1 });

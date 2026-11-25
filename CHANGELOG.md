@@ -8,6 +8,42 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v25.11.5 — PP — připomínky (zvětšení a značky na snímku), krycí list PROJ, větev claude/pp-pripominky-kl
+
+Nad integrací `ebca8ebd` (v25.11.3). Rozhodnutí J. V. 25. 11. 2026 (ROZHODNUTI_LOG). Číslo verze se nezvyšuje.
+
+- **#781 Připomínky: obchodník vyznačí problém přímo na snímku.** V panelu Připomínka je v kroku „3 · Kde to je?“
+  hlavní tlačítko „✏️ Zakroužkovat problém na snímku“ (i klik na miniaturu) → editor přes celé okno: Rámeček /
+  Kroužek tažením myši, víc značek (nejvýš 20), Zpět (Ctrl+Z), Smazat vše, Hotovo, Zrušit (Esc). Miniatura
+  i tlačítko ukazují počet („2 vyznačená místa“); „📷 Pořídit nový snímek“ začne znovu. 📍 výběr prvku zůstává
+  jako doplněk („nebo Kliknout na prvek“). S vyznačením se odešle právě snímek, na který obchodník kreslil.
+  Značky jsou vektor v promilích snímku a ukládají se se snímkem (jen správce, ne do zálohy ani ke koordinaci);
+  server ověří tvar a velikost (B257 doplněk PP). Správce je vidí v detailu i ve zvětšení.
+- **#780 Připomínky: snímek jde zvětšit.** V detailu (Nastavení → Připomínky) klik nebo Enter na snímek otevře
+  zvětšení přes celé okno: kolečko myši přibližuje kolem kurzoru, tlačítka +/−, Přizpůsobit, 1:1 (10–800 %),
+  posun tažením, Esc / ✕ zavře. Bez externích knihoven.
+- **#791 Objednávka PROJ (PDF i Word): datum a podpis objednatele na konci** — za Poznámkou, Platebním
+  kalendářem, Termíny a „Vystavil“. **Podpis nikdy sám na straně** (revize Fable S1): poslední blok textu,
+  „Vystavil“ a odstup drží s podpisem (Word `w:keepNext`, tisk `break-after: avoid`) — při přetečení jde na
+  novou stranu celý poslední blok s podpisem; počet stran se neslibuje (plný rozsah). Mění rozložení dokumentu
+  (porovnání sestavení: data objednávky `obj-proj` beze změny — viz `podklady/porovnani/ocekavane_pp_2026-11-25.txt`).
+- **#792 Krycí list PROJ: karta „Objednávka, smlouva o dílo a plná moc (PROJ)“** (popis objednávky už neříká
+  „jednostránková“ — revize N3). Samostatná karta
+  „Objednávka / Smlouva (PROJ)“ zrušena; tlačítka v pořadí Náhled a tisk objednávky (PDF), Vytvořit objednávku
+  (Word), Vytvořit plnou moc (Word), Vytvořit smlouvu o dílo PROJ (Word); Jazyk tisku zůstává u smlouvy.
+- **#793 „Co by se zapsalo do Pipedrive“ jen pro administrátora** — karta v krycím listu OCK i PROJ i sbalovací
+  náhled u Prodeje (rozhodnutí dávky: Prodej také jen admin). Zápis prodeje a odeslání nabídky beze změny.
+- **Kolo 61 (doplněk koordinace 25. 11.):** **#801** Uložit zakázku bez čísla / názvu zůstane na stránce s hlavičkou
+  (Kalkulace OCK / PROJ) a ukáže hlášku „Vyplňte v hlavičce…“ (dřív přepnulo na Přehled a hláška byla skrytá).
+  **#802** kontrola před tiskem hlásí nevyplněná místa jen té smlouvy, kterou zakázka tiskne (jen PROJ → bez SoD
+  realizace, s číslem OCK / jen OCK → bez SoD PROJ). **#803** „1 položka / 2–4 položky / 5 položek“ v kartě Cenová
+  nabídka. **#804** krycí list OCK i PROJ (tisk, Word, náhled prodeje) píše pole typu datum („Dne“, „Datum podpisu
+  smlouvy“) česky „25. 11. 2026“ — **mění text krycího listu** (porovnání: 390 / 390 očekávaných, jen kryci-*);
+  uložená hodnota a symboly SoD beze změny. Test `src/test_pp_k61.js`.
+- Testy: `src/test_pp_pripominky.js` (59), `netlify/test_pp_znacky.mjs` (29), `overit_pp_pripominky.mjs` (42), `src/test_pp_k61.js` (16),
+  doplněné `src/test_objednavka_proj.js`, `overit_objednavka_proj.mjs`, `overit_pd_nanecisto.mjs`,
+  `overit_zobrazeni.mjs`, `overit_controlling.mjs`, `src/test_vs_kontroly.js`; mutace [PP] jádra 24/24 (+ kolo 61) a serveru 6/6.
+
 ## v25.11.4 — G1 — úklid nízkých nálezů vlny G, větev claude/g1-uklid
 
 Nad integrací `9776c346`. **Cenu kalkulací ani text dokumentů nemění**; jediná změna ve vygenerovaném Wordu jsou vlastnosti souboru (#754).

@@ -688,7 +688,9 @@ function kryciProjData(zak, varianta, jekly, verze) {
   const c = kryciProjCtx(zak, varianta);
   const kl = varianta.data.kryciProj || { hodnoty: {} };
   const sekce = KRYCI_PROJ_SEKCE.map(s => {
-    const radky = s.pole.filter(p => p.verze.includes(verze) && kryciProjPoleViditelne(p, c)).map(p => [p.label, kryciProjHodnota(p, kl, c)]);
+    /* #804: datum česky (kryciTiskHodnota, kryci.js). */
+    const tiskH = typeof kryciTiskHodnota === 'function' ? kryciTiskHodnota : require('./kryci.js').kryciTiskHodnota;
+    const radky = s.pole.filter(p => p.verze.includes(verze) && kryciProjPoleViditelne(p, c)).map(p => [p.label, tiskH(p, kryciProjHodnota(p, kl, c))]);
     return radky.length ? { sekce: s.sekce, radky } : null;
   }).filter(Boolean);
   /* Hodiny z kalkulace na konci verze Backoffice — jen z Kalkulace PROJ

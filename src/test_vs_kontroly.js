@@ -239,17 +239,23 @@ const nal = (k, kod) => k.nalezy.find(n => n.kod === kod);
   /* sodNevyplneno / sodProjNevyplneno */
   const nv = o => ({ navic: { sodNevyplneno: o } });
   const kn = kontrolyProved(ctx(zak, v, nv({ sod: ['OBJEDNATEL_ICO', 'SOD_TERMIN_MONTAZ_OD'], sodProj: ['SODP_SPRAVNI_POPLATKY'] })));
-  const a = nal(kn, 'sodNevyplneno'), b = nal(kn, 'sodProjNevyplneno');
+  /* #802 (K61-N3): zakázka s číslem OCK má PROJ vyřazenou — SoD PROJ se u ní nehlásí;
+   * SoD PROJ se ověří nad touž zakázkou bez čísla (žádná strana vyřazená). */
+  const bezCisla = Object.assign({}, zak, { cislo: '' });
+  const knP = kontrolyProved(ctx(bezCisla, v, nv({ sod: ['OBJEDNATEL_ICO', 'SOD_TERMIN_MONTAZ_OD'], sodProj: ['SODP_SPRAVNI_POPLATKY'] })));
+  test('#802 číslo OCK (PROJ vyřazená): SoD PROJ se nehlásí', !nal(kn, 'sodProjNevyplneno') && !!nal(kn, 'sodNevyplneno'));
+  const a = nal(kn, 'sodNevyplneno'), b = nal(knP, 'sodProjNevyplneno');
   test('H sodNevyplneno: upozornění vyjmenuje údaje lidsky, nikdy zábrana', a && a.uroven === KONTROLY_UROVEN
     && /IČO zákazníka, termín montáže od/.test(a.text) && !/OBJEDNATEL_ICO/.test(a.text) && !kontrolyZabranaDokumentu(kn, 'sod'), a);
   test('H sodProjNevyplneno: upozornění, nikdy zábrana', b && b.uroven === KONTROLY_UROVEN && /správní poplatky/.test(b.text)
-    && !kontrolyZabranaDokumentu(kn, 'sodProj'), b);
+    && !kontrolyZabranaDokumentu(knP, 'sodProj'), b);
   const kn2 = kontrolyProved(ctx(zak, v, nv({ sod: ['OBJEDNATEL_UCET', 'OBJEDNATEL_KONTAKT_KOPIE1'], sodProj: ['OBJEDNATEL_PODPIS2_JMENO'] })));
-  const a2 = nal(kn2, 'sodNevyplneno'), b2 = nal(kn2, 'sodProjNevyplneno');
+  const kn2P = kontrolyProved(ctx(bezCisla, v, nv({ sod: ['OBJEDNATEL_UCET', 'OBJEDNATEL_KONTAKT_KOPIE1'], sodProj: ['OBJEDNATEL_PODPIS2_JMENO'] })));
+  const a2 = nal(kn2, 'sodNevyplneno'), b2 = nal(kn2P, 'sodProjNevyplneno');
   test('H SL: sodNevyplneno dělí „Chybí" (číslo účtu) a „Nepovinné" (faktury v kopii), dál jen upozornění', a2 && a2.uroven === KONTROLY_UROVEN
     && /Chybí: číslo účtu zákazníka\. Nepovinné: faktury v kopii na \(1\)\./.test(a2.text) && !kontrolyZabranaDokumentu(kn2, 'sod'), a2);
   test('H SL: sodProjNevyplneno jen s nepovinným: upozornění „Nepovinné", bez „Chybí"', b2 && b2.uroven === KONTROLY_UROVEN
-    && /Nepovinné: druhý podepisující za zákazníka\./.test(b2.text) && !/Chybí/.test(b2.text) && !kontrolyZabranaDokumentu(kn2, 'sodProj'), b2);
+    && /Nepovinné: druhý podepisující za zákazníka\./.test(b2.text) && !/Chybí/.test(b2.text) && !kontrolyZabranaDokumentu(kn2P, 'sodProj'), b2);
   test('H sodNevyplneno: bez informace / prázdný seznam mlčí', !nal(kontrolyProved(ctx(zak, v)), 'sodNevyplneno')
     && !nal(kontrolyProved(ctx(zak, v, nv({ sod: [] }))), 'sodNevyplneno') && !nal(kontrolyProved(ctx(zak, v, nv({ sod: null }))), 'sodNevyplneno'));
   test('H nová pravidla stojí za vsSablona na konci seznamu', kontrolyPravidla().map(p => p.kod).slice(-4).join() === 'vsSablona,vsSablonaSod,sodNevyplneno,sodProjNevyplneno');

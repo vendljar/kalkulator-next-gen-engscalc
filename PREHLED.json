@@ -7,17 +7,23 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "5c42ca16",
-  "verze": "v25.11.3",
+  "sha": "6e002036",
+  "verze": "v25.11.4",
   "datum": "25. 11. 2026"
  },
- "test_navic_commitu": 141,
+ "test_navic_commitu": 158,
  "v_testu_ne_v_main": [
   {
    "id": "795",
    "typ": "ukol",
    "nazev": "Jazykové verze šablony SoD projekce v4 (EN/DE/FR, 16 kB, o měsíc starší) proti české (124 kB) — ověřit úplnost",
    "verze": "v25.11.3"
+  },
+  {
+   "id": "794",
+   "typ": "ukol",
+   "nazev": "Vlastnosti Wordu ze šablon: Company → „ENGINEERS CZ s.r.o.“, název dokumentu (dc:title) vymazat (revize G1 N1)",
+   "verze": "v25.11.4"
   },
   {
    "id": "776",
@@ -146,6 +152,15 @@
    "verze": "v24.11.9"
   },
   {
+   "id": "756",
+   "typ": "ukol",
+   "nazev": "Ruční položka Spojovacího materiálu / Lakování při ručně přepsaném řádku Hrubé OCK — cena v rozpisu podle poměru přepsaného řádku",
+   "alias": [
+    "RP-D1"
+   ],
+   "verze": "v25.11.4"
+  },
+  {
    "id": "755",
    "typ": "ukol",
    "nazev": "Zákazníci ze zakázek: hromadné naplnění databáze zákazníků jen tam, kde data sedí podle ARES (nástroj správce)",
@@ -153,6 +168,26 @@
     "ZK"
    ],
    "verze": "v24.11.8"
+  },
+  {
+   "id": "754",
+   "typ": "ukol",
+   "nazev": "Vlastnosti dokumentu šablony (docProps/core.xml: autor, kdo naposledy uložil) se kopírují do každé vygenerované nabídky",
+   "alias": [
+    "SA-META"
+   ],
+   "verze": "v25.11.4"
+  },
+  {
+   "id": "753",
+   "typ": "ukol",
+   "nazev": "Nízké nálezy revize SA (kontrola šablon Word): R6 skrytá položka ZIPu, R9 UTF-32 BOM, R10 selhání dekodéru UTF-16",
+   "alias": [
+    "SA-R6",
+    "SA-R9",
+    "SA-R10"
+   ],
+   "verze": "v25.11.4"
   },
   {
    "id": "744",
@@ -409,14 +444,23 @@
     "K60-I1"
    ],
    "cekaNa": "návod pro obchodníky (CN změnit až po založení) nebo úprava automatizace v Pipedrive"
+  },
+  {
+   "id": "810",
+   "typ": "otazka",
+   "nazev": "Šablona SoD PROJ v4 (z LibreOffice) nemá ve vlastnostech prvek Company → Společnost zůstane prázdná (generátor chybějící prvek nepřidává)",
+   "alias": [
+    "K62-I1"
+   ],
+   "cekaNa": "nechat prázdné (doporučeno), nebo doplnit firmu i tam, kde šablona prvek nemá"
   }
  ],
  "ceka_na_jv_odlozene": 14,
  "nehotove_podle_kdo": {
-  "J. V.": 32,
+  "J. V.": 33,
   "kolega": 4,
-  "koordinace": 2,
-  "dávka": 16
+  "koordinace": 5,
+  "dávka": 7
  },
- "nehotovych": 54
+ "nehotovych": 49
 }
