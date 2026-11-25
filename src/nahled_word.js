@@ -226,7 +226,7 @@ function nwBloky(data, L, o) {
 
   /* 3) A. TECHNICKÁ ČÁST */
   const vse = (typeof nabidkaNahledSekce === 'function' ? nabidkaNahledSekce : require('./nabidka.js').nabidkaNahledSekce)(
-    ph, L, data.platbyOck, data.tsExtra, null);
+    ph, L, data.platbyOck, data.tsExtra, null, data.rucni);   // RP: ruční položky (jedna šachta / společné sekce)
   const jmSachty = NW_SEKCE_SACHTY.map(P);
   const ts = [{ typ: 'titul', text: T('tsTitul') }, { typ: 'pozn-titul', text: T('tsPozn') }];
   if (Array.isArray(data.sachty) && data.sachty.length) {
@@ -234,7 +234,7 @@ function nwBloky(data, L, o) {
     const sNahled = (typeof nabidkaNahledSekce === 'function' ? nabidkaNahledSekce : require('./nabidka.js').nabidkaNahledSekce);
     data.sachty.forEach(sa => {
       const phS = Object.assign({}, ph, sa.ph);
-      const radky = nwTsSekce(sNahled(phS, L, null, null, null), jmSachty, phS, P, T);
+      const radky = nwTsSekce(sNahled(phS, L, null, null, [], { tsRadky: sa.rucniTs || [] }), jmSachty, phS, P, T);
       if (!nwPrazdna(sa.ph.SACHTA_TS_NAZEV)) ts.push({ typ: 'pruh', text: sa.ph.SACHTA_TS_NAZEV, sachta: true });
       radky.forEach(r => ts.push(r));
     });
@@ -265,6 +265,10 @@ function nwBloky(data, L, o) {
     cena.push({ popis: [T('sachta'), T('sachtaRozsah')], hodnota: [ph.CENA_SACHTA_BEZ_DPH, bez], styl: 'polozka' });
   if (!nwPrazdna(ph.CENA_MUSTKY_BEZ_DPH))
     cena.push({ popis: [T('mustky'), T('mustkyRozsah')], hodnota: [ph.CENA_MUSTKY_BEZ_DPH, bez], styl: 'polozka' });
+  /* RP: ruční položky — řádek naklonovaný z řádku můstků (docxRadkyNavic) */
+  ((data.rucni && data.rucni.ceny) || []).forEach(x =>
+    cena.push({ popis: [x.nazev], hodnota: [x.cena, bez], styl: 'polozka' }));
+  const sRucnimi = !!(data.rucni && data.rucni.ceny && data.rucni.ceny.length);
   /* SLEVA (nález z porovnání 19. 11. 2026: starý náhled ji vynechával) —
    * řádky jen se slevou, jako Word (rozhoduje SLEVA_KC). */
   if (!nwPrazdna(ph.SLEVA_KC)) {
@@ -274,7 +278,8 @@ function nwBloky(data, L, o) {
   if (!nwPrazdna(ph.CENA_BEZ_DPH_SACHTA))
     cena.push({ popis: [T('sachta'), T('sachtaRozsah')], hodnota: [ph.CENA_BEZ_DPH_SACHTA, bez], styl: 'cena' });
   if (!nwPrazdna(ph.CENA_BEZ_DPH_CELKEM))
-    cena.push({ popis: [T('celkemCena'), T('celkemCenaPopis'), ph.SACHTY_CELKEM_POPIS].filter(x => !nwPrazdna(x)),
+    /* RP: s ruční položkou jen „CENA CELKEM" (Word přejmenuje celý popisek) */
+    cena.push({ popis: [T('celkemCena'), sRucnimi ? '' : T('celkemCenaPopis'), ph.SACHTY_CELKEM_POPIS].filter(x => !nwPrazdna(x)),
       hodnota: [ph.CENA_BEZ_DPH_CELKEM, bez], styl: 'cena' });
   cena.push({ popis: [T('dph')], hodnota: [ph.DPH_KC], styl: 'dph' });
   cena.push({ popis: [T('celkem')], hodnota: [ph.CENA_S_DPH, T('vcDph')], styl: 'celkem' });
@@ -334,6 +339,9 @@ function nwEsc(s) {
   return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 const nwP = (t, cls) => `<p${cls ? ` class="${cls}"` : ''}>${nwEsc(t)}</p>`;
+/* hodnota řádku specifikace: konec řádku = zalomení jako ve Wordu (`\n` →
+ * <w:br/>, ruční položka RP: množství a pod ním dodatkový text) */
+const nwPv = (t) => nwP(t).replace(/\n/g, '<br>');
 function nwFotoPlatna(s) {
   return typeof s === 'string' && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(s);
 }
@@ -359,8 +367,8 @@ function nwHtml(bloky) {
           if (r.typ === 'pozn') return `<tr class="nw-ts-pozn"><td colspan="3">${nwP(r.text)}</td></tr>`;
           const [l, ...v] = r.bunky;
           /* široký popisek (projekční práce, co není součástí, další ujednání) přes dva sloupce */
-          if (v.length === 1 && r.siroka) return `<tr class="nw-ts-radek nw-siroka"><td class="nw-ts-l" colspan="2">${l ? nwP(l) : ''}</td><td>${nwP(v[0])}</td></tr>`;
-          if (v.length === 1) return `<tr class="nw-ts-radek"><td class="nw-ts-l">${l ? nwP(l) : ''}</td><td colspan="2">${nwP(v[0])}</td></tr>`;
+          if (v.length === 1 && r.siroka) return `<tr class="nw-ts-radek nw-siroka"><td class="nw-ts-l" colspan="2">${l ? nwP(l) : ''}</td><td>${nwPv(v[0])}</td></tr>`;
+          if (v.length === 1) return `<tr class="nw-ts-radek"><td class="nw-ts-l">${l ? nwP(l) : ''}</td><td colspan="2">${nwPv(v[0])}</td></tr>`;
           return `<tr class="nw-ts-radek${r.pod ? ' nw-ts-pod' : ''}"><td class="nw-ts-l">${l ? nwP(l) : ''}</td>${v.map(x => `<td>${nwP(x)}</td>`).join('')}</tr>`;
         }).join('')}</table>`;
       case 'cena':

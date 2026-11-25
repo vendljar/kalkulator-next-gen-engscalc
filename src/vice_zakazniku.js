@@ -61,7 +61,7 @@ const VZ_OTISK_FIRMA = ['objednatel', 'adresaObjednatele', 'ico', 'dic', 'kontak
 /* Pole psaná serverem s údaji řídícího zákazníka / dealu — v pohledu
  * DALŠÍHO zákazníka nemají co dělat (deal vede řídící). */
 const VZ_POHLED_BEZ = ['pdZadani', 'pdStav', 'pdVazbaWebhook', 'pdDealyOdmitnute',
-  'pdPoznamkaSachty', 'pdPoznamkaZakaznici', 'pdOrgVitez', 'pdOrgDealu'];
+  'pdPoznamkaSachty', 'pdPoznamkaZakaznici', 'pdOrgVitez', 'pdOrgDealu', 'pdOdeslani'];
 
 const vzObj = x => !!x && typeof x === 'object' && !Array.isArray(x);
 const vzText = x => (typeof x === 'string' ? x : (x == null ? '' : String(x)));

@@ -300,6 +300,9 @@ const PREKLAD = {
   "nadzemní patro": ["upper floor", "Obergeschoss (OG)", "étage supérieur"],
   "NAPÁJENÍ VÝTAHU VČET. REVIZNÍ ZPRÁVY": ["INSPECTED EL. POWER SUPPLY FOR LIFT", "GEPRÜFTE STROMVERSORGUNG FÜR DEN AUFZUG (inkl. Revisionsbericht)", "ALIMENTATION ÉLECTRIQUE DE L’ASCENSEUR CONTRÔLÉE (rapport de révision incl.)"],
   "NEREZOVÁ MADLA NA BOČNÍCH STĚNÁCH OCK": ["STAINLESS STEEL HANDLE ON THE SIDE OF SHAFT STRUCTURE", "EDELSTAHLGRIFF AN DER SEITE DER SCHACHTSTAHLKONSTRUKTION", "MAINS COURANTES EN INOX SUR LES PAROIS LATÉRALES DE LA GAINE"],
+  /* PT-ZAB (#759, J. V. 24. 11. 2026): hodnota pole ZÁBRADLÍ NA PODESTÁCH
+   * (interiérová šachta se zábradlím) ve slovníku chyběla od srpna. */
+  "úpravy a napojení stávajícího zábradlí na podestách": ["modification and connection of the existing railing at the landings", "Anpassung und Anschluss des bestehenden Geländers an den Podesten", "adaptation et raccordement du garde-corps existant sur les paliers"],
   "nerezový plech dle zaměření ve všech nástupištích": ["Stainless steel metal sheet in each floor (based on site survey)","Edelstahlbleche in jedem Stockwerk (auf der Grundlage der Vermessung vor Ort)","Tôle inox selon relevé, à tous les arrêts"],
   "Nerezový plech ve tvaru dle individuálního zaměření spojující podestu nástupiště s prahem šachetních dveří v šířce vstupu": ["Stainless steel plate connecting the platform with landing door sill. Designed according to site survey.", "Edelstahlplatte, die die Plattform mit der Schwelle der Schachttür verbindet. Entworfen nach ordnungsgemäßer Standortvermessung.", "Tôle en inox reliant le palier au seuil des portes palières, réalisée selon le relevé sur site."],
   "Nosnost": ["load", "Tragkraft", "charge utile"],
@@ -608,6 +611,10 @@ const PREKLAD = {
   "do sloupů (na terén)": ["onto columns (to the ground)", "auf Stützen (auf das Gelände)", "sur poteaux (au sol)"],
   "konzolově jen z OCK": ["cantilevered from the steel structure only", "auskragend nur von der Stahlkonstruktion", "en porte-à-faux depuis la structure uniquement"],
   "ks": ["pcs", "Stk.", "pcs"],
+  /* RP (23. 11. 2026): jednotky ruční položky — NÁVRH překladu, k potvrzení J. V. */
+  "bm": ["lm", "lfm", "ml"],
+  "kpl": ["set", "Kpl.", "ens."],
+  "m²": ["m²", "m²", "m²"],
   "šířka × délka": ["width × length", "Breite × Länge", "largeur × longueur"],
   "výška": ["height", "Höhe", "hauteur"],
   "skupina": ["group", "Gruppe", "groupe"],
@@ -794,6 +801,9 @@ const PREKLAD = {
   "MONTÁŽ ŠACHETNÍCH DVEŘÍ": ["LANDING DOOR INSTALLATION","MONTAGE DER SCHACHTTÜREN","MONTAGE DES PORTES PALIÈRES"],
   "LEŠENÍ - dokončení hlavy šachty": ["SCAFFOLDING – shaft head completion","GERÜST – Fertigstellung des Schachtkopfes","ÉCHAFAUDAGE – finition de la tête de gaine"],
   "LEŠENÍ - vnější": ["SCAFFOLDING – external","GERÜST – außen","ÉCHAFAUDAGE – extérieur"],
+  /* #757 (24. 11. 2026): ENGINEERING jako příplatek nové kalkulace. Znění
+   * odlišené od inženýrské činnosti (IČ = ENGINEERING SERVICES); schválil J. V. 24. 11. 2026. */
+  "ENGINEERING": ["TECHNICAL ENGINEERING","TECHNISCHES ENGINEERING","INGÉNIERIE TECHNIQUE"],
   /* PŘÍPLATKY BEZ PŘEKLADU (#335, nález K10-N38 z 10. kola, 24. 9. 2026).
    * V cizojazyčné nabídce se tiskly česky — „LEŠENÍ - vnitřní" stálo vedle
    * „SCAFFOLDING – external". Názvy drží terminologii sousedních hesel
@@ -1466,6 +1476,14 @@ const PREKLAD_VZORY = [
     en: '$1 pcs, size $2 × $3 mm (width × length), steel structure incl. railing and installation',
     de: '$1 Stk., Abmessung $2 × $3 mm (Breite × Länge), Stahlkonstruktion inkl. Geländer und Montage',
     fr: '$1 pcs, dimensions $2 × $3 mm (largeur × longueur), structure en acier y compris garde-corps et montage' },
+  /* PT-ZAB (#759, J. V. 24. 11. 2026): víc skupin můstků (Model 2, starý ceník
+   * #354 — techspec prefill `mustky`, sk.length > 1): „1 ks 1600 × 1000 mm,
+   * 2 ks 1000 × 800 mm (šířka × délka), ocelová konstrukce vč. zábradlí
+   * a montáže" — stejnými slovy jako věta pro jednu skupinu. */
+  { re: /^(\d+ ks \d+ × \d+ mm(?:, \d+ ks \d+ × \d+ mm)+) \(šířka × délka\), ocelová konstrukce vč\. zábradlí a montáže$/i,
+    en: (m, sk) => sk.replace(/ ks /g, ' pcs ') + ' (width × length), steel structure incl. railing and installation',
+    de: (m, sk) => sk.replace(/ ks /g, ' Stk. ') + ' (Breite × Länge), Stahlkonstruktion inkl. Geländer und Montage',
+    fr: (m, sk) => sk.replace(/ ks /g, ' pcs ') + ' (largeur × longueur), structure en acier y compris garde-corps et montage' },
   { re: /^přisazena k (fasádě|podestám), v (\d+) nástupištích přes můstky$/i,
     en: (m, k, n) => 'Attached to the ' + (k === 'fasádě' ? 'facade' : 'landings') + ', at ' + n + ' landings via access bridges',
     de: (m, k, n) => 'An ' + (k === 'fasádě' ? 'die Fassade' : 'die Podeste') + ' angebaut, an ' + n + ' Zugangsstellen über Brücken',

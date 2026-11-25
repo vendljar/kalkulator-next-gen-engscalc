@@ -15,6 +15,7 @@ Stav: ☐ čeká · ◐ rozpracováno · ☑ hotovo. Roadmapa #730 (zastřešuje
 | A6 | Kalkulace z Pipedrive se otevře rovnou k úpravám (#728) | dávka → test | ☐ |
 | A6b | Autor kalkulace z webhooku = vlastník dealu (#734) | dávka → test | ◐ hotovo v dávce PV (`claude/pv-pipedrive`, v23.11.7), čeká na revizi, test a ověření na dealu TEST (vlastník s účtem ve stejném e-mailu) |
 | A7 | Kontaktní osoba z dealu jen jméno, bez e-mailu a telefonu (#729) | dávka → test | ☐ |
+| A9b | Odeslání nabídky do dealu (#116, J. V. 24. 11.): první tisk CN → tabulka „dnes / nově“ → potvrzení → pole krycího listu, CN, hodnota, fáze 22 → 23 (jen dopředu), poznámka „Nabídka odeslána“, Word jako soubor | dávka → test, pak testovací sezení | ◐ hotovo v dávce PO (`claude/po-odeslani-pipedrive`, jen simulátor), čeká na revizi Fable a test; pak zkušební zápis na deal TEST (souhlas J. V.): fáze 23, poznámka jedna, soubor u dealu, stav dealu beze změny, „zapsáno“ v kartě a protokolu; ověřit strop velikosti souboru Netlify / Pipedrive. Volitelně `PIPEDRIVE_FAZE_ODESLANO` (id nebo název fáze; výchozí „Nabídka odeslána“) |
 | A8 | Vazba „čeká / V pořádku“ a vypnutý zápis (dosud neověřeno bez zásahu do nastavení) | testovací sezení | ☐ |
 | A9 | Plný průchod: deal → kalkulace → tisk nabídky → Prodáno → potvrzení tabulky → zápis prodeje (#597) | J. V. + testovací sezení | ◐ zápis #597 hotový v dávce PV (jen simulátor); po nasazení do testu zkušební zápis na deal TEST: tabulka „dnes / nová“, hodnota dealu, fáze 26, stav dealu beze změny, CN, „zapsáno“ v kartě a protokolu |
 

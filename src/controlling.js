@@ -292,7 +292,9 @@ function ctrlRozvrhOck(vysledek, opts) {
       ...(rcC ? { rucniCesta: rcC, rucniHodnota: lakN.nabidka, rucniZaklad: typeof lakN.dleCeniku === 'number' ? lakN.dleCeniku : null } : {}),
       skupina: s.skupina, zarazeno: s.zarazeno, vZakladu,
       vlastni: !!r.vlastni, mnozstvi: +r.mnozstvi || 0, cena: +r.cena || 0,
-      naklad: +r.naklad || 0, prodej: +r.sMarzi || 0 });
+      /* #758: nová kalkulace nese rezervu v ceně příplatku — prodej položky
+       * bez ní, rezerva jde řádkem REZERVA PŘÍPLATKY (bez dvojího započtení). */
+      naklad: +r.naklad || 0, prodej: (+r.sMarzi || 0) - (+r.rezervaSMarzi || 0) });
   };
   ['hrubaOck', 'mustky', 'oplasteni', 'volitelne', 'rezie'].forEach(sek =>
     (vysledek.sekce[sek] || []).forEach(r => radek(r, sek, true)));
@@ -306,7 +308,14 @@ function ctrlRozvrhOck(vysledek, opts) {
   const prip = Array.isArray(vysledek.priplatky) ? vysledek.priplatky : [];
   prip.forEach(r => radek(r, 'priplatky', false));
   const pct = +o.rezervaPriplatkyPct || 0;
-  if (pct && prip.length) {
+  const rezVPolozkach = prip.some(r => typeof r.rezervaNaklad === 'number');
+  if (rezVPolozkach) {
+    const naklad = prip.reduce((a, r) => a + (+r.rezervaNaklad || 0), 0);
+    const s = ctrlSkupinaKlice(P.mapa, 'R.rezervaPriplatky');
+    out.push({ oblast: 'ock', sekce: 'priplatky', nazev: 'REZERVA PŘÍPLATKY', klic: 'R.rezervaPriplatky',
+      skupina: s.skupina, zarazeno: s.zarazeno, vZakladu: false, vlastni: false,
+      mnozstvi: 1, cena: naklad, naklad, prodej: prip.reduce((a, r) => a + (+r.rezervaSMarzi || 0), 0) });
+  } else if (pct && prip.length) {
     const zaklad = prip.reduce((a, r) => a + (o.fixes === false ? (+r.sMarzi || 0) : (+r.naklad || 0)), 0);
     const naklad = zaklad * pct;
     const m = +o.marze || 0;

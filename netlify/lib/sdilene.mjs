@@ -109,6 +109,19 @@ export async function uloziste(nazev) {
   };
 }
 
+/* HROMADNÉ ČTENÍ ZÁZNAMŮ (revize ZK R2, 24. 11. 2026). Blobs nemá čtení víc
+ * klíčů naráz; po jednom za sebou je u stovek karet zákazníků (po hromadném
+ * naplnění ze zakázek) zbytečně pomalé. Tady se čtou souběžně po dávkách
+ * `soubeh` — pořadí výsledku = pořadí klíčů, chybějící záznam = null. */
+export async function ctiVsechny(s, klice, soubeh = 16) {
+  const out = new Array(klice.length);
+  for (let i = 0; i < klice.length; i += soubeh) {
+    const kus = await Promise.all(klice.slice(i, i + soubeh).map((k) => s.cti(k)));
+    kus.forEach((v, j) => { out[i + j] = v; });
+  }
+  return out;
+}
+
 /* VÝHRADNÍ ÚSEK NAD KLÍČEM (B158, audit 25, 16. 10. 2026). Počítadlo je
  * čtení–změna–zápis a Blobs atomický inkrement nemá (viz B4 níž). Souběžné
  * požadavky v téže instanci funkce se proto řadí za sebe: každý další čeká,

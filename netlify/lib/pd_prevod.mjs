@@ -521,7 +521,7 @@ export function pdFazeNajdi(fazeSeznam, deal, konf = {}) {
   const pipeline = deal && deal.pipeline_id != null && deal.pipeline_id !== '' ? +deal.pipeline_id : null;
   if (konf.id) {
     const f = seznam.find((x) => x.id === +konf.id);
-    if (!f) return { duvod: 'fáze nenalezena: fáze id ' + konf.id + ' (' + PD_FAZE_PROMENNA + ') v Pipedrive není' };
+    if (!f) return { duvod: 'fáze nenalezena: fáze id ' + konf.id + ' (' + (konf.promenna || PD_FAZE_PROMENNA) + ') v Pipedrive není' };
     if (pipeline !== null && f.pipeline_id !== pipeline)
       return { duvod: 'fáze nenalezena: fáze „' + f.name + '" (' + f.id + ') patří do jiné pipeline než deal' };
     return { faze: f };

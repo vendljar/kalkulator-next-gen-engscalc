@@ -31,7 +31,7 @@ const PDN_STAVY = {
 function pdnPopisky(sekce, nadpis) {
   const out = {};
   (sekce || []).forEach(s => (s.pole || []).forEach(p => {
-    if (p && p.id) out[p.id] = nadpis + ' › ' + s.sekce + ' › ' + String(p.label || p.id).replace(/<[^>]*>/g, '');
+    if (p && p.id && !p.mimoPipedrive) out[p.id] = nadpis + ' › ' + s.sekce + ' › ' + String(p.label || p.id).replace(/<[^>]*>/g, '');
   }));
   return out;
 }
@@ -43,6 +43,7 @@ function pdnStranaOck(zak, v, jekly) {
   const kl = (v.data && v.data.kryci) || { hodnoty: {} };
   const hodnoty = {};
   KRYCI_SEKCE.forEach(s => s.pole.forEach(p => {
+    if (p.mimoPipedrive) return;   // RP: ruční položky v ceně do CRM nejdou
     let x = '';
     try { x = kryciHodnota(p, kl, c); } catch (e) { x = ''; }
     hodnoty[p.id] = pdnText(x);

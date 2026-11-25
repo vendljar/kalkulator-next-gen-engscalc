@@ -202,7 +202,22 @@ export const PD_POZNAMKA_DRUH_ZAKAZNICI = Object.freeze({
   jeNase: pdPoznamkaZakJeNase,
   text: (zak, existuje, G) => pdPoznamkaZakText(zak, existuje, G),
 });
-const DRUHY = [PD_POZNAMKA_DRUH_SACHTY, PD_POZNAMKA_DRUH_ZAKAZNICI];
+/* PO #116: poznámka „Nabídka odeslána: …“ (souhrn odeslané nabídky). Píše ji
+ * jen POST /api/pd/odeslani (lib/pd_odeslani.mjs) po potvrzení obchodníkem,
+ * ne uložení zakázky — v DRUHY je proto, aby ji poznámka šachet / zákazníků
+ * nikdy nepřepsala (jinyDruh) a ona je. */
+export const PD_POZNAMKA_ODESL_UVOD = 'Nabídka odeslána: ';
+export function pdPoznamkaOdeslJeNase(obsah, zak) {
+  const t = jednaMezera(bezZnacek(obsah, ' '));
+  const znacka = jednaMezera(pdPoznamkaEsc(pdPoznamkaZnacka(zak).trim()));
+  return !!znacka && t.startsWith(jednaMezera(pdPoznamkaEsc(PD_POZNAMKA_ODESL_UVOD))) && t.endsWith(znacka);
+}
+export const PD_POZNAMKA_DRUH_ODESLANI = Object.freeze({
+  pole: 'pdOdeslani', uvod: PD_POZNAMKA_ODESL_UVOD, strop: 'poznamka-odeslani', predmet: 'Souhrn odeslané nabídky',
+  jeNase: pdPoznamkaOdeslJeNase,
+  text: () => '',
+});
+const DRUHY = [PD_POZNAMKA_DRUH_SACHTY, PD_POZNAMKA_DRUH_ZAKAZNICI, PD_POZNAMKA_DRUH_ODESLANI];
 
 /* Začíná obsah úvodem JINÉHO druhu? Taková poznámka se tímto druhem nikdy
  * nepřepíše (poznámka šachet ≠ poznámka zákazníků, VZ-E5). */
@@ -253,6 +268,12 @@ async function zapisDoPipedrive(dealId, id, obsah, zak, zavolej, druh) {
   const noveId = nova && Number(nova.id);
   if (!(Number.isInteger(noveId) && noveId > 0)) throw new PdChyba('Pipedrive nevrátil id poznámky.', 502);
   return { id: noveId, akce: 'zalozeno' };
+}
+
+/* PO #116: zápis / úprava poznámky daného druhu mimo uložení zakázky (najde
+ * vlastní poznámku podle id, jinak podle úvodu a značky; cizí druh nepřepíše). */
+export function pdPoznamkaZapisDruhu(dealId, id, obsah, zak, zavolej, druh) {
+  return zapisDoPipedrive(String(dealId), id, obsah, zak, zavolej, druh);
 }
 
 /* Smí uživatel psát do Pipedrive (B80, právo `crm.pipedrive`)? */

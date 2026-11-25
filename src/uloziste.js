@@ -724,7 +724,8 @@ function uloZamekRazitkaDrz(naDisku, kUlozeni) {
      * mimo klíč zámku (uloZamekKlic), takže starší klient, který ho nezná, ukládá bez 409. */
     /* `zpracovatel` (#665): blok „Vypracoval" odeslané nabídky — píše ho server při prvním přijetí zámku.
      * `strana` (B231): příznaky strany zakázky v okamžiku zámku — doklad, píše jen server. */
-    ['kdo', 'popis', 'sablona', 'slovnik', 'hlavicka', 'prijato', 'zpracovatel', 'strana'].forEach(k => {
+    /* `datumNabidky` (DT #745): den na papíře odeslané nabídky — po prvním přijetí ho klient nepřepíše ani nedopíše. */
+    ['kdo', 'popis', 'sablona', 'slovnik', 'hlavicka', 'prijato', 'zpracovatel', 'strana', 'datumNabidky'].forEach(k => {
       if (!stejne(sz[k], nz[k])) {
         if (sz[k] === undefined) delete nz[k]; else nz[k] = JSON.parse(JSON.stringify(sz[k]));
         oprav++;
@@ -976,7 +977,9 @@ const ULO_CISLA_NAVIC = ['ock.zadani.mustekHloubkaMm', 'ock.zadani.mustekSirkaMm
  * NAD_DVERMI_VOLBY z engine.js (shodu hlídá test_svetliky_boky.js). */
 const ULO_VYPLN_DVERI = ['bez', 'sklo', 'plech', 'material', 'stavba'];
 /* Zaškrtnutí statiky opláštění (#667): jen true / false; chybí = výchozí stav. */
-const ULO_VYCTY_MIMO_VZOR = { nadDvermi: ULO_VYPLN_DVERI, bokyDveri: ULO_VYPLN_DVERI, statikaOpl: [true, false] };
+/* Příznak nové kalkulace (ER #757, #758, #761): jen 2; chybí = stará kalkulace. */
+const ULO_VYCTY_MIMO_VZOR = { nadDvermi: ULO_VYPLN_DVERI, bokyDveri: ULO_VYPLN_DVERI, statikaOpl: [true, false],
+  kalkVerze: [2] };
 /* ZRUŠENÁ VOLBA „ZAJISTÍ STAVBA" (#560, rozhodnutí J. V. 4. 11. 2026: „stavba"
  * = „bez"). Ve výčtu výš zůstává, protože ji nesou STARÁ data — odeslaná
  * nabídka i rozpracovaná varianta, kterou ještě nikdo neotevřel novou verzí.
@@ -1164,6 +1167,25 @@ function uloTypyProblemy(zak, stara, opts) {
     /* Ruční hodnoty krycího listu (B152) — i u zamčené varianty, protože
      * volná pole odeslané nabídky se doplňují dál (v14.10.5). */
     uloTypyKryci(d, sv && sv.data).forEach(k => out.push({ kde: pred + k, duvod: 'typ' }));
+    /* PŘÍZNAK NOVÉ KALKULACE SE NEMĚNÍ (revize ER N3, schválil J. V. 24. 11. 2026).
+     * Přidat nebo ubrat `kalkVerze` u uložené varianty / šachty by tiše
+     * přepnulo pravidla ceny. Běžná cesta příznak nemění nikdy (klon,
+     * duplikát, šachta 2+ = kopie). Výjimky: obnova ze zálohy a první
+     * uložení čerstvé kalkulace z Pipedrive (pdCerstvaPriprav ji skládá
+     * znovu z nové kalkulace). Stojí PŘED přeskočením zamčené varianty
+     * (dorevize ER D1): odemčení a změna příznaku v jednom uložení neprojdou.
+     * Meze (nové id, nová zakázka, obnova souborem) v BEZPECNOST_MEZE.md. */
+    if (sv && !obnova && !(stara && stara.pdCerstva === true) && d.ock && typeof d.ock === 'object') {
+      const kv = (z) => (z && typeof z === 'object' && z.kalkVerze != null && z.kalkVerze !== '') ? z.kalkVerze : null;
+      const so = (sv.data && sv.data.ock) || {};
+      if (so.zadani && kv(d.ock.zadani) !== kv(so.zadani))
+        out.push({ kde: pred + 'ock.zadani.kalkVerze', duvod: 'kalkVerze' });
+      const stDalsi = Array.isArray(so.dalsi) ? so.dalsi : [];
+      (Array.isArray(d.ock.dalsi) ? d.ock.dalsi : []).forEach((x, i) => {
+        const st = x && stDalsi.find(t => t && t.id === x.id);
+        if (st && kv(x.zadani) !== kv(st.zadani)) out.push({ kde: pred + 'ock.dalsi.' + i + '.zadani.kalkVerze', duvod: 'kalkVerze' });
+      });
+    }
     if (sv && sv.zamek && sv.zamek.zamceno) return;                // doklad — nesahat
     const vlastni = [];
     if (d.ock && typeof d.ock === 'object') {
@@ -1181,6 +1203,13 @@ function uloTypyProblemy(zak, stara, opts) {
         uloTypyOplasteni(z.oplasteni, 'ock.zadani.oplasteni.steny', vlastni);
         uloTypyProfily(z.profily, 'ock.zadani.profily', vlastni);
       }
+      /* Příznak nové kalkulace i u šachet 2+ (ER, revize Fable N3): jádro
+       * počítá každou šachtu podle jejího zadání. */
+      (Array.isArray(d.ock.dalsi) ? d.ock.dalsi : []).forEach((s, i) => {
+        const x = s && s.zadani && typeof s.zadani === 'object' ? s.zadani.kalkVerze : undefined;
+        if (x !== undefined && x !== null && x !== '' && ULO_VYCTY_MIMO_VZOR.kalkVerze.indexOf(x) < 0)
+          vlastni.push({ kde: 'ock.dalsi.' + i + '.zadani.kalkVerze', duvod: 'typ' });
+      });
     }
     /* Ceník varianty je celý vstup jádra — čísla jen ve tvaru, který jádro
      * čte jako člověk (B135). */
@@ -1196,7 +1225,7 @@ function uloTypyProblemy(zak, stara, opts) {
       uloTypyProj(d.proj.zadani, 'proj.zadani', vlastni);
       if (vzCenP) uloTypyStrom(vzCenP, d.proj.cenik, 'proj.cenik', vlastni, true);
     }
-    vlastni.forEach(p => out.push({ kde: pred + p.kde, duvod: p.duvod === 'zrusenaVolba' ? p.duvod : 'typ' }));   // #560
+    vlastni.forEach(p => out.push({ kde: pred + p.kde, duvod: (p.duvod === 'zrusenaVolba' || p.duvod === 'kalkVerze') ? p.duvod : 'typ' }));   // #560, ER N3
   });
   return out;
 }
@@ -1281,6 +1310,11 @@ const ULO_ZADANI_BEZ_ZAPORU = ['rezervaProfilyPct', 'rezervaPlechyPct', 'rezerva
  * načítá i bez jádra; shodu hlídá src/test_560_mustky_sekce.js). */
 const ULO_MUSTKY_MAX = 20;
 const ULO_MUSTKY_TEXT = 120;
+/* RP (revize N6): ruční položka — jednotka (ks/bm/m²/kpl), dodatkový text
+ * a překlad názvu / dodatku EN/DE/FR. */
+const ULO_RP_JEDNOTKA_MAX = 10;
+const ULO_RP_NAZEV_MAX = 500;
+const ULO_RP_TEXT_MAX = 2000;
 const ULO_MUSTKY_CISLA = ['ks', 'sirkaMm', 'delkaMm', 'zabradliStrany', 'sloupyKs', 'sloupVyskaM'];
 const ULO_MUSTKY_VOLBY = { podlaha: ['plech', 'pororost', 'vana', 'jine'], zabradli: ['kov', 'sklo', 'bez', 'jine'],
   kotveni: ['deska', 'sloupy', 'konzola', 'jine'] };
@@ -1315,6 +1349,25 @@ function uloZaporneVZadani(z, zp) {
       if (!p || typeof p !== 'object' || Array.isArray(p)) { out.push({ kde: c, duvod: 'typ' }); return; }
       hlidej(p.cena, c + '.cena'); strop(p.cena, c + '.cena');
       hlidej(p.mnozstvi, c + '.mnozstvi'); strop(p.mnozstvi, c + '.mnozstvi');
+      /* RP #736/#740 (revize N6): jednotka, dodatkový text a překlad ruční
+       * položky — typ a strop délky jako u ostatních textů zadání. */
+      const text = (h, kde, max) => {
+        if (h === undefined || h === null) return;
+        if (typeof h !== 'string') out.push({ kde, duvod: 'typ' });
+        else if (h.length > max) out.push({ kde, id: h.slice(0, 40) + '…', duvod: 'delka' });
+      };
+      text(p.jednotka, c + '.jednotka', ULO_RP_JEDNOTKA_MAX);
+      text(p.dodatek, c + '.dodatek', ULO_RP_TEXT_MAX);
+      if (p.jazyky !== undefined && p.jazyky !== null) {
+        if (typeof p.jazyky !== 'object' || Array.isArray(p.jazyky)) out.push({ kde: c + '.jazyky', duvod: 'typ' });
+        else Object.keys(p.jazyky).forEach(j => {
+          const cj = c + '.jazyky.' + (/^(en|de|fr)$/.test(j) ? j : '?');
+          const v = p.jazyky[j];
+          if (!/^(en|de|fr)$/.test(j) || !v || typeof v !== 'object' || Array.isArray(v)) { out.push({ kde: cj, duvod: 'typ' }); return; }
+          text(v.nazev, cj + '.nazev', ULO_RP_NAZEV_MAX);
+          text(v.dodatek, cj + '.dodatek', ULO_RP_TEXT_MAX);
+        });
+      }
     });
   };
   if (z && typeof z === 'object') {
@@ -2153,9 +2206,10 @@ function uloIdProblemyText(problemy) {
   const rozmer = problemy.filter(p => p.duvod === 'rozmer');
   const model = problemy.filter(p => p.duvod === 'model');
   const zrusena = problemy.filter(p => p.duvod === 'zrusenaVolba');
+  const kalkVerze = problemy.filter(p => p.duvod === 'kalkVerze');
   const tvar = problemy.filter(p => p.duvod !== 'duplicita' && p.duvod !== 'delka' && p.duvod !== 'priloha'
     && p.duvod !== 'typ' && p.duvod !== 'zaporne' && p.duvod !== 'zaokr' && p.duvod !== 'rozmer' && p.duvod !== 'model'
-    && p.duvod !== 'zrusenaVolba');
+    && p.duvod !== 'zrusenaVolba' && p.duvod !== 'kalkVerze');
   const casti = [];
   if (tvar.length) casti.push('identifikátor v nepovoleném tvaru (' + tvar.map(x => x.kde).join(', ')
     + ') — povolená jsou písmena, číslice, tečka, podtržítko a pomlčka');
@@ -2173,6 +2227,9 @@ function uloIdProblemyText(problemy) {
   /* #560: zrušená volba světlíku — nová „zajistí stavba" nesmí vzniknout. */
   if (zrusena.length) casti.push('zrušenou volbu světlíku „zajistí stavba" (' + zrusena.slice(0, 5).map(x => x.kde).join(', ')
     + ') — od 4. 11. 2026 se volí „bez" (prostor světlíku dozdí stavba); otevřete zakázku znovu, převede se sama');
+  /* ER N3: příznak nové kalkulace uložené varianty se nemění. */
+  if (kalkVerze.length) casti.push('změnu pravidel výpočtu uložené kalkulace (' + kalkVerze.slice(0, 5).map(x => x.kde).join(', ')
+    + ') — kalkulace založená před 24. 11. 2026 počítá postaru a nová podle nových pravidel; jinou verzi výpočtu založte jako novou kalkulaci');
   /* B111: záporná částka, množství nebo hodiny — cesty jako u typů. */
   if (zaporne.length) casti.push('zápornou částku nebo množství (' + zaporne.slice(0, 5).map(x => x.kde).join(', ')
     + (zaporne.length > 5 ? ' a další ' + (zaporne.length - 5) : '')

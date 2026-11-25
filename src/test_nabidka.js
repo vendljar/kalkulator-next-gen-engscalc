@@ -134,7 +134,8 @@ test('příplatek má cenu v Kč', d.priplatky.every(x => /Kč$/.test(x.cena)));
 test('výchozí nabídka neobsahuje skla (N7 — vloží je obchodník)',
   !d.priplatky.some(x => /sklo/i.test(x.popis) || /sklo/i.test(x.nazev || '')), JSON.stringify(d.priplatky.map(x=>x.popis).slice(0,3)));
 const vV = JSON.parse(JSON.stringify(v));
-vV.data.ock.zadani.priplatkyVynechat = ['vsgFolie', 'skn', 'ventilator', 'madlaBoky'];  // skla už jsou mimo (N7) + dvě další
+/* Výchozí seznam nové zakázky (skla N7, od #757 i engineering) + dvě další. */
+vV.data.ock.zadani.priplatkyVynechat = (v.data.ock.zadani.priplatkyVynechat || []).concat(['ventilator', 'madlaBoky']);
 const dV = nabidkaData(zak, vV, JEKLY);
 test('vynechané příplatky se negenerují', dV.priplatky.length === d.priplatky.length - 2
   && !dV.priplatky.some(x => x.nazev.includes('SKN')), dV.priplatky.length);

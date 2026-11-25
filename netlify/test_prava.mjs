@@ -66,6 +66,7 @@ import slovnikFn from './functions/slovnik.mjs';
 import controllingFn from './functions/controlling.mjs';
 import controllingExportFn from './functions/controlling_export.mjs';
 import zakazniciFn from './functions/zakaznici.mjs';
+import zakazniciZeZakazekFn from './functions/zakaznici_ze_zakazek.mjs';
 import schvalovaniFn from './functions/schvalovani.mjs';
 import sablonyFn from './functions/sablony.mjs';
 import analytikaFn from './functions/analytika.mjs';
@@ -77,6 +78,7 @@ import pdWebhookFn from './functions/pd_webhook.mjs';
 import pdVazbaFn from './functions/pd_vazba.mjs';
 import pdOrganizaceFn from './functions/pd_organizace.mjs';
 import pdProdejFn from './functions/pd_prodej.mjs';
+import pdOdeslaniFn from './functions/pd_odeslani.mjs';
 import zalohaDiskFn from './functions/zaloha_disk.mjs';
 import pdStavFn from './functions/pd_stav.mjs';
 import pripominkyFn from './functions/pripominky.mjs';
@@ -415,6 +417,23 @@ const MATICE = [
     proc: 'smazaná karta bere s sebou i dohledané údaje — nevratné, proto jen administrátor',
     prava: JEN_ADMIN },
 
+  /* ZK #755 (24. 11. 2026): hromadné naplnění databáze zákazníků ze zakázek
+   * podle ARES — čte VŠECHNY zakázky a ptá se ARES, proto jen administrátor.
+   * V matici jen volání bez dotazu do ARES (zrušení náhledu, zápis s cizím
+   * id = 409); náhled a zápis hlídá netlify/test_zk_zakaznici_ze_zakazek.mjs. */
+  { fn: zakazniciZeZakazekFn, soubor: 'zakaznici_ze_zakazek.mjs', nazev: 'zákazníci ze zakázek — stav a protokol (GET /api/zakaznici-ze-zakazek)',
+    metoda: 'GET', url: 'http://x/api/zakaznici-ze-zakazek',
+    proc: 'náhled nese firmy ze všech zakázek — jen administrátor',
+    prava: JEN_ADMIN },
+  { fn: zakazniciZeZakazekFn, nazev: 'zákazníci ze zakázek — zrušení náhledu (POST akce=zrusit)',
+    metoda: 'POST', url: 'http://x/api/zakaznici-ze-zakazek', telo: () => ({ akce: 'zrusit' }),
+    proc: 'hromadná akce nad databází zákazníků — jen administrátor',
+    prava: JEN_ADMIN },
+  { fn: zakazniciZeZakazekFn, nazev: 'zákazníci ze zakázek — zápis karet (POST akce=zalozit, cizí id)',
+    metoda: 'POST', url: 'http://x/api/zakaznici-ze-zakazek', telo: () => ({ akce: 'zalozit', id: 'neexistuje' }),
+    proc: 'hromadné založení karet jen administrátor (409 = náhled neexistuje)',
+    prava: { 'nepřihlášený': 401, 'Obchodník': 403, 'Vedoucí': 403, 'Administrátor': 409 } },
+
   { fn: zobrazeni, soubor: 'zobrazeni.mjs', nazev: 'zobrazení — čtení matice (GET /api/zobrazeni)', metoda: 'GET',
     url: 'http://x/api/zobrazeni',
     proc: 'podle matice si rozhraní skládá sám prohlížeč — potřebuje ji každý přihlášený',
@@ -611,6 +630,14 @@ const MATICE = [
     metoda: 'POST', url: 'http://x/api/pd/prodej', telo: () => ({ soubor: ulozena.soubor, akce: 'nahled' }),
     proc: 'po Prodáno a potvrzení obchodníkem zapíše krycí list, hodnotu a fázi dealu — s právem Pipedrive',
     prava: { 'nepřihlášený': 401, 'Obchodník': 409, 'Vedoucí': 409, 'Administrátor': 409 } },
+  /* Zápis odeslání nabídky do dealu (PO #116): právo Pipedrive z matice (B80)
+   * a k tomu odeslaná varianta (autor, kdo odeslal, vedoucí, administrátor).
+   * Tady varianta v zakázce není → 404 všem přihlášeným s právem.
+   * Podrobnosti netlify/test_po_116_odeslani.mjs. */
+  { fn: pdOdeslaniFn, soubor: 'pd_odeslani.mjs', nazev: 'Pipedrive — zápis odeslání nabídky do dealu (POST /api/pd/odeslani)',
+    metoda: 'POST', url: 'http://x/api/pd/odeslani', telo: () => ({ soubor: ulozena.soubor, varianta: 'neni', zamekKdy: 'x', akce: 'nahled' }),
+    proc: 'po prvním tisku cenové nabídky a potvrzení obchodníkem zapíše krycí list, hodnotu, fázi, poznámku a Word k dealu — s právem Pipedrive',
+    prava: { 'nepřihlášený': 401, 'Obchodník': 404, 'Vedoucí': 404, 'Administrátor': 404 } },
 
   /* Noční kopie na Disk skriptem Apps Script (#577 AS, 10. 11. 2026): volá ji
    * skript v Google účtu správce s tokenem KNG_DISK_TOKEN v hlavičce

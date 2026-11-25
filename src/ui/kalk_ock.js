@@ -248,7 +248,7 @@ function renderInputs() {
          * Vlastní stěny jsou ve zvláštní kartě, která se kreslí až po
          * přepnutí — ve standardním režimu o nich obchodník nemá vědět. */
         + `<div class="row"><label>Opláštění</label>
-            <select style="width:150px" onchange="oplRezimSet(this.value)" title="${esc(SKLO_JINE_NAPOVEDA)}">
+            <select style="width:150px" onchange="oplRezimSet(this.value)" title="${esc(oplasteniNapoveda(Z, oplPoStenach()))}">
               <option value="standard" ${oplPoStenach() ? '' : 'selected'}>jednotné (standard)</option>
               <option value="poStenach" ${oplPoStenach() ? 'selected' : ''}>po stěnách A–D</option>
             </select><span class="u"></span></div>`
@@ -329,9 +329,14 @@ function renderInputs() {
        * Prázdné pole = řádek není (příp. ceníková sazba u starých zakázek
        * s uloženými kusy); zaškrtnutí ATYP předvyplní 50 000 Kč. */
       inp('Z.zamecnikAtypKc', { l: 'Zámečník atyp (prázdné = žádný)', step: 1000, u: 'Kč', klic: 'Z.zamecnikAtypKc ← C.atypZamecnikKc (sazba: C.zamecnikAtypKc)' }) +
-      inp('Z.engineeringKs', { type: 'anone', l: 'Engineering' }) +
-      inp('Z.vystupZamereni', { type: 'anone', l: 'Výstup ze zaměření pro zákazníka' }) +
-      statikaOplRadek(rAkt) +
+      /* NOVÁ KALKULACE (ER, J. V. 24. 11. 2026, kalkNova): engineering je
+       * v příplatcích (#757), výstup ze zaměření vždy a statika opláštění podle
+       * opláštění (#761) — přepínače tu zůstávají jen u starých kalkulací. */
+      (kalkNova(Z)
+        ? '<div class="row"><label>Engineering</label><span class="note">v příplatkových položkách (sloupec Nabídka)</span></div>'
+        : inp('Z.engineeringKs', { type: 'anone', l: 'Engineering' }) +
+          inp('Z.vystupZamereni', { type: 'anone', l: 'Výstup ze zaměření pro zákazníka' }) +
+          statikaOplRadek(rAkt)) +
       /* REZERVY v procentech (17. 8. večer): 30 = +30 %. Základ se počítá
        * z celého základu kalkulace, příplatky z příplatků — jako dosud,
        * mění se jen zadávání (v datech zůstává desetinný podíl). */
@@ -514,7 +519,7 @@ function atypPrepni(zap, opts) {
       projekceAtypHod: Math.round(S('atypProjekcePct') * (+Z.projekceZakladHod || 0)),
     };
   }
-  atypHodnoty(Z, vData, zap, predloha);
+  atypHodnoty(Z, vData, zap, predloha, { automat: !!(opts && opts.automat) });
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   render();
 }
@@ -1684,16 +1689,73 @@ function vlastniDoCeniku(sekce, i) {
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   render();
 }
+/* Textové vlastnosti ruční položky (dávka RP: jednotka, dodatkový text) se
+ * neberou jako číslo; jednotka jen ze seznamu RP_JEDNOTKY. */
+const RP_TEXT_POLE = ['nazev', 'jednotka', 'dodatek'];
 function vlastniSet(sekce, i, k, v) {
   const p = vlastniPolozkyArr(sekce)[i];
   if (!p) return;
-  if (k !== 'nazev' && typeof zaporneOdmitni === 'function' && zaporneOdmitni(v)) return;   // B111
+  const text = RP_TEXT_POLE.indexOf(k) >= 0;
+  if (!text && typeof zaporneOdmitni === 'function' && zaporneOdmitni(v)) return;   // B111
+  if (k === 'jednotka' && RP_JEDNOTKY.indexOf(v) < 0) return;
   const puvodni = p.nazev;
-  p[k] = k === 'nazev' ? v : +v;
+  p[k] = text ? String(v == null ? '' : v) : +v;
+  if (k === 'dodatek' && !p.dodatek.trim()) delete p.dodatek;
   // přejmenování vlastní položky – přestěhuj ruční přepisy klíčované názvem (#4)
   if (k === 'nazev' && puvodni && puvodni !== p.nazev) prepisyPrejmenuj(Z, puvodni, p.nazev);
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   render();
+}
+
+/* ---- RUČNÍ POLOŽKA V NABÍDCE (dávka RP, J. V. 23. 11. 2026) ----
+ * Pod každou ruční položkou (vlastní řádek bez `kid`) řádek s jednotkou,
+ * dodatkovým textem do cenové nabídky a sekcí specifikace, do které se
+ * položka vytiskne (pevný převod RP_SEKCE_TS — obchodník ho nevolí).
+ * „překlad EN/DE/FR" rozbalí pole názvu a dodatkového textu v cizích
+ * jazycích (vzor #379); prázdné pole = slovník, jinak česky a kontrola
+ * „rucniPolozkaCesky" upozorní. */
+const RP_UI = { preklad: new Set() };
+function rpPrekladToggle(klic) {
+  if (RP_UI.preklad.has(klic)) RP_UI.preklad.delete(klic); else RP_UI.preklad.add(klic);
+  render();
+}
+function rpJazykSet(sekce, i, jaz, pole, v) {
+  const p = vlastniPolozkyArr(sekce)[i];
+  if (!p || ['en', 'de', 'fr'].indexOf(jaz) < 0 || ['nazev', 'dodatek'].indexOf(pole) < 0) return;
+  const t = String(v == null ? '' : v).trim();
+  if (!p.jazyky || typeof p.jazyky !== 'object') p.jazyky = {};
+  if (!p.jazyky[jaz]) p.jazyky[jaz] = {};
+  if (t) p.jazyky[jaz][pole] = t; else delete p.jazyky[jaz][pole];
+  if (!Object.keys(p.jazyky[jaz]).length) delete p.jazyky[jaz];
+  if (!Object.keys(p.jazyky).length) delete p.jazyky;
+  aktivniVarianta(ZAK).upraveno = new Date().toISOString();
+  render();
+}
+function rpPodRadek(r, NC) {
+  if (!r || !r.vlastni || r.kid || !r.sekce || !RP_SEKCE_TS[r.sekce]) return '';
+  const edit = jeAdmin() || smiZobrazit('kalk.pridatPolozku');
+  const p = vlastniPolozkyArr(r.sekce)[r.idx];
+  if (!p) return '';
+  const sek = escJs(r.sekce), i = r.idx, klic = r.sekce + ':' + i;
+  const jed = rpJednotka(p);
+  const dis = edit ? '' : ' disabled';
+  const sel = `<select class="rp-jednotka"${dis} onchange="vlastniSet('${sek}', ${i}, 'jednotka', this.value)">${
+    RP_JEDNOTKY.map(j => `<option value="${esc(j)}"${j === jed ? ' selected' : ''}>${esc(j)}</option>`).join('')}</select>`;
+  const pocet = p.jazyky ? ['en', 'de', 'fr'].filter(j => p.jazyky[j] && (p.jazyky[j].nazev || p.jazyky[j].dodatek)).length : 0;
+  const otevreno = RP_UI.preklad.has(klic);
+  const jaz = otevreno ? `<div class="rp-jazyky">${['en', 'de', 'fr'].map(j => {
+    const v = (p.jazyky && p.jazyky[j]) || {};
+    return `<div class="rp-jazyk"><b>${j.toUpperCase()}</b>
+      <input type="text" class="rp-j-nazev" maxlength="500" placeholder="název ${j.toUpperCase()}" value="${esc(v.nazev || '')}"${dis} onchange="rpJazykSet('${sek}', ${i}, '${j}', 'nazev', this.value)">
+      <input type="text" class="rp-j-dodatek" maxlength="2000" placeholder="dodatkový text ${j.toUpperCase()}" value="${esc(v.dodatek || '')}"${dis} onchange="rpJazykSet('${sek}', ${i}, '${j}', 'dodatek', this.value)"></div>`;
+  }).join('')}</div>` : '';
+  return `<tr class="rp-pod noprint"><td colspan="${NC}"><div class="rp-pod-in">
+    <label class="rp-jed">jednotka ${sel}</label>
+    <label class="rp-dodatek">Dodatkový text do cenové nabídky (nepovinné)
+      <input type="text" class="rp-dodatek-in" maxlength="2000" value="${esc(p.dodatek || '')}"${dis} onchange="vlastniSet('${sek}', ${i}, 'dodatek', this.value)"></label>
+    <span class="note rp-sekce" title="ruční položka se vytiskne vždy, do sekce technické specifikace podle sekce kalkulace">v nabídce: ${esc(RP_SEKCE_TS[r.sekce])}</span>
+    <button class="mini rp-preklad" onclick="rpPrekladToggle('${escJs(klic)}')">překlad EN/DE/FR${pocet ? ' (' + pocet + ')' : ''} ${otevreno ? '▴' : '▾'}</button>
+  </div>${jaz}</td></tr>`;
 }
 
 /* ---- zaškrtnutí volitelné položky do základní ceny ---- */
@@ -1765,6 +1827,23 @@ function bunkaNazev(r, sekceKey) {
 const SKLO_JINE_NAPOVEDA = 'Jiné sklo, než dává typ šachty a způsob zasklení: v zadání šachty zvolte '
   + 'Opláštění „po stěnách A–D" a u stěn typ skla z ceníku, nebo „jiné" s vlastním názvem a sazbou '
   + '(stejné sklo pro všechny stěny = stejný typ u všech čtyř).';
+/* NÁPOVĚDA U VOLBY OPLÁŠTĚNÍ PODLE ZVOLENÉ HODNOTY (#741, rozhodnutí J. V.
+ * 24. 11. 2026, varianta A). Po stěnách: „Jiný typ zasklení viz níže."
+ * Standard: zasklení, které se opravdu počítá — typ skla ze skloVolba (čelní
+ * sklo), u exteriérové šachty (boky a zadní stěna = položka ceníku „Izolační
+ * dvojsklo – typ", C.skloBokyKc) „+ Izolační dvojsklo". Vychází tak:
+ * exteriér „Zasklení VSG 4.4.1 + Izolační dvojsklo", interiér mezi příčníky
+ * „Zasklení VSG 4.4.1", interiér na terče „Zasklení VSG 4.4.2". Zadání se po
+ * změně typu šachty i zasklení překreslí (set → render), title tedy sleduje
+ * volbu. Řádek skla v tabulce a Detail výpočtu dál nesou SKLO_JINE_NAPOVEDA.
+ * Hlídá src/test_ut_741_napoveda_opl.js. */
+function oplasteniNapoveda(z, poStenach) {
+  if (poStenach) return 'Jiný typ zasklení viz níže.';
+  if (typeof skloVolba !== 'function') return SKLO_JINE_NAPOVEDA;
+  const sv = skloVolba(z, {});
+  const typ = String(sv.celni.nazev).replace(/^MATERIÁL\s+/, '');
+  return 'Zasklení ' + typ + (sv.boky.cesta === 'C.skloBokyKc' ? ' + Izolační dvojsklo' : '');
+}
 function jeRadekSkla(r) {
   if (!r || r.vlastni || oplPoStenach() || typeof skloVolba !== 'function') return false;
   const v = aktivniVarianta(ZAK);
@@ -2140,7 +2219,7 @@ function radekKalk(r, sekceKey) {
   if (showCost) c += `<td>${fmt(r.naklad)}</td><td>${fmt(r.marze)}</td>`;
   c += `<td>${fmt(r.sMarzi)}</td>`;
   if (admin) c += adminKoncBunky(r, sekceKey);
-  return `<tr${dz} class="${vypnutoTrida(r).trim()}">${c}</tr>` + rcRadekPod(r, kalkSloupce().NC);
+  return `<tr${dz} class="${vypnutoTrida(r).trim()}">${c}</tr>` + rpPodRadek(r, kalkSloupce().NC) + rcRadekPod(r, kalkSloupce().NC);
 }
 function radekPridat(sekceKey, popis) {
   const { NC } = kalkSloupce();
@@ -2301,7 +2380,7 @@ function tblVolitelne(katalog, sum) {
       /* Dodatkový text i u volitelných položek (#267) — zadání J. V. mluví
        * o „příplatkových a volitelných položkách“, takže obojí. */
       return `<tr${dz}${tridy.trim() ? ` class="${tridy.trim()}"` : ''}>${c}</tr>`
-        + popisRadekVol(r, NC);
+        + rpPodRadek(r, NC) + popisRadekVol(r, NC);
     }).join('') +
     (sbalenoV ? '' : radekPridatSekce('volitelne')) +
     sumRadek('sectot', 'VOLITELNÉ CELKEM (jen zaškrtnuté)', sum, rows);
@@ -2635,7 +2714,8 @@ function renderOutputs() {
        * (sloupec Nabídka vlevo). Vlastní příplatek zakázky ho nemá — ten
        * v nové zakázce vůbec nevznikne. */
       c += `<td class="admincol">${x.vlastni ? ''
-        : vychoziPolozkaChk(ZOBRAZENI_PRIPLATEK + x.key, true,
+        : vychoziPolozkaChk(ZOBRAZENI_PRIPLATEK + x.key,
+          (typeof zobrazeniPriplatekZaklad === 'function') ? zobrazeniPriplatekZaklad(x.key) : true,
           'zaškrtnuto = příplatek jde v NOVÉ zakázce do cenové nabídky (platí pro všechny); '
           + 'otevřená zakázka se nemění')}</td>`;
     }

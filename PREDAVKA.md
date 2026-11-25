@@ -38,13 +38,30 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/mt-mutace-2311` | (tato dávka) | v23.11.3 | MT #735: 4 nechycené mutace kola 45162888071 — jen testy, nad c8d3d9d |
 | `claude/sa-sablony` | (tato dávka) | v23.11.6 | SA #719–#721 kontrola šablon nad 133a8f5; verzi přečísluje koordinace |
 | `claude/lak-lakovani` | (tato dávka) | v22.11.8 | LAK #666 lakování z nabídky lakovny nad 05a496d, s integrací 36e2681 |
+| `claude/dt-datum-tisku` | (tato dávka) | — | DT #745 #746 datum nabídky = den tisku nad 0fd6410; verzi přidělí koordinace |
 | `claude/pv-pipedrive` | (tato dávka) | v23.11.7 | PV #597 zápis prodeje do dealu + #734 autor = vlastník dealu nad 1280831; revize Fable; verzi přidělí koordinace |
+| `claude/ut-texty` | (tato dávka) | — | UT #741 #742 #743 (#744 čeká na J. V.) nad 0fd6410; verzi přidělí koordinace |
+| `claude/po-odeslani-pipedrive` | (tato dávka) | v24.11.10 | PO #116 nad 0d8a95f; Fable SLOUČIT; předávka v archivu |
+| `claude/r3-pole-wordu` | (tato dávka) | — | R3 #751 zákaz dalších polí Wordu nad 3cab0c5 (v24.11.2); verzi přidělí koordinace |
+| `claude/er-engineering-rezerva` | (tato dávka) | v24.11.9 | ER #757 #758 #761 nová kalkulace; předávka v archivu |
+| `claude/zk-zakaznici-ze-zakazek` | (tato dávka) | v24.11.8 | ZK #755 zákazníci ze zakázek podle ARES (nástroj správce) nad c89e872, sloučeno s integrací d3d449b (v24.11.7); revize Fable SLOUČIT |
 
 Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontrola: `python3 nastroje/release_odkaz.py --chybejici`
 (22. 11.: žádná — main v19.11.11, tag vydán).
 
 ## Běžící dávky
 
+ZK #755 (v24.11.8, `claude/zk-zakaznici-ze-zakazek`): předávka dávky v `podklady/predavky/2026-11.md` (nahoře).
+
+Stav 24. 11. 2026 21:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74 % → doporučeno nové sezení; kokpit https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2):
+- **main** v24.11.7 (4e69c27, 25. 11. — test → main na pokyn J. V.; release v24.11.7 čeká na J. V.). **test** v24.11.7 (4e69c27). **integrace** v25.11.1 = UT, R3, DT, RP, ZK, ER, PO, TZ-1; Actions nad aa8f651 ZELENÉ 36/36.
+- **v24.11.7 pro test** (lokálně v pracovní kopii koordinace, NEpushnuto): test 6722ad9 + claude/rychla-PT-ZAB (7d1b3d1, #759 překlad zábradlí + výčet víc skupin můstků) + claude/rychla-K56-I2 (7ddb87f, #760 SoD a objednávka PROJ = kdo tiskne, CN snímek zámku). Postup: sloučit obě větve nad origin/test (konflikty jen přidané řádky — sjednotit), verze 24.11.7, kolo `--bez-mutaci --proti origin/test --ocekavane podklady/porovnani/ocekavane_pt-zab_2026-11-24.txt`, push do test, /api/zdravi, pak test sloučit do integrace.
+- **Další:** integrace v25.11.1 → test (pokyn); pak testovací sezení: PO na deal TEST, ZK naplnění, R1 RP Word na CN v18. PIPEDRIVE_ZAPIS na main vypnutý.
+- **ER** (claude/er-engineering-rezerva, 3f3162f, #757 engineering příplatek 1× za variantu, #758 rezerva v položkách + automat ATYP, #761 přepínače; jen nové kalkulace kalkVerze 2): opravy po revizi Fable (N1 engineering víc šachet, N3 server hlídá příznak, N5, N6) → dorevize (session_018mwHQEfyWwjwB8mdLvYCpJ). J. V.: N2 a N3 ano.
+- **ZK** (claude/zk-zakaznici-ze-zakazek, 62403a4, #755 naplnění zákazníků podle ARES): dorevize běží (session_018mwHQJYxTLw32SuMNrUtwJ). J. V.: R7, R9 a ostatní ponechat.
+- **PO** (claude/po-odeslani-pipedrive, #116): revize i dorevize Fable SLOUČIT, sloučeno s 0d8a95f jako v24.11.10; v integraci, TZ-1 = v25.11.1. J. V. založí pole „Datum nabídky“ (#763).
+- **Fronta:** K56-D (doplnění porovnání; potřebuje větev claude/testovani-kolo56 e221781f — bundle od J. V.); doprava a přesun hmot OCK (PDF návrh u majitele); R1 RP Word na skutečných šablonách CN v18 před main (testovací sezení).
+- Sloučené dnes: PV, MT2, UT, R3, DT, K54-N1, RP — předávky v `podklady/predavky/2026-11.md`.
 - Sloučené dávky (SA, PD, CN, RA, LAK, JT, NN, PR, BZ, HN, RJ, VZD, MT) — oddíly přesunuty do `podklady/predavky/2026-11.md` (23. 11. 2026). Běží: PV (#734 + #597), RP (prototyp ručních položek, čeká na J. V.).
 
 ## Dávka PV (`claude/pv-pipedrive`, 23. 11. 2026)
@@ -70,20 +87,6 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
   hlídá jména kontaktů a pole `kontakt` v odpovědích; mutace před 0/1, po 1/1.
 - **#738:** sady bz/cn/nn/ra červené 00–01 Praha (datum prodeje v UTC). `netlify/pomoc_den.mjs` (dnesPraha),
   `netlify/pomoc_falesne_hodiny.mjs`, hlídka `test_mt2_pulnoc.mjs`; před 8 FAIL, po 16 OK. Klient bere `objDnes()` — v aplikaci vada není.
-
-## Rychlá oprava K54-N1 (`claude/rychla-K54-N1`, 24. 11. 2026)
-
-- Nad integrací `0fd6410` (= test, v24.11.1), #750, předběžně v24.11.2 (verzi přidělí koordinace). Nález kola 54
-  (CN-432): smazaná otevřená kalkulace zůstala otevřená, první uložení ji založilo znovu, webhook ji jen aktualizoval.
-- Klient: `onlineSmazVybrane` zavře opravdu smazanou otevřenou (`zakNovaZakazkaProved({bezPrepnuti})`), zahodí
-  Zpět/Znovu a zálohu smazané (`historieZapomen`, revize N1/N2), předem to řekne v potvrzení (N6), zruší autosave
-  a počká na uložení (N7); `onlineUloz` posílá `ocekavanySoubor`, po 409 `smazana`/`pdCerstvaJina` neukládá (N5).
-- Server `zakazky.mjs`: neleží-li nic pod jménem a tělo nese razítko + `ocekavanySoubor` = jméno → 409 `smazana`.
-  N3 (J. V. 24. 11.): záznam s `pdCerstva` uloží jen okno s toutéž `pdVazbaWebhook.kdy` (dorevize D1/D2); jinak → 409.
-- Testy: `netlify/test_k54n1_smazana.mjs` 30 OK, `src/test_k54n1_smazani_ui.js` 34 OK (pojistky v CHANGELOG),
-  mutace [K54N1] a kolo viz zpráva koordinaci. N4 v BEZPECNOST_MEZE. Revize i dorevize Fable `claude/revize-k54n1` (D1–D4 opraveny) → čeká druhá dorevize.
-- Po nasazení do testu J. V.: smazat otevřenou → prázdná Nová zakázka, Ctrl+Z nic nevrátí; druhá karta → „byla
-  mezitím smazána“; webhook po smazání → nová čerstvá; stará kopie nad ní → „znovu založil Pipedrive“.
 
 ## Čeká na J. V.
 

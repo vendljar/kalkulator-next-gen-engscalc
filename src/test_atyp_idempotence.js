@@ -204,7 +204,7 @@ const snimek = (Z) => P.map(k => k + '=' + JSON.stringify(Z[k])).join(' ');
 const src = fs.readFileSync(__dirname + '/ui/kalk_ock.js', 'utf8');
 const fn = (src.match(/function atypPrepni\(zap, opts\)[\s\S]*?\n\}/) || [''])[0];
 test('atypPrepni existuje', fn.length > 0);
-test('a předává rozhodnutí funkci atypHodnoty', /atypHodnoty\(Z, vData, zap, predloha\)/.test(fn));
+test('a předává rozhodnutí funkci atypHodnoty', /atypHodnoty\(Z, vData, zap, predloha(, \{ automat: !!\(opts && opts\.automat\) \})?\)/.test(fn));
 test('předloha se skládá jen při ZAPNUTÍ', /if \(zap\) \{[\s\S]{0,900}predloha = \{/.test(fn));
 test('předloha pokrývá všech sedm polí',
   P.every(k => new RegExp(k + ':').test(fn)), P.filter(k => !new RegExp(k + ':').test(fn)));

@@ -292,6 +292,7 @@ async function zlata(src, volby) {
       zak.cislo = '2026-OPR-CN-9590'; zak.nazevAkce = 'Zlatá sada VS ' + jm;
       pevneDatum(zak);
       const v = zak.varianty[0];
+      require('./zlata_ocista_er.js').predEr(v.data.ock.zadani);   // #757: scénář = stará kalkulace
       Object.assign(v.data.ock.zadani, ZAD, { typSachty: typ }, kop(uprava));
       v.data.ock.fixes = f;
       v.data.cenik = Object.assign(ZC.zkusebniCenik(), cen === '354' ? ZC.zkusebniMustky() : {}, { kurzEurKc: 25 });

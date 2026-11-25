@@ -62,7 +62,7 @@ Pipedrive: token dává přístup ke VŠEM datům uživatele, proto žije jen
 v proměnné prostředí a nikdy nejde do prohlížeče (`netlify/lib/pipedrive.mjs`).
 Bez obou proměnných napojení na CRM neběží (funkce `/api/pd_*` to ohlásí);
 zbytek aplikace tím není dotčený. Číst z CRM smí administrátor a role,
-které přidělí právo „Čtení obchodních případů z Pipedrive“ v Nastavení →
+které přidělí právo „Pipedrive: čtení a zápis do vlastních obchodních případů“ v Nastavení →
 Zobrazení (výchozí: všichni uživatelé, rozhodnutí J. V. 15. 10. 2026; B80); detail případu má strop 30 čerstvých
 načtení za hodinu na uživatele.
 

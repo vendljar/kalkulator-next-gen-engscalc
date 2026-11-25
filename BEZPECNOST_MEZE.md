@@ -2422,11 +2422,16 @@ Zpráva auditu `podklady/2026-11-20_BEZPECNOSTNI_AUDIT_v19.11.11.md`, PoC `podkl
   počtem kontrola nevidí; generátor ZIP zapisuje znovu z toho, co kontrola viděla (zákazník ji nedostane), týká se
   jen surové šablony v úložišti. Návrh do roadmapy.
 - **B271 — pole s údaji počítače — OPRAVENO.** `FILENAME` (i `\p`), `USERNAME` a `AUTHOR` jsou mezi zakázanými poli
-  (`SABLONA_POLE_ZAKAZANA`). *Mez:* příbuzná pole `USERINITIALS`, `USERADDRESS`, `LASTSAVEDBY` a vlastnosti dokumentu
-  (`DOCPROPERTY`, `INFO`) dál projdou — k rozhodnutí J. V., zda je přidat. Revize SA R3: `INFO FileName \p`,
-  `INFO Author`, `DOCPROPERTY Author|LastSavedBy` a `TEMPLATE \p` vrátí totéž co zakázaná pole — doporučení přidat
-  všech šest (`USERINITIALS`, `USERADDRESS`, `LASTSAVEDBY`, `TEMPLATE`, `INFO`, `DOCPROPERTY`) po ověření nad
-  firemními šablonami (`KNG_PODKLADY`). Jméno autora nese i `docProps/core.xml` (`dc:creator`, `cp:lastModifiedBy`)
+  (`SABLONA_POLE_ZAKAZANA`). **Revize SA R3 — OPRAVENO (rozhodnutí J. V. 24. 11. 2026, #751):** zakázaná jsou
+  i rovnocenná pole `USERINITIALS`, `USERADDRESS`, `LASTSAVEDBY`, `TEMPLATE` (i `\p` — cesta k Normal.dotm v profilu
+  uživatele), `INFO` a `DOCPROPERTY` (vlastnosti dokumentu — autor, firma, správce, název souboru; `INFO Author` dřív
+  obešlo zákaz `AUTHOR`). Platí při nahrání šablony (server, průvodce) i při vyplňování nabídky
+  (`docxObsahZkontroluj`), ve `fldSimple`, ve složeném poli i s kódem rozděleným do více běhů, bez ohledu na velikost
+  písmen, uvozovky a přepínače; hláška „pole <TYP> (část)“. Kolo 54 ověřilo 31 firemních šablon test + main — mají
+  jen pole `PAGE`. Test `src/test_sa_sablony.js`, mutace jádra [R3] 6. *Mez:* zakázán je celý typ `INFO`
+  a `DOCPROPERTY`, ne jen argumenty s údaji osob — šablona s vlastností „Název“ z `DOCPROPERTY` neprojde (bezpečný
+  směr; firemní šablony je nemají). Typ pole dodaný vnořeným polem se odmítá dál obecně (B115).
+  Jméno autora nese i `docProps/core.xml` (`dc:creator`, `cp:lastModifiedBy`)
   a generátor ho kopíruje do každé nabídky — návrh do roadmapy.
 - **B272 — strop jedné XML části — OPRAVENO.** `SABLONA_XML_CAST_MAX` = 8 MB: `zipPrecti(u8, { xmlCastMax })` zastaví
   rozbalení položky `.xml` / `.rels` nad strop hned (PoC C12: 60 MB část ~0,1 s místo ~1 s na serveru) a kontrola nad
@@ -2502,11 +2507,26 @@ Testy `netlify/test_pv_597_zapis.mjs`, `netlify/test_pv_734_autor.mjs`, `overit_
   z uložené (po Prodáno zmrazené) zakázky, včetně Čísla nabídky = značky vlastníka dealu (#115 B).
 - **Chyby Pipedrive do zakázky jen pevnou větou (revize S4 — OPRAVENO).** `v.prodano.pipedrive.duvod` a protokol nesou
   vlastní větu podle stavu (`pdProdejChybaVeta`); surový text Pipedrive jen v odpovědi (`podrobnost`) tomu, kdo zapisoval.
-- *O1 rozhodnuto J. V. 24. 11. 2026: ano.* *Otázka pro J. V.:* O1 — vlastník dealu jako autor kalkulace z webhooku má práva autora (zrušit vazbu, změnit deal,
+- *O1 rozhodnuto J. V. 24. 11. 2026: ano. O2 rozhodnuto J. V. 24. 11. 2026: varianta a — právo `crm.pipedrive` zůstává, popisek přejmenován (#742).* *Otázka pro J. V.:* O1 — vlastník dealu jako autor kalkulace z webhooku má práva autora (zrušit vazbu, změnit deal,
   opravit firmu; dřív u webhookové kalkulace jen administrátor); O2 — zápis prodeje hlídá právo `crm.pipedrive`
-  („Čtení obchodních případů z Pipedrive“) + autor / kdo prodal / vedoucí / administrátor. Kód je zatím podle
+  („Pipedrive: čtení a zápis do vlastních obchodních případů“) + autor / kdo prodal / vedoucí / administrátor. Kód je zatím podle
   doporučení revize (O1 ano, O2 zatím stačí).
 
+## DT — datum cenové nabídky = den tisku (#745, #746, dávka DT, 24. 11. 2026)
+
+Větev `claude/dt-datum-tisku` nad `0fd6410`. Testy `src/test_dt_datum_tisku.js`, `netlify/test_dt_datum_tisku.mjs`,
+mutace [DT]. Číslo B278 je pracovní (přidělí koordinace).
+
+- **`zamek.datumNabidky`** (den na papíře odeslané nabídky) je **mimo klíč zámku** (`uloZamekKlic`) — cenu, číslo,
+  otisk ani kontrolu shody (B59, B232) nemění. U uloženého zámku ho drží server (`uloZamekRazitkaDrz`: nepřepíše,
+  nesmaže, nedopíše starému zámku). Nový zámek: server přijme jen platný den ≤ den `kdy` v Praze a nejvýš 7 dní před
+  ním, jinak dosadí den `kdy`; obnova (otisk i soubor) datum mimo mez zahodí (dotisk pak tiskne datum založení).
+- **B278 — mez data nabídky se měří od `zamek.kdy`, které určuje prohlížeč — VĚDOMÁ MEZ (rozhodnutí J. V.
+  24. 11. 2026, revize DT N5: ponechat).** `kdy` smí být až 400 dní staré (tisk bez sítě, `zamekKdyProblem`), takže
+  upravený klient s právem odeslat nabídku může nový zámek opatřit datem nabídky až ~407 dní zpět (do budoucnosti
+  ne). Není to zhoršení proti stavu před DT: dřív nabídka tiskla `v.datum`, které klient psal bez jakékoli meze.
+  Přísnější varianta (datum nejvýš N dní před časem přijetí serverem, `prijato`) by zpřísnila i tisk bez sítě —
+  neprogramováno. Stopa: `zamek.prijato` (čas přijetí serverem) a `kdo` zámku.
 ## K54-N1 — smazaná kalkulace se uložením nevzkřísí (#750, rychlá cesta, 24. 11. 2026)
 
 Větev `claude/rychla-K54-N1`, revize Fable `podklady/revize/REVIZE_K54N1.md` (větev `claude/revize-k54n1`; SLOUČIT
@@ -2531,3 +2551,100 @@ PO OPRAVÁCH — N1, N2, N3 (rozhodnutí J. V.), N5–N8 opraveny, N4 zapsáno s
 - **PŘIJATO (dorevize D3): pojistka N3 je ochrana proti omylu, ne bezpečnostní mez.** Čas vazby je v načtené zakázce
   (kdo smí zakázku načíst, smí ji i uložit — NN B237); úmyslně sestavený požadavek ji obejde. Chrání před starou
   kopií v okně, ne před útočníkem.
+
+## ER — příznak nové kalkulace `kalkVerze` (#757, #758, #761, dávka ER, 24. 11. 2026)
+
+Větev `claude/er-engineering-rezerva`, revize Fable `podklady/revize/REVIZE_ER.md` (větev `claude/revize-er`; SLOUČIT
+po opravách N1, N3, N5, N6 a dorevizi D1). Test `src/test_er_nova_kalkulace.js`, mutace jádra [ER].
+
+- **Server odmítne změnu příznaku uložené varianty a šachty** (revize N3, J. V. 24. 11. 2026): `uloTypyProblemy`
+  porovná `ock.zadani.kalkVerze` i `ock.dalsi[].zadani.kalkVerze` (šachta podle `id`) s uloženou verzí; jiná hodnota
+  → 400 s větou o změně pravidel výpočtu. Platí i pro uloženou ZAMČENOU variantu (dorevize D1: odemčení a změna
+  příznaku v jednom uložení neprojdou). Výjimky: obnova ze zálohy (`obnova`) a první uložení čerstvé kalkulace
+  z Pipedrive (`pdCerstva` v uložené verzi). Tvar příznaku (jen 2) hlídá server u všech šachet.
+- **PŘIJATO (dorevize ER): je to pojistka proti omylu a upravenému klientovi, ne hranice.** Příznak smí nést
+  (a tedy nový výpočet dostat) **nová varianta nebo šachta s novým `id`**, **nová zakázka** a **obnova ze souboru
+  administrátorem** — tam není uložený stav, se kterým porovnávat. Kdo smí zakázku uložit, smí ji takto založit znovu
+  (NN B237); běžné cesty aplikace (klon, duplikát, kopie šachty) příznak jen kopírují. Zamčené (odeslané) nabídky
+  chrání zmrazený výsledek zámku.
+## ZK — zákazníci ze zakázek podle ARES (#755, dávka ZK, 24. 11. 2026)
+
+Větev `claude/zk-zakaznici-ze-zakazek` nad `c89e872`. Testy `netlify/test_zk_zakaznici_ze_zakazek.mjs`,
+`overit_zk_zakaznici.mjs`, matice `test_prava.mjs`, mutace [ZK]. Před sloučením revize Fable.
+
+- **Jen administrátor:** `/api/zakaznici-ze-zakazek` volá `vyzadujRoli(req, 'Administrátor')` pro GET i POST (roli
+  určuje účet, ne cookie; původ požadavku hlídá `prihlaseny`). Náhled nese název, sídlo a IČO firem ze všech zakázek —
+  proto žádná jiná role, ani pro čtení. Kontakty ani jména souborů zakázek klient nedostane; čtou se až při zápisu.
+- **Zápis nevěří klientovi:** karty se zakládají z náhledu uloženého na serveru (`zakaznici_hromadne/zk-navrh`,
+  platí 24 h, id musí souhlasit), u každé položky se znovu přečte zakázka a ověří shoda s uloženým subjektem ARES;
+  existující karta (klíč IČO, nebo karta bez IČO se stejným názvem) se nepřepíše. Strop `ZAKAZNICI_MAX` platí.
+- **ARES:** jen platné IČO (kontrolní číslice), jen IČO bez karty; `aresNacti` (pevná adresa, 3 s, bez přesměrování,
+  strop odpovědi). Nejvýš 10 dotazů na volání s pauzou 400 ms, 600 na jedno kolo náhledu („Zkusit znovu“ = další
+  kolo, pokračuje zbytkem fronty), 1 500 za den (počítadlo `zk-den`). IČO, které nesedělo, se znovu neptá, dokud se
+  nezmění jeho nejnovější zakázka (paměť `zk-nesedi`, nejvýš 30 dní; revize R3).
+- **Zápis po kouscích (revize R1):** nejvýš 100 karet nebo 7 s na volání; protokol vzniká prvním voláním a nese
+  průběžné počty, takže i přerušený zápis nechá stopu (nejvýš o jeden nedokončený kousek pozadu — karta z něj se při
+  opakování pozná podle autora, poznámky a času a započte se jako založená). Propadlý náhled (24 h) se nevydá a smaže
+  (R5); rozpracovaný zápis pak zůstane v protokolu jako „přerušen“.
+- **Čtení karet (revize R2):** náhled ani zápis karty nečtou — existenci pozná z klíčů úložiště (klíč = IČO, bez
+  IČO `n-<název>`); čte se jen karta téhož klíče těsně před zápisem. `GET /api/zakaznici` čte karty souběžně po 16
+  (`ctiVsechny`). Skutečnou dobu seznamu po naplnění změří testovací sezení na testu.
+- **D3 — změna meze (dorevize, k vědomí koordinace):** strop 600 dotazů platí na jedno KOLO náhledu, ne na celý
+  náhled; „Zkusit znovu“ začne další kolo, takže jeden náhled se dá doklikat až do denního stropu 1 500. Denní mez drží.
+- **D1 — karta s neplatným IČO a stejným názvem — PŘIJATO (dorevize):** existence se pozná z klíčů; karta, jejíž IČO
+  neprojde kontrolní číslicí (překlep, klíč = číslice), se nehledá podle názvu, takže vedle ní vznikne karta z ARES
+  (ta je správná). Hledat ji podle názvu by znamenalo číst karty (proti R2). Duplicitu správce smaže ručně.
+- **D2 — paměť „nesedí“ nejde ručně obejít:** po opravě firmy v ARES je potřeba zakázku znovu uložit, jinak IČO vyjde
+  „nesedí“ (s datem ověření) nejvýš 30 dní. Uvedeno v příručce správce.
+- **R6 — novější zakázka mezi náhledem a zápisem — VĚDOMÁ MEZ:** zápis znovu ověří zakázku z náhledu proti subjektu
+  ARES z náhledu (nejvýš 24 h starému), ale neověří, že je pořád nejnovější. Uloží-li mezitím někdo novější zakázku
+  téže firmy s jiným kontaktem, karta dostane kontakt ze starší. Okno nejvýš 24 h; kontakt jde v kartě opravit (autor
+  karty = správce). ARES se při zápisu znovu neptá.
+- **Mez (vědomá):** výhradní úsek `vyhradne('zakaznici/hromadne')` a počítadlo dne jsou čtení–změna–zápis bez
+  podmíněného zápisu — dvě instance funkce (dva správci naráz) se nevidí: náhled jednoho může přepsat náhled druhého
+  (zápis pak skončí 409 a spustí se znovu) a denní strop může přetéct o jedno volání (≤ 10 dotazů). Karty chrání
+  `vyhradne('zakaznici/<klíč>')` a kontrola existence těsně před zápisem (mez jako K7-S1).
+- **R7 — banka a číslo účtu ze zakázky do karty — PŘIJATO (J. V. 24. 11. 2026: ponechat):** ARES je neověřuje; karta
+  je pak předvyplňuje do dalších zakázek. Totéž dělá ruční „Založit z otevřené zakázky“; okruh lidí, kteří údaj vidí,
+  se nemění (zakázky i karty čte každý přihlášený); autor karty je správce, obchodník změnu jen navrhne (B234).
+- **Výjimka ze zálohy — PŘIJATO (J. V. 24. 11. 2026: ponechat, revize R9):** úložiště `zakaznici_hromadne` (náhled, počítadlo, paměť „nesedí“,
+  protokol) se nezálohuje; po obnově zůstane stopa „kdo a kdy“ jen v kartách (autor, čas, poznámka s datem ověření).
+
+## PO — zápis odeslání nabídky do dealu (#116 CRM-17, dávka PO, 24. 11. 2026)
+
+Větev `claude/po-odeslani-pipedrive` nad `7339a9e`. Poradce Fable navrhl postup; revize před sloučením přes koordinaci.
+Testy `netlify/test_po_116_odeslani.mjs` (simulátor), `src/test_po_116_ui.js`, `netlify/test_prava.mjs`, mutace [PO].
+Čísla B279–B281 jsou pracovní (přidělí koordinace).
+
+- **Stejná brána jako zápis prodeje (#597):** `POST /api/pd/odeslani` — přihlášení, vlastní původ, právo `crm.pipedrive`,
+  k tomu autor zakázky / kdo nabídku odeslal (`zamek.zpracovatel.email`, snímek serveru z relace #665) / vedoucí /
+  administrátor; deal jen z uložené zakázky a s platnou vazbou (`pd_overeni.mjs`); `PIPEDRIVE_ZAPIS` hlídá zápis
+  dřív, než se sáhne na síť; strop pokusů na deal; časové meze; zápis do téhož dealu jeden po druhém (výhradní úsek).
+  Pole, hodnotu, fázi a text poznámky skládá server z uložené zakázky; stav dealu (status) se neposílá nikdy.
+- **Stav zápisu `zak.pdOdeslani` píše jen server** (`pdOdeslaniDrz`, vzor `pdOrgVitezDrz`): hodnota z prohlížeče se
+  při uložení zahodí, obnova ze souboru ji nepřebírá, kopie zakázky (Duplikovat) ji maže.
+- **B279 — obsah přiloženého Wordu server neověřuje proti nabídce — ZÚŽENO (revize PO R5, potvrdí J. V. #764).** Soubor
+  posílá prohlížeč (Word vzniká v prohlížeči). Server ho rozbalí jako ZIP (`zipPrecti` z docxgen.js, týž čtecí kód
+  jako kontrola šablon), vyžaduje `[Content_Types].xml` a `word/document.xml` a nad rozbalenými částmi pustí TUTÉŽ
+  kontrolu jako u šablon (`sablonaObsahVadyZipu`, dorevize D1: makra, vložené objekty, ActiveX, vnější
+  attachedTemplate, aFChunk, vnější vztahy, kódování UTF-16, %-kódované a duplicitní názvy); velikost nejvýš 4 MB,
+  název složí sám (`CN_<číslo>_<datum>.docx`), soubor přijme až po zapsaných údajích dealu (potvrzená tabulka)
+  a rozbalí ho až po kontrole práv k zakázce a stropu pokusů (dorevize D3; strop rozbalení B272 sdílený se
+  šablonami). Zbývá: oprávněný uživatel s platnou vazbou může k vlastnímu dealu přiložit jiný (čistý) docx do 4 MB —
+  zápis jde pod tokenem aplikace, ne pod jeho účtem Pipedrive. Stopa: protokol zakázky. J. V. mez přijal (#764).
+- **Komu šel první tisk, říká prohlížeč — PŘIJATO (dorevize D2, třída B279).** Razítko `zamek.tisky[0].zakaznik`
+  skládá server (`vzServerRazitka`), ale z id zákazníka, které pošle prohlížeč (bez id = řídící). Upravený prohlížeč
+  tak může tisk pro dalšího zákazníka vydávat za tisk řídícímu a zastavení R4 obejít. Dosah: jen vlastní deal
+  oprávněného uživatele a jeho vlastní záznam o tisku; id řídícího je stálé (`zak.vzRidici.id`), výměna řídícího
+  stará razítka nepřepíše. Bez opravy.
+- **B280 — přiložení souboru není idempotentní na straně Pipedrive — ZÚŽENO (revize PO R2, R9, R11).** Files API nemá
+  klíč idempotence. Před KAŽDÝM nahráním se u dealu hledá soubor téhož názvu a velikosti (převezme se), před POST
+  se zapíše stav `zahajeno` (bez zápisu se nenahrává — zámek mezitím odemčen). Zbývá: hledá se mezi prvními 100
+  soubory dealu; soubor nahraný v jiné instanci funkce souběžně (výhradní úsek platí jen v instanci) — nanejvýš
+  dvě kopie téhož Wordu u dealu.
+- **Zastavení platí pro zápis i soubor (revize PO R1 — OPRAVENO):** ztracený / smazaný deal, cizí číslo nabídky,
+  první tisk pro dalšího zákazníka (R4) → 409 i pro krok „soubor“.
+- **Tělo požadavku (revize PO R10 — PŘIJATO):** tělo do 6 MB se přečte a rozparsuje i u náhledu a zápisu, mez 512 kB
+  se uplatní až po parsování (jen přihlášení s právem, strop Netlify 6 MB; test 413).
+- **B281 — okno mezi čtením dealu a zápisem — PŘIJATO (jako B277).** Otisk náhledu nese `update_time`, PATCH jde jen
+  se změněnými poli.

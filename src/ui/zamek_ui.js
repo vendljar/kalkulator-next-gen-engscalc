@@ -23,6 +23,7 @@ const ZAMEK_CHRANENE = [
   // Kalkulace OCK – množství, ceny, vlastní položky, příplatky, pořadí
   'mnozstviSet', 'nazevSet', 'nazevReset', 'cenaSet',
   'vlastniAdd', 'vlastniDel', 'vlastniSet', 'vlastniDoCeniku',
+  'rpJazykSet',   // RP: překlad ruční položky (EN/DE/FR) do zadání
   /* `volitelneVychoziSet` tu stála do 20. 8. 2026. Zanikla: sloupec Výchozí
    * už nezapisuje do zadání zakázky, ale do matice zobrazení (nastavení
    * aplikace pro nové zakázky) — a nastavení aplikace zámek varianty
@@ -518,10 +519,19 @@ function zamekPoTisku(typ, varId, sablona, navic) {
   /* #665: snímek zpracovatele (přihlášený) — server ho při uložení přepíše z relace. */
   const zpracovatel = (prvni && typeof zamekZpracovatelSnimek === 'function' && typeof zpracovatelAktualni === 'function')
     ? zamekZpracovatelSnimek(zpracovatelAktualni()) : null;
-  zamkniVariantu(v, Object.assign({ typ, kdo: zamekKdo(), cislo: variantaCislo(ZAK, v), otisk, vysledek, snimek, zpracovatel,
+  /* DT #745: den na papíře odeslané nabídky — z tiskového náhledu ten, který
+   * náhled ukazuje (navic.datumNabidky), jinak dnešek v Europe/Prague
+   * (Word vzniká těsně před zámkem; zámek tiskem SoD = den odeslání). */
+  const datumNabidky = !prvni ? null
+    : (navic && typeof zamekDatumNabidkyProblem === 'function' && !zamekDatumNabidkyProblem(navic.datumNabidky, new Date().toISOString()))
+      ? navic.datumNabidky : (typeof zamekDenPraha === 'function' ? zamekDenPraha() : null);
+  zamkniVariantu(v, Object.assign({ typ, kdo: zamekKdo(), cislo: variantaCislo(ZAK, v), otisk, vysledek, snimek, zpracovatel, datumNabidky,
                       sablona: sablona || null, slovnik: zamekSlovnikTed(), sod: (navic && navic.sod) || null }, komu ? { zakaznik: komu } : {}));
   render();
-  zamekPoTiskuUloz();
+  const ulozeni = zamekPoTiskuUloz() ? globalThis.ZAMEK_ULOZ_SLIB : null;
+  /* PO #116: první zámek cenovou nabídkou = odeslání — karta „Odeslání do
+   * Pipedrive“ po uložení zámku ukáže, co se zapíše (tisk nikdy neblokuje). */
+  if (prvni && typeof odeslPdPoZamku === 'function') { try { odeslPdPoZamku(v, typ, ulozeni); } catch (e) { /* tisk pokračuje */ } }
   return v.zamek;
 }
 
@@ -535,7 +545,8 @@ function zamekPoTisku(typ, varId, sablona, navic) {
 function zamekPoTiskuUloz() {
   if (typeof onlineMozne !== 'function' || !onlineMozne()) return false;
   if (typeof ONLINE_STAV === 'undefined' || !ONLINE_STAV.ja || typeof onlineUloz !== 'function') return false;
-  try { onlineUloz({ tiche: true, fronta: true }); } catch (e) { return false; }
+  /* PO #116: slib uložení si bere karta odeslání do Pipedrive (čeká na zámek na serveru). */
+  try { globalThis.ZAMEK_ULOZ_SLIB = onlineUloz({ tiche: true, fronta: true }); } catch (e) { globalThis.ZAMEK_ULOZ_SLIB = null; return false; }
   return true;
 }
 
@@ -588,7 +599,7 @@ function zamekLista() {
 
 function renderZamekLista() {
   const el = document.getElementById('zamekLista');
-  if (el) el.innerHTML = zamekLista();
+  if (el) el.innerHTML = zamekLista() + ((typeof odeslPdKarta === 'function') ? odeslPdKarta() : '');   // PO #116
   renderListaZakazky();
 }
 

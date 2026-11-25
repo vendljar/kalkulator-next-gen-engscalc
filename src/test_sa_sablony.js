@@ -9,6 +9,8 @@
  *   B272 jedna XML část těsně pod stropem rozbalení (64 MB) zaměstnala
  *        server ~1,9 s; strop jedné XML části SABLONA_XML_CAST_MAX.
  *
+ * R3 revize SA (24. 11. 2026, #751): USERINITIALS, USERADDRESS, LASTSAVEDBY,
+ *   TEMPLATE, INFO a DOCPROPERTY prošla (INFO Author = AUTHOR obchvatem).
  * Revize SA (23. 11. 2026): R1 strop obejitý mezerami před „<" v .bin,
  *   R2 binární část čtená jako UTF-16 po znaku, R4 neplatné % vypnulo
  *   dekódování názvu, R5 další tvary názvu (.. , //, :, U+FFFD), R7 {} místo
@@ -94,6 +96,38 @@ const STROP = SO.SABLONA_XML_CAST_MAX || 8 * MB;   // před opravou není — te
     authorSimple: [p => doDoc(p, simple(' AUTHOR ')), /pole AUTHOR/],
     usernameRozdeleny: [p => doDoc(p, '<w:p><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText> USER</w:instrText></w:r><w:r><w:instrText>NAME </w:instrText></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>'), /pole USERNAME/]
   };
+  /* R3 revize SA (J. V. 24. 11. 2026, #751): šest rovnocenných polí — každé
+   * jako fldSimple, složené pole, kód rozdělený do tří běhů (přes hranici
+   * typu), malými písmeny / s uvozovkami a s přepínači. */
+  const rozdel = (kod) => {
+    const a = Math.max(2, Math.floor(kod.length / 3)), b = Math.max(a + 1, Math.floor(kod.length * 2 / 3));
+    return '<w:p><w:r><w:fldChar w:fldCharType="begin"/></w:r>' + [kod.slice(0, a), kod.slice(a, b), kod.slice(b)]
+      .map(k => '<w:r><w:instrText xml:space="preserve">' + k + '</w:instrText></w:r>').join('')
+      + '<w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>x</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>';
+  };
+  const R3 = {
+    USERINITIALS: [' USERINITIALS ', ' userinitials \\* Lower ', '  UserInitials  \\* MERGEFORMAT '],
+    USERADDRESS: [' USERADDRESS ', ' useraddress \\* MERGEFORMAT ', '\u00A0USERADDRESS'],
+    LASTSAVEDBY: [' LASTSAVEDBY ', ' lastsavedby \\* Caps ', ' "LASTSAVEDBY" '],
+    TEMPLATE: [' TEMPLATE \\p ', ' template ', ' Template \\p \\* MERGEFORMAT '],
+    INFO: [' INFO FileName \\p ', ' info Author ', ' INFO LastSavedBy \\* Upper '],
+    DOCPROPERTY: [' DOCPROPERTY Author ', ' docproperty "LastSavedBy" ', ' DOCPROPERTY  Company \\* MERGEFORMAT ']
+  };
+  for (const [typ, kody] of Object.entries(R3)) {
+    const ocek = new RegExp('pole ' + typ + '\\b');
+    const tvary = { simple: simple(kody[0]), slozene: pole(kody[0]), rozdelene: rozdel(kody[0]),
+      maleRozdelene: rozdel(kody[1]), prepinace: pole(kody[2]), prepinaceSimple: simple(kody[2].replace(/"/g, '&quot;')) };
+    for (const [tvar, xml] of Object.entries(tvary)) {
+      const p = kopie(); doDoc(p, xml);
+      const vady = await SO.sablonaObsahVady(await zip(p));
+      test('→ odmítnuto (R3): ' + typ + ' ' + tvar, vady.some(v => ocek.test(v)), vady);
+    }
+    /* generátor (kontrola při vyplňování nabídky) odmítne totéž */
+    const p = kopie(); doDoc(p, rozdel(kody[0]));
+    let chyba = '';
+    try { await DG.docxVyplnSablonu((await zip(p)).buffer, { X: 'x' }); } catch (e) { chyba = e.message; }
+    test('→ generátor odmítne (R3): ' + typ + ' rozdělené', ocek.test(chyba), chyba);
+  }
   for (const [jmeno, [uprav, ocek]] of Object.entries(spatne)) {
     const p = kopie(); uprav(p);
     const vady = await SO.sablonaObsahVady(await zip(p));
@@ -171,6 +205,11 @@ const STROP = SO.SABLONA_XML_CAST_MAX || 8 * MB;   // před opravou není — te
     polePage: p => doDoc(p, pole(' PAGE ') + pole(' NUMPAGES ') + simple(' DATE \\@ &quot;d. M. yyyy&quot; ')),
     poleSlovaVeTextu: p => doDoc(p, '<w:p><w:r><w:t>FILENAME USERNAME AUTHOR</w:t></w:r></w:p>'),
     poleTitle: p => doDoc(p, pole(' TITLE ') + pole(' FILESIZE ')),
+    /* R3: slova zakázaných typů jako text, jen PAGE (jako firemní šablony),
+     * podobná jména polí (INFOx, TEMPLATES nejsou typy) a odkaz REF */
+    r3SlovaVeTextu: p => doDoc(p, '<w:p><w:r><w:t>USERINITIALS USERADDRESS LASTSAVEDBY TEMPLATE INFO DOCPROPERTY</w:t></w:r></w:p>'),
+    r3JenPage: p => doDoc(p, pole(' PAGE ') + simple(' PAGE \\* MERGEFORMAT ')),
+    r3Ref: p => doDoc(p, pole(' REF Informace \\h ')),
     obrazek: p => p.push({ nazev: 'word/media/image1.png', data: new Uint8Array(9 * MB).fill(7) }),
     customXml: navic('customXml/item1.xml', '<b:Sources xmlns:b="http://schemas.openxmlformats.org/officeDocument/2006/bibliography"/>'),
     slozka: p => p.push({ nazev: 'word/media/', data: new Uint8Array(0) }),

@@ -75,6 +75,7 @@ export function zakazkaVelikostHlaska(zak, bajtu) {
 }
 import { pdVazbaDrz } from './pd_vazba.mjs';
 import { pdOrgVitezDrz, pdOrgDealuDrz } from './pd_org_vitez.mjs';
+import { pdOdeslaniDrz } from './pd_odeslani.mjs';
 import { razitkoKdo } from './sdilene.mjs';
 
 export const CISLO_MAX = 60;
@@ -438,6 +439,8 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   pdOrgVitezDrz(stara, zak, { obnova, zeSouboru });
   /* VZ T1 (N3): skutečná organizace dealu `pdOrgDealu` — jen server, z uložené verze. */
   pdOrgDealuDrz(stara, zak, { obnova, zeSouboru });
+  /* PO #116: stav zápisu odeslání nabídky do dealu `pdOdeslani` — jen server, z uložené verze. */
+  pdOdeslaniDrz(stara, zak, { obnova, zeSouboru });
   /* Stav dealu Pipedrive (P1, 22. 10. 2026): jen tvar { status, nacteno }
    * z whitelistu — objekt jiného tvaru nebo cizí typ → 400, ne 500.
    * Obsah při uložení dosazuje server (lib/pd_stav.mjs), obnova ho bere ze zálohy. */
@@ -803,6 +806,9 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
        * ze souboru se zahodí (otázka 3a) — zámek se pak chová jako starší (mez z `kdy`). */
       if (zeSouboru || !(typeof v.zamek.prijato === 'string' && globalThis.zamekKdyProblem
         && !globalThis.zamekKdyProblem(v.zamek.prijato, Date.parse(v.zamek.prijato)))) delete v.zamek.prijato;
+      /* DT #745: datum nabídky z otisku i ze souboru jen platné vůči `kdy` (doklad papíru). */
+      if (v.zamek.datumNabidky !== undefined && typeof globalThis.zamekDatumNabidkyProblem === 'function'
+        && globalThis.zamekDatumNabidkyProblem(v.zamek.datumNabidky, v.zamek.kdy)) delete v.zamek.datumNabidky;
       if (zeSouboru || !v.zamek.overeni) {
         const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru);
         if (ov) v.zamek.overeni = ov; else if (zeSouboru) delete v.zamek.overeni;
@@ -813,6 +819,12 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
     /* Čas nového zámku (K7-S5): tvar ISO, ne v budoucnosti, ne starší než 400 dní. */
     const kdyProblem = globalThis.zamekKdyProblem ? globalThis.zamekKdyProblem(v.zamek.kdy) : '';
     if (kdyProblem) return odmitni(400, 'Neuloženo: ' + kdyProblem + '. Obnovte stránku (Ctrl+F5) a nabídku vytiskněte znovu.');
+    /* DT #745: den na papíře odeslané nabídky — platný den, ne po odeslání a nejvýš
+     * týden před ním (náhled otevřený přes půlnoc). Jinak den odeslání v Praze;
+     * chybí-li (starší klient), zůstane chybět a dotisk tiskne datum založení. */
+    if (v.zamek.datumNabidky !== undefined && typeof globalThis.zamekDatumNabidkyProblem === 'function'
+      && globalThis.zamekDatumNabidkyProblem(v.zamek.datumNabidky, v.zamek.kdy))
+      v.zamek.datumNabidky = globalThis.zamekDenPraha(Date.parse(v.zamek.kdy));
     const cisloMaBy = cisloVarianty(zak, v);
     if (String(v.zamek.cislo || '') !== cisloMaBy || v.zamek.cisloPapir !== true)
       return odmitni(409, 'Neuloženo: nová odeslaná (uzamčená) nabídka nese jiné číslo ('

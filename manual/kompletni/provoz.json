@@ -318,6 +318,11 @@
        "oba weby"
       ],
       [
+       "PIPEDRIVE_FAZE_ODESLANO",
+       "nepovinná fáze, do které odeslání nabídky posune deal (jen dopředu podle pořadí fází): číslo = id fáze, text = název (výchozí „Nabídka odeslána“ v pipeline dealu)",
+       "oba weby"
+      ],
+      [
        "PIPEDRIVE_ZAPIS",
        "vypínač zápisu do skutečného Pipedrive: jen hodnota „ano“ pustí zápis (poznámky, organizace, vazba, odkaz z webhooku); bez ní (výchozí) jde jen čtení — zapíná J. V.",
        "oba weby (nejdřív testovací)"
@@ -445,7 +450,7 @@
        "✔"
       ],
       [
-       "Čtení obchodních případů z Pipedrive",
+       "Pipedrive: čtení a zápis do vlastních obchodních případů",
        "○ (výchozí zapnuto)",
        "○ (výchozí zapnuto)",
        "✔",
@@ -604,6 +609,12 @@
        "karty zákazníků (IČO, sídlo, kontaktní osoby)",
        "jména, telefony, e-maily kontaktů",
        "dokud je administrátor nesmaže"
+      ],
+      [
+       "zakaznici_hromadne",
+       "naplnění zákazníků ze zakázek podle ARES: náhled (`zk-navrh`, platí 24 h; IČO, název a sídlo firmy, subjekt z ARES, bez kontaktů), denní počítadlo dotazů do ARES (`zk-den`), paměť IČO, která nesedí s ARES (`zk-nesedi`, 30 dní) a protokol hromadných zápisů (`zk-protokol`: kdo, kdy, stav, počty); mimo zálohu",
+       "e-mail správce v protokolu a v náhledu",
+       "náhled do zápisu nebo 24 h (propadlý se smaže), paměť „nesedí“ 30 dní, protokol posledních 100 běhů"
       ],
       [
        "pripominky",
@@ -1523,6 +1534,12 @@
        "karty zákazníků"
       ],
       [
+       "/api/zakaznici-ze-zakazek",
+       "GET, POST",
+       "jen administrátor",
+       "naplnění databáze zákazníků ze zakázek podle ARES: náhled po kouscích, zápis karet po potvrzení, protokol"
+      ],
+      [
        "/api/pripominky",
        "GET, POST, PATCH",
        "GET a POST přihlášený (odesílá jen povolená role při zapnuté funkci; autor vidí jen svoje); snímek, nastavení, klíč a PATCH stavu jen administrátor; klíč koordinace (Authorization: Bearer) jen GET ?pro=koordinace a PATCH stavu",
@@ -1683,6 +1700,12 @@
        "POST",
        "autor zakázky, kdo prodal, vedoucí a administrátor s právem čtení z Pipedrive",
        "zápis prodeje do dealu po Prodáno: náhled „pole / dnes v Pipedrive / nová hodnota“ a zápis po potvrzení (otisk náhledu) — údaje krycího listu, hodnota dealu ze serveru, fáze Vyhrané k podpisu SoD, stav dealu nikdy; jen se zapnutým zápisem do Pipedrive (proměnná PIPEDRIVE_ZAPIS) a platnou vazbou deal ↔ zakázka; cizí číslo nabídky v dealu jen s převzetím (poznámka k dealu)"
+      ],
+      [
+       "/api/pd/odeslani",
+       "POST",
+       "autor zakázky, kdo nabídku odeslal, vedoucí a administrátor s právem čtení z Pipedrive",
+       "zápis odeslání nabídky do dealu po prvním tisku cenové nabídky: náhled „dnes v Pipedrive / nová hodnota“, zápis po potvrzení (otisk náhledu) — údaje krycího listu, číslo nabídky, hodnota dealu ze serveru, fáze Nabídka odeslána jen dopředu, poznámka „Nabídka odeslána“, Word jako soubor k dealu (nejvýš 4 MB); stav dealu nikdy; jen se zapnutým zápisem (PIPEDRIVE_ZAPIS) a platnou vazbou deal ↔ zakázka"
       ]
      ]
     },
@@ -1815,6 +1838,13 @@
        "nepovinně",
        "nepovinně",
        "kam Prodáno přesune deal: id fáze nebo název; bez ní fáze „Vyhrané k podpisu SoD“ v pipeline dealu (stav dealu Prodáno nemění)"
+      ],
+      [
+       "PIPEDRIVE_FAZE_ODESLANO",
+       "ne",
+       "nepovinně",
+       "nepovinně",
+       "kam odeslání nabídky posune deal (jen dopředu): id fáze nebo název; bez ní fáze „Nabídka odeslána“ v pipeline dealu (stav dealu nemění)"
       ],
       [
        "PIPEDRIVE_ZAPIS",

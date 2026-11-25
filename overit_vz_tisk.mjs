@@ -486,7 +486,9 @@ console.log('\nJeden zákazník — beze změny');
   /* VZ-E3 (#602): skript náhledu u víc zákazníků nese navíc adresáta razítka
    * („zakaznik" v TISK_ZAMEK a 4. argument zamekPoTisku) — obsah dokumentu se nesrovnává s ním. */
   const norm = (t, ids) => bezCasu(t).split(ids).join('VARID')
-    .replace(/,"zakaznik":"z\d+"/g, '').replace(/,null,\{zakaznik:TISK_ZAMEK\.zakaznik\}/g, '');
+    .replace(/,"zakaznik":"z\d+"/g, '').replace(/,null,\{zakaznik:TISK_ZAMEK\.zakaznik\}/g, '')
+    /* DT #745: s datem nabídky jde zákazník ve společném objektu 4. argumentu. */
+    .replace(/\{zakaznik:TISK_ZAMEK\.zakaznik,/g, '{');
   const shoda = norm(a3, c3.ridici) === norm(s1['náhled a tisk nabídky'], cJ.ridici);
   if (!shoda) {
     const x = norm(a3, c3.ridici), y = norm(s1['náhled a tisk nabídky'], cJ.ridici);

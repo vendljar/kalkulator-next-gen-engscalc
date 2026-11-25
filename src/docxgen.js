@@ -970,9 +970,12 @@ function docxSmyckaSachet(xml, sachty) {
         return k.length && k.every(x => jePrazdnaHodnota(ph[x]));
       }).sort((a, b) => b.zac - a.zac);
       odstr.forEach(sp => { f = f.slice(0, sp.zac) + f.slice(sp.kon); });
+      /* RP (ruční položky, 23. 11. 2026): řádky šachty bez symbolu v šabloně
+       * se naklonují uvnitř jejího úseku, dřív než zmizí prázdné řádky. */
+      if (Array.isArray(ph.__radkyNavic) && ph.__radkyNavic.length) f = docxRadkyNavic(f, ph.__radkyNavic);
       f = odstranPrazdneTsRadky(f, ph);
       const hodnoty = {};
-      Object.keys(ph).forEach(k => { hodnoty[k] = bezSymbolu(ph[k]); });
+      Object.keys(ph).forEach(k => { if (k !== '__radkyNavic') hodnoty[k] = bezSymbolu(ph[k]); });
       f = nahradPlaceholdery(f, hodnoty).replace(/\uE000/g, '&#123;');
       return i ? f.replace(/\sw14:(?:paraId|textId)="[^"]*"/g, '') : f;   // klon bez dvojích id odstavců
     });

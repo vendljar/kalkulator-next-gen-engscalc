@@ -44,6 +44,8 @@ export const PD_SIM_ROZPOCET_PROMENNA = 'PIPEDRIVE_SIMULATOR_ROZPOCET';
 /* Doména `.invalid` (RFC 2606) se nikdy nepřeloží — odkaz na deal ze
  * simulátoru nikam nevede a nikdo si ho nesplete se skutečným CRM. */
 export const PD_SIM_ZAKLAD = 'https://simulator.pipedrive.invalid';
+/* PO #116: strop velikosti souboru k dealu v simulátoru (bajty). */
+export const PD_SIM_SOUBOR_MAX = 50 * 1024 * 1024;
 export const PD_SIM_POCET_DEALU = 230;   // víc než stránka PD_STRANKA (200) → dvě stránky
 
 /* ============================================================
@@ -478,6 +480,31 @@ async function pdSimFetchVnitrni(url, init = {}) {
       return data(kopie(o));
     }
     return chyba(405, 'Method not allowed');
+  }
+  /* SOUBORY v1 (PO #116): POST /api/v1/files (multipart: file, deal_id) jen
+   * k existujícímu nesmazanému dealu, strop velikosti PD_SIM_SOUBOR_MAX
+   * (skutečný strop Pipedrive dokumentace neuvádí — ověřit na testu);
+   * GET /api/v1/deals/{id}/files = soubory dealu (nejnovější první). */
+  if (!D.soubory) D.soubory = [];
+  if (cesta === '/api/v1/files' && metoda === 'POST') {
+    const f = init.body;
+    if (!f || typeof f.get !== 'function') return chyba(400, 'Multipart body expected');
+    const soubor = f.get('file');
+    const dealId = parseInt(String(f.get('deal_id') || ''), 10);
+    if (!soubor || typeof soubor.arrayBuffer !== 'function') return chyba(400, 'File missing');
+    if (!D.dealy.some((d) => d.id === dealId && d.status !== 'deleted')) return chyba(400, 'Deal not found');
+    if (soubor.size > PD_SIM_SOUBOR_MAX) return chyba(413, 'File too large');
+    const obsah = Buffer.from(await soubor.arrayBuffer());
+    const z = { id: 7000 + D.soubory.length + 1, deal_id: dealId, name: String(soubor.name || 'soubor'), file_name: String(soubor.name || 'soubor'),
+      file_size: soubor.size, file_type: String(soubor.type || ''), active_flag: true, obsahOtisk: obsah.slice(0, 4).toString('hex'),
+      add_time: new Date().toISOString().slice(0, 19).replace('T', ' ') };
+    D.soubory.push(z);
+    s.tela.push({ pozadavek: 'POST /api/v1/files', telo: JSON.stringify({ deal_id: dealId, name: z.name, size: z.file_size, type: z.file_type }) });
+    return data(kopie(z));
+  }
+  if (metoda === 'GET' && (m = /^\/api\/v1\/deals\/(\d+)\/files$/.exec(cesta))) {
+    if (!D.dealy.some((d) => d.id === +m[1] && d.status !== 'deleted')) return chyba(404, 'Deal not found');
+    return data(kopie(D.soubory.filter((x) => x.deal_id === +m[1] && x.active_flag !== false).slice().reverse()));
   }
   if (metoda === 'GET' && (m = /^\/api\/v2\/persons\/(\d+)$/.exec(cesta))) {
     const o = D.osoby.find((x) => x.id === +m[1]);

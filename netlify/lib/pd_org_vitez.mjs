@@ -70,7 +70,7 @@ export const PD_VITEZ_JINY_VITEZ = 'Zakázka je prodaná jinému zákazníkovi, 
 export const PD_VITEZ_DUVOD = {
   'bez-ico': 'Hlavička zakázky nemá platné IČO vítězného zákazníka — doplňte IČO (po odemčení prodeje vedoucí nebo administrátor), nebo změňte organizaci dealu ručně v Pipedrive.',
   vice: 'V Pipedrive je víc organizací s tímto IČO — sjednoťte je a zápis zopakujte.',
-  'bez-prava': 'Zápis do Pipedrive vám administrátor nepřidělil — organizaci dealu přepíše kolega s právem „Čtení obchodních případů z Pipedrive“.',
+  'bez-prava': 'Zápis do Pipedrive vám administrátor nepřidělil — organizaci dealu přepíše kolega s právem „Pipedrive: čtení a zápis do vlastních obchodních případů“.',
   strop: 'Zápis organizace dealu byl za poslední hodinu zkoušen příliš často — zkuste to později.',
 };
 

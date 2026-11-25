@@ -876,6 +876,71 @@ function zamekKdyProblem(kdy, ted) {
   return '';
 }
 
+/* DATUM CENOVÉ NABÍDKY = DEN TISKU (DT #745, rozhodnutí J. V. 24. 11. 2026).
+ *
+ * Dřív nabídka tiskla datum založení varianty (variantaDatum: v.datum ||
+ * zak.datum). Kalkulace se ale často rozpracuje a tiskne i po měsíci —
+ * zákazník pak dostal nabídku „ze dne" o týdny starší, než kdy odešla.
+ *
+ *  - NEODESLANÁ nabídka: datum = dnešní den v Europe/Prague (každý tisk
+ *    i online náhled ukazuje den, který dostane tisk dnes). Nic se neukládá.
+ *  - ODESLANÁ (zamčená) s `zamek.datumNabidky`: drží den, kdy odešla —
+ *    dotisk se shoduje s papírem zákazníka.
+ *  - ODESLANÁ BEZ něj (všechny zámky před DT): beze změny variantaDatum,
+ *    jinak by dotisk staré nabídky nesl jiné datum než originál.
+ *
+ * `v.datum` / `zak.datum` (datum založení) se NEMĚNÍ: dál slouží stáří
+ * ceníku, controllingu a seznamům a tiskne ho plná moc. Smlouva o dílo
+ * cituje „nabídku ze dne“ = toto datum (J. V. 24. 11. 2026, #746).
+ *
+ * `datumNabidky` je MIMO klíč zámku (uloZamekKlic) — cenu, číslo ani otisk
+ * nemění a starší klient bez něj ukládá bez 409. Píše se jen při PRVNÍM
+ * zamčení; u uloženého zámku ho drží server (uloZamekRazitkaDrz), takže
+ * se nedá dopsat ani přepsat starému zámku. */
+const ZAMEK_DATUM_TVAR = /^\d{4}-\d{2}-\d{2}$/;
+/* Náhled se zámkem (HTML tisk) může být otevřený i pár dní, než se tiskne. */
+const ZAMEK_DATUM_NABIDKY_ZPET_DNI = 7;
+/* Den v Europe/Prague (shodně s objDnes v objednane.js — ne UTC, #738). */
+function zamekDenPraha(ted) {
+  const d = (ted === undefined || ted === null) ? new Date() : new Date(ted);
+  try { return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Prague' }).format(d); }
+  catch (e) { return d.toISOString().slice(0, 10); }
+}
+function zamekDatumPlatne(d) {
+  if (typeof d !== 'string' || !ZAMEK_DATUM_TVAR.test(d)) return false;
+  const t = new Date(d + 'T00:00:00Z');
+  return !isNaN(t) && t.toISOString().slice(0, 10) === d;
+}
+/* Datum nabídky nového zámku vůči jeho času `kdy`: platný den, ne po dni
+ * odeslání a nejvýš ZAMEK_DATUM_NABIDKY_ZPET_DNI před ním. Vrací důvod, nebo ''. */
+function zamekDatumNabidkyProblem(d, kdy) {
+  if (!zamekDatumPlatne(d)) return 'datum nabídky nemá platný tvar';
+  const t = Date.parse(kdy);
+  if (!isFinite(t)) return 'zámek nemá čas odeslání';
+  if (d > zamekDenPraha(t)) return 'datum nabídky je po dni odeslání';
+  if (d < zamekDenPraha(t - ZAMEK_DATUM_NABIDKY_ZPET_DNI * 86400000)) return 'datum nabídky je o víc než '
+    + ZAMEK_DATUM_NABIDKY_ZPET_DNI + ' dní starší než odeslání';
+  return '';
+}
+/* ISO den ze symbolu DATUM dokumentu („24.11.2026“ → „2026-11-24“), nebo ''.
+ * Tiskový náhled předá zámku přesně den, který vytiskl (revize DT, N1). */
+function zamekDatumZeSymbolu(s) {
+  const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(String(s == null ? '' : s).trim());
+  const iso = m ? m[3] + '-' + m[2] + '-' + m[1] : '';
+  return zamekDatumPlatne(iso) ? iso : '';
+}
+/* ISO den, který nese cenová nabídka (OCK i PROJ, všechny jazyky, náhled,
+ * krycí list „Dne" a „nabídka ze dne" v objednávce PROJ). */
+function nabidkaDatum(zak, v, ted) {
+  const z = v && v.zamek;
+  if (z && z.zamceno) {
+    if (zamekDatumPlatne(z.datumNabidky)) return z.datumNabidky;
+    return (typeof variantaDatum === 'function') ? variantaDatum(zak, v)
+      : ((v && v.datum) || (zak && zak.datum) || '');
+  }
+  return zamekDenPraha(ted);
+}
+
 /* #665: snímek zpracovatele nabídky pro zámek (blok „Vypracoval") z profilu
  * — prohlížeč: přihlášený (zpracovatelAktualni), server: relace (profilZUctu).
  * Bez podpisu (sken je velký a leží stranou účtu). Bez e-mailu → null. */
@@ -955,6 +1020,8 @@ function zamkniVariantu(v, info) {
    * zámku — server ho u nového zámku zapíše z relace a dál drží uložený
    * (uloZamekRazitkaDrz), klientovi nevěří. Bez profilu klíč chybí. */
   if (info.zpracovatel && typeof info.zpracovatel === 'object') v.zamek.zpracovatel = info.zpracovatel;
+  /* DT #745: den, který stojí na papíře odeslané nabídky (nabidkaDatum). */
+  if (zamekDatumPlatne(info.datumNabidky)) v.zamek.datumNabidky = info.datumNabidky;
   return v.zamek;
 }
 
@@ -1472,7 +1539,7 @@ function listaZakazkyRozhodni(zak, zaloha, ja, prava, ctx) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { zamekNesouhlasiText, zamekZpracovatelSnimek, zamekZakVzOdeslano, variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, ZAMEK_PRODANO_TERMINY, zamekProdanoTerminVolny, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
+  module.exports = { nabidkaDatum, zamekDatumZeSymbolu, zamekDenPraha, zamekDatumPlatne, zamekDatumNabidkyProblem, ZAMEK_DATUM_NABIDKY_ZPET_DNI, zamekNesouhlasiText, zamekZpracovatelSnimek, zamekZakVzOdeslano, variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, ZAMEK_PRODANO_TERMINY, zamekProdanoTerminVolny, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
                      zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, ZAMEK_OVERENI_JADRO, ZAMEK_OVERENI_JADRO_PRISNE, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
                      zamekCteniSmiOdemknout, zamekCteniDuvod, priponaPrvniNalez, priponaPrvniOprav,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,

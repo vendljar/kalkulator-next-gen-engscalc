@@ -8,6 +8,180 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v25.11.1 — TZ-1: test „pole Dne“ v noci (jen test), větev claude/test-dne-praha
+
+- `overit_zobrazeni.mjs`: test „pole Dne se předvyplňuje dnešním datem“ porovnává
+  `kryciDnesIso()` s dnem prohlížeče a řádek „Dne“ neodeslané nabídky
+  s pražským dnem (DT #745). V UTC kontejneru padal každou noc 0–1 h SEČ.
+  Pojistka: s hodinami 24. 11. 23:30 UTC starý 158/1 FAIL, nový 159/0.
+  Aplikace beze změny (svěřené rozhodnutí TZ-1).
+
+## v24.11.10 — PO: odeslání nabídky do dealu v Pipedrive (#116 CRM-17), větev claude/po-odeslani-pipedrive
+
+Nad integrací `7339a9e` (v24.11.6), sloučeno s `0d8a95f` (v24.11.9, ER). Rozhodnutí J. V. 24. 11. 2026. Poradce Fable navrhl postup; revize Fable před
+sloučením přes koordinaci. **Cenu kalkulací ani text dokumentů nemění** (porovnání sestavení má dát SHODA).
+Pipedrive jen simulátor — zkouška na dealu TEST až v testovacím sezení se souhlasem J. V.
+
+- **Karta „Odeslání do Pipedrive“ pod lištou odeslané nabídky.** První tisk cenové nabídky (OCK i PROJ, Word i tisk)
+  = odeslání: po uložení zámku na server karta sama ukáže tabulku „Dnes v Pipedrive / Nově“ a zapíše až po
+  potvrzení „Potvrdit a zapsat do Pipedrive“. Tisk nic neblokuje — bez dealu, bez práva, offline nebo s vypnutým
+  `PIPEDRIVE_ZAPIS` karta jen řekne proč. Dotisk sám nic nezapisuje (zápis a přiložení jen tlačítkem).
+- **Co se zapíše:** pole krycího listu podle mapy polí (směr „zápis“, bez polí smlouvy o dílo; zákazník, adresa
+  a kontakty jsou podle mapy z CRM), Číslo nabídky (CN), hodnota dealu = cena odesílané varianty bez DPH
+  (kombinovaná = součet), fáze **jen dopředu** podle pořadí fází v pipeline (Zkontaktováno → Nabídka odeslána;
+  Vyjednávání, Před podpisem, Vyhrané k podpisu SoD se nevracejí; vyhraný deal fázi nemění, ztracený nezapíše nic),
+  poznámka „Nabídka odeslána: …“ (číslo a datum nabídky = datum zámku, odeslané varianty s cenami, šachty,
+  Vypracoval, odkaz na kalkulaci; bez e-mailů a telefonů; jedna na zakázku a deal, opakování ji upraví) a vygenerovaný
+  Word jako soubor k dealu (`CN_<číslo>_<datum>.docx`, nejvýš 4 MB). Stav dealu se nemění nikdy.
+- **Ochrany jako zápis prodeje #597:** právo „Pipedrive: čtení a zápis do vlastních obchodních případů“ + autor / kdo
+  odeslal / vedoucí / administrátor, platná vazba dealu, otisk náhledu (změna dealu mezi náhledem a zápisem → nic se
+  nezapíše), cizí číslo nabídky v dealu zápis zastaví, strop pokusů, časové meze, chyby pevnou větou. Výsledek
+  (údaje / poznámka / soubor) v kartě a protokolu zakázky, každý krok jde zopakovat; po nedoručené odpovědi na nahrání
+  se soubor u dealu dohledá a nepřiloží podruhé.
+- Nové: `POST /api/pd/odeslani` (`netlify/functions/pd_odeslani.mjs`, `netlify/lib/pd_odeslani.mjs`),
+  `src/ui/odeslani_pd_ui.js`; simulátor umí soubory k dealu; `pdZavolej` umí multipart; proměnná
+  `PIPEDRIVE_FAZE_ODESLANO` (volitelná: id nebo název cílové fáze). Datum nabídky do vlastního pole dealu až po založení
+  pole v Pipedrive (#763) — zatím v poznámce.
+- Testy: `netlify/test_po_116_odeslani.mjs` (simulátor), `src/test_po_116_ui.js`, `netlify/test_prava.mjs`; pojistka:
+  nad 7339a9e sady selžou (endpoint ani karta neexistují). Mutace [PO] 27/27. Kolo `--bez-mutaci` VŠE ZELENÉ, S3 SHODA 367/367. Meze B279–B281 (pracovní čísla).
+  Otázky J. V. #762–#765 (s doporučením; naprogramováno podle doporučení).
+- **Opravy revize Fable (24. 11., `podklady/revize/REVIZE_PO.md`, SLOUČIT PO OPRAVÁCH):** krok „soubor“ respektuje
+  zastavení (ztracený / smazaný deal, cizí CN — R1); stav zápisu po variantách a před nahráním vždy hledat shodný
+  soubor u dealu (R2); prodaná zakázka / vyhraný deal = jen poznámka a Word (R3, J. V. #765); první tisk dalšímu
+  zákazníkovi se do dealu řídícího nezapisuje (R4, J. V. #762); Word kontrolován jako ZIP bez maker, OLE a ActiveX
+  a přijat až po zapsaných údajích (R5); Word v paměti přežije opětovné načtení zakázky (R6); hláška fáze jmenuje
+  PIPEDRIVE_FAZE_ODESLANO (R7); deal bez stavu fázi neposouvá (R8); bez zapsaného „zahájeno“ se nenahrává (R9);
+  testy přeživších mutací revize (R12). Testy: server 85/85, karta 23/23, mutace [PO] 44/44; kolo `--bez-mutaci`
+  VŠE ZELENÉ, S3 SHODA 367/367.
+- **Dorevize Fable (SLOUČIT, D1–D5):** Word přikládaný k dealu prochází TOUŽ kontrolou jako šablony
+  (`sablonaObsahVadyZipu` — i vnější šablona, aFChunk, vnější OLE, UTF-16, %-kódované názvy; D1) a rozbalí se až po
+  kontrole práv a stropu (D3); test nového zámku (D4); D2 zapsáno k B279, D5 do příručky. Nový test
+  `src/test_po_116_docx.js` (Word vygenerovaný aplikací projde, 5 průniků z dorevize odmítnuto; pojistka: nad 6ddd54e
+  5 FAIL).
+
+## v24.11.9 — ER #757, #758, #761: nová kalkulace (engineering jako příplatek, rezerva příplatků v položkách, Režie bez přepínačů); automat ATYP, větev claude/er-engineering-rezerva
+
+Nad integrací `c89e872` (v24.11.5), sloučeno s v24.11.6 (RP) a `230eb6a` (v24.11.8, ZK). **Mění cenu NOVÝCH kalkulací** (rozhodnutí J. V. 24. 11.); existující beze změny.
+Nová kalkulace nese příznak zadání `kalkVerze: 2` (jen založení nové kalkulace a čerstvá z Pipedrive; klon a duplikát
+kopírují zdroj, import ani stará data ho nedostanou).
+
+- **#757 Engineering** je u nové kalkulace příplatková položka (C.engineeringKc × 1), ve výchozím stavu **mimo nabídku**
+  (obchodník ho zaškrtne ve sloupci Nabídka; administrátor může výchozí stav změnit ve sloupci Výchozí), v Režii není.
+  U víc šachet a kusů **jednou za variantu** — z první šachty, která ho má ve sloupci Nabídka (jinak z první,
+  která ho má), stejně v kalkulaci, nabídce i objednaných příplatcích (SoD, krycí list po prodeji). Tiskne se jako ostatní příplatky
+  (EN „TECHNICAL ENGINEERING“, DE „TECHNISCHES ENGINEERING“, FR „INGÉNIERIE TECHNIQUE“ — schváleno J. V.); krycí list, Pipedrive a controlling ho berou jako ostatní příplatky.
+- **#758 Rezerva příplatků:** u nové kalkulace se přičte do ceny každého příplatku (před zaokrouhlením na tisíce), takže ji
+  nese nabídka, krycí list, SoD i Pipedrive; controlling ji vede řádkem REZERVA PŘÍPLATKY bez dvojího započtení. Starší
+  kalkulace dál jen v součtu „Příplatky celkem (pokud vše)“. **Schváleno J. V. 24. 11. (revize N2):** u nové kalkulace
+  s rezervou se „Příplatky celkem“ liší od dřívějšího výpočtu o zaokrouhlení — dřív se rezerva přičetla k součtu
+  a zaokrouhlil se celek, nově se zaokrouhluje každá položka i s rezervou; na zkušebních případech řádově tisíce Kč
+  oběma směry (−6 000 až +4 000, průměr −407 Kč). **Automat ATYP** (všechny kalkulace) už nepřepíše ručně
+  zadaná pole (rezervy, zámečník, hodiny); ruční klik na ATYP dosadí předlohu z ceníku jako dosud.
+- **#761 Režie:** nová kalkulace nemá přepínače „Výstup ze zaměření pro zákazníka“ (řádek vždy 1 × C.vystupZamereniKc,
+  specifikace „ano“) a „Statické posouzení opláštění“ (řádek jen u šachty s opláštěním). Starší kalkulace přepínače mají dál.
+- Server hlídá tvar příznaku (i u šachet 2+) a **odmítne změnu příznaku uložené varianty nebo šachty** (revize N3,
+  schváleno J. V. 24. 11.; výjimka obnova ze zálohy a první uložení čerstvé kalkulace z Pipedrive). Příručka výpočtu doplněna.
+- Roadmapa: #766 ruční značky ATYP po šachtách (nízká), #767 víc šachet — výběr příplatků nabídka × krycí list (mimo ER).
+- Testy: `src/test_er_nova_kalkulace.js` (113 OK; proti c89e872 padá), mutace jádra [ER] 33/33 chycené; porovnání sestavení
+  proti integraci: fixtury 7/7 a fuzz 300/300 SHODA, 60 očekávaných rozdílů jen u případů z `novaZakazka()`
+  (`podklady/porovnani/ocekavane_er_2026-11-24.txt`); zlaté sady #560/VS očištěny o příznak (svěřené rozhodnutí ER-1).
+- Revize Fable `podklady/revize/REVIZE_ER.md`: SLOUČIT po opravách N1, N3, N5, N6 a dorevizi D1 (změna příznaku
+  i u zamčené uložené varianty); meze v `BEZPECNOST_MEZE.md` (oddíl ER).
+
+## v24.11.8 — ZK #755: zákazníci ze zakázek podle ARES (nástroj správce), větev claude/zk-zakaznici-ze-zakazek
+
+Nad integrací `c89e872` (v24.11.5), sloučeno s integrací `7339a9e` (v24.11.6) a `d3d449b` (v24.11.7). **Cenu, ceník ani text dokumentů nemění** (porovnání sestavení: SHODA).
+Podnět J. V. 24. 11.: v databázi zákazníků na ostrém webu jsou 2 karty — vznikaly jen ručně.
+
+- **Zákazníci → „Naplnit ze zakázek (ARES)…“ (jen administrátor):** náhled projde uložené zakázky (řídící i další
+  zákazníci), seskupí je podle IČO (normalizace, kontrolní číslice; bez IČO / s neplatným IČO jen počet) a pro IČO bez
+  karty ověří ARES. Kartu navrhne jen když subjekt existuje, nezanikl a **název i sídlo z ARES sedí s hlavičkou
+  nejnovější zakázky** (velikost písmen, mezery, „s.r.o. / spol. s r.o.“, PSČ s mezerou; část obce smí chybět;
+  diakritika názvu se nezahazuje). Tabulka založit / už existuje / nesedí s ARES (důvod) / ARES nedostupný (zkusit znovu).
+- **Karta** = ARES (název, sídlo, IČO, DIČ) + z nejnovější zakázky jen pole, která ARES nemá (kontaktní osoba,
+  zástupci, banka, účet, zápis). Autor = správce, poznámka s datem ověření.
+- **Zápis až po potvrzení**, ze serverového náhledu (platí 24 h; klient nic nedodává), u každé položky znovu ověří
+  zakázku; nic existujícího nepřepíše, druhý běh nic nezaloží. Protokol kdo / kdy / počty bez osobních údajů.
+- **Server** `/api/zakaznici-ze-zakazek` (`functions/zakaznici_ze_zakazek.mjs`, logika `lib/zakaznici_ze_zakazek.mjs`):
+  roli ověřuje účet (ne-admin 403), ARES přes `aresNacti` (jen platné IČO bez karty; nejvýš 10 dotazů za volání
+  s pauzou 400 ms, strop 600 na náhled a 1 500 za den; výpadek = „zkusit znovu“, nic se nezapíše). Náhled nenese
+  kontakty, odpověď nenese jména souborů zakázek. Náhled, denní počítadlo a protokol jsou ve vlastním úložišti
+  `zakaznici_hromadne` — **výjimka ze zálohy** (provozní stopa, J. V. 24. 11.: ponechat); karty jsou v zálohovaném `zakaznici`.
+- **Revize Fable (`podklady/revize/REVIZE_ZK.md`, SLOUČIT PO OPRAVÁCH):** sloučena integrace `7339a9e` (R0); zápis
+  karet po kouscích s časovým rozpočtem, protokol od prvního volání s průběžnými počty i po přerušení, tlačítko
+  „Dokončit zápis“ (R1); náhled a zápis karty nečtou — existence z klíčů úložiště, `GET /api/zakaznici` čte karty
+  souběžně (`ctiVsechny`) (R2); strop 600 platí na kolo, „Zkusit znovu“ pokračuje, IČO, které nesedělo, se znovu
+  neptá, dokud se nezmění jeho zakázka (paměť `zk-nesedi`, 30 dní) (R3); testy R4; propadlý náhled se nevydá
+  a smaže (R5); R6 zapsáno do `BEZPECNOST_MEZE.md`. R7 (banka a účet do karty) a R9 (mimo zálohu): J. V. 24. 11. ponechat.
+- **Dorevize (SLOUČIT):** D1 přijato jako mez, D2 věta do příručky správce, D3 změna meze zapsána, D4 testy na 5 přeživších
+  mutací (mutace [ZK] 42).
+- Testy s pojistkou: `netlify/test_zk_zakaznici_ze_zakazek.mjs` (před ZK import selže; 74 OK, po revizi 95 OK, po dorevizi 102 OK), harness
+  `overit_zk_zakaznici.mjs` (15 OK; před opravou panelu po přepnutí účtu 1 FAIL), matice práv `test_prava.mjs`,
+  úplnost zálohy `test_zalohy.mjs` N4; mutace [ZK] 37/37 (po revizi); kolo `--bez-mutaci --proti origin/claude/integrace-16-10` (7339a9e) VŠE ZELENÉ (544 sad, 12/12 statických), porovnání sestavení SHODA 367/367.
+
+## v24.11.7 — PT-ZAB #759: překlad hodnoty ZÁBRADLÍ NA PODESTÁCH + hlídač pevných textů, větev claude/rychla-PT-ZAB
+
+Rychlá cesta (vada dokumentu) nad testem `6722ad9` (v24.11.5). **Cena beze změny**; mění se jen text EN/DE/FR
+technické specifikace OCK u interiérové šachty se zaškrtnutým zábradlím.
+
+- **Opraveno:** pole ZÁBRADLÍ NA PODESTÁCH tisklo v anglické, německé i francouzské specifikaci česky
+  „úpravy a napojení stávajícího zábradlí na podestách“ (heslo ve vestavěném slovníku chybělo od srpna; export
+  J. V. NEPRELOZENE_2026-11-24-SPECIFIKACE-EN_24.11.5.csv). Nové heslo se schváleným překladem J. V. 24. 11.:
+  EN „modification and connection of the existing railing at the landings“, DE „Anpassung und Anschluss des
+  bestehenden Geländers an den Podesten“, FR „adaptation et raccordement du garde-corps existant sur les paliers“.
+- **Hlídač (#759):** `src/test_759_pevne_texty_preklad.js` projde celou technickou specifikaci (sekce, popisky,
+  hodnoty polí, poznámky) pro 522 zadání (interiér/exteriér, průchozí, přechodové plechy, každá volitelná položka
+  zapnutá i vypnutá, stříšky, můstky ve všech modelech) a data nabídky OCK pro 21 zakázek (i víc šachet) v EN/DE/FR;
+  nepřeložený pevný text = chyba. Pole, která si jazyk skládají sama, hlídá po částech (sledování překladu #518).
+- **Opraveno i (J. V. 24. 11.):** výčet víc skupin můstků v Modelu 2 se starým ceníkem #354 („1 ks 1600 × 1000 mm,
+  2 ks 1000 × 800 mm (šířka × délka), ocelová konstrukce vč. zábradlí a montáže“), který hlídač našel, zůstával
+  v EN/DE/FR česky — nový vzor ho překládá stejnými slovy jako větu pro jednu skupinu. Výjimky „čeká na J. V.“ nejsou.
+- Pojistka: bez hesla test 4 FAIL, bez vzoru 4 FAIL, s obojím 12 OK; cílené mutace [PTZAB] 2 z 2 chycené.
+## v24.11.7 — K56-I2 #760: smlouva o dílo a objednávka PROJ nesou toho, kdo je tiskne, větev claude/rychla-K56-I2
+
+Rychlá cesta (vada dokumentu, kolo 56) nad testem `6722ad9` (v24.11.5). **Cena beze změny.**
+
+- **Opraveno (rozhodnutí J. V. 24. 11.):** zmrazený snímek zpracovatele ze zámku (#665 / #715 — jméno, funkce,
+  telefon, e-mail a sken podpisu z prvního odeslání) platí **jen pro cenovou nabídku** (CN OCK i PROJ, všechny jazyky,
+  Word i online tisk). Smlouva o dílo (OCK i PROJ, všechny jazyky) a objednávka PROJ („Vystavil“) znovu nesou
+  přihlášeného uživatele, který dokument právě tiskne — jako před #665. Dřív u zamčené varianty tištěné kolegou
+  nesly zpracovatele z prvního odeslání nabídky i se skenem jeho podpisu.
+- Test `src/test_k56i2_tiskar.js` (pojistka: na 6722ad9 7 FAIL, po opravě 26 OK); cílené mutace [K56I2] 4 z 4 chycené.
+
+## v24.11.6 — RP: ruční položky kalkulace OCK v nabídce CN a krycím listu (#736, #740), větev claude/rp-rucni-polozky
+
+Nad integrací `d655295`, sloučeno s `0fd6410` (v24.11.1) a `c89e872` (v24.11.5). Rozhodnutí J. V. 23. 11. 2026 (podnět CN-431), prototyp
+a doporučení odsouhlaseny 24. 11. **Cenu kalkulací nemění** (jádro výpočtu beze změny); mění se text nabídky
+a krycího listu jen u zakázek, které ruční položku mají.
+
+- **Ruční položka se tiskne vždy (#736).** Řádek, který obchodník přidá tlačítkem „+ přidat položku“ (bez vazby na
+  ceník, množství > 0), jde do technické specifikace do sekce podle sekce kalkulace: Hrubá OCK, ATYP, Spojovací
+  materiál, Lakování → KONSTRUKČNÍ ŘEŠENÍ ŠACHTY; Opláštění → OPLÁŠTĚNÍ ŠACHTY; Volitelné → DOPLŇKOVÉ KONSTRUKCE;
+  Můstky → MŮSTKY MEZI BUDOVOU A OCK; Režie → PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE. Řádek NÁZEV | „množství jednotka“
+  a pod tím dodatkový text (Word klon řádku poslední pozice sekce šablony CN v18, online Kompletní náhled podkladů).
+  Víc šachet: u své šachty, Režie s názvem šachty.
+- **Cena ruční položky v cenovém bloku** jako u můstků: VÝTAHOVÁ ŠACHTA / položka / (Cena před slevou / Sleva) /
+  CENA CELKEM; součet řádků = cena před slevou na korunu i na euro (cena s marží). Ruční položka Můstků se odečte
+  z řádku můstků, položka s cenou 0 jde jen do specifikace. CENA CELKEM bez podtitulu „výtahová šachta a můstky“.
+- **Krycí list OCK (BO i Tech):** řádek „Ruční položky v ceně“ (počet – název, množství jednotka, cena s marží,
+  sekce) jen u zakázky s ruční položkou; do Pipedrive se nepíše.
+- **Jednotka, dodatkový text a překlad (#740):** pod ruční položkou jednotka ks / bm / m² / kpl (výchozí ks, starý
+  soubor = ks), „Dodatkový text do cenové nabídky (nepovinné)“, cílová sekce a překlad EN/DE/FR. Slovník: bm → lm /
+  lfm / ml, kpl → set / Kpl. / ens. Kontrola před tiskem „Ruční položka zůstane v cizojazyčné nabídce česky“.
+- **Odeslaná nabídka** se při dotisku vytiskne s ručními položkami ze zmrazeného výsledku; čísla zámku, ověření
+  serveru (B59/B232) ani otisk se nemění.
+- Testy: `src/test_rp_rucni_polozky.js` (41), `src/test_np_nahled_word.js` oddíl G (náhled = Word s ručními
+  položkami); pojistka nad d655295 selže. Mutace [RP] 18. Vědomě upravené: test_kontroly (54 pravidel), test_kryci,
+  test_platby_ock, zlatá sada VS (jen texty dokumentů u 25 scénářů s ruční položkou), cisla_vydani.json,
+  tabulka zmrazení KL (nové pole jako Příplatky v nabídce — potvrdil J. V. 24. 11.). Příručka kap. 18.
+- **Opravy revize Fable (24. 11.):** kontrola před tiskem „Ruční položka se ve Wordu nevytiskne“ (šablona bez řádku
+  cílové sekce nebo bez řádku pro cenu, S1); ruční položka Spojovacího materiálu a Lakování (jen z importu) se tiskne
+  v KONSTRUKČNÍM ŘEŠENÍ (N2); stará šablona v15: ruční Můstky v sekci MŮSTKY (N4); trvalá položka i podle zadání (N5);
+  server hlídá typ a délku jednotky, dodatkového textu a překladu (N6); testy eur (T1), dotisku a krycího listu ze
+  zámku (T2). Pravidel kontrol 55.
+- **Krycí list u šachty s víc kusy (N1, J. V. 24. 11.):** u ruční položky cena za kus a celkem, např. „12 000 Kč/ks ×
+  2 ks = 24 000 Kč“ (BO i Tech, i odeslaná nabídka); u 1 ks jen cena.
+
 ## v24.11.5 — K54-N1 #750: smazaná otevřená kalkulace se zavře a uložením nevzkřísí, větev claude/rychla-K54-N1
 
 Rychlá cesta nad integrací `0fd6410` (= test, v24.11.1). **Ceník ani sazby nemění** (porovnání sestavení: SHODA);
@@ -37,6 +211,61 @@ dopad na cenu byl nepřímý — vzkříšená stará data smazané kalkulace (n
 - Testy s pojistkou: `netlify/test_k54n1_smazana.mjs` (před 6 FAIL, N3 5 FAIL, D1/D2 3 FAIL; po 30 OK),
   `src/test_k54n1_smazani_ui.js` (na `0fd6410` 21 FAIL, na `b23e832` 15 FAIL, D4 3 FAIL; po 34 OK); mutace [K54N1].
 
+## v24.11.4 — DT: datum cenové nabídky = den tisku (#745, #746), větev claude/dt-datum-tisku
+
+Nad integrací `0fd6410` (v24.11.1). Rozhodnutí J. V. 24. 11. 2026. **Cenu, číslo nabídky ani otisk zámku nemění**
+(datum není v klíči zámku ani v otisku). Porovnání sestavení proti `origin/test`: cena SHODA, 363/367 shodných,
+4 očekávané rozdíly jen v DATUM neodeslaných variant fixtur (`podklady/porovnani/ocekavane_dt_2026-11-24.txt`).
+
+- **Nabídka OCK i PROJ (všechny jazyky) nese den tisku** v Europe/Prague, ne datum založení kalkulace
+  (`nabidkaDatum` v `src/zamek.js`). Online náhled ukazuje datum, jaké dostane tisk dnes.
+- **Odeslaná nabídka drží den odeslání**: nové pole zámku `zamek.datumNabidky` (jen při prvním zamčení; mimo klíč
+  zámku; uložené drží server `uloZamekRazitkaDrz`, nový zámek ověří `zakazka_kontrola.mjs` — nejvýš 7 dní před
+  odesláním, jinak den odeslání). **Zámky před DT** pole nemají → dotisk beze změny (datum založení).
+- Krycí list OCK/PROJ „Dne“ = datum nabídky (zmrazené hodnoty starých zámků beze změny); objednávka PROJ
+  „nabídka ze dne“ = datum nabídky.
+- **Smlouva o dílo** (OCK i PROJ) cituje „nabídku ze dne“ týmž datem jako nabídka (#746, J. V. 24. 11. 2026);
+  ostatní text a data SoD beze změny. Zámek vzniklý tiskem SoD = den odeslání nabídky.
+- **Beze změny:** plná moc, `v.datum`/`zak.datum` (stáří ceníku, controlling, seznamy).
+- Tiskový náhled OCK i PROJ předá zámku den, který vytiskl (symbol DATUM), takže náhled otevřený přes půlnoc
+  a jeho dotisk se shodují (revize N1). Krycí list „Dne“ se při zámku dál zmrazí na den zámku (J. V., N4);
+  mez data vůči `zamek.kdy` = B278 v BEZPECNOST_MEZE (N5).
+- Testy: `src/test_dt_datum_tisku.js` (pojistka: nad 0fd6410 53 FAIL a pád, po 84 OK), `netlify/test_dt_datum_tisku.mjs`
+  (nad 0fd6410 12 FAIL, po 17 OK); mutace `[DT]` 18/18 chycených. Zlatá sada VS přegenerovaná (jen DATUM 4 neodeslaných
+  variant, svěřené DT-2), harness `overit_vz_tisk.mjs` (DT-1). Kolo `--bez-mutaci`: sady 537/0, hodiny 436/0, statické 12/12.
+
+## v24.11.3 — R3: zákaz dalších polí Wordu v šablonách (#751), větev claude/r3-pole-wordu
+
+Nad integrací `3cab0c5` (v24.11.2). **Cenu ani text dokumentů nemění** (firemní šablony mají jen pole `PAGE`).
+
+- **#751 (revize SA R3, rozhodnutí J. V. 24. 11. 2026):** kontrola nahrávané šablony Wordu (server, průvodce) i kontrola
+  při vyplňování nabídky (`docxObsahZkontroluj`) odmítne vedle `FILENAME`, `USERNAME`, `AUTHOR` (B271, #720) i pole
+  `USERINITIALS`, `USERADDRESS`, `LASTSAVEDBY`, `TEMPLATE`, `INFO` a `DOCPROPERTY` — vkládají jméno a iniciály uživatele,
+  kdo naposledy uložil, cestu k šabloně a vlastnosti dokumentu (`INFO Author` dřív obešlo zákaz `AUTHOR`). Ve `fldSimple`,
+  ve složeném poli i s kódem rozděleným do běhů, malými písmeny, v uvozovkách, s přepínači; hláška „pole <TYP> (část)“.
+  Test `src/test_sa_sablony.js` (36 tvarů + 6 × generátor; PAGE, REF a slova v textu projdou), pojistka: před opravou
+  70 OK / 42 FAIL, po 112 / 0. V `src/test_sablona_obsah.js` legitimní případ `slovaPodobna` místo `DOCPROPERTY` nese
+  `REF DatabaseVerze`. Mutace jádra `[R3]` (6), mutace `[SA] B271` přepsaná na nový řádek.
+
+## v24.11.2 — UT: texty v aplikaci (#741 nápověda Opláštění, #742 popisek práva Pipedrive), test šablon (#743), větev claude/ut-texty
+
+Nad integrací `0fd6410` (v24.11.1). **Cenu ani text dokumentů nemění** (porovnání sestavení proti `origin/test`: viz zpráva koordinaci).
+
+- **#741 — nápověda u volby Opláštění podle zvolené hodnoty (J. V. 24. 11. 2026, varianta A):** po stěnách
+  „Jiný typ zasklení viz níže.“; standard podle toho, co se počítá (`skloVolba`): exteriér „Zasklení VSG 4.4.1 +
+  Izolační dvojsklo“, interiér mezi příčníky „Zasklení VSG 4.4.1“, interiér na terče „Zasklení VSG 4.4.2“. Title se
+  mění se změnou typu šachty a zasklení. Řádek skla v tabulce a Detail výpočtu mají dál nápovědu „Jiné sklo…“.
+  Test `src/test_ut_741_napoveda_opl.js`, pojistka: před 15 FAIL, po 14 OK; mutace `[UT] #741` (4).
+- **#742 — O2, rozhodnutí J. V. 24. 11. 2026 (varianta a):** právo `crm.pipedrive` zůstává (klíč beze změny), popisek
+  v Nastavení → Zobrazení je nově „Pipedrive: čtení a zápis do vlastních obchodních případů“ (hlídá i zápis prodeje
+  do dealu, #597). Tentýž název citují karta Prodej, chyba 403 z `/api/pd/*`, hláška výběru organizace dealu,
+  příručka administrátora a kompletní příručka, `NASAZENI_NETLIFY.md`, `BEZPECNOST_MEZE.md` (O2 rozhodnuto).
+  Mutace B80 přepsaná na nový řádek, nové mutace `[UT] #742` (4). Test `src/test_ut_742_popisek_pd.js`,
+  pojistka: před opravou 18 FAIL, po 20 OK.
+- **#743 (K54-I1) — test šablon:** `src/test_sablona_obsah.js` kontroluje všechny `Sablona_*.docx` z `KNG_PODKLADY`
+  (dřív pevný seznam CN v14 / PROJ v4 → CN v18 a PROJ v9 se přeskočily). Pojistka: stará sada s podklady jen s vadnou
+  CN v18 zelená, nová 1 FAIL. Svěřené rozhodnutí UT-3. **#744 (K54-I2)** — jazykové SoD projekce na testu: čeká na J. V.
+- Mutační harness: obě nové sady UT v `SADY` (dřív tam `test_ut_742` chyběl a mutace `[UT] #742` ho nepouštěly).
 ## v24.11.1 — MT2: zpevnění testů kola (#737 mutace #553 kontakt, #738 sady kolem půlnoci), větev claude/mt2-testy
 
 Nad integrací `db1e9e7` (v23.11.7). **Aplikace beze změny, cenu ani dokumenty nemění** (porovnání sestavení proti

@@ -30,7 +30,9 @@
  *     v [Content_Types].xml;
  *   – prvky OLEObject, altChunk a subDoc (s jakýmkoli prefixem);
  *   – pole INCLUDETEXT, INCLUDEPICTURE, INCLUDE, IMPORT, LINK, DDE, DDEAUTO,
- *     DATABASE, RD (složené pole fldChar/instrText i s kódem rozděleným do
+ *     DATABASE, RD, pole s údaji počítače a autora FILENAME, USERNAME,
+ *     AUTHOR (B271), USERINITIALS, USERADDRESS, LASTSAVEDBY, TEMPLATE, INFO,
+ *     DOCPROPERTY (R3) (složené pole fldChar/instrText i s kódem rozděleným do
  *     více běhů, fldSimple) a pole, jehož typ dodá teprve vnořené pole;
  *   – hromadná korespondence s připojením k datům (connectString, query);
  *   – deklarace DOCTYPE / ENTITY (vlastní entity by zakázaný text skryly);
@@ -73,7 +75,13 @@ const SABLONA_POLE_ZAKAZANA = ['INCLUDETEXT', 'INCLUDEPICTURE', 'INCLUDE', 'IMPO
   /* B271 (audit 20. 11. 2026): při aktualizaci polí (F9, tisk) vloží Word
    * cestu k souboru (FILENAME \p) a jméno uživatele počítače (USERNAME,
    * AUTHOR) do dokumentu, který jde zákazníkovi. */
-  'FILENAME', 'USERNAME', 'AUTHOR'];
+  'FILENAME', 'USERNAME', 'AUTHOR',
+  /* R3 revize SA (rozhodnutí J. V. 24. 11. 2026, #751): rovnocenná pole —
+   * iniciály a adresa uživatele, kdo naposledy uložil, cesta k šabloně
+   * (TEMPLATE \p = profil uživatele) a vlastnosti dokumentu (INFO,
+   * DOCPROPERTY: autor, firma, správce, název souboru). Firemní šablony test
+   * i main (kolo 54, 31 šablon) mají jen pole PAGE. */
+  'USERINITIALS', 'USERADDRESS', 'LASTSAVEDBY', 'TEMPLATE', 'INFO', 'DOCPROPERTY'];
 /* B272 (audit 20. 11. 2026): strop jedné XML části šablony. Strop rozbalení
  * celé šablony je 64 MB (ZIP_ROZBALENO_MAX); jedna XML část těsně pod ním
  * zaměstnala server rozborem asi 1,9 s. Firemní šablony mají zabalené
@@ -519,6 +527,16 @@ async function sablonaObsahVady(vstup) {
   try { polozky = await cti(u8, { xmlCastMax: SABLONA_XML_CAST_MAX }); } /* B272 */ catch (e) { return ['soubor nejde rozbalit jako .docx (' + e.message + ')']; }
   return sablonaObsahVadyZipu(polozky);
 }
+/* Části ZIPu (Word) jako [{ nazev, data }] — týž čtecí kód a strop XML části
+ * jako kontrola šablon; nečitelný ZIP vyhodí výjimku. Pro kontrolu Wordu
+ * přikládaného k dealu (PO #116, revize R5: lib/pd_odeslani.mjs). */
+async function sablonaZipPolozky(u8) {
+  const cti = sablonaZipCtecka();
+  if (!cti) throw new Error('chybí čtení ZIP');
+  const volby = {};
+  volby.xmlCastMax = SABLONA_XML_CAST_MAX;   // B272: týž strop XML části
+  return cti(u8, volby);
+}
 /* Odstavce textu šablony (base64 / ArrayBuffer / Uint8Array) pro kontrolu
  * češtiny v jazykové verzi (C7, K48-N1). Tentýž výčet odstavců jako průvodce
  * v prohlížeči (docxTextSablony z docxgen.js); nečitelný soubor → []. */
@@ -540,4 +558,4 @@ function sablonaObsahVadyText(vady) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { SABLONA_VZTAHY_ZAKAZANE, sablonaObsahVadyZipu, sablonaObsahVady, sablonaObsahVadyText, sablonaOdstavce, sablonaB64NaBajty, sablonaXmlUnesc, sablonaNazevVada, sablonaNazevDekoduj, sablonaNazevKlic, sablonaJeXmlBajty, sablonaObsahText, SABLONA_POLE_ZAKAZANA, SABLONA_XML_CAST_MAX };
+  module.exports = { SABLONA_VZTAHY_ZAKAZANE, sablonaObsahVadyZipu, sablonaObsahVady, sablonaZipPolozky, sablonaObsahVadyText, sablonaOdstavce, sablonaB64NaBajty, sablonaXmlUnesc, sablonaNazevVada, sablonaNazevDekoduj, sablonaNazevKlic, sablonaJeXmlBajty, sablonaObsahText, SABLONA_POLE_ZAKAZANA, SABLONA_XML_CAST_MAX };
