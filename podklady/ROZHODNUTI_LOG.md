@@ -10,6 +10,7 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
+| 25. 11. 2026 | Testovací web: automatizace webhooku Pipedrive zůstává trvale zapnutá; v testovacích nabídkách vždy slovo TEST (kolo 60). | test, C9 |
 | 25. 11. 2026 | PD2 Platba 1–8 (PROJ): pole platí jen podle kalkulačky — při prodeji se pole bez platby v plánu vymaže, potvrzení ukáže „vymaže se“. #800: šachta bez opláštění — v technické specifikaci nabídky z bloku Opláštění jen „TYP OPLÁŠTĚNÍ: bez opláštění“, ostatní řádky vypadnou (PD2). | PD2, #800 |
 | 25. 11. 2026 | #771 V3 (odrážka „Zajištění montážního lešení“ v kapitole IV): zatím nechat, jak je — z PD2 vypuštěno; chování z 22. 9. platí. | #771, PD2 |
 | 25. 11. 2026 | Objednávku OCK (#790) nechce a nepotřebuje — odloženo do F (předchozí pokyn „založ“ byl nedorozumění). PD2: Informováno BO/Tech = datum zápisu (Praha), jen do prázdného pole. | #790, PD2 |
