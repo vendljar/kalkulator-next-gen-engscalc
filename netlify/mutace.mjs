@@ -47,7 +47,9 @@ if (!process.env.ADMIN_EMAIL) process.env.ADMIN_EMAIL = 'spravce@priklad.cz';
  * je soubor zmutovaný. Běžný běh ji nenastavuje. */
 const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
-  : [/* MD (25. 11. 2026): K58-N1 číslo zámku PROJ (rychlá sada). */
+  : [/* PD2 (25. 11. 2026): pole KL do dealu jen do prázdného, dohledání, Platby, tisk CN (rychlé sady). */
+     'test_pd2_pole.mjs', '../src/test_pd2_platby.js', '../src/test_pd2_tisk_cn.js',
+     /* MD (25. 11. 2026): K58-N1 číslo zámku PROJ (rychlá sada). */
      '../src/test_k58n1_cislo_proj.js',
      /* ZK (24. 11. 2026): #755 zákazníci ze zakázek podle ARES (rychlá sada). */
      'test_zk_zakaznici_ze_zakazek.mjs',

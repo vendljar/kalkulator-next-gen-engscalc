@@ -56,6 +56,8 @@ const text = async (ph, volby) => {
     test('ostatní odstavce zůstanou (Vypracoval, Email)', /Vypracoval:/.test(s.t) && /\|Email: a@priklad\.cz/.test(s.t), s.t);
     const s2 = await text({ ZPRAC_TEL: '123 456 789', ZPRAC_EMAIL: 'a@priklad.cz' }, { odstavceTextPryc: DG.docxPopiskyBezHodnoty({ foto: true, tel: '123 456 789' }) });
     test('s fotkou a telefonem se nic nemaže', /Pohled na objekt z ulice:/.test(s2.t) && (s2.t.match(/Tel: 123 456 789/g) || []).length === 3, s2.t);
+    test('s telefonem a fotkou nejsou v seznamu ani „Tel:“, ani nadpis fotky', DG.docxPopiskyBezHodnoty({ foto: true, tel: '123' }).length === 0,
+      DG.docxPopiskyBezHodnoty({ foto: true, tel: '123' }));
     test('popisky EN: „Phone:“ podle slovníku (překlad šablony po úsecích)', DG.docxPopiskyBezHodnoty({ tel: '', foto: true, P: t => PR.tr(t, 'en') }).indexOf('Phone:') >= 0);
   }
 
