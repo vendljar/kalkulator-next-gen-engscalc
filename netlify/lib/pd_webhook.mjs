@@ -383,6 +383,8 @@ export async function pdWebhookAutor(deal, { nactiUzivatele, ucet } = {}) {
   const ja = lide.filter((u) => u && Number(u.id) === id);
   if (!ja.length) return { stav: 'nenalezen' };
   if (ja.length > 1) return { stav: 'nejednoznacny' };
+  /* PV N1 (#752): vypnutý uživatel Pipedrive autorem kalkulace nebude. */
+  if (ja[0].active_flag === false) return { stav: 'nenalezen' };
   const email = em(ja[0]);
   if (!email) return { stav: 'bez-emailu' };
   if (!/^[^\s@<>]+@[^\s@<>]+$/.test(email) || email === PD_WEBHOOK_AUTOR) return { stav: 'nenalezen' };

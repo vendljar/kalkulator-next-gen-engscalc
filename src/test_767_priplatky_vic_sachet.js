@@ -62,7 +62,13 @@ console.log('===== B. neodeslaná nabídka = sjednocení šachet =====');
   /* Totéž, co krycí list a Pipedrive (názvy), a objednané / SoD (částky). */
   const kl = V.vsPriplatkyVNabidce(r, v.data.ock);
   test('krycí list: stejné příplatky ve stejném pořadí', JSON.stringify(kl.map(p => p.nazev)) === JSON.stringify(n.map(p => p.nazev)), [kl, n]);
-  test('krycí list nese šachty (A) / (B) / (A, B)', JSON.stringify(kl.map(p => p.sachty)) === '[["A"],["A","B"],["B"]]', kl);
+  /* MD N1 (#778, PD2): pořadí = pořadí příplatků ve výsledku (ceník), ne pořadí prvního zaškrtnutí —
+   * „Sklo VSG“ zaškrtnuté jen v šachtě B už neskončí za přechodovými plechy. */
+  const ceniku = r.sachty[0].vysl.priplatky.map(p => p.key);
+  test('krycí list nese šachty u každého řádku (A) / (B) / (A, B)', JSON.stringify(kl.map(p => p.sachty).slice().sort()) === '[["A"],["A","B"],["B"]]', kl);
+  test('MD N1: pořadí příplatků = pořadí v ceníku (ne první zaškrtnutý výskyt)',
+    JSON.stringify(V.vsPriplatkyVyber(r, v.data.ock).map(x => ceniku.indexOf(x.key))) === JSON.stringify(V.vsPriplatkyVyber(r, v.data.ock).map(x => ceniku.indexOf(x.key)).slice().sort((a, b) => a - b))
+    && ceniku.indexOf('vsgFolie') < ceniku.indexOf('prechMat') && kl[kl.length - 1].nazev !== kl.find(p => /VSG/.test(p.nazev)).nazev, kl);
   const vz = kop(v); vz.zamek = { zamceno: true, snimek: ZM.zamekSnimekSpocti(vz) };
   const ob = O.objNabidnute(vz, J);
   test('objednané (SoD): stejné klíče a částky jako nabídka',

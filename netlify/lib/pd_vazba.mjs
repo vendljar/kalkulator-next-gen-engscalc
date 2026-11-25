@@ -49,8 +49,8 @@ export function pdVazbaNorm(x) {
     icoOtisk: /^[0-9a-f]{16}$/.test(String(x.icoOtisk || '')) ? x.icoOtisk : '',
     aresRozdily: seznam(x.aresRozdily, PD_ORG_POLE), doplneno: seznam(x.doplneno, PD_VAZBA_POLE) };
   if (x.zanikla === true) v.zanikla = true;
-  if (x.icoShoda === true) v.icoShoda = true;
-  if (x.zalozil === true) v.zalozil = true;   // #734: kalkulaci založil webhook (autor může být vlastník dealu); píše jen server   // IČO organizace dealu = IČO hlavičky (zhasíná tlačítko opravy; rozhoduje server)
+  if (x.icoShoda === true) v.icoShoda = true;   // IČO organizace dealu = IČO hlavičky (zhasíná tlačítko opravy; rozhoduje server)
+  if (x.zalozil === true) v.zalozil = true;   // #734: kalkulaci založil webhook (autor může být vlastník dealu); píše jen server
   const n = x.nahlaseno;
   if (n && typeof n === 'object' && !Array.isArray(n) && typeof n.kdo === 'string' && KDY.test(String(n.kdy || '')))
     v.nahlaseno = { kdo: txt(n.kdo, 200), kdy: n.kdy };

@@ -187,12 +187,12 @@ async function zpracuj({ req, relace, s, soubor, varId, zamekKdy, akce, otiskKli
 
   let pole, dealData;
   try {
-    pole = await pdPoleMapa();
+    pole = await pdPoleMapa(false, (c, o) => zavolej(c, o));   // PV N2: v časovém rozpočtu
     const ov = await pdDealPatriZakazce(ulozena, deal, { zavolej: (c) => zavolej(c), poleMapa: async () => pole,
       odkaz: pdWebhookOdkaz(soubor, req) }, G);
     if (!ov.ok) return akce === 'nahled' ? json({ ok: false, stav: 'neovereno', chyba: ov.duvod }, 409)
       : selhani(409, krokKlic, ov.duvod, '', { kod: 'neovereno' });
-    dealData = await zavolej('/api/v2/deals/' + Number(deal));
+    dealData = ov.deal || await zavolej('/api/v2/deals/' + Number(deal));   // PV N3: deal z ověření odkazem
     if (!dealData || typeof dealData !== 'object') throw new PdChyba('Pipedrive deal zakázky nezná.', 404);
   } catch (e) {
     if (e instanceof PdChyba) return akce === 'nahled' ? chybaPd(e) : selhani(e.stav === 404 ? 404 : 502, krokKlic, pdProdejChybaVeta(e), e.message);

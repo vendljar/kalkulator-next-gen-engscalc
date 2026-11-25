@@ -58,6 +58,7 @@ export async function pdDealPatriZakazce(zak, dealId, { zavolej, poleMapa, odkaz
   const d = await zavolej('/api/v2/deals/' + Number(id));
   if (!d || typeof d !== 'object') return { ok: false, duvod: PD_DEAL_NEPATRI };
   const cf = (d.custom_fields && typeof d.custom_fields === 'object') ? d.custom_fields : {};
-  if (odkaz && mapa.odkazKalkulace && pdHodnota(cf[mapa.odkazKalkulace]).trim() === odkaz) return { ok: true, zdroj: 'odkaz' };
+  /* PV N3 (#752): přečtený deal se vrací — volající ho nečte podruhé. */
+  if (odkaz && mapa.odkazKalkulace && pdHodnota(cf[mapa.odkazKalkulace]).trim() === odkaz) return { ok: true, zdroj: 'odkaz', deal: d };
   return { ok: false, duvod: PD_DEAL_NEPATRI };
 }

@@ -13,6 +13,7 @@
  *          k29:*, k36:*  scénáře nálezů K29-N1 (zastřešení vyřazené, měď,
  *                      #451) a K36-N2 (zahraniční montáž můstků, #550)
  *          k50:*       K50-N1 (statika opláštění v zahraniční řadě)
+ *          k58:*       K58-I2 (šachta bez opláštění, nová × stará kalkulace; MD N5)
  *          k40:*       K40-N1 (přepnutí typu šachty / zasklení, čelní sklo; #647)
  *          lak:*       LAK #666 (cena lakování z nabídky lakovny, se zdrojem i bez)
  *          vs:*        víc šachet s výchozími názvy, dokumenty EN/DE (DS #648)
@@ -424,6 +425,25 @@ async function otisky(src, volby) {
     }
   }
 
+  /* 3b2) MD N5 (#778, PD2): K58-I2 (#775) — šachta bez opláštění v nové
+   *      kalkulaci (kalkVerze 2: kotvy, cestovné, čištění = 0) a stará
+   *      kalkulace beze změny. Sada je dřív neměla, rozsah K58-I2 tak nikdo
+   *      neviděl na celé kalkulaci. Data jako src/test_k58i2_bez_oplasteni.js. */
+  const BEZ_STENA = () => ({ odM: 0, pasy: [{ typ: 'bez', doM: null }] });
+  const BEZ_OPL = () => ({ oplasteni: { rezim: 'poStenach', steny: { A: BEZ_STENA(), B: BEZ_STENA(), C: BEZ_STENA(), D: BEZ_STENA() } },
+    nadDvermi: 'stavba', bokyDveri: 'stavba', svetlikNadDvermi: false, svetlikyBoky: 0, zaskleni: 'na terče' });
+  for (const [jm, nova2] of [['k58:bez-oplasteni-nova', true], ['k58:bez-oplasteni-stara', false]]) {
+    for (const f of [true, false]) {
+      const zak = nova('2026-OPR-CN-9775', 'Porovnání sestavení ' + jm);
+      const v = zak.varianty[0];
+      Object.assign(v.data.ock.zadani, ZAD, BEZ_OPL(), nova2 ? { kalkVerze: 2 } : {});
+      if (!nova2) delete v.data.ock.zadani.kalkVerze;
+      v.data.ock.fixes = f;
+      v.data.cenik = Object.assign(cenikZ(false), { cestovniKc: 9000, cisteniKc: 7000, plastKotvyKc: 3000 });
+      out[jm + ':' + (f ? 'm2' : 'm1')] = await scenar(zak, v, J, jm + ':' + (f ? 'm2' : 'm1'));
+    }
+  }
+
   /* 3c) K40-N1 (#614, #647): přepnutí typu šachty / zasklení s vyřazeným nebo
    *     přepsaným čelním sklem. Sada dřív neměla zakázku, kde se po přepnutí
    *     řádek čelního skla přejmenuje (VSG 4.4.2 ↔ 4.4.1), takže porovnání
@@ -518,6 +538,9 @@ async function otisky(src, volby) {
     ['proj:studie-vyrazena', v => { const st = (v.data.proj.zadani.sekce || []).find(s => s.key === 'studie'); if (st) st.polozky.forEach(p => { p.vyrazeno = true; }); }],
     ['proj:prodana-lhuty', v => { v.zamek = { zamceno: true, tisky: [] }; v.prodano = { datum: DATUM, zakaznik: 'z1' };
       if (typeof lhutyProjVychozi === 'function') v.data.kryciProj = Object.assign({ hodnoty: {} }, v.data.kryciProj, { lhutyProj: lhutyProjVychozi() }); }],
+    /* MD N5 (#778, PD2): K58-N1 (#772) — odeslaná nabídka PROJ se starým zámkem,
+     * který nese předlohu čísla OCK (server ho toleruje a ukazuje číslo PROJ). */
+    ['proj:zamek-cislo-ock', v => { v.zamek = { zamceno: true, typ: 'nabidkaProj', cislo: '2026 - OPR - CN - ', kdy: DATUM + 'T10:00:00.000Z', tisky: [] }; }],
     ['proj:prodana-sleva-100', v => { v.data.slevaProj = Object.assign({}, v.data.slevaProj, { procenta: 100, stav: 'schváleno' });
       v.zamek = { zamceno: true, tisky: [] }; v.prodano = { datum: DATUM, zakaznik: 'z1' };
       if (typeof lhutyProjVychozi === 'function') v.data.kryciProj = Object.assign({ hodnoty: {} }, v.data.kryciProj, { lhutyProj: lhutyProjVychozi() }); }],
@@ -657,7 +680,7 @@ function rozdilyPripadu(a, b) {
 
 function skupinaPripadu(jm) {
   const p = jm.split(':')[0];
-  return { fixtura: 'fixtury', scenar: 'scénáře #560 + můstky', k29: 'K29-N1 / #451', k36: 'K36-N2 / #550', k50: 'K50-N1', k40: 'K40-N1 / #614', lak: 'LAK #666', vs: 'víc šachet #648', dotisk: 'dotisk #665', proj: 'PROJ #683 / D8', vz: 'víc zákazníků #673/#674', ukazka: 'ukázkové zakázky', fuzz: 'fuzz (semínko)' }[p] || p;
+  return { fixtura: 'fixtury', scenar: 'scénáře #560 + můstky', k29: 'K29-N1 / #451', k36: 'K36-N2 / #550', k50: 'K50-N1', k58: 'K58-I2 / MD N5', k40: 'K40-N1 / #614', lak: 'LAK #666', vs: 'víc šachet #648', dotisk: 'dotisk #665', proj: 'PROJ #683 / D8', vz: 'víc zákazníků #673/#674', ukazka: 'ukázkové zakázky', fuzz: 'fuzz (semínko)' }[p] || p;
 }
 
 function porovnej(A, B, volby) {

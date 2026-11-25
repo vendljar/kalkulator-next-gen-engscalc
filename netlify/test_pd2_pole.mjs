@@ -421,5 +421,35 @@ puvodniLog('\n===== 5. ODESLÁNÍ NABÍDKY =====\n');
   G.zakazkaCisloVedouci = puv;
 }
 
+/* ---------- 6. NÁLEZY REVIZE PV N1–N5 (#752) ---------- */
+puvodniLog('\n===== 6. REVIZE PV N1–N5 =====\n');
+{
+  const { pdWebhookAutor } = await import('./lib/pd_webhook.mjs');
+  const a = await pdWebhookAutor({ owner_id: 2 }, { nactiUzivatele: async () => [{ id: 2, email: 'vypnuty@priklad.cz', active_flag: false }],
+    ucet: async (e) => ({ email: e, jmeno: 'Vypnutý', aktivni: true }) });
+  test('PV N1: vypnutý uživatel Pipedrive (active_flag false) autorem nebude', a.stav === 'nenalezen', a);
+  const { pdPoleMapa } = await import('./functions/pd_pole.mjs');
+  const volano = [];
+  await pdPoleMapa(true, async (c, o) => { volano.push(c); const { pdZavolej } = await import('./lib/pipedrive.mjs'); return pdZavolej(c, o); });
+  test('PV N2: pdPoleMapa volá definice polí přes zavolej volajícího (časový rozpočet)',
+    volano.includes('/api/v2/dealFields') && volano.includes('/api/v2/organizationFields'), volano);
+  /* N3: vazba jen odkazem v dealu (bez vazby z webhooku) → deal se čte jednou. */
+  const Q = await prodanaZakazka(true);
+  const gq = zakazka(Q.soubor); delete gq.pdVazbaWebhook; zapisZakazku(Q.soubor, gq);
+  const p0 = pozadavky().length;
+  const logy = [];
+  const puvLog = console.log;
+  console.log = (...x) => { const t = x.join(' '); if (t.startsWith('pd_prodej: ')) logy.push(t); else puvLog(...x); };
+  /* Odkaz v dealu zapsal webhook pro https://testweb.example — náhled z téže adresy. */
+  const rq = await prodejFn(new Request('https://testweb.example/api/pd/prodej', { method: 'POST', headers: { cookie: cP },
+    body: JSON.stringify({ soubor: Q.soubor, akce: 'nahled' }) }));
+  n = { status: rq.status, ...(await rq.json()) };
+  console.log = puvLog;
+  const cteni = pozadavky().slice(p0).filter((x) => x === 'GET /api/v2/deals/' + Q.deal.id);
+  test('PV N3: ověření odkazem vrátí deal — náhled ho čte jen jednou', n.status === 200 && cteni.length === 1, [n.status, n.chyba, cteni]);
+  test('PV N5: jeden řádek logu „pd_prodej: …“ s dealId, akcí a počtem polí, bez e-mailů a jmen',
+    logy.length === 1 && /"dealId":"\d+"/.test(logy[0]) && /"akce":"nahled"/.test(logy[0]) && !/@|Petra|Zástupce/.test(logy[0]), logy);
+}
+
 puvodniLog('\n' + ok + ' OK, ' + fail + ' FAIL');
 if (fail) { puvodniLog('Selhalo:\n  ' + selhalo.join('\n  ')); process.exit(1); }

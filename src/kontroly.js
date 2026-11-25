@@ -865,7 +865,13 @@ const KONTROLY = [
       if (!r || !Array.isArray(r.priplatky)) return null;
       const vynech = (ctx.zadani && ctx.zadani.priplatkyVynechat) || [];
       /* #767: víc šachet — týž výběr, jaký tiskne nabídka (sjednocení šachet). */
-      const vyber = (ctx.__vs && ctx.__vs.ock && typeof vsPriplatkyVyber === 'function') ? vsPriplatkyVyber(r, ctx.__vs.ock) : null;
+      /* MD N4 (#778): odeslaná nabídka víc šachet bez značky `priplatkyVyber`
+       * ve snímku zámku se tiskne POSTARU (nabidkaPriplatkyVyberNovy) — kontrola
+       * bere týž výběr jako tisk, ne nové sjednocení šachet. */
+      const vVs = (ctx.__vs && ctx.__vs.ock && ctx.zak && Array.isArray(ctx.zak.varianty))
+        ? ctx.zak.varianty.find(x => x && x.data && x.data.ock === ctx.__vs.ock) : null;
+      const vyberNovy = !vVs || typeof nabidkaPriplatkyVyberNovy !== 'function' || nabidkaPriplatkyVyberNovy(vVs);
+      const vyber = (vyberNovy && ctx.__vs && ctx.__vs.ock && typeof vsPriplatkyVyber === 'function') ? vsPriplatkyVyber(r, ctx.__vs.ock) : null;
       const vNabidce = vyber ? vyber.map(x => x.radek) : r.priplatky.filter(p => p && !vynech.includes(p.key));
       const plechy = ['prechMat', 'prechMont'];
       const slouceny = plechy.every(k => vNabidce.some(p => p.key === k));

@@ -322,8 +322,11 @@ puvodniLog('\n===== 6. PRÁVA, VAZBA, STROP, VYPNUTÝ ZÁPIS =====\n');
   r = await prodej({ soubor: C.soubor, akce: 'nahled', ...podC }, cP);
   test('bez vazby z webhooku a bez odkazu v dealu → náhled 409 „neovereno“', r.status === 409 && r.stav === 'neovereno', r);
   r = await prodej({ soubor: C.soubor, akce: 'zapis', ...podC, otisk: 'a'.repeat(32) }, cP);
-  test('…zápis 409, žádný PATCH, stav chyba s důvodem', r.status === 409 && r.kod === 'neovereno' && patche().length === p0
-    && pdStav(C.soubor).stav === 'chyba' && /nepatří/.test(pdStav(C.soubor).duvod), [r, pdStav(C.soubor)]);
+  /* PV N4 (#752, PD2): neověřená vazba není pokus o zápis — jen odpověď, zakázka ani protokol se nemění. */
+  const protC = (zakazka(C.soubor).protokol || []).length;
+  test('…zápis 409, žádný PATCH, důvod v odpovědi; stav zápisu v zakázce beze změny (PV N4)', r.status === 409 && r.kod === 'neovereno'
+    && patche().length === p0 && /nepatří/.test(r.chyba) && pdStav(C.soubor).stav === 'ceka'
+    && (zakazka(C.soubor).protokol || []).length === protC, [r, pdStav(C.soubor)]);
 
   pamet.set('pd_cache/strop:prodej-zapis:deal:' + B.deal.id, JSON.stringify({ od: Date.now(), pocet: PP.PD_PRODEJ_STROP }));
   r = await prodej({ soubor: B.soubor, akce: 'zapis', ...podB, otisk: 'a'.repeat(32) }, cP);
@@ -335,9 +338,10 @@ puvodniLog('\n===== 6. PRÁVA, VAZBA, STROP, VYPNUTÝ ZÁPIS =====\n');
   process.env.PIPEDRIVE_TOKEN = 'testovaci-token-nikam-nejde';
   process.env.PIPEDRIVE_DOMENA = 'zkusebni';
   const v0 = venku.length;
+  const stavB0 = pdStav(B.soubor).stav;
   r = await prodej({ soubor: B.soubor, akce: 'zapis', ...podB, otisk: 'a'.repeat(32) }, cP);
-  test('bez PIPEDRIVE_ZAPIS=ano → 503 „Zápis do Pipedrive je vypnutý“, do sítě nic, stav chyba', r.status === 503
-    && /vypnutý/.test(r.chyba) && venku.length === v0 && pdStav(B.soubor).stav === 'chyba', [r, venku.slice(v0)]);
+  test('bez PIPEDRIVE_ZAPIS=ano → 503 „Zápis do Pipedrive je vypnutý“, do sítě nic, stav zápisu nepřepsán (PV N4)', r.status === 503
+    && /vypnutý/.test(r.chyba) && venku.length === v0 && pdStav(B.soubor).stav === stavB0, [r, venku.slice(v0), pdStav(B.soubor)]);
   delete process.env.PIPEDRIVE_TOKEN; delete process.env.PIPEDRIVE_DOMENA;
   process.env.PIPEDRIVE_SIMULATOR = '1';
 }
