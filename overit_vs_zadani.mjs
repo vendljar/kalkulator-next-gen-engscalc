@@ -144,7 +144,10 @@ const bezVsPole = (p) => p.evaluate(() => {
   test('2 varianty: šachta 2 = kopie šachty 1, cena = 2× šachta před zaokrouhlením (R2, R3)', await p.evaluate((c1) => {
     const r = vypocetAkt();
     const u = r.sachty[0].vysl.souhrn.zakladCenaPredZaokr;
-    return JSON.stringify(OCK.dalsi[0].zadani) === JSON.stringify(OCK.zadani) && r.souhrn.zakladCena === Math.ceil(2 * u / 1000 - 1e-9) * 1000 && c1 > 0;
+    /* #766 (MD 25. 11. 2026): kopie nové kalkulace nese navíc vlastní ruční značky = kopii značek varianty. */
+    const bezZnacek = Object.assign({}, OCK.dalsi[0].zadani); delete bezZnacek.zadaniRucni;
+    const znacky = JSON.stringify(OCK.dalsi[0].zadani.zadaniRucni) === JSON.stringify(aktivniVarianta(ZAK).data.zadaniRucni || {});
+    return JSON.stringify(bezZnacek) === JSON.stringify(OCK.zadani) && znacky && r.souhrn.zakladCena === Math.ceil(2 * u / 1000 - 1e-9) * 1000 && c1 > 0;
   }, cena1));
 
   /* zápis do šachty 2 + en-US čárka */
