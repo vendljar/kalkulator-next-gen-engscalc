@@ -8,6 +8,11 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v25.11.2 — K56-D: doplnění porovnání sestavení (jen nástroje kola), větev claude/k56-porovnani
+
+- Nástroje kola, ne aplikace: porovnání sestavení (sada 390 kalkulací) vidí krycí list OCK/PROJ, PROJ, Kompletní náhled podkladů po blocích, SoD EN/DE, Word EN/DE (#682), víc zákazníků (#673, #674) a kalkulaci z webhooku (#729, #733); kontrola neprázdnosti polí (K56-I1).
+- Ověření: v19.11.11 × main v24.11.7 390 rozdílných = 390 očekávaných; test v24.11.7 × v25.11.1 223 rozdílných, 0 neočekávaných; test × test SHODA 390/390; kolo VŠE ZELENÉ; test nástroje 37/0. Svěřená K56-1 až K56-5.
+
 ## v25.11.1 — TZ-1: test „pole Dne“ v noci (jen test), větev claude/test-dne-praha
 
 - `overit_zobrazeni.mjs`: test „pole Dne se předvyplňuje dnešním datem“ porovnává

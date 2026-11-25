@@ -8,13 +8,28 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | prostředí | verze |
 |---|---|
 | ostrý web (`main`) | **v24.11.7** (`4e69c276`, 24. 11. 2026) |
-| testovací web (`test`) | **v24.11.7** (`4e69c276`, 24. 11. 2026) |
+| testovací web (`test`) | **v25.11.1** (`7144623e`, 25. 11. 2026) |
 
-Test je proti main napřed o 0 commitů.
+Test je proti main napřed o 86 commitů.
 
 ## V testu, ještě ne v main
 
-Nic — test a main nesou stejné položky evidence.
+| # | typ | co | verze |
+|---|---|---|---|
+| #765 | otázka | PO-O4: odeslání do dealu jiné nabídky, vyhraného a ztraceného | v24.11.10 |
+| #764 | otázka | PO-O3: Word jako soubor k dealu (koncept) a mez B279 | v24.11.10 |
+| #763 | otázka | PO-O2: pole „Datum nabídky“ v Pipedrive | v24.11.10 |
+| #762 | otázka | PO-O1: odeslání do Pipedrive — která varianta a dotisk | v24.11.10 |
+| #761 (dřív ER-REZIE) | úkol | Nová kalkulace bez přepínačů Výstup ze zaměření (vždy 1 ×) a Statické posouzení opláštění (podle opláštění) | v24.11.9 |
+| #758 (dřív ER-REZ) | úkol | REZERVA příplatky v cenách příplatků (nové kalkulace); automat ATYP nepřepíše ruční pole | v24.11.9 |
+| #757 (dřív ER-ENG) | úkol | Engineering jako příplatková položka (nové kalkulace); staré dál v Režii | v24.11.9 |
+| #755 (dřív ZK) | úkol | Zákazníci ze zakázek: hromadné naplnění databáze zákazníků jen tam, kde data sedí podle ARES (nástroj správce) | v24.11.8 |
+| #743 (dřív K54-I1, UT-3) | nález | test_sablona_obsah: zastaralý seznam firemních šablon — CN v18 a PROJ v9 se přeskočily | v24.11.2 |
+| #742 (dřív UT-2, O2) | úkol | Popisek práva crm.pipedrive: „Pipedrive: čtení a zápis do vlastních obchodních případů“ | v24.11.2 |
+| #741 (dřív UT-1) | úkol | Nápověda u volby Opláštění podle zvolené hodnoty (standard / po stěnách) | v24.11.2 |
+| #740 (dřív RP-2) | úkol | Ruční položka: jednotka, dodatkový text do nabídky a překlad EN/DE/FR s kontrolou před tiskem | v24.11.6 |
+| #736 (dřív RP) | úkol | Ruční položky kalkulace OCK v nabídce CN (specifikace a cenový blok) a v krycím listu | v24.11.6 |
+| #116 | úkol | CRM-17 — Odeslání vygenerované nabídky do případu | v24.11.10 |
 
 ## Otevřené vady s dopadem na cenu
 
