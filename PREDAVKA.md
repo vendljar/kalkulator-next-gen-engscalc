@@ -60,29 +60,23 @@ Stav 25. 11. 2026 15:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74
 - Sloučené dnes: PV, MT2, UT, R3, DT, K54-N1, RP — předávky v `podklady/predavky/2026-11.md`.
 - Sloučené dávky (SA, PD, CN, RA, LAK, JT, NN, PR, BZ, HN, RJ, VZD, MT) — oddíly přesunuty do `podklady/predavky/2026-11.md` (23. 11. 2026). Běží: PV (#734 + #597), RP (prototyp ručních položek, čeká na J. V.).
 
-## Dávka PV (`claude/pv-pipedrive`, 23. 11. 2026)
+## Dávka PD2 (`claude/pd2-pole-kl`, 25. 11. 2026)
 
-- Nad integrací 1280831 (v23.11.5), v23.11.7. **#734:** webhook při založení dohledá vlastníka dealu
-  (owner_id → GET /api/v1/users → e-mail → aktivní účet) = autor; jinak technický účet + varování a `autor` v logu.
-  Vazba nese `zalozil` (pdVazbaDokladaZapis). **#597:** POST `/api/pd/prodej` náhled/zápis (functions/pd_prodej.mjs,
-  lib/pd_prodej.mjs, lib/jadro_pd.cjs), karta Prodej v `src/ui/sod_ui.js`; stav `v.prodano.pipedrive` zapsano/chyba.
-- Testy: test_pv_597_zapis 57/0, test_pv_734_autor 51/0, overit_pv_prodej 19/0, mutace [PV] 18/18 chycených,
-  kolo `--bez-mutaci --proti origin/claude/integrace-16-10` VŠE ZELENÉ (534/0, hodiny 433/0, S3 SHODA 367/367); sloučeno s 9f2445a.
-- Do živého Pipedrive nic. Po nasazení do testu: testovací sezení zkušební zápis na deal TEST (PIPEDRIVE_SPUSTENI A6b, A9).
-- Revize Fable (`podklady/revize/REVIZE_PV.md`): V1 (texty krycího listu ze serveru), S1 (převzetí: úmysl před PATCH,
-  poznámka při opakování), S2 (výhradní úsek na deal), S3 (limit `/users` ve webhooku), S4 (pevné věty chyb) opraveny;
-  mez okna GET–PATCH = B277. Otázky pro J. V.: O1 práva vlastníka-autora, O2 právo pro zápis prodeje (kód podle doporučení).
-- Návrhy do roadmapy (revize N1–N6): N1 vypnutý uživatel PD (`active_flag`) jako autor; N2 `pdPoleMapa` v časovém rozpočtu
-  zápisu; N3 deal se čte dvakrát (vrátit ho z `pdDealPatriZakazce`); N4 neúspěch kvůli vypnutému zápisu / vazbě nemá psát
-  zakázku ani přepsat „zapsano“; N5 řádek logu `pd_prodej` bez osobních údajů; N6 komentář `icoShoda` v `pd_vazba.mjs:53`.
-
-## Dávka MT2 (`claude/mt2-testy`, 24. 11. 2026)
-
-- Nad integrací db1e9e7 (v23.11.7), v24.11.1. Jen testy a nástroje kola (svěřená MT2-1, MT2-2); aplikace beze změny.
-- **#737:** mutace „#553: kontakt v odpovědi“ nechycená — test zeslábl po #729 (kontakt = jméno). `test_553_webhook.mjs`
-  hlídá jména kontaktů a pole `kontakt` v odpovědích; mutace před 0/1, po 1/1.
-- **#738:** sady bz/cn/nn/ra červené 00–01 Praha (datum prodeje v UTC). `netlify/pomoc_den.mjs` (dnesPraha),
-  `netlify/pomoc_falesne_hodiny.mjs`, hlídka `test_mt2_pulnoc.mjs`; před 8 FAIL, po 16 OK. Klient bere `objDnes()` — v aplikaci vada není.
+- Nad integrací 5c42ca16, verzi přidělí koordinace. #782: A (Pipedrive) + B (#771 V1, V2, V4; #800) + #752 PV N1–N6
+  + #778 MD N1/N2/N4/N5 + #777 + #779; návrh postupu zrevidoval Fable (UPRAVIT, U1–U9 zapracovány).
+- **A:** kontakty / Podepisující firma / Druhý podepisující / Zmocnitel / Informováno jen do prázdných polí dealu
+  (`jenPrazdne`, dohledání `netlify/lib/pd_dohledani.mjs`, jen GET, nic se nezakládá); K53-N3 ze snímku zpracovatele
+  v zámku; Odchylky i PROJ (nové pole KL PROJ); Firma „Způsob fakturace — projekce“ zrušen, u PROJ se nezapisuje;
+  Platba 1–8 z plánu (bez milníku = vymazat, J. V. 25. 11.); #777, #779. Podpisy, Informováno, Platby jen prodej.
+- **B:** dotisk dřív odeslané nabídky beze změny (značka `pd2Tisk` ve snímku podmínek). V3 vypuštěn (J. V.).
+  **Čeká: V5 a V6** — pevný text šablony CN; návrh (symbol {{NAB_ZARUKA}} / úprava šablony datovým úkolem)
+  poslán koordinaci, odpověď nepřišla.
+- Testy s pojistkou: `netlify/test_pd2_pole.mjs` 60/0, `src/test_pd2_platby.js` 32/0, `src/test_pd2_tisk_cn.js` 31/0,
+  `src/test_pd2_md_nalezy.js` 4/0. Mutace [PD2] server 26/26, jádro 19/19. Kolo `--bez-mutaci --proti
+  origin/claude/integrace-16-10` VŠE ZELENÉ; porovnání 395 jen očekávané (`podklady/porovnani/ocekavane_pd2_2026-11-25.txt`).
+- Po nasazení do testu: testovací sezení zkušební zápis na dealy 432 / 437 (kontakty, podpisy, Informováno, Platby,
+  „ponechá se“); V4 překlad konečné faktury EN/DE/FR je návrh — ověřit s J. V.
+- Pro J. V. / koordinaci: Platby se při prodeji MAŽOU, když plán milník nemá (výjimka ze zásady „zápis nemaže“).
 
 ## Čeká na J. V.
 
