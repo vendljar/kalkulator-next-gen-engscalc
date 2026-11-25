@@ -10,6 +10,7 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
+| 25. 11. 2026 | K58-I1: výstup ze zaměření se počítá tolikrát, kolik je kusů šachty (2 ks = 2×) — beze změny aplikace; engineering dál jednou za variantu. | K58-I1, ER |
 | 25. 11. 2026 | Kokpit koordinace VŽDY ukazuje počty commitů main → test → integrace (i bez slučovacích) na dlaždicích main, test a main × test × integrace; počítá je skript kokpitu z origin při každé aktualizaci, ne ručně (opakovaná připomínka J. V. 24. a 25. 11.). | kokpit |
 | 25. 11. 2026 | K58-N1 (číslo zámku PROJ): staré zámky nemigrovat (jen správné zobrazení v CRM a liště); starý klient po nasazení tolerovat; razítko víc zákazníků u zakázky jen PROJ opravit v MD, vejde-li se. | K58-N1, MD |
 | 25. 11. 2026 | Zápis do Pipedrive (dávka PD2 po MD, spolu s K53-N3): kontakty smluvní/obchodní/technický z KL zapsat jen do prázdných polí dealu (osoba podle e-mailu); platební kalendář SoD PROJ rozepsat do polí Platba 1–8 (text kalendáře zůstává); Podepisující firma, Druhý podepisující a Zmocnitel z kalkulace jen do prázdných; Odchylky a Způsob fakturace i u PROJ. Vyplněné hodnoty v dealu se nepřepisují. | Pipedrive, K53-N3, kolo 58 |
