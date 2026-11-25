@@ -8,6 +8,24 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## G1 (verzi přidělí koordinace) — úklid nízkých nálezů vlny G, větev claude/g1-uklid
+
+Nad integrací `9776c346`. **Cenu kalkulací ani text dokumentů nemění**; jediná změna ve vygenerovaném Wordu jsou vlastnosti souboru (#754).
+
+- **#753 (revize SA R6, R9, R10) — kontrola šablon Word:**
+  R6 `zipPrecti` odmítne archiv, jehož adresář nekončí tam, kam ukazuje koncový záznam (položka skrytá počtem),
+  nesouhlasí počet „na disku“ a „celkem“, lokální hlavička nemá podpis nebo nese jiné jméno než adresář.
+  R9 `sablonaJeXmlBajty` přeskakuje BOM kdekoli v úvodu — část `.bin` v UTF-32 BE s BOM nebo s dvojím BOM se rozebere
+  (a UTF-32 odmítne). R10 výjimka dekodéru UTF-16 BE už kontrolu nevypne: část se odmítne jako „část nejde přečíst“.
+- **#754 — vlastnosti dokumentu:** generátor (`docxVyplnSablonu`) přepíše `dc:creator` a `cp:lastModifiedBy`
+  v `docProps/core.xml` na „ENGINEERS CZ s.r.o.“ (rozhodnutí J. V. 25. 11. 2026); jméno zaměstnance ze šablony se
+  k zákazníkovi nedostane. Prvek, který šablona nemá, se nepřidává; ostatní vlastnosti beze změny.
+- **#756 — kontrola „Ruční položka u ručně přepsaného řádku Hrubé OCK“** (`rucniPolozkaPomer`, varování, Kalkulace OCK):
+  ruční položka Spojovacího materiálu / Lakování (jen z importu) bere cenu z poměru řádku Hrubé OCK; je-li ten řádek
+  ručně přepsaný, kontrola na to upozorní. Cena ani tisk beze změny. Pravidel je 56.
+- Testy: `src/test_g1_uklid.js` 27/0 (pojistka: nad kódem 9776c346 15 FAIL); mutace `[G1]` 14.
+  Porovnání sestavení čte jen `word/document.xml` — vlastnosti souboru nevidí (`podklady/porovnani/ocekavane_g1_2026-11-25.txt`).
+
 ## v25.11.2 — K56-D: doplnění porovnání sestavení (jen nástroje kola), větev claude/k56-porovnani
 
 - Nástroje kola, ne aplikace: porovnání sestavení (sada 390 kalkulací) vidí krycí list OCK/PROJ, PROJ, Kompletní náhled podkladů po blocích, SoD EN/DE, Word EN/DE (#682), víc zákazníků (#673, #674) a kalkulaci z webhooku (#729, #733); kontrola neprázdnosti polí (K56-I1).

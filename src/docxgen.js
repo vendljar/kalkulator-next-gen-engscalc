@@ -82,7 +82,11 @@ async function zipPrecti(u8, volby) {
     throw new Error('Nevěrohodný konec ZIP adresáře (za archivem je připojený jiný).');
   const eocd = kandidati[0];
   const pocet = dv.getUint16(eocd + 10, true);
-  let off = dv.getUint32(eocd + 16, true);
+  /* Revize SA R6 (G1 #753): počet „na disku" a „celkem" se musí shodovat —
+   * jinak jiný program čte jiný počet položek než kontrola. */
+  if (dv.getUint16(eocd + 8, true) !== pocet) throw new Error('Nejednoznačný počet položek ZIP adresáře.');
+  const cdZac = dv.getUint32(eocd + 16, true), cdVel = dv.getUint32(eocd + 12, true);
+  let off = cdZac;
   const dekoder = new TextDecoder();
   const polozky = [];
   let zbyva = ZIP_ROZBALENO_MAX;
@@ -97,7 +101,12 @@ async function zipPrecti(u8, volby) {
     const lokalOff = dv.getUint32(off + 42, true);
     const nazev = dekoder.decode(u8.subarray(off + 46, off + 46 + delkaNazvu));
     // lokální hlavička – vlastní délky názvu/extra
+    if (lokalOff + 30 > u8.length || dv.getUint32(lokalOff, true) !== 0x04034b50) throw new Error('Poškozená lokální hlavička ZIP.');
     const lN = dv.getUint16(lokalOff + 26, true), lE = dv.getUint16(lokalOff + 28, true);
+    /* R6: jméno v lokální hlavičce = jméno v adresáři (programy, které čtou
+     * lokální hlavičky, by jinak rozbalily jiné jméno, třeba ../x.xml). */
+    if (lokalOff + 30 + lN > u8.length || dekoder.decode(u8.subarray(lokalOff + 30, lokalOff + 30 + lN)) !== nazev)
+      throw new Error('Jméno položky v lokální hlavičce ZIP nesouhlasí s adresářem (' + nazev + ').');
     const dataZac = lokalOff + 30 + lN + lE;
     const komprimovana = u8.subarray(dataZac, dataZac + velKomp);
     rozsahy.push([dataZac, dataZac + velKomp]);
@@ -117,6 +126,10 @@ async function zipPrecti(u8, volby) {
     polozky.push({ nazev, data });
     off += 46 + delkaNazvu + delkaExtra + delkaKom;
   }
+  /* R6: adresář musí skončit přesně tam, kam ukazuje jeho velikost. Počet
+   * v koncovém záznamu o 1 menší skryl další položku (druhý document.xml),
+   * kterou Python zipfile i unzip vidí, kontrola ne. */
+  if (off !== cdZac + cdVel) throw new Error('ZIP adresář má víc položek, než udává jeho konec (skrytá položka).');
   /* Další věrohodný konec = nejednoznačný archiv (#395) — kromě podpisu
    * uvnitř dat položky (obrázek), který žádný program za konec nebere (R1). */
   if (kandidati.slice(1).some(i => !rozsahy.some(([a, b]) => i >= a && i + 4 <= b)))
@@ -1445,7 +1458,28 @@ async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky, v
     }
   }
   if (!nahrad && !obrazku) throw new Error('V šabloně nebyly nalezeny žádné symboly {{...}} – je to správný soubor šablony?');
+  docxVlastnostiAutor(polozky);                                      // #754: autor ve Vlastnostech souboru = firma
   return zipZapis(polozky);
+}
+/* VLASTNOSTI DOKUMENTU (#754, G1, J. V. 25. 11. 2026). docProps/core.xml
+ * šablony nese autora a kdo naposledy uložil (dc:creator, cp:lastModifiedBy)
+ * — jméno zaměstnance, který šablonu upravoval. Šlo beze změny do každé
+ * nabídky u zákazníka. Generátor obě hodnoty přepíše na firmu; prvek, který
+ * šablona nemá, nepřidává. Text dokumentu se nemění. */
+const DOCX_AUTOR_FIRMA = 'ENGINEERS CZ s.r.o.';
+function docxVlastnostiAutorXml(xml, autor) {
+  const hodnota = xmlEsc(autor == null ? DOCX_AUTOR_FIRMA : autor);
+  return String(xml).replace(/<((?:[^\s<>\/=:]+:)?(creator|lastModifiedBy))((?:\s[^>]*?)?)(?:\/>|>[\s\S]*?<\/\1\s*>)/g,
+    (_m, jmeno, _mistni, attr) => '<' + jmeno + attr.replace(/\s+$/, '') + '>' + hodnota + '</' + jmeno + '>');
+}
+function docxVlastnostiAutor(polozky, autor) {
+  const dek = new TextDecoder(), enk = new TextEncoder();
+  for (const p of polozky) {
+    if (p.nazev.toLowerCase() !== 'docprops/core.xml') continue;
+    const pred = dek.decode(p.data);
+    const po = docxVlastnostiAutorXml(pred, autor);
+    if (po !== pred) p.data = enk.encode(po);
+  }
 }
 
 /* ============================================================
@@ -1856,7 +1890,7 @@ function docxCisloStrankyVarovani(c) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { docxCisloStranky, docxCisloStrankyXml, docxCisloStrankyVarovani, docxPodbarveniTecek, docxBehRozdel, docxRPrZluta, docxStudieBezZamereni, docxDpzBezZamereni, DOCX_DPZ_STAVAJICI, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
+  module.exports = { DOCX_AUTOR_FIRMA, docxVlastnostiAutorXml, docxVlastnostiAutor, docxCisloStranky, docxCisloStrankyXml, docxCisloStrankyVarovani, docxPodbarveniTecek, docxBehRozdel, docxRPrZluta, docxStudieBezZamereni, docxDpzBezZamereni, DOCX_DPZ_STAVAJICI, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
     odstranPrazdneTsRadky, docxSmyckaSachet, DOCX_CENA_CASTI, DOCX_TECKY, docxTecky, docxTeckySada, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,

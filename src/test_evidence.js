@@ -56,6 +56,8 @@ const porusit = [
   ['kolo není číslo', db => { db.polozky[2].kolo = 'čtyřicet'; }, /není číslo/],
   ['hotová s typem bez verze', db => { delete db.polozky[3].verze; }, /nemá verzi/],
   ['verze ve špatném tvaru', db => { db.polozky[3].verze = '2.1.1'; }, /vDEN/],
+  ['verze dávky malými písmeny', db => { db.polozky[3].verze = 'g1'; }, /vDEN/],
+  ['verze dávky příliš dlouhá', db => { db.polozky[3].verze = 'UKLID1'; }, /vDEN/],
   ['větev s mezerou', db => { db.polozky[2].vetev = 'moje větev'; }, /není platné jméno/],
   ['dopadCena jen ano/ne', db => { db.polozky[2].dopadCena = 'možná'; }, /dopadCena/],
   ['alias u dvou položek', db => { db.polozky[3].alias = ['k40-n1']; }, /mají #3 i #4/],
@@ -63,6 +65,12 @@ const porusit = [
   ['alias není seznam', db => { db.polozky[3].alias = 'C9'; }, /seznam/],
   ['nová značka není číslo', db => { db.polozky[1].id = 'B8'; }, /jen čísla/],
 ];
+/* Dočasná značka dávky (svěřené G1-T1): „G1“ kontrolou projde. */
+{
+  const db = zaklad(); db.polozky[3].verze = 'G1';
+  const v = kontrola(db);
+  test('kontrola pustí dočasnou verzi dávky „G1“', v.status === 0, v.stdout);
+}
 porusit.forEach(([nazev, uprav, vzor]) => {
   const db = zaklad(); uprav(db);
   const v = kontrola(db);
