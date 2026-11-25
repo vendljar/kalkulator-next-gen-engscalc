@@ -10,6 +10,7 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
+| 25. 11. 2026 | MD: #767 nabídka = součet jen zaškrtnutých šachet (shodně se SoD a krycím listem); zamčené nabídky beze změny (nový zámek se značkou). #766 kopie šachty zdědí ruční značky ATYP; šachty 2+ založené před nasazením bez migrace. Pole dealu „Datum nabídky“ v Pipedrive založeno (J. V.) → napojení #763 v dávce MD. | #766, #767, #763 |
 | 25. 11. 2026 | Nastavení → Databáze: stavové řádky záloh barevně — zeleně platné a správné, oranžově problém do 5 dnů, červeně nad 5 dnů (koordinace upřesnila: zelená = stáří ≤ 36 h bez chyby). Do dávky MD. | zálohy, UI |
 | 25. 11. 2026 | Pole „Dne“ na krycím listu podle pražského data (kryciDnesIso → Europe/Prague) — ANO, do dávky MD. Spuštění Pipedrive na main (C3–C9) zatím NE — J. V. chce víc testovat. Zkoušky na testu v25.11.1 (PO, PV #597, ZK, RP R1, ER) rozběhnout hned v TESTOVÁNÍ 3. | krycí list, PIPEDRIVE_SPUSTENI |
 | 25. 11. 2026 | Test v24.11.7 → main (nasazeno, release v24.11.7 vydán J. V.); integrace v25.11.1 → test. Víc šachet na main (#617) zatím NE. Malá dávka MD nad integrací ANO: #768 (Příplatky v nabídce jen pole typu text), #766 (ruční značky ATYP po šachtách), #767 (nabídka bere výběr příplatků stejně jako krycí list — sjednocení šachet). Spustit K56-D (doplnění porovnání) s upraveným promptem. | #617, #766–#768, K56-D |
