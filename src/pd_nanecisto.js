@@ -76,7 +76,8 @@ function pdnPlatby(pl) {
   Object.keys(r.symboly).forEach(k => {
     const m = /^SODP_PLATBA([1-8])_KC$/.exec(k);
     const c = Number(r.symboly[k]);
-    if (m && isFinite(c)) platby[m[1]] = c;
+    /* Revize Fable N1: platba 0 Kč = milník bez platby → pole Platba se vymaže jako chybějící milník. */
+    if (m && isFinite(c) && c !== 0) platby[m[1]] = c;
   });
   const mimo = (r.navic || []).map(x => ({ text: pdnText(x.text).replace(/[.\s]+$/, ''), castka: Number(x.castka) }));
   return { platby, mimo };

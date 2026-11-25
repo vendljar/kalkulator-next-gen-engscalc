@@ -141,6 +141,13 @@ for (const [nazev, plan] of PLANY) {
         && mapa[chybi.klic] in zap.custom_fields && zap.custom_fields[mapa[chybi.klic]] === null && /vymaže/.test(r.kolize.join(' ')), [r, zap.custom_fields]);
       const zap2 = PRE.pdZapisDealu(defs, { proj: Object.assign({}, s, { platby: undefined }) }, { mapa, popisy }, { deal });
       test('U7e: bez Plateb z nového plánu (starý plán / nesedící součet) se nic nemaže', !(mapa[chybi.klic] in zap2.custom_fields), zap2.custom_fields);
+      /* Revize Fable N1: platba 0 Kč (milník v plánu s nulou) = chybějící milník → vymaže se. */
+      const s0 = Object.assign({}, s, { platby: Object.assign({}, s.platby, { [chybi.klic.slice(-1)]: 0 }) });
+      const zap0 = PRE.pdZapisDealu(defs, { proj: s0 }, { mapa, popisy }, { deal });
+      test('N1: Platba 0 Kč = chybějící milník → v dealu se vymaže (null), žádný řádek „nelze“', zap0.custom_fields[mapa[chybi.klic]] === null
+        && !zap0.duvody.some((x) => x.klic === chybi.klic), [zap0.custom_fields, zap0.duvody]);
+      test('N1: pdnPlatby nulovou platbu do polí nedává', !Object.values(PDN.pdnPlatby({ stary: false, eur: false,
+        dopocet: { sedi: true, platby: [{ klic: 'podpis', castka: 0, text: 'po podpisu' }, { klic: 'dps_predani', castka: 100, text: 'DPS' }] } }).platby).includes(0));
       const zap3 = PRE.pdZapisDealu(defs, { proj: s }, { mapa, popisy }, { deal: { custom_fields: {} } });
       test('U7e: prázdné pole Platba v dealu se nemaže (nic k vymazání)', !(mapa[chybi.klic] in zap3.custom_fields), zap3.custom_fields);
     }

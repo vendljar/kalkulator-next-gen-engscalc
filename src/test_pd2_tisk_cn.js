@@ -162,6 +162,22 @@ const text = async (ph, volby) => {
     test('A3: krycí list PROJ má pole „Jiné odchylky oproti smluvnímu standardu“ (Backoffice)', !!pole && pole.verze.includes('bo')
       && pole.label === 'Jiné odchylky oproti smluvnímu standardu', pole);
   }
+  /* ---------- Revize Fable N2 (U8): zrušený Způsob fakturace PROJ a odeslaná stará nabídka ---------- */
+  {
+    const KP = require('./kryci_proj.js');
+    const pole = [].concat(...KP.KRYCI_PROJ_SEKCE.map(x => x.pole)).find(p => p.id === 'zpusobFakturace');
+    const VLASTNI = 'vlastní věta Firmy z doby odeslání (smyšlená)';
+    global.NAST.firma.zpusobFakturaceProj = 'jiná uložená věta Firmy (smyšlená)';   // uložená hodnota zrušeného nastavení
+    const z = novaZ(), v = z.varianty[0];
+    v.data.kryciProj = { hodnoty: {}, zmrazeno: { zpusobFakturace: VLASTNI } };
+    v.zamek = { zamceno: true, typ: 'nabidkaProj', kdy: '2026-10-01T10:00:00Z' };
+    const odesl = KP.kryciProjHodnota(pole, v.data.kryciProj, KP.kryciProjCtx(z, v));
+    test('N2 (U8): odeslaná stará nabídka PROJ tiskne Způsob fakturace ze snímku, ne z Firmy ani pevnou větu', odesl === VLASTNI, odesl);
+    const zn = novaZ(), vn = zn.varianty[0];
+    const nova = KP.kryciProjHodnota(pole, (vn.data.kryciProj = { hodnoty: {} }), KP.kryciProjCtx(zn, vn));
+    test('N2 (U8): rozpracovaná nabídka uloženou větu zrušeného nastavení nečte', nova !== 'jiná uložená věta Firmy (smyšlená)' && !!nova, nova);
+    delete global.NAST.firma.zpusobFakturaceProj;
+  }
   console.log(`\n${ok} OK, ${fail} FAIL`);
   process.exit(fail ? 1 : 0);
 })();

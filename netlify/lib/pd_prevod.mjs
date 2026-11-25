@@ -272,7 +272,9 @@ export function pdDoPd(def, strana, zdroj, popis, spolecne = {}) {
    * částky jako text Platebního kalendáře), měna strany. */
   if (def.prevod === 'platba') {
     const c = Number(v[0]);
-    if (!isFinite(c) || c <= 0) return { duvod: 'platba plánu není kladná částka' };
+    /* Revize Fable N1: 0 Kč = milník bez platby — jako chybějící milník (U7e: vymaže se). */
+    if (c === 0) return { prazdne: true };
+    if (!isFinite(c) || c < 0) return { duvod: 'platba plánu není kladná částka' };
     return { hodnota: { value: Math.round(c * 100) / 100, currency: String((zdroj && zdroj.mena) || spolecne.mena || 'CZK').toUpperCase() } };
   }
   /* PD2 Informováno BO / Tech (J. V. 25. 11. 2026): krycí list drží, KDO byl
