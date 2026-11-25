@@ -385,14 +385,18 @@ const prodej = await stranka.evaluate(() => {
   const po = { text: k() ? k().textContent : '', volne: zamekKryciPoleStav(v, 'kryci', 'jmenoPrijmeni') };
   ONLINE_STAV.ja = { email: 'vedouci@priklad.cz', role: 'Vedoucí', jmeno: 'V' }; render();
   const ved = k() ? k().textContent : '';
+  /* #793 (J. V. 25. 11. 2026): sbalovací náhled „Co by se zapsalo do Pipedrive“ jen administrátor. */
+  ONLINE_STAV.ja = { email: 'spravce@priklad.cz', role: 'Administrátor', jmeno: 'S' }; render();
+  const admin = k() ? k().textContent : '';
   delete v.prodano; render();
-  return { pred, po, ved };
+  return { pred, po, ved, admin };
 });
 zkus('#540: karta Prodej na konci krycího listu, Prodáno u odeslané nabídky povolené', prodej.pred.karta && prodej.pred.tlacitko
   && prodej.pred.volne === 'editovatelne', JSON.stringify(prodej.pred));
 /* PV #597: stav zápisu do Pipedrive „čeká na zápis" (zapíše se až po potvrzení v tabulce). */
-zkus('#540: po Prodáno štítek, „čeká na zápis", náhled Pipedrive, volné pole zamčené, obchodník neodemkne',
-  /✔ Prodáno/.test(prodej.po.text) && /čeká na zápis/.test(prodej.po.text) && /Co by se zapsalo do Pipedrive/.test(prodej.po.text)
+zkus('#540: po Prodáno štítek, „čeká na zápis", náhled Pipedrive jen správci (#793), volné pole zamčené, obchodník neodemkne',
+  /✔ Prodáno/.test(prodej.po.text) && /čeká na zápis/.test(prodej.po.text) && !/Co by se zapsalo do Pipedrive/.test(prodej.po.text)
+  && /Co by se zapsalo do Pipedrive/.test(prodej.admin)
   && prodej.po.volne === 'zmrazeno' && !/Odemknout prodej(?! smí)/.test(prodej.po.text), prodej.po.text.slice(0, 300));
 zkus('#540: vedoucí má tlačítko Odemknout prodej', /Odemknout prodej(?! smí)/.test(prodej.ved), prodej.ved.slice(0, 200));
 
