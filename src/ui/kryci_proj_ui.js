@@ -206,10 +206,8 @@ function renderKryciProj() {
     ${typeof kryciHodinyBlok === 'function' ? kryciHodinyBlok('proj') : ''}
     ${kryciProjTiskBlok(zab)}
   </div>
-  ${typeof sodProjKarta === 'function'
-    ? `<div class="noprint" style="margin-top:14px">${card('Smlouva o dílo a plná moc (PROJ)', sodProjKarta())}</div>` : ''}
-  ${typeof objednavkaProjKarta === 'function'   /* D3: objednávka ke stejné nabídce jako SoD PROJ (ui/objednavka_proj_ui.js) */
-    ? `<div class="noprint" style="margin-top:14px">${card('Objednávka / Smlouva (PROJ)', objednavkaProjKarta())}</div>` : ''}
+  ${typeof sodProjKarta === 'function'   /* #792: objednávka PROJ (ui/objednavka_proj_ui.js) je ve společné kartě se SoD PROJ a plnou mocí */
+    ? `<div class="noprint" style="margin-top:14px">${card(SOD_PROJ_KARTA_NAZEV, sodProjKarta())}</div>` : ''}
   ${typeof pdnKarta === 'function' ? pdnKarta('proj') : ''}
   ${typeof prodejKarta === 'function'
     ? `<div class="noprint" style="margin-top:14px">${card('Prodej', prodejKarta('proj'))}</div>` : ''}`;

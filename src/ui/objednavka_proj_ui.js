@@ -2,24 +2,34 @@
  * OBJEDNÁVKA / SMLOUVA PROJ — karta, tiskový náhled a Word (D3, 19. 11. 2026)
  * Data skládá objednavka_proj.js (z nabídky PROJ, ceny = jádro).
  *
- * Karta stojí na KONCI krycího listu PROJ, hned pod Smlouvou o dílo PROJ:
+ * Tlačítka stojí na KONCI krycího listu PROJ ve společné kartě se Smlouvou o dílo PROJ
+ * a plnou mocí (#792, dřív samostatná karta pod SoD PROJ):
  * objednávka je smluvní dokument ke stejné nabídce jako SoD PROJ (obchodník
  * volí jedno nebo druhé) a bere platební kalendář z plánu plateb a zástupce
  * zákazníka, které se vyplňují právě v krycím listu. Karta nabídky PROJ
  * (Kalkulace PROJ) zůstává pro nabídku samotnou.
  * ============================================================ */
 
-function objednavkaProjKarta() {
-  const zab = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr('objednavkaProj') : '';
-  return `<div class="note">Jednostránková objednávka, kterou zákazník jen podepíše. Číslo vznikne z čísla nabídky
+/* #792 (J. V. 25. 11. 2026): samostatná karta „Objednávka / Smlouva (PROJ)" zrušena —
+ * popis a tlačítka objednávky stojí ve společné kartě se smlouvou o dílo a plnou
+ * mocí (sodProjKarta v ui/sod_ui.js, krycí list PROJ). Tady jen jejich kusy. */
+function objednavkaProjPopis() {
+  return `<div class="note"><b>Objednávka</b> je jednostránková, zákazník ji jen podepíše. Číslo vznikne z čísla nabídky
       (<code>…-CN-…</code> → <code>…-OBJ-…</code>), řádky jsou nabízené činnosti varianty PROJ s rozsahem prací z nabídky,
       ceny, sleva, cestovné i DPH jsou <b>tytéž jako v cenové nabídce PROJ</b>. Pod tabulkou je odkaz na cenovou nabídku,
-      platební kalendář a termíny.</div>
-    <div class="btns" style="margin-top:6px">
-      <button class="primary cteni-ok"${zab} onclick="objednavkaProjNahled()">Náhled a tisk objednávky (PDF)</button>
-      <button class="cteni-ok"${zab} onclick="objednavkaProjWord()">Vytvořit objednávku (Word)</button>
-    </div>
-    <div class="note objednavkaProjStav" style="margin-top:4px"></div>`;
+      platební kalendář a termíny.</div>`;
+}
+function objednavkaProjTlacitka() {
+  const zab = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr('objednavkaProj') : '';
+  return `<button class="primary cteni-ok"${zab} onclick="objednavkaProjNahled()">Náhled a tisk objednávky (PDF)</button>
+      <button class="cteni-ok"${zab} onclick="objednavkaProjWord()">Vytvořit objednávku (Word)</button>`;
+}
+function objednavkaProjStavHtml() { return '<div class="note objednavkaProjStav" style="margin-top:4px"></div>'; }
+/* Celek (popis + tlačítka + stav) — pro místa mimo krycí list a testy. */
+function objednavkaProjKarta() {
+  return `${objednavkaProjPopis()}
+    <div class="btns" style="margin-top:6px">${objednavkaProjTlacitka()}</div>
+    ${objednavkaProjStavHtml()}`;
 }
 
 function objednavkaProjStavText(t) {
@@ -60,7 +70,9 @@ function objednavkaProjWord() {
 /* HTML dokumentu (bez lišty) — testy ho skládají i bez okna. Pořadí bloků
  * podle vzoru „Přijatá objednávka": vpravo název, číslo dokladu, zakázka;
  * vlevo dodavatel, pod ním místo určení / objednatel; datum případu; tabulka
- * se součtovým řádkem; rámeček Celkem Kč; podpis; poznámka; Vystavil. */
+ * se součtovým řádkem; rámeček Celkem Kč; poznámka; platební kalendář; termíny;
+ * Vystavil; podpis objednatele až úplně na konci (#791, J. V. 25. 11. 2026 —
+ * objednatel podepisuje pod vším, co objednávka obsahuje). */
 function objednavkaProjHtml(o) {
   const kc = o.texty.kc;
   const strana = (nadpis, r) => `<div class="strana"><div class="stitek">${esc(nadpis)}</div>
@@ -97,11 +109,11 @@ function objednavkaProjHtml(o) {
       <table class="ramecek"><tr><td>Celkem bez DPH</td><td class="c">${esc(o.texty.bezDph)}</td></tr>
         <tr><td>DPH ${esc(o.souhrn.dphPct)} %</td><td class="c">${esc(o.texty.dph)}</td></tr>
         <tr class="celkem"><td>Celkem Kč</td><td class="c">${esc(o.texty.sDph)}</td></tr></table></div>
-    <div class="podpis">Datum: ……………………………… &nbsp;&nbsp;&nbsp; Podpis objednatele: ………………………………………………</div>
     <div class="pozn"><b>Poznámka</b><p id="objPoznamka">${esc(o.poznamka)}</p>
       ${o.platebniKalendar.length ? `<b>Platební kalendář</b><p>${o.platebniKalendar.map((t, i) => `${i ? '<br>' : ''}${esc(t)}`).join('')}</p>` : ''}
       ${o.terminy.length ? `<b>Termíny</b><p>${o.terminy.map((x, i) => `${i ? '<br>' : ''}${esc(x[0])}${x[1] ? ` – ${esc(x[1])}` : ''}`).join('')}</p>` : ''}</div>
-    ${o.vystavil ? `<div class="vystavil">Vystavil: ${esc(o.vystavil)}</div>` : ''}`;
+    ${o.vystavil ? `<div class="vystavil">Vystavil: ${esc(o.vystavil)}</div>` : ''}
+    <div class="podpis">Datum: ……………………………… &nbsp;&nbsp;&nbsp; Podpis objednatele: ………………………………………………</div>`;
 }
 
 function objednavkaProjCss() {
@@ -123,7 +135,7 @@ function objednavkaProjCss() {
     .mimo{font-size:10px;color:#4b5563;flex:1}
     table.ramecek{width:auto;min-width:300px;border:2px solid #2b3850} table.ramecek td{padding:3px 8px}
     table.ramecek tr.celkem td{font-weight:700;font-size:13px;background:#eef2f8;border-top:1px solid #2b3850}
-    .podpis{margin:28px 0 14px}
+    .podpis{margin:28px 0 0;page-break-inside:avoid;break-inside:avoid}
     .pozn{font-size:10px} .pozn p{margin:2px 0 8px} .vystavil{font-size:10px;margin-top:10px}
     ${dokHlavickaCss()}
     .bar{position:sticky;top:0;background:#fff;border-bottom:1px solid #e5e9f0;padding:8px 0;margin-bottom:8px;z-index:5}

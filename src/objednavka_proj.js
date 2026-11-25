@@ -290,11 +290,14 @@ function objednavkaProjDocxTelo(o) {
     + objDocxBunka(objDocxTabulka([2000, 1900], R('Celkem bez DPH', o.texty.bezDph) + R('DPH ' + o.souhrn.dphPct + ' %', o.texty.dph)
       + R('Celkem Kč', o.texty.sDph, true)) + objDocxOdst(''), 3900) + '</w:tr>', false);
   body += objDocxOdst('', { after: 240 });
-  body += objDocxOdst('Datum: ……………………………        Podpis objednatele: ………………………………………', { sz: 18, after: 240 });
   body += B('Poznámka', { sz: 16 }) + objDocxOdst(o.poznamka, { after: 80 });
   if (o.platebniKalendar.length) body += B('Platební kalendář') + objDocxOdst(o.platebniKalendar.join('\n'), { after: 80 });
   if (o.terminy.length) body += B('Termíny') + objDocxOdst(o.terminy.map(x => x[0] + (x[1] ? ' – ' + x[1] : '')).join('\n'), { after: 80 });
   if (o.vystavil) body += objDocxOdst('Vystavil: ' + o.vystavil, { after: 0 });
+  /* #791 (J. V. 25. 11. 2026): datum a podpis objednatele až na konci — za Poznámkou,
+   * Platebním kalendářem, Termíny a „Vystavil" (prázdný odstavec = odstup jako v náhledu). */
+  body += objDocxOdst('', { after: 240 });
+  body += objDocxOdst('Datum: ……………………………        Podpis objednatele: ………………………………………', { sz: 18, after: 0 });
   return body;
 }
 /* .docx se zápatím „Strana x / y" (pole PAGE a NUMPAGES). */
