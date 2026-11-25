@@ -8,6 +8,32 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## PP (verzi přidělí koordinace) — připomínky (zvětšení a značky na snímku), krycí list PROJ, větev claude/pp-pripominky-kl
+
+Nad integrací `ebca8ebd` (v25.11.3). Rozhodnutí J. V. 25. 11. 2026 (ROZHODNUTI_LOG). Číslo verze se nezvyšuje.
+
+- **#781 Připomínky: obchodník vyznačí problém přímo na snímku.** V panelu Připomínka je v kroku „3 · Kde to je?“
+  hlavní tlačítko „✏️ Zakroužkovat problém na snímku“ (i klik na miniaturu) → editor přes celé okno: Rámeček /
+  Kroužek tažením myši, víc značek (nejvýš 20), Zpět (Ctrl+Z), Smazat vše, Hotovo, Zrušit (Esc). Miniatura
+  i tlačítko ukazují počet („2 vyznačená místa“); „📷 Pořídit nový snímek“ začne znovu. 📍 výběr prvku zůstává
+  jako doplněk („nebo Kliknout na prvek“). S vyznačením se odešle právě snímek, na který obchodník kreslil.
+  Značky jsou vektor v promilích snímku a ukládají se se snímkem (jen správce, ne do zálohy ani ke koordinaci);
+  server ověří tvar a velikost (B257 doplněk PP). Správce je vidí v detailu i ve zvětšení.
+- **#780 Připomínky: snímek jde zvětšit.** V detailu (Nastavení → Připomínky) klik nebo Enter na snímek otevře
+  zvětšení přes celé okno: kolečko myši přibližuje kolem kurzoru, tlačítka +/−, Přizpůsobit, 1:1 (10–800 %),
+  posun tažením, Esc / ✕ zavře. Bez externích knihoven.
+- **#791 Objednávka PROJ (PDF i Word): datum a podpis objednatele na konci** — za Poznámkou, Platebním
+  kalendářem, Termíny a „Vystavil“. Jinak beze změny; 4 činnosti dál ≤ 2 strany. Mění rozložení dokumentu
+  (porovnání sestavení: data objednávky `obj-proj` beze změny — viz `podklady/porovnani/ocekavane_pp_2026-11-25.txt`).
+- **#792 Krycí list PROJ: karta „Objednávka, smlouva o dílo a plná moc (PROJ)“.** Samostatná karta
+  „Objednávka / Smlouva (PROJ)“ zrušena; tlačítka v pořadí Náhled a tisk objednávky (PDF), Vytvořit objednávku
+  (Word), Vytvořit plnou moc (Word), Vytvořit smlouvu o dílo PROJ (Word); Jazyk tisku zůstává u smlouvy.
+- **#793 „Co by se zapsalo do Pipedrive“ jen pro administrátora** — karta v krycím listu OCK i PROJ i sbalovací
+  náhled u Prodeje (rozhodnutí dávky: Prodej také jen admin). Zápis prodeje a odeslání nabídky beze změny.
+- Testy: `src/test_pp_pripominky.js` (59), `netlify/test_pp_znacky.mjs` (29), `overit_pp_pripominky.mjs` (42),
+  doplněné `src/test_objednavka_proj.js`, `overit_objednavka_proj.mjs`, `overit_pd_nanecisto.mjs`,
+  `overit_zobrazeni.mjs`; mutace [PP] jádra 24/24 a serveru (viz předávka).
+
 ## v25.11.3 — MD: malá dávka #766, #767, #768, „Dne“ podle Prahy, barvy záloh, větev claude/md-mala-davka
 
 Revize Fable 25. 11.: SLOUČIT (`claude/revize-md` 35ef173, podklady/revize/REVIZE_MD.md); střední S1 → #776, S2 → #777, nízké → #778. Kolo VŠE ZELENÉ nad 4bea53c, porovnání 390: 388 SHODA + 2 očekávané.

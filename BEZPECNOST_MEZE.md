@@ -2254,6 +2254,19 @@ Rozhodnutí v `podklady/ROZHODNUTI_LOG.md`, roadmapa #704, #710, #714, #715. Tes
   koordinací si koordinace otevřít smí (#710 (4)) — jen dokud v témže stavu nepřibyl záznam správce
   (revize RJ N2). #710 (1)–(3) potvrzeno beze změny.
 
+- **B257 (doplněk PP, 25. 11. 2026) — značky na snímku (#781) a zvětšení (#780).** Obchodník smí na snímku
+  vyznačit místa (rámeček / kroužek). Značka je **jen vektor** `{tvar, x, y, w, h}` v promilích snímku —
+  žádný text, barva ani obrázek. Server (`pripominkaZnackyZkontroluj`, src/pripominky.js) přijme jen seznam
+  nejvýš 20 značek, tvar `ramecek` | `kruh`, celá čísla 0–1000, bez polí navíc, šířka i výška ≥ 5 ‰, bez
+  přesahu snímku; cokoli jiného → 400 a nic se neuloží (ani číslo připomínky). Značky bez snímku → 400.
+  Ukládají se **se snímkem** (`pripominky_snimky/<id>` = `{obrazek, znacky}`), ne do záznamu připomínky →
+  stejně jako snímek: čte je jen Administrátor (`?snimek=`), nejdou do zálohy, kopie na Disk ani ke
+  koordinaci. Při čtení se uložené značky ověří znovu (poškozený záznam = žádné značky). UI kreslí SVG jen
+  z ověřených čísel a tvaru ze seznamu (`pripominkaZnackySvg`), escapovat není co. Limit snímku (700 kB)
+  a těla (800 kB) beze změny. Zvětšení snímku je čistě klientské (transform), bez knihoven a bez požadavků
+  mimo stránku. Testy `src/test_pp_pripominky.js`, `netlify/test_pp_znacky.mjs`, `overit_pp_pripominky.mjs`,
+  mutace [PP] jádra i serveru.
+
 ## PR — připomínky z aplikace (dávka PR, 21. 11. 2026) — B257
 
 - **B257 — připomínky z aplikace: klíč koordinace, snímky obrazovky, osobní údaje.**
