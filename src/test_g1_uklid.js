@@ -148,7 +148,7 @@ const CT = '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.o
     const core = dec.decode(vyst.find(p => p.nazev === 'docProps/core.xml').data);
     test('D #754 dc:creator = ENGINEERS CZ s.r.o.', core.includes('<dc:creator>ENGINEERS CZ s.r.o.</dc:creator>') && !core.includes('Autor Šablony'), core);
     test('D #754 cp:lastModifiedBy = ENGINEERS CZ s.r.o.', core.includes('<cp:lastModifiedBy>ENGINEERS CZ s.r.o.</cp:lastModifiedBy>') && !core.includes('Upravil'), core);
-    test('D #754 ostatní vlastnosti beze změny (title, revision)', core.includes('<dc:title>Nabídka</dc:title>') && core.includes('<cp:revision>7</cp:revision>'), core);
+    test('D #754 ostatní vlastnosti beze změny (revision); #794 dc:title prázdný', core.includes('<dc:title></dc:title>') && !core.includes('Nabídka</dc:title>') && core.includes('<cp:revision>7</cp:revision>'), core);
     test('D #754 text dokumentu vyplněn jako dřív', dec.decode(vyst.find(p => p.nazev === 'word/document.xml').data).includes('Cena 100'));
     /* Revize koordinace S1: CN v18 má i docProps/core0.xml (záznam v [Content_Types].xml a vztah v _rels/.rels) */
     const CT2 = '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
@@ -176,7 +176,33 @@ const CT = '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.o
     const fn = typeof docxVlastnostiAutorXml === 'function' ? docxVlastnostiAutorXml : x => x;
     test('D #754 prázdný prvek (<cp:lastModifiedBy/>) dostane firmu',
       fn('<cp:lastModifiedBy/><dc:creator xml:lang="cs">x</dc:creator>') === '<cp:lastModifiedBy>ENGINEERS CZ s.r.o.</cp:lastModifiedBy><dc:creator xml:lang="cs">ENGINEERS CZ s.r.o.</dc:creator>');
-    test('D #754 chybějící prvek se nepřidává, jiné prvky beze změny', typeof docxVlastnostiAutorXml === 'function' && fn('<dc:title>a</dc:title><dc:creatorX>b</dc:creatorX>') === '<dc:title>a</dc:title><dc:creatorX>b</dc:creatorX>');
+    test('D #754 chybějící prvek se nepřidává, jiné prvky beze změny', typeof docxVlastnostiAutorXml === 'function' && fn('<dc:subject>a</dc:subject><dc:creatorX>b</dc:creatorX><dc:title/>') === '<dc:subject>a</dc:subject><dc:creatorX>b</dc:creatorX><dc:title/>');
+
+    /* #794 (J. V. 25. 11., revize G1 N1): Company = firma (app.xml, custom.xml), dc:title prázdný — ve všech částech */
+    const APP = '<?xml version="1.0" encoding="UTF-8"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">'
+      + '<Template>Normal.dotm</Template><Company>Notebook</Company><Manager>Vedouci</Manager></Properties>';
+    const CUSTOM = '<?xml version="1.0" encoding="UTF-8"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">'
+      + '<property fmtid="{D5CDD505-2E9C-101B-9397-08002B2CF9AE}" pid="2" name="Company"><vt:lpwstr>MHMP</vt:lpwstr></property>'
+      + '<property fmtid="{D5CDD505-2E9C-101B-9397-08002B2CF9AE}" pid="3" name="Jine"><vt:lpwstr>zustane</vt:lpwstr></property></Properties>';
+    const CT3 = '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+      + '<Override PartName="/vlast/app2.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>';
+    const RELS3 = '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+      + '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
+      + '<Relationship Id="rId9" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/custom-properties" Target="vlast/moje.xml"/></Relationships>';
+    const sab3 = await bajty(zipZapis([{ nazev: '[Content_Types].xml', data: enc.encode(CT3) }, { nazev: '_rels/.rels', data: enc.encode(RELS3) },
+      { nazev: 'docProps/core.xml', data: enc.encode(CORE_XML) }, { nazev: 'docProps/app.xml', data: enc.encode(APP) },
+      { nazev: 'vlast/app2.xml', data: enc.encode(APP) }, { nazev: 'docProps/custom.xml', data: enc.encode(CUSTOM) },
+      { nazev: 'vlast/moje.xml', data: enc.encode(CUSTOM) }, { nazev: 'word/document.xml', data: enc.encode(DOC) }]));
+    const vyst3 = await zipPrecti(await bajty(await docxVyplnSablonu(sab3.buffer, { CENA: '100' }, [], {}, {})));
+    const c3 = n => dec.decode(vyst3.find(p => p.nazev === n).data);
+    const comp = x => x.includes('<Company>ENGINEERS CZ s.r.o.</Company>') && !x.includes('Notebook') && x.includes('<Manager>Vedouci</Manager>');
+    test('D #794 Company v docProps/app.xml (bez záznamu v typech) = firma, ostatní (Manager) beze změny', comp(c3('docProps/app.xml')), c3('docProps/app.xml'));
+    test('D #794 Company i v další části app podle [Content_Types].xml', comp(c3('vlast/app2.xml')), c3('vlast/app2.xml'));
+    const cus = x => x.includes('name="Company"><vt:lpwstr>ENGINEERS CZ s.r.o.</vt:lpwstr></property>') && !x.includes('MHMP') && x.includes('<vt:lpwstr>zustane</vt:lpwstr>');
+    test('D #794 vlastnost Company v docProps/custom.xml = firma, jiné vlastnosti beze změny', cus(c3('docProps/custom.xml')), c3('docProps/custom.xml'));
+    test('D #794 Company i v části custom podle vztahu v _rels/.rels', cus(c3('vlast/moje.xml')), c3('vlast/moje.xml'));
+    test('D #794 dc:title prázdný i v druhé části vlastností (core0.xml)', cast('docProps/core0.xml').includes('<dc:title></dc:title>'), cast('docProps/core0.xml'));
+    test('D #794 text dokumentu beze změny', dec.decode(vyst3.find(p => p.nazev === 'word/document.xml').data).includes('Cena 100'));
   }
 
   /* ---------- E) #756 ---------- */

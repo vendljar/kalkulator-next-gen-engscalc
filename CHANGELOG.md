@@ -30,9 +30,11 @@ Nad integrací `9776c346`. **Cenu kalkulací ani text dokumentů nemění**; jed
 - Revize koordinace (`origin/claude/revize-g1`, REVIZE_G1.md): S1 #754 přepisuje KAŽDOU část vlastností dokumentu
   (typ core-properties v `[Content_Types].xml`, vztah core-properties v `_rels/.rels`, vždy `docProps/core.xml`) — CN v18
   má i `docProps/core0.xml` se jmény osob; S2 `nastroje/novinky.py` (a tím `release_odkaz.py --od`) na hotovou položku
-  s dočasnou značkou dávky skončí chybou „přepsat značku dávky na číslo verze“. N1 (Company, dc:title) čeká na J. V.
-- Testy: `src/test_g1_uklid.js` 39/0 (pojistky: nad 9776c346 15 FAIL, bez F1/F2 2 FAIL, bez S1 3 FAIL); `test_evidence.js` 71/0
-  (bez S2 2 FAIL); mutace `[G1]` 21/21, `[SA]` 23/23.
+  s dočasnou značkou dávky skončí chybou „přepsat značku dávky na číslo verze“.
+- **#794 (J. V. 25. 11., revize G1 N1):** ve všech částech vlastností generovaného Wordu Company (`docProps/app.xml`
+  a vlastní vlastnost „Company“ v `docProps/custom.xml`) = „ENGINEERS CZ s.r.o.“, `dc:title` prázdný. Text dokumentu beze změny.
+- Testy: `src/test_g1_uklid.js` 45/0 (pojistky: nad 9776c346 15 FAIL, bez F1/F2 2 FAIL, bez S1 3 FAIL, bez #794 6 FAIL); `test_evidence.js` 71/0
+  (bez S2 2 FAIL); mutace `[G1]` 26/26, `[SA]` 23/23.
   Porovnání sestavení čte jen `word/document.xml` — vlastnosti souboru nevidí (`podklady/porovnani/ocekavane_g1_2026-11-25.txt`).
 
 ## v25.11.2 — K56-D: doplnění porovnání sestavení (jen nástroje kola), větev claude/k56-porovnani

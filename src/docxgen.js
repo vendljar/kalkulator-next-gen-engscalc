@@ -1486,24 +1486,57 @@ async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky, v
  * šablony nese autora a kdo naposledy uložil (dc:creator, cp:lastModifiedBy)
  * — jméno zaměstnance, který šablonu upravoval. Šlo beze změny do každé
  * nabídky u zákazníka. Generátor obě hodnoty přepíše na firmu; prvek, který
- * šablona nemá, nepřidává. Text dokumentu se nemění. */
+ * šablona nemá, nepřidává. Text dokumentu se nemění.
+ * #794 (J. V. 25. 11. 2026, revize G1 N1): Company (docProps/app.xml
+ * a vlastní vlastnost „Company“ v docProps/custom.xml) = firma, název
+ * dokumentu (dc:title) prázdný — šablony nesly „Notebook“, „MHMP“ a názvy
+ * po původních dokumentech. */
 const DOCX_AUTOR_FIRMA = 'ENGINEERS CZ s.r.o.';
+/* Obsah prvků s místním jménem z `jmena` (libovolný prefix) → `hodnota`
+ * (už escapovaná); prázdný prvek <x/> dostane hodnotu, je-li neprázdná. */
+function docxPrvkyNahrad(xml, jmena, hodnota) {
+  const re = new RegExp('<((?:[^\\s<>\\/=:]+:)?(' + jmena + '))((?:\\s[^>]*?)?)(?:\\/>|>[\\s\\S]*?<\\/\\1\\s*>)', 'g');
+  return String(xml).replace(re, (cely, jmeno, _mistni, attr) => (!hodnota && /\/>$/.test(cely)) ? cely
+    : '<' + jmeno + attr.replace(/\s+$/, '') + '>' + hodnota + '</' + jmeno + '>');
+}
 function docxVlastnostiAutorXml(xml, autor) {
-  const hodnota = xmlEsc(autor == null ? DOCX_AUTOR_FIRMA : autor);
-  return String(xml).replace(/<((?:[^\s<>\/=:]+:)?(creator|lastModifiedBy))((?:\s[^>]*?)?)(?:\/>|>[\s\S]*?<\/\1\s*>)/g,
-    (_m, jmeno, _mistni, attr) => '<' + jmeno + attr.replace(/\s+$/, '') + '>' + hodnota + '</' + jmeno + '>');
+  const firma = xmlEsc(autor == null ? DOCX_AUTOR_FIRMA : autor);
+  return docxPrvkyNahrad(docxPrvkyNahrad(xml, 'creator|lastModifiedBy', firma), 'title', '');
+}
+/* #794: docProps/app.xml — Company. */
+function docxVlastnostiAppXml(xml, firma) {
+  return docxPrvkyNahrad(xml, 'Company', xmlEsc(firma == null ? DOCX_AUTOR_FIRMA : firma));
+}
+/* #794: docProps/custom.xml — vlastnost name="Company" (bez ohledu na velikost
+ * písmen); hodnota jako text (vt:lpwstr s prefixem, který část používá). */
+function docxVlastnostiCustomXml(xml, firma) {
+  const hodnota = xmlEsc(firma == null ? DOCX_AUTOR_FIRMA : firma);
+  return String(xml).replace(/<((?:[^\s<>\/=:]+:)?property)(\s[^>]*?)(\/>|>([\s\S]*?)<\/\1\s*>)/g, (cely, jmeno, attr, _k, obsah) => {
+    const m = /\sname\s*=\s*("([^"]*)"|'([^']*)')/.exec(attr);
+    const nazev = m ? (m[2] != null ? m[2] : m[3]) : '';
+    if (nazev.trim().toLowerCase() !== 'company') return cely;
+    const vt = /<([^\s<>\/=:]+):[A-Za-z0-9]+\b/.exec(obsah || '');
+    const pref = vt ? vt[1] : 'vt';
+    return '<' + jmeno + attr.replace(/\s+$/, '') + '><' + pref + ':lpwstr>' + hodnota + '</' + pref + ':lpwstr></' + jmeno + '>';
+  });
 }
 /* Revize koordinace S1 (25. 11. 2026): šablona CN v18 nese vedle
  * docProps/core.xml ještě docProps/core0.xml (druhý vztah core-properties
  * v _rels/.rels, druhý záznam v [Content_Types].xml) se jmény osob. Přepisuje
- * se proto KAŽDÁ část vlastností: typ obsahu core-properties v
- * [Content_Types].xml (Override PartName), cíl vztahu core-properties
- * v _rels/.rels a vždy docProps/core.xml. */
-const DOCX_CORE_TYP = /^application\/vnd\.openxmlformats-package\.core-properties\+xml$/i;
-const DOCX_CORE_VZTAH = /\/metadata\/core-properties$/i;
+ * se proto KAŽDÁ část vlastností: typ obsahu v [Content_Types].xml (Override
+ * PartName), cíl vztahu v _rels/.rels a výchozí jméno části. Vrací
+ * Map(jméno části malými → 'core' | 'app' | 'custom'). */
+const DOCX_VLASTNOSTI_DRUHY = [
+  { druh: 'core', vychozi: 'docprops/core.xml',
+    typ: /^application\/vnd\.openxmlformats-package\.core-properties\+xml$/i, vztah: /\/metadata\/core-properties$/i },
+  { druh: 'app', vychozi: 'docprops/app.xml',
+    typ: /^application\/vnd\.openxmlformats-officedocument\.extended-properties\+xml$/i, vztah: /\/relationships\/extended-properties$/i },
+  { druh: 'custom', vychozi: 'docprops/custom.xml',
+    typ: /^application\/vnd\.openxmlformats-officedocument\.custom-properties\+xml$/i, vztah: /\/relationships\/custom-properties$/i },
+];
 function docxCastiVlastnosti(polozky) {
   const dek = new TextDecoder();
-  const casti = new Set(['docprops/core.xml']);
+  const casti = new Map(DOCX_VLASTNOSTI_DRUHY.map(d => [d.vychozi, d.druh]));
   const norm = c => String(c).trim().replace(/^\/+/, '').toLowerCase();
   const atr = (znacka, jm) => { const m = new RegExp('\\s' + jm + '\\s*=\\s*("([^"]*)"|\'([^\']*)\')').exec(znacka); return m ? (m[2] != null ? m[2] : m[3]) : null; };
   for (const p of polozky) {
@@ -1513,12 +1546,14 @@ function docxCastiVlastnosti(polozky) {
     if (n === '[content_types].xml') {
       (xml.match(/<(?:[^\s<>\/=:]+:)?Override\b[^>]*>/g) || []).forEach(z => {
         const typ = atr(z, 'ContentType'), cast = atr(z, 'PartName');
-        if (typ && cast && DOCX_CORE_TYP.test(typ.trim())) casti.add(norm(cast));
+        const d = typ && cast && DOCX_VLASTNOSTI_DRUHY.find(x => x.typ.test(typ.trim()));
+        if (d) casti.set(norm(cast), d.druh);
       });
     } else {
       (xml.match(/<(?:[^\s<>\/=:]+:)?Relationship\b[^>]*>/g) || []).forEach(z => {
         const typ = atr(z, 'Type'), cil = atr(z, 'Target');
-        if (typ && cil && DOCX_CORE_VZTAH.test(typ.trim()) && !/^[a-z][a-z0-9+.-]*:/i.test(cil.trim())) casti.add(norm(cil));
+        const d = typ && cil && !/^[a-z][a-z0-9+.-]*:/i.test(cil.trim()) && DOCX_VLASTNOSTI_DRUHY.find(x => x.vztah.test(typ.trim()));
+        if (d) casti.set(norm(cil), d.druh);
       });
     }
   }
@@ -1527,10 +1562,12 @@ function docxCastiVlastnosti(polozky) {
 function docxVlastnostiAutor(polozky, autor) {
   const dek = new TextDecoder(), enk = new TextEncoder();
   const casti = docxCastiVlastnosti(polozky);
+  const uprav = { core: docxVlastnostiAutorXml, app: docxVlastnostiAppXml, custom: docxVlastnostiCustomXml };
   for (const p of polozky) {
-    if (!casti.has(p.nazev.toLowerCase())) continue;
+    const druh = casti.get(p.nazev.toLowerCase());
+    if (!druh) continue;
     const pred = dek.decode(p.data);
-    const po = docxVlastnostiAutorXml(pred, autor);
+    const po = uprav[druh](pred, autor);
     if (po !== pred) p.data = enk.encode(po);
   }
 }
@@ -1943,7 +1980,7 @@ function docxCisloStrankyVarovani(c) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { DOCX_AUTOR_FIRMA, docxVlastnostiAutorXml, docxVlastnostiAutor, docxCastiVlastnosti, docxCisloStranky, docxCisloStrankyXml, docxCisloStrankyVarovani, docxPodbarveniTecek, docxBehRozdel, docxRPrZluta, docxStudieBezZamereni, docxDpzBezZamereni, DOCX_DPZ_STAVAJICI, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
+  module.exports = { DOCX_AUTOR_FIRMA, docxVlastnostiAutorXml, docxVlastnostiAppXml, docxVlastnostiCustomXml, docxVlastnostiAutor, docxCastiVlastnosti, docxCisloStranky, docxCisloStrankyXml, docxCisloStrankyVarovani, docxPodbarveniTecek, docxBehRozdel, docxRPrZluta, docxStudieBezZamereni, docxDpzBezZamereni, DOCX_DPZ_STAVAJICI, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
     odstranPrazdneTsRadky, docxSmyckaSachet, DOCX_CENA_CASTI, DOCX_TECKY, docxTecky, docxTeckySada, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,
