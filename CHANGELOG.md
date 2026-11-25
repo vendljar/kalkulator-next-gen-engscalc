@@ -42,7 +42,9 @@ Nad integrací `cad7d93` (v25.11.1). Rozhodnutí J. V. 25. 11. 2026 (ROZHODNUTI_
   zákazníků ukážou číslo PROJ. Cenu ani tištěný dokument nemění.
 - **K58-N2 (#773): částka do Pipedrive jen jako číslo** (s Kč / CZK / EUR / bez DPH / za den); jiný text („TEST K57 …“)
   už nezapíše 57 Kč, tabulka „dnes / nově“ řekne „není částka“.
-- Mutace `[MD]` (jádro, server #768, #763, K58-N1, K58-N2); staré mutace VS-E5, VS-E2, ER N1/#757, K18-N96 a #512 přesměrované
+- **K58-I2 (#775): nová kalkulace — šachta bez opláštění** nemá v sekci Opláštění plastové kotvy, cestovné ani
+  čištění (jen příznak ER kalkVerze 2; stará kalkulace beze změny). Mění cenu jen nových kalkulací bez opláštění.
+- Mutace `[MD]` (jádro, server #768, #763, K58-N1, K58-N2, K58-I2); staré mutace VS-E5, VS-E2, ER N1/#757, K18-N96 a #512 přesměrované
   na nové místo kódu.
 
 ## v25.11.2 — K56-D: doplnění porovnání sestavení (jen nástroje kola), větev claude/k56-porovnani
