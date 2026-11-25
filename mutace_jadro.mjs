@@ -217,7 +217,9 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   'cislo_nabidky.js', 'ui/cislo_nabidky_ui.js',
   /* PP (25. 11. 2026): #780/#781 značky a zvětšení snímku připomínky (pripominky.js,
    * ui/pripominky_ui.js), #793 náhled Pipedrive jen administrátor (ui/pd_nanecisto_ui.js). */
-  'pripominky.js', 'ui/pripominky_ui.js', 'ui/pd_nanecisto_ui.js'];
+  'pripominky.js', 'ui/pripominky_ui.js', 'ui/pd_nanecisto_ui.js',
+  /* PP kolo 61 (#801): uložení bez hlavičky zůstane u hlášky (ui/zakulozeni_ui.js). */
+  'ui/zakulozeni_ui.js'];
 /* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
  * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
  * nastroje/mutace_cast.mjs). */
@@ -294,7 +296,7 @@ const PRIORITA = [
   /* C2 #583 / C3 #584 — SoD realizace v5 a tečky (sod.js, docxgen.js, vyrob_sablony.js) */
   'test_sod_v5.js', 'test_sod_tecky.js',
   /* PP (25. 11. 2026) — #780/#781/#792/#793 a #791 pořadí objednávky PROJ (rychlé sady) */
-  'test_pp_pripominky.js', 'test_objednavka_proj.js',
+  'test_pp_pripominky.js', 'test_objednavka_proj.js', 'test_pp_k61.js',
 ];
 
 /* Které sady vůbec pouštět: všechny, které si berou některé z obou jader.
@@ -423,6 +425,39 @@ const MUTACE = [
     hledej: "    ${o.vystavil ? `<div class=\"vystavil\">Vystavil: ${esc(o.vystavil)}</div>` : ''}\n    <div class=\"podpis\">",
     nahrad: "    <div class=\"podpis\">",
     proc: "náhled / PDF objednávky by ztratil „Vystavil“ nad podpisem objednatele (J. V.: podpis až na konci)", sady: ["test_objednavka_proj.js"] },
+  /* PP — nálezy kola 61 (#801–#804, koordinace 25. 11. 2026). Hlídá src/test_pp_k61.js. [PP] */
+  { nazev: "PP #801: bez hlavičky přepne na Přehled [PP]", soubor: "ui/zakulozeni_ui.js",
+    hledej: "    prepniTab(zakUlozeniTabHlavicky());\n",
+    nahrad: "    prepniTab('zakazka');\n",
+    proc: "hláška „Vyplňte v hlavičce…“ by zůstala na skryté stránce, uživatel neví, proč se neuložilo", sady: ["test_pp_k61.js"] },
+  { nazev: "PP #801: zakázka jen PROJ do Kalkulace OCK [PP]", soubor: "ui/zakulozeni_ui.js",
+    hledej: "  return vyr === 'ock' ? 'proj' : 'kalk';",
+    nahrad: "  return 'kalk';",
+    proc: "u zakázky jen PROJ by hláška skončila na vyřazené Kalkulaci OCK bez hlavičky", sady: ["test_pp_k61.js"] },
+  { nazev: "PP #802: SoD realizace i u zakázky jen PROJ [PP]", soubor: "kontroly.js",
+    hledej: "      if (ctx.jenProj) return null;\n      const n = ctx.sodNevyplneno && ctx.sodNevyplneno.sod;",
+    nahrad: "      const n = ctx.sodNevyplneno && ctx.sodNevyplneno.sod;",
+    proc: "tisk zakázky jen PROJ by hlásil 28 míst smlouvy, která nevznikne (K61-N3)", sady: ["test_pp_k61.js"] },
+  { nazev: "PP #802: SoD PROJ i u zakázky jen OCK [PP]", soubor: "kontroly.js",
+    hledej: "      if (ctx.jenOck) return null;\n      const n = ctx.sodNevyplneno && ctx.sodNevyplneno.sodProj;",
+    nahrad: "      const n = ctx.sodNevyplneno && ctx.sodNevyplneno.sodProj;",
+    proc: "krycí list OCK by hlásil chybějící údaje SoD PROJ u vyřazené projekce (K61-N3)", sady: ["test_pp_k61.js", "test_vs_kontroly.js"] },
+  { nazev: "PP #804: krycí list OCK s ISO datem [PP]", soubor: "kryci.js",
+    hledej: ".map(p => [p.label, kryciTiskHodnota(p, kryciHodnota(p, kl, c))]);",
+    nahrad: ".map(p => [p.label, kryciHodnota(p, kl, c)]);",
+    proc: "krycí list by tiskl „Dne 2026-11-25“ (K61-I3)", sady: ["test_pp_k61.js"] },
+  { nazev: "PP #804: krycí list PROJ s ISO datem [PP]", soubor: "kryci_proj.js",
+    hledej: ".map(p => [p.label, tiskH(p, kryciProjHodnota(p, kl, c))]);",
+    nahrad: ".map(p => [p.label, kryciProjHodnota(p, kl, c)]);",
+    proc: "krycí list PROJ by tiskl ISO datum (K61-I3)", sady: ["test_pp_k61.js"] },
+  { nazev: "PP #804: datum bez mezer / s nulami [PP]", soubor: "kryci.js",
+    hledej: "  return m ? (+m[3]) + '. ' + (+m[2]) + '. ' + m[1] : (iso == null ? '' : iso);",
+    nahrad: "  return m ? m[3] + '.' + m[2] + '.' + m[1] : (iso == null ? '' : iso);",
+    proc: "datum v krycím listu by mělo jiný tvar než „25. 11. 2026“", sady: ["test_pp_k61.js"] },
+  { nazev: "PP #803: „4 položek“ [PP]", soubor: "ui/zakazka_ui.js",
+    hledej: "  return k + ' ' + (k === 1 ? 'položka' : (k >= 2 && k <= 4 ? 'položky' : 'položek'));",
+    nahrad: "  return k + ' položek';",
+    proc: "karta Cenová nabídka by psala „4 položek“ (K61-N4)", sady: ["test_pp_k61.js"] },
   /* MD (25. 11. 2026): MD-4 pole „Dne" krycího listu podle pražského dne (kryciDnesIso), MD-5 barvy
    * stavových řádků záloh (uloZalohaBarva); #766 a #767 níž. [MD] */
   { nazev: "MD #766: značky vždy z mapy varianty [MD]", soubor: "zakazka.js",

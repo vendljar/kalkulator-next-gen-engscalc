@@ -30,9 +30,16 @@ Nad integrací `ebca8ebd` (v25.11.3). Rozhodnutí J. V. 25. 11. 2026 (ROZHODNUTI
   (Word), Vytvořit plnou moc (Word), Vytvořit smlouvu o dílo PROJ (Word); Jazyk tisku zůstává u smlouvy.
 - **#793 „Co by se zapsalo do Pipedrive“ jen pro administrátora** — karta v krycím listu OCK i PROJ i sbalovací
   náhled u Prodeje (rozhodnutí dávky: Prodej také jen admin). Zápis prodeje a odeslání nabídky beze změny.
-- Testy: `src/test_pp_pripominky.js` (59), `netlify/test_pp_znacky.mjs` (29), `overit_pp_pripominky.mjs` (42),
+- **Kolo 61 (doplněk koordinace 25. 11.):** **#801** Uložit zakázku bez čísla / názvu zůstane na stránce s hlavičkou
+  (Kalkulace OCK / PROJ) a ukáže hlášku „Vyplňte v hlavičce…“ (dřív přepnulo na Přehled a hláška byla skrytá).
+  **#802** kontrola před tiskem hlásí nevyplněná místa jen té smlouvy, kterou zakázka tiskne (jen PROJ → bez SoD
+  realizace, s číslem OCK / jen OCK → bez SoD PROJ). **#803** „1 položka / 2–4 položky / 5 položek“ v kartě Cenová
+  nabídka. **#804** krycí list OCK i PROJ (tisk, Word, náhled prodeje) píše pole typu datum („Dne“, „Datum podpisu
+  smlouvy“) česky „25. 11. 2026“ — **mění text krycího listu** (porovnání: 390 / 390 očekávaných, jen kryci-*);
+  uložená hodnota a symboly SoD beze změny. Test `src/test_pp_k61.js`.
+- Testy: `src/test_pp_pripominky.js` (59), `netlify/test_pp_znacky.mjs` (29), `overit_pp_pripominky.mjs` (42), `src/test_pp_k61.js` (16),
   doplněné `src/test_objednavka_proj.js`, `overit_objednavka_proj.mjs`, `overit_pd_nanecisto.mjs`,
-  `overit_zobrazeni.mjs`; mutace [PP] jádra 24/24 a serveru (viz předávka).
+  `overit_zobrazeni.mjs`, `overit_controlling.mjs`, `src/test_vs_kontroly.js`; mutace [PP] jádra 24/24 (+ kolo 61) a serveru 6/6.
 
 ## v25.11.3 — MD: malá dávka #766, #767, #768, „Dne“ podle Prahy, barvy záloh, větev claude/md-mala-davka
 

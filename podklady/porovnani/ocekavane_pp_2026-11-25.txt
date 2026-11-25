@@ -1,0 +1,11 @@
+# Očekávané rozdíly PP (#780, #781, #791, #792, #793 + kolo 61 #801–#804) × integrace ebca8ebd (v25.11.3) — 25. 11. 2026
+# Formát: <vzor případu> <pole,pole|*>  # důvod   (popis v nastroje/porovnani_sada.js)
+#
+# #804 (K61-I3, koordinace 25. 11.): krycí list OCK i PROJ píše pole typu datum („Dne“, „Datum podpisu
+#   smlouvy“, termíny) česky „25. 11. 2026“ místo ISO 2026-11-25. „Dne“ má předvyplnění v každém případu,
+#   proto se mění text všech krycích listů (BO i Tech, OCK i PROJ). Uložená hodnota, symboly SoD
+#   (DD.MM.RRRR), cena, řádky, Pipedrive, controlling a zámek = SHODA.
+# #791 (podpis objednatele na konec objednávky PROJ) mění jen rozložení náhledu / Wordu; sada otiskuje
+#   DATA objednávky (obj-proj) → SHODA. Pořadí hlídají src/test_objednavka_proj.js a overit_objednavka_proj.mjs.
+# #780, #781, #792, #793, #801, #803 jen UI; #802 jen kontroly před tiskem (sada je neotiskuje).
+*   kryci-bo,kryci-tech,kryci-proj-bo,kryci-proj-tech   # #804: datum v krycím listu česky
