@@ -2325,6 +2325,10 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     if (oplZPrepisuSkla && !it.prepsano) it.zPrepisuSkla = true;
     return it;
   };
+  /* K58-I2 (J. V. 25. 11. 2026): NOVÁ kalkulace (kalkVerze 2, jako #761 statika
+   * opláštění) — šachta BEZ opláštění (plocha opláštění 0, všechny stěny „bez")
+   * nemá plastové kotvy, cestovné ani čištění opláštění. Stará kalkulace beze změny. */
+  const bezOplNova = kalkNova(z) && !((+oplPlochaCelkem || 0) > 0);
   const oplasteni = [
     /* Které sklo kam (9. 9. 2026) rozhoduje typ šachty a způsob zasklení —
      * viz skloVolba(). Názvy řádků nese táž funkce, protože se na ně věší
@@ -2341,7 +2345,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
      * J. V. 18. 9. 2026) — proto `oplPlochaCelkem`, která je ve standardu
      * totožná se `skloCelkemM2`. */
     sPlochouSkla(mkItem('PRÁCE OPLÁŠTĚNÍ', oplPlochaCelkem, c.praceOplasteniKc, { cenaPath: 'C.praceOplasteniKc' })),
-    mkItem('PLASTOVÉ KOTVY', terce ? 1 : 0, c.plastKotvyKc, { cenaPath: 'C.plastKotvyKc' }),
+    mkItem('PLASTOVÉ KOTVY', terce && !bezOplNova ? 1 : 0, c.plastKotvyKc, { cenaPath: 'C.plastKotvyKc' }),
     ext ? sPlochouSkla(mkItem('TMELENÍ (MAT. + PRÁCE) (EXT)', oplPlochaCelkem, c.tmeleniKc, { cenaPath: 'C.tmeleniKc' })) : null,
     /* STŘÍŠKA JE POČET KUSŮ, NE ZAŠKRTÁVÁTKO (9. 9. 2026, zadání J. V.).
      *
@@ -2353,8 +2357,8 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     (+z.striskaKs || 0) > 0
       ? mkItem('STŘÍŠKA NAD NÁSTUPIŠTĚ', +z.striskaKs || 0, c.striskaDvurKc, { cenaPath: 'C.striskaDvurKc' })
       : null,
-    mkItem('CESTOVNÍ NÁKLADY', 1, c.cestovniKc, { cenaPath: 'C.cestovniKc' }),
-    mkItem('ČIŠTĚNÍ', 1, c.cisteniKc, { cenaPath: 'C.cisteniKc' }),
+    mkItem('CESTOVNÍ NÁKLADY', bezOplNova ? 0 : 1, c.cestovniKc, { cenaPath: 'C.cestovniKc' }),
+    mkItem('ČIŠTĚNÍ', bezOplNova ? 0 : 1, c.cisteniKc, { cenaPath: 'C.cisteniKc' }),
     ...vlastniProSekci('oplasteni'),
   ].filter(Boolean);
 

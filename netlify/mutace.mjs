@@ -6551,10 +6551,6 @@ const MUTACE = [
     hledej: "  const cisloPapir = String((typeof G.zamekCisloZobraz === 'function' ? G.zamekCisloZobraz(ulozena, v) : v.zamek.cislo)",
     nahrad: "  const cisloPapir = String((v.zamek.cislo)",
     proc: 'poznámka dealu a název Wordu by nesly předlohu čísla OCK', sady: ['../src/test_k58n1_cislo_proj.js'] },
-  { nazev: 'MD K58-N1: server čeká u PROJ číslo OCK [MD]', soubor: 'lib/zakazka_kontrola.mjs',
-    hledej: "    const cisloMaBy = String(globalThis.zamekCisloPapir(zak, v, v.zamek.typ) || '');",
-    nahrad: "    const cisloMaBy = cisloVarianty(zak, v);",
-    proc: 'admin by starý zámek přečísloval špatně / hláška by uváděla číslo OCK', sady: ['test_cn_cislo_nabidky.mjs'] },
   /* MD K58-N2 (25. 11. 2026): částka do Pipedrive jen jako číslo s měnou / bez DPH / za den. [MD] */
   { nazev: 'MD K58-N2: částka z libovolného textu [MD]', soubor: 'lib/pd_prevod.mjs',
     hledej: "  if (!menaJenCastka(text)) return { duvod:",

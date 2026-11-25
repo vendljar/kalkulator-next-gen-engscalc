@@ -55,7 +55,9 @@ console.log('===== 3. klient a server berou totéž =====');
   const kz = fs.readFileSync(__dirname + '/../netlify/lib/zakazka_kontrola.mjs', 'utf8');
   test('server B56 a nový zámek přes zamekCisloSedi', (kz.match(/zamekCisloSedi\(/g) || []).length >= 2, (kz.match(/zamekCisloSedi\(/g) || []).length);
   const po = fs.readFileSync(__dirname + '/../netlify/functions/pd_odeslani.mjs', 'utf8');
-  test('odeslání do Pipedrive bere zamekCisloZobraz', /zamekCisloZobraz\(/.test(po));
+  test('odeslání do Pipedrive: číslo papíru (poznámka, název Wordu) i varianty přes zamekCisloZobraz',
+    /const cisloPapir = String\(\(typeof G\.zamekCisloZobraz === 'function' \? G\.zamekCisloZobraz\(ulozena, v\)/.test(po)
+    && /cislo: \(typeof G\.zamekCisloZobraz === 'function' \? G\.zamekCisloZobraz\(ulozena, x\)/.test(po));
   const z = webhook(), v = z.varianty[0];
   const r = vzRazitkoSnimek(Object.assign(z, { zakaznici: undefined }), undefined, v, 'nabidkaProj');
   test('razítko VZ pro první tisk PROJ (není-li VZ, null)', r === null || /CN-437/.test(r.cislo), r);
