@@ -317,7 +317,7 @@ Ceny se do STAV nepíší; porovnání čísel main × test dělá porovnání s
   dávka ER doplněk + test s pojistkou.
 - **S6 šachta bez opláštění** (TEST OPR 9876, všechny stěny „bez opláštění“): řádek STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ
   **chybí — OK** (#761), STATICKÉ POSOUZENÍ šachty zůstává, uloženo 200.
-- **K58-I2** (otázka pro J. V., dopad na cenu u šachet bez opláštění): i když jsou všechny stěny „bez opláštění“, sekce
+- **K58-I2** — ✅ **rozhodnuto J. V. 25. 11. (ROZHODNUTI_LOG):** nová kalkulace bez opláštění = kotvy, cestovné, čištění 0; staré beze změny; oprava dávka MD, po nasazení ověřit S6 (nová × stará). Původní otázka: i když jsou všechny stěny „bez opláštění“, sekce
   Opláštění dál počítá 3 položky po 1 ×: PLASTOVÉ KOTVY, CESTOVNÍ NÁKLADY, ČIŠTĚNÍ. Nesouvisí s ER (pevné položky sekce).
   Jsou to paušály, které patří ke každé šachtě, nebo se bez opláštění nemají počítat? Doporučení: ověřit v ceníku / u J. V.;
   pokud nemají, nález s dopadem na cenu a oprava v jádře (+ test s pojistkou).
