@@ -1560,6 +1560,8 @@ const KONTROLY = [
     kod: 'sodNevyplneno', kde: 'Smlouva o dílo', nazev: 'Nevyplněné údaje smlouvy o dílo',
     strany: ['ock'],
     zjisti(ctx) {
+      /* #802 (K61-N3): zakázka jen PROJ (vyřazená OCK) SoD realizace netiskne — nehlásit. */
+      if (ctx.jenProj) return null;
       const n = ctx.sodNevyplneno && ctx.sodNevyplneno.sod;
       if (!Array.isArray(n) || !n.length || typeof sodNevyplneneText !== 'function') return null;
       return { uroven: KONTROLY_UROVEN, dokumenty: ['sod'],
@@ -1571,6 +1573,8 @@ const KONTROLY = [
     kod: 'sodProjNevyplneno', kde: 'Smlouva o dílo PROJ', nazev: 'Nevyplněné údaje smlouvy o dílo PROJ',
     strany: ['proj'],
     zjisti(ctx) {
+      /* #802 (K61-N3): zakázka jen OCK (vyřazená / uzamčená a vynulovaná PROJ) SoD PROJ netiskne. */
+      if (ctx.jenOck) return null;
       const n = ctx.sodNevyplneno && ctx.sodNevyplneno.sodProj;
       if (!Array.isArray(n) || !n.length || typeof sodNevyplneneText !== 'function') return null;
       return { uroven: KONTROLY_UROVEN, dokumenty: ['sodProj'],
