@@ -10,6 +10,7 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
+| 25. 11. 2026 | PD2 doplněk: Informováno Backoffice / Technické odd. z krycího listu do dealu jen do prázdných polí. Starý plán plateb PROJ: vést jen nový plán — zrušit nastavení Firma „Způsob fakturace — projekce“, pole starého plánu v KL PROJ ponechat jen jako doklad u starých odeslaných nabídek; do Pipedrive u PROJ nezapisovat Způsob fakturace; milníky nového plánu přiřadit do Platba 1–8 podle typu, co nesedí, zůstane jen v textu Platebního kalendáře. | PD2, plán plateb PROJ |
 | 25. 11. 2026 | K58-I2: šachta bez opláštění má v nové kalkulaci (ER) plastové kotvy, cestovné a čištění opláštění = 0; staré kalkulace beze změny. Do dávky MD. | K58-I2, cena nových kalkulací |
 | 25. 11. 2026 | K58-I1: výstup ze zaměření se počítá tolikrát, kolik je kusů šachty (2 ks = 2×) — beze změny aplikace; engineering dál jednou za variantu. | K58-I1, ER |
 | 25. 11. 2026 | Kokpit koordinace VŽDY ukazuje počty commitů main → test → integrace (i bez slučovacích) na dlaždicích main, test a main × test × integrace; počítá je skript kokpitu z origin při každé aktualizaci, ne ručně (opakovaná připomínka J. V. 24. a 25. 11.). | kokpit |
