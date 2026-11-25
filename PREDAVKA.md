@@ -84,6 +84,12 @@ Stav 25. 11. 2026 15:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74
 - **#738:** sady bz/cn/nn/ra červené 00–01 Praha (datum prodeje v UTC). `netlify/pomoc_den.mjs` (dnesPraha),
   `netlify/pomoc_falesne_hodiny.mjs`, hlídka `test_mt2_pulnoc.mjs`; před 8 FAIL, po 16 OK. Klient bere `objDnes()` — v aplikaci vada není.
 
+## Dávka PP (`claude/pp-pripominky-kl`, 25. 11. 2026)
+
+- Nad ebca8ebd: #780, #781 (připomínky: zvětšení a značky na snímku), #791–#793, kolo 61 #801–#804; verze „PP“.
+- Mutace [PP] jádro 32/32, server 6/6; porovnání 390/390 očekávaných (#804, `ocekavane_pp_2026-11-25.txt`).
+- Detail: `podklady/predavky/PP_2026-11-25.md`. Revize Fable.
+
 ## Čeká na J. V.
 
 Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.). Od S6 je zdrojem evidence
