@@ -1,7 +1,7 @@
 # Spuštění propojení s Pipedrive na ostrém webu (main) — procedura
 
 Živý kontrolní seznam (J. V. 23. 11. 2026). Koordinace ho vede i v kokpitu („Spuštění Pipedrive na main“).
-Stav: ☐ čeká · ◐ rozpracováno · ☑ hotovo. Roadmapa #730 (zastřešuje #16, #510, #597, #623, #723, #728, #729).
+Stav k 25. 11. 2026. Stav: ☐ čeká · ◐ rozpracováno · ☑ hotovo. Roadmapa #730 (zastřešuje #16, #510, #597, #623, #723, #728, #729).
 
 ## A. Ověřeno na testu (testengscalc, deal TEST 432)
 
@@ -11,13 +11,14 @@ Stav: ☐ čeká · ◐ rozpracováno · ☑ hotovo. Roadmapa #730 (zastřešuje
 | A2 | Webhook „Vygenerovat nabídku“ založí kalkulaci a zapíše „Odkaz na kalkulaci“ do dealu | testovací sezení | ☑ 23. 11. (v23.11.1) |
 | A3 | Poznámky šachet a zákazníků do dealu, ochrany (cizí zakázka, staré razítko, organizace bez IČO) | testovací sezení | ☑ 23. 11. |
 | A4 | Druhá automatizace „Deal - generate offer -> send data to Make“ vypnuta (reagovala na stejné pole) | J. V. | ☑ 23. 11. |
-| A5 | RA na testu: „V pořádku“ jen administrátor (#723), log výsledku webhooku | koordinace → test | ☐ |
-| A6 | Kalkulace z Pipedrive se otevře rovnou k úpravám (#728) | dávka → test | ☐ |
-| A6b | Autor kalkulace z webhooku = vlastník dealu (#734) | dávka → test | ◐ hotovo v dávce PV (`claude/pv-pipedrive`, v23.11.7), čeká na revizi, test a ověření na dealu TEST (vlastník s účtem ve stejném e-mailu) |
-| A7 | Kontaktní osoba z dealu jen jméno, bez e-mailu a telefonu (#729) | dávka → test | ☐ |
-| A9b | Odeslání nabídky do dealu (#116, J. V. 24. 11.): první tisk CN → tabulka „dnes / nově“ → potvrzení → pole krycího listu, CN, hodnota, fáze 22 → 23 (jen dopředu), poznámka „Nabídka odeslána“, Word jako soubor | dávka → test, pak testovací sezení | ◐ hotovo v dávce PO (`claude/po-odeslani-pipedrive`, jen simulátor), čeká na revizi Fable a test; pak zkušební zápis na deal TEST (souhlas J. V.): fáze 23, poznámka jedna, soubor u dealu, stav dealu beze změny, „zapsáno“ v kartě a protokolu; ověřit strop velikosti souboru Netlify / Pipedrive. Volitelně `PIPEDRIVE_FAZE_ODESLANO` (id nebo název fáze; výchozí „Nabídka odeslána“) |
+| A5 | RA na testu: „V pořádku“ jen administrátor (#723), log výsledku webhooku | koordinace → test | ☑ v main od v23.11.2 |
+| A6 | Kalkulace z Pipedrive se otevře rovnou k úpravám (#728) | dávka → test | ☑ v23.11.5 |
+| A6b | Autor kalkulace z webhooku = vlastník dealu (#734) | dávka → test | ☑ v23.11.7, ověřeno na testu (kolo 55) |
+| A7 | Kontaktní osoba z dealu jen jméno, bez e-mailu a telefonu (#729) | dávka → test | ☑ v23.11.5, ověřeno (K56-D) |
+| A9b | Odeslání nabídky do dealu (#116, J. V. 24. 11.): první tisk CN → tabulka „dnes / nově“ → potvrzení → pole krycího listu, CN, hodnota, fáze 22 → 23 (jen dopředu), poznámka „Nabídka odeslána“, Word jako soubor | dávka → test, pak testovací sezení | ☑ test v25.11.1, ověřeno na dealu TEST 432 (OCK) i 437 (PROJ), kola 55 a 58 |
 | A8 | Vazba „čeká / V pořádku“ a vypnutý zápis (dosud neověřeno bez zásahu do nastavení) | testovací sezení | ☐ |
-| A9 | Plný průchod: deal → kalkulace → tisk nabídky → Prodáno → potvrzení tabulky → zápis prodeje (#597) | J. V. + testovací sezení | ◐ zápis #597 hotový v dávce PV (jen simulátor); po nasazení do testu zkušební zápis na deal TEST: tabulka „dnes / nová“, hodnota dealu, fáze 26, stav dealu beze změny, CN, „zapsáno“ v kartě a protokolu |
+| A9 | Plný průchod: deal → kalkulace → tisk nabídky → Prodáno → potvrzení tabulky → zápis prodeje (#597) | J. V. + testovací sezení | ☑ test v25.11.1, plný průchod 25. 11. (kola 55 a 58), zápis prodeje 31/35 polí |
+| A10 | Doplnění polí: Datum nabídky (#763), K58-N1/N2 (dávka MD); kontakty, podpisy, Informováno, Platba 1–8, Nabídku vypracoval (dávka PD2) | dávky MD → PD2, pak testovací sezení | ◐ MD běží, PD2 po ní |
 
 ## B. Rozhodnutí J. V. před main
 
@@ -31,8 +32,8 @@ Stav: ☐ čeká · ◐ rozpracováno · ☑ hotovo. Roadmapa #730 (zastřešuje
 
 | # | krok | kdo | stav |
 |---|---|---|---|
-| C1 | Integrace s A5–A9 a dávkou #597 v test, celé kolo zelené, zkoušky na testu bez vysokých nálezů | koordinace | ☐ |
-| C2 | Sloučení test → main (pokyn J. V.), tag a release | J. V. | ☐ |
+| C1 | Integrace s A5–A9 a dávkou #597 v test, celé kolo zelené, zkoušky na testu bez vysokých nálezů | koordinace | ◐ test v25.11.1 kola 55/57/58 OK; čeká MD + PD2 |
+| C2 | Sloučení test → main (pokyn J. V.), tag a release | J. V. | ☐ main v24.11.7 (25. 11.) nese #597, ne #116; další main s #116, MD a PD2 |
 | C3 | Netlify engscalc: `PIPEDRIVE_TOKEN` (uživatel z B2), `PIPEDRIVE_DOMENA`, `PIPEDRIVE_WEBHOOK_KLIC` (nový, ne z testu), `PIPEDRIVE_ZAPIS = ano` | J. V. | ☐ |
 | C4 | Pipedrive automatizace „Vygenerovat nabídku → kalkulátor“: adresa webhooku na **engscalc** (ne testengscalc), klíč z C3 | J. V. | ☐ |
 | C5 | Pipedrive automatizace: **zrušit omezení „Systémové pole - filtr - nemazat = 432“** nebo ho nahradit pravidlem (pipeline / fáze) | J. V. | ☐ |

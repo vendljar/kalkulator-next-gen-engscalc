@@ -123,6 +123,12 @@ main{padding:0}
 .karta .nm{font-size:12.5px;margin:2px 0 0;line-height:1.35}
 .karta .sp{font-size:11px;color:var(--mut);margin-top:5px;display:flex;flex-wrap:wrap;gap:4px 9px}
 .slz-badge{border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:10.5px;font-weight:700;color:#5a6880;background:#f2f5fa}
+/* Stavová ikona vlny a karty (jako v kokpitu, J. V. 25. 11. 2026): hotovo · rozpracováno (položka s polem „bezi“) · čeká. */
+.ik{width:15px;height:15px;vertical-align:-2px;margin-right:5px;flex:none}
+.ik.todo{color:var(--mut)} .ik.run{color:#2563eb} .ik.done{color:var(--hot)}
+.sloup>h2 .vstav{font-size:11px;font-weight:600;color:var(--mut);margin-left:4px}
+.sloup>h2 .vstav.run{color:#1d4ed8}
+.karta .bezi{color:#1d4ed8;font-weight:600}
 /* Plán práce (meta.planVikend, J. V. 23. 10. 2026): vlny a položky, kterých se plán týká, modře. */
 .sloup.plan{border:2px solid #2563eb;box-shadow:0 0 0 3px #dbeafe}
 .sloup.plan>h2{color:#1d4ed8}
@@ -635,6 +641,18 @@ addEventListener('keydown', e => { if (e.key === 'Escape') zavriModal(); });
 /* ---------- vlny ---------- */
 /* Položky plánu práce (meta.planVikend.polozky) — modře ve Vlnách; chybějící id se ignorují. */
 const PLAN = new Set(((RM.meta.planVikend || {}).polozky || []).map(String));
+/* Stav vlny a položky jako v kokpitu: rozpracované = nehotová položka s polem „bezi“ (kde a od kdy se na ní pracuje). */
+const IK = {
+  todo: '<svg class="ik todo" viewBox="0 0 16 16" role="img" aria-label="Čeká"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.4 2"/></svg>',
+  run: '<svg class="ik run" viewBox="0 0 16 16" role="img" aria-label="Rozpracováno"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 3.6a4.4 4.4 0 0 1 0 8.8z" fill="currentColor"/></svg>',
+  done: '<svg class="ik done" viewBox="0 0 16 16" role="img" aria-label="Hotovo"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.8 8.2l2.1 2.1 4.3-4.6" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+};
+const bezi = p => p.stav !== 'hotovo' && !!p.bezi;
+function stavVlny(vse) {
+  if (vse.length && vse.every(p => p.stav === 'hotovo')) return ['done', 'hotovo'];
+  const r = vse.filter(bezi).length;
+  return r ? ['run', 'rozpracováno ' + r] : ['todo', 'čeká'];
+}
 function kresliVlny() {
   const vyb = vybrane();
   $('#vlny-telo').innerHTML = RM.meta.vlny.filter(v => !vlnaSchovana(v.id)).map(v => {
@@ -644,8 +662,10 @@ function kresliVlny() {
     const poradiDul = { vys: 0, blok: 1, str: 2, niz: 3, hot: 4, sed: 5 };
     moje.sort((a, b) => poradiDul[barvaKlic(a)] - poradiDul[barvaKlic(b)]);
     const vPlanu = vse.some(p => PLAN.has(p.id));
+    const [sk, st] = stavVlny(vse);
+    moje.sort((a, b) => bezi(b) - bezi(a));
     return `<div class="sloup${vPlanu ? ' plan' : ''}">
-      <h2>${esc(v.nazev)}${vPlanu ? '<span class="planstit">v plánu</span>' : ''} <span class="p">${esc(v.popis)}</span></h2>
+      <h2 title="${esc(st)}">${IK[sk]}${esc(v.nazev)}<span class="vstav ${sk}">· ${esc(st)}</span>${vPlanu ? '<span class="planstit">v plánu</span>' : ''} <span class="p">${esc(v.popis)}</span></h2>
       <div class="pruh"><i style="width:${vse.length ? Math.round(hot / vse.length * 100) : 0}%"></i></div>
       <div style="font-size:11px;color:var(--mut);padding:0 12px 6px">hotovo ${hot} z ${vse.length}${moje.length !== vse.length ? ` · filtrem vidíš ${moje.length}` : ''}</div>
       <div class="telo">${moje.map(karta).join('') || '<div style="color:var(--mut);font-size:12px;padding:6px">Filtrům tu nic neodpovídá.</div>'}</div>
@@ -657,7 +677,7 @@ function karta(p) {
   const k = barvaKlic(p);
   const cekaji = (p.zavisi || []).filter(z => MAPA[z.id] && MAPA[z.id].stav !== 'hotovo');
   return `<div class="karta l-${k}${PLAN.has(p.id) ? ' plan' : ''}" data-id="${esc(p.id)}">
-    <div class="hl"><span class="id">#${esc(p.id)}</span>
+    <div class="hl"><span class="id">${bezi(p) ? IK.run : ''}#${esc(p.id)}</span>
       <span>${p.slozitost ? `<span class="slz-badge">${esc(p.slozitost)}</span>` : ''}
       ${pripravena(p) ? '<span class="pill hot" style="margin-left:4px">lze začít</span>' : ''}
       ${p.stav === 'hotovo' ? '<span class="pill hot" style="margin-left:4px">✓</span>' : ''}</span></div>
@@ -665,6 +685,7 @@ function karta(p) {
     <div class="sp">
       ${cekaji.length ? `<span>⟵ čeká na ${cekaji.map(z => '#' + esc(z.id)).join(', ')}</span>` : ''}
       ${p.odemyka.length ? `<span>⟶ odemkne ${p.odemyka.map(z => '#' + esc(z.id)).join(', ')}</span>` : ''}
+      ${bezi(p) ? `<span class="bezi">běží: ${esc(p.bezi)}</span>` : ''}
       ${p.cekaNa ? `<span title="${esc(p.cekaNa)}">⏳ ${esc(p.cekaNa)}</span>` : ''}
       ${p.otazka ? '<span title="' + esc(p.otazka) + '">❓ otevřená otázka</span>' : ''}
     </div></div>`;
