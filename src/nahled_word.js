@@ -221,7 +221,9 @@ function nwBloky(data, L, o) {
     { text: T('popisNase'), styl: 'modry' },
     { text: ph.OPLASTENI_VETA, styl: 'modry' },
     { text: T('popisSkladba') }].filter(x => !nwPrazdna(x.text)),
-    pohled: T('pohled'), foto: o.foto || '' });
+    pohled: T('pohled'), foto: o.foto || '',
+    /* PD2 #771 V1: nadpis bez fotky skrýt jen tam, kde ho skryje i Word (data.odstavceTextPryc) */
+    bezPohledu: (data.odstavceTextPryc || []).indexOf('Pohled na objekt z ulice:') >= 0 });
   bloky.push({ typ: 'zlom' });
 
   /* 3) A. TECHNICKÁ ČÁST */
@@ -317,7 +319,8 @@ function nwBloky(data, L, o) {
   bloky.push({ typ: 'podpis',
     vypracoval: { nadpis: T('vypracoval'), jmeno: ph.ZPRAC_JMENO || '', funkce: ph.ZPRAC_FUNKCE || '',
       /* PD2 #771 V2: bez telefonu žádný řádek „Tel:“ (jako Word) */
-      podpis: (data.obrazky && data.obrazky.ZPRAC_PODPIS) || '', tel: nwPrazdna(ph.ZPRAC_TEL) ? '' : T('tel'), email: T('email') },
+      podpis: (data.obrazky && data.obrazky.ZPRAC_PODPIS) || '',
+      tel: nwPrazdna(ph.ZPRAC_TEL) && (data.odstavceTextPryc || []).indexOf('Tel:') >= 0 ? '' : T('tel'), email: T('email') },
     kancelar: { nadpis: T('kancelar'), radky: [ph.FIRMA_NAZEV, ph.FIRMA_SIDLO_ULICE,
       [ph.FIRMA_SIDLO_PSC, ph.FIRMA_SIDLO_MESTO].filter(x => !nwPrazdna(x)).join('  '),
       T('kIco'), T('kTel')].filter(x => !nwPrazdna(x)), web: ph.FIRMA_WEB || '' } });
@@ -356,7 +359,8 @@ function nwHtml(bloky) {
       case 'popis':
         return `<div class="nw-blok nw-popis"><h3>${nwEsc(b.nadpis)}</h3><div class="nw-popis-telo">${b.odstavce.map(x => nwP(x.text, x.styl === 'modry' ? 'nw-modry' : '')).join('')}`
           /* PD2 #771 V1: bez fotky ani nadpis „Pohled na objekt z ulice:“ (jako Word) */
-          + (nwFotoPlatna(b.foto) ? `<h4>${nwEsc(b.pohled)}</h4><img class="nw-foto" src="${nwEsc(b.foto)}" alt="">` : '') + '</div></div>';
+          + (b.bezPohledu && !nwFotoPlatna(b.foto) ? '' : `<h4>${nwEsc(b.pohled)}</h4>`)
+          + (nwFotoPlatna(b.foto) ? `<img class="nw-foto" src="${nwEsc(b.foto)}" alt="">` : '') + '</div></div>';
       case 'zlom':
         return '<div class="nw-blok nw-zlom"></div>';
       case 'nadpis':

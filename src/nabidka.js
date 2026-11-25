@@ -674,7 +674,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
              typeof zpracovatelObrazky === 'function' ? zpracovatelObrazky(varianta) : {},
              typeof uvodniFotoObrazky === 'function' ? uvodniFotoObrazky(zak) : {}),
            /* PD2 #771 V1, V2 (posudek CN-432): nadpis fotky bez fotky a „Tel:“ bez čísla pryč */
-           odstavceTextPryc: typeof docxPopiskyBezHodnoty === 'function' ? docxPopiskyBezHodnoty({ P,
+           odstavceTextPryc: pd2Tisk && typeof docxPopiskyBezHodnoty === 'function' ? docxPopiskyBezHodnoty({ P,
              foto: typeof uvodniFotoObrazky === 'function' && !!uvodniFotoObrazky(zak).UVODNI_FOTO, tel: placeholders.ZPRAC_TEL }) : [],
            nazevSouboru: nazevSouboru.replace(/[\\/:*?"<>|]+/g, '-') };
 }

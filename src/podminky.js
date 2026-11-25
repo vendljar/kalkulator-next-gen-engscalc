@@ -608,7 +608,7 @@ function podminkySnimek(firma, casti) {
   /* PD2 (#771 V4, #800): značka „odesláno po PD2“ — nabídka odeslaná před PD2
    * (snímek bez značky) se dotiskne tak, jak odešla: konečná faktura bez pořadí
    * a procenta, opláštění šachty bez opláštění se všemi řádky. */
-  if (out.vety) out.pd2Tisk = 1;
+  out.pd2Tisk = 1;
   const lm = podmLhutyModul();
   if (out.nabidkaProj && lm) out.lhutyProj = lm.lhutyProjEf(firma && typeof firma === 'object' ? firma.lhutyProj : undefined);
   return out;

@@ -74,6 +74,19 @@ const text = async (ph, volby) => {
     /* Online tisk (náhled ve tvaru Wordu). */
     const html = NW.nwHtml(NW.nwBloky(N.nabidkaData(novaZ(), novaZ().varianty[0], J, 'cz'), 'cz', { foto: '' }));
     test('V1/V2 online tisk: bez fotky bez nadpisu, bez telefonu bez „Tel:“', !/Pohled na objekt z ulice/.test(html) && !/>Tel: </.test(html) && !/>Tel:<\/p>/.test(html));
+    /* Dotisk nabídky odeslané PŘED PD2 (snímky podmínek bez značky pd2Tisk) — popisky zůstanou. */
+    const zs = novaZ(), vs = zs.varianty[0];
+    vs.data.kryci = { hodnoty: {}, zmrazenoPodminky: { v: 1, vety: {} } };
+    vs.data.kryciProj = { hodnoty: {}, zmrazenoPodminky: { v: 1, nabidkaProj: {} } };
+    vs.zamek = { zamceno: true, typ: 'nabidka', kdy: '2026-11-20T10:00:00Z' };
+    const dos = N.nabidkaData(zs, vs, J, 'cz'), dosP = NP.nabidkaProjData(zs, vs, 'cz');
+    test('dotisk odeslané před PD2: OCK i PROJ popisky nemažou (týž papír)', !(dos.odstavceTextPryc || []).length && !(dosP.odstavceTextPryc || []).length,
+      [dos.odstavceTextPryc, dosP.odstavceTextPryc]);
+    const htmlS = NW.nwHtml(NW.nwBloky(dos, 'cz', { foto: '' }));
+    test('dotisk odeslané před PD2: online tisk nadpis fotky i „Tel:“ ponechá', /Pohled na objekt z ulice/.test(htmlS) && /Tel:/.test(htmlS));
+    vs.data.kryci.zmrazenoPodminky.pd2Tisk = 1; vs.data.kryciProj.zmrazenoPodminky.pd2Tisk = 1;
+    test('odeslaná po PD2 (značka): popisky pryč i při dotisku', N.nabidkaData(zs, vs, J, 'cz').odstavceTextPryc.includes('Tel:')
+      && NP.nabidkaProjData(zs, vs, 'cz').odstavceTextPryc.includes('Tel:'));
     const html2 = NW.nwHtml(NW.nwBloky(d2, 'cz', { foto: FOTO }));
     test('V1 online tisk: s fotkou nadpis i obrázek', /Pohled na objekt z ulice/.test(html2) && /nw-foto/.test(html2));
   }
