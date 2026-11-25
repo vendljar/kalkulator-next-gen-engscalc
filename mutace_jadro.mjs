@@ -318,6 +318,32 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* MD (25. 11. 2026): MD-4 pole „Dne" krycího listu podle pražského dne (kryciDnesIso), MD-5 barvy
+   * stavových řádků záloh (uloZalohaBarva); #766 a #767 níž. [MD] */
+  { nazev: "MD-4: kryciDnesIso bere den prohlížeče [MD]", soubor: "kryci.js",
+    hledej: "  if (typeof zamekDenPraha === 'function') return zamekDenPraha();\n",
+    nahrad: "",
+    proc: "u prohlížeče mimo SEČ / v UTC po půlnoci Praha by krycí list nesl včerejší den", sady: ["test_md4_kryci_den.js"] },
+  { nazev: "MD-5: mez zelené 36 h → 48 h [MD]", soubor: "uloziste.js",
+    hledej: "const ULO_ZALOHA_OK_HODIN = 36;",
+    nahrad: "const ULO_ZALOHA_OK_HODIN = 48;",
+    proc: "záloha stará 40 h by svítila zeleně", sady: ["test_md5_zalohy_barvy.js"] },
+  { nazev: "MD-5: chyba nezabarví oranžově [MD]", soubor: "uloziste.js",
+    hledej: "  if (chyba) return { barva: 'oranzova'",
+    nahrad: "  if (false) return { barva: 'oranzova'",
+    proc: "selhaná poslední záloha by se tvářila jako v pořádku", sady: ["test_md5_zalohy_barvy.js"] },
+  { nazev: "MD-5: chybějící záloha oranžová místo červené [MD]", soubor: "uloziste.js",
+    hledej: "  if (!Number.isFinite(t)) return { barva: 'cervena', hodin: null",
+    nahrad: "  if (!Number.isFinite(t)) return { barva: 'oranzova', hodin: null",
+    proc: "úplně chybějící záloha by nebyla červená", sady: ["test_md5_zalohy_barvy.js"] },
+  { nazev: "MD-5: červená až po 7 dnech [MD]", soubor: "uloziste.js",
+    hledej: "  if (ms > ULO_ZALOHA_CERVENA_DNU * 86400000)",
+    nahrad: "  if (ms > 7 * 86400000)",
+    proc: "šest dní stará záloha by svítila jen oranžově", sady: ["test_md5_zalohy_barvy.js"] },
+  { nazev: "MD-5: den bez času jako UTC půlnoc [MD]", soubor: "uloziste.js",
+    hledej: "    return p ? t - parseInt(p.hhmm.slice(0, 2), 10) * 3600000 : t;",
+    nahrad: "    return t;",
+    proc: "stáří nočního otisku by se počítalo od UTC, ne od pražské půlnoci", sady: ["test_md5_zalohy_barvy.js"] },
   /* ER (24. 11. 2026): nová kalkulace kalkVerze 2 — #757 engineering jako příplatek, #758 rezerva příplatků
    * v položkách a automat ATYP, #761 výstup ze zaměření a statika opláštění; stará data postaru. [ER] */
   { nazev: "ER: kalkNova bere i text / true [ER]", soubor: "engine.js",

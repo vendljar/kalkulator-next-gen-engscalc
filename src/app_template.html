@@ -836,6 +836,13 @@
     color:var(--mut); font-size:13px; line-height:1.6; background:#fbfcfe; }
   .seznam-varovani { background:#fef3c7; border:1px solid #fcd34d; color:#78350f;
     border-radius:8px; padding:8px 12px; margin-bottom:8px; font-size:12.5px; line-height:1.5; }
+  /* MD-5 (25. 11. 2026): stav záloh v Nastavení → Databáze — zelená / oranžová /
+     červená, světlé pozadí s tmavým písmem (kontrast ≥ 7:1); štítek nese totéž slovy. */
+  .zaloha-stav { border-radius:8px; padding:7px 12px; margin-bottom:6px; font-size:12.5px;
+    line-height:1.5; border:1px solid; border-left-width:5px; }
+  .zaloha-zelena { background:#ecfdf5; border-color:#16a34a; color:#14532d; }
+  .zaloha-oranzova { background:#fff7ed; border-color:#ea580c; color:#7c2d12; }
+  .zaloha-cervena { background:#fef2f2; border-color:#dc2626; color:#7f1d1d; }
   /* Zápis do složky selhal. Žlutá „varovani" tu nestačí: dokud se to
      nespraví, změny nikde nejsou a po zavření okna zmizí. */
   .seznam-chyba { background:#fee2e2; border:1px solid #f87171; color:#7f1d1d;

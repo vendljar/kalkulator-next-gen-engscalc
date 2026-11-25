@@ -844,7 +844,8 @@ await page.waitForTimeout(200);
 {
   const html = await page.locator('#nastaveni-panel').innerHTML();
   test('#152: Nastavení → Databáze ukazuje varování o noční záloze',
-    /id="online-zalohy-nocni" class="seznam-varovani"/.test(html) && /není žádná noční/.test(html),
+    /id="online-zalohy-nocni" class="zaloha-stav zaloha-cervena"/.test(html) && /není žádná noční/.test(html)
+    && /zaloha-cervena"><b class="zaloha-stitek">Chybí — zkontrolujte:/.test(html),
     (html.match(/online-zalohy-nocni[^<]*<?[^<]{0,200}/) || [''])[0]);
 }
 /* Noční otisk z minulé noci — pořídí ho tatáž serverová funkce jako
@@ -855,8 +856,12 @@ await page.waitForTimeout(200);
 {
   const html = await page.locator('#nastaveni-panel').innerHTML();
   test('#152: s čerstvou noční zálohou je řádek klidný a jmenuje ji',
-    /id="online-zalohy-nocni" class="note"/.test(html) && /Poslední noční záloha:/.test(html),
+    /id="online-zalohy-nocni" class="zaloha-stav zaloha-zelena"/.test(html) && /Poslední noční záloha:/.test(html),
     (html.match(/online-zalohy-nocni[^<]*<?[^<]{0,200}/) || [''])[0]);
+  /* MD-5: řádek „Poslední záloha databáze" — čerstvá záloha bez chyby = zelená se štítkem */
+  test('MD-5: čerstvá záloha databáze → zelený řádek se štítkem „V pořádku"',
+    /class="zaloha-stav zaloha-zelena" id="online-zalohy"><b class="zaloha-stitek">V pořádku \(před \d+ h\):/.test(html),
+    (html.match(/[^<]{0,60}id="online-zalohy"[^<]*<?[^<]{0,120}/) || [''])[0]);
 }
 test('#152: obchodník hlídku nevidí (jen administrátor)',
   await page.evaluate(() => {
@@ -897,8 +902,8 @@ await page.evaluate(() => onlineOtiskyNacti().then(() => render()));
 await page.waitForTimeout(150);
 {
   const html = await page.locator('#nastaveni-panel').innerHTML();
-  test('N6: bez kopie na Disku hlídka varuje (seznam-varovani)',
-    /id="online-kopie-disk" class="seznam-varovani"/.test(html) && /zatím žádná/.test(html),
+  test('N6: bez kopie na Disku hlídka varuje (MD-5: červená)',
+    /id="online-kopie-disk" class="zaloha-stav zaloha-cervena"/.test(html) && /zatím žádná/.test(html),
     (html.match(/online-kopie-disk[^<]*<?[^<]{0,160}/) || [''])[0]);
   test('N6: administrátor má tlačítko „Zkopírovat zálohu na Disk teď"', html.includes('Zkopírovat zálohu na Disk teď'));
 }
@@ -967,7 +972,7 @@ test('K3-N1 O7: záznam na serveru nese složku a potvrzení heslem',
   test('N6: server si kopii poznamenal (hlídka všude)', !!r.kopie && r.kopie.soubor === r.otisk
     && JSON.parse(pamet.get('zalohy/kopie-disk')).sha256 === r.sha);
   const html = await page.locator('#nastaveni-panel').innerHTML();
-  test('N6: po kopii je hlídka klidná', /id="online-kopie-disk" class="note"/.test(html) && /Poslední kopie/.test(html));
+  test('N6: po kopii je hlídka klidná', /id="online-kopie-disk" class="zaloha-stav zaloha-zelena"/.test(html) && /Poslední kopie/.test(html));
 }
 /* Automatika po přihlášení: kopie starší než 7 dní → sama, bez výběru složky. */
 await page.evaluate(() => { window.__diskSoubory.clear(); });
@@ -1006,8 +1011,8 @@ test('N6: čerstvá kopie (méně než 7 dní) se automaticky nepřipomíná',
 pamet.set('zalohy/kopie-disk', JSON.stringify({ kdy: new Date(Date.now() - 15 * 86400000).toISOString(), soubor: 'otisk_stary.json' }));
 await page.evaluate(() => onlineOtiskyNacti().then(() => render()));
 await page.waitForTimeout(150);
-test('N6: kopie starší než 14 dní → varování v Nastavení → Databáze',
-  /id="online-kopie-disk" class="seznam-varovani"[^>]*>[^<]*stará 15 dní/.test(await page.locator('#nastaveni-panel').innerHTML()));
+test('N6: kopie starší než 14 dní → varování v Nastavení → Databáze (MD-5: červená)',
+  /id="online-kopie-disk" class="zaloha-stav zaloha-cervena">[\s\S]{0,300}stará 15 dní/.test(await page.locator('#nastaveni-panel').innerHTML()));
 /* K3-N13 (O7): pojistka retence přeskočila mazání → hlídka v Databázi */
 pamet.set('zalohy/retence-varovani', JSON.stringify({ kdy: new Date(Date.now() - 3600000).toISOString(), den: '2026-10-21',
   predchozi: '2026-10-20', pred: { pocetZakazek: 100, pocetUctu: 10 }, nove: { pocetZakazek: 40, pocetUctu: 10 },

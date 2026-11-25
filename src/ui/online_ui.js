@@ -3631,10 +3631,24 @@ function renderOnlineKarta() {
     /* Pojistka retence (K3-N13): noční záloha s poklesem dat pod polovinu. */
     const retenceHl = (jeAdminOnline() && ONLINE_STAV.otiskyNacteno && typeof uloRetenceVarovani === 'function')
       ? uloRetenceVarovani(ONLINE_STAV.retenceVarovani, Date.now()) : null;
+    /* MD-5 (J. V. 25. 11. 2026): barva řádků záloh podle stáří a chyby
+     * (uloZalohaBarva: ≤ 36 h zelená, problém ≤ 5 dní oranžová, jinak / chybí
+     * červená) + krátký štítek, aby barva nebyla jediný nosič informace. */
+    const barvaRadku = (b) => b ? 'zaloha-stav zaloha-' + b.barva : 'note';
+    const stitek = (b) => b ? `<b class="zaloha-stitek">${esc(b.stitek)}:</b> ` : '';
+    const posledniOtisk = (ONLINE_STAV.otisky || [])[0];
+    const bDb = (ONLINE_STAV.otiskyNacteno && typeof uloZalohaBarva === 'function')
+      ? uloZalohaBarva(posledniOtisk ? (posledniOtisk.porizena || posledniOtisk.den) : null, Date.now(),
+        !!(ONLINE_STAV.otiskStav && ONLINE_STAV.otiskStav.stav === 'chyba' && onlineOtiskPokusText())) : null;
+    const bNoc = (hlidka && typeof uloZalohaBarva === 'function')
+      ? uloZalohaBarva(hlidka.posledni ? (hlidka.posledni.porizena || hlidka.posledni.den) : null, Date.now(), false) : null;
+    const bDisk = (kopieHl && typeof uloZalohaBarva === 'function')
+      ? uloZalohaBarva(kopieHl.dnu === null ? null : (ONLINE_STAV.kopieDisk && ONLINE_STAV.kopieDisk.kdy), Date.now(),
+        !!ONLINE_STAV.kopieDiskCeka) : null;
     const zalohaRadek = jeAdminOnline()
-      ? `<div class="note" id="online-zalohy">${esc(onlineOtiskPopis())}</div>`
-        + (hlidka ? `<div id="online-zalohy-nocni" class="${hlidka.stara ? 'seznam-varovani' : 'note'}">${esc(hlidka.text)}</div>` : '')
-        + (kopieHl ? `<div id="online-kopie-disk" class="${kopieHl.stara ? 'seznam-varovani' : 'note'}">${esc(kopieHl.text)}</div>` : '')
+      ? `<div class="${barvaRadku(bDb)}" id="online-zalohy">${stitek(bDb)}${esc(onlineOtiskPopis())}</div>`
+        + (hlidka ? `<div id="online-zalohy-nocni" class="${barvaRadku(bNoc)}">${stitek(bNoc)}${esc(hlidka.text)}</div>` : '')
+        + (kopieHl ? `<div id="online-kopie-disk" class="${barvaRadku(bDisk)}">${stitek(bDisk)}${esc(kopieHl.text)}</div>` : '')
         /* #571 DZ: denní kopie se nepořídila — proč, a tlačítko hned u toho */
         + (ONLINE_STAV.kopieDiskCeka ? `<div id="online-kopie-disk-ceka" class="seznam-varovani">${esc(ONLINE_STAV.kopieDiskCeka.text)}
             <button class="mini" onclick="onlineKopieDiskTed()" ${ONLINE_STAV.pracuje ? 'disabled' : ''}>Zkopírovat zálohu na Disk teď</button></div>` : '')

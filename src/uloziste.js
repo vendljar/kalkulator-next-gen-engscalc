@@ -2347,6 +2347,38 @@ function uloPrahaCas(kdy) {
     return { den: c.year + '-' + c.month + '-' + c.day, hhmm: c.hour + c.minute };
   } catch (e) { return null; }
 }
+/* BARVA STAVOVÝCH ŘÁDKŮ ZÁLOH (MD-5, J. V. 25. 11. 2026) — Nastavení → Databáze,
+ * karta ONLINE DATABÁZE: „Poslední záloha databáze", „Poslední noční záloha",
+ * „Poslední kopie záloh na Disku Google".
+ *   zelená   = záloha je a je v pořádku: stáří ≤ ULO_ZALOHA_OK_HODIN a bez chyby;
+ *   oranžová = problém (starší než ULO_ZALOHA_OK_HODIN nebo hlášená chyba /
+ *              nepořízená kopie), stáří nejvýš ULO_ZALOHA_CERVENA_DNU dní;
+ *   červená  = záloha / kopie chybí, nebo je starší než ULO_ZALOHA_CERVENA_DNU dní.
+ * Barva není jediný nosič informace — `stitek` je krátký text na začátek řádku.
+ * `kdy` = ISO čas (nebo jen den RRRR-MM-DD = půlnoc v Europe/Prague), `ted` v ms. */
+const ULO_ZALOHA_OK_HODIN = 36;
+const ULO_ZALOHA_CERVENA_DNU = 5;
+function uloZalohaCas(kdy) {
+  if (typeof kdy === 'number') return Number.isFinite(kdy) ? kdy : NaN;
+  const x = String(kdy == null ? '' : kdy).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(x)) {
+    const t = Date.parse(x + 'T00:00:00Z');
+    const p = Number.isFinite(t) ? uloPrahaCas(t) : null;   // UTC půlnoc → 01:00 (SEČ) / 02:00 (SELČ) v Praze
+    return p ? t - parseInt(p.hhmm.slice(0, 2), 10) * 3600000 : t;
+  }
+  return x ? Date.parse(x) : NaN;
+}
+function uloZalohaBarva(kdy, ted, chyba) {
+  const t = uloZalohaCas(kdy);
+  if (!Number.isFinite(t)) return { barva: 'cervena', hodin: null, stitek: 'Chybí — zkontrolujte' };
+  const ms = Math.max(0, (Number.isFinite(+ted) && ted !== null ? +ted : Date.now()) - t);
+  const hodin = Math.floor(ms / 3600000), dnu = Math.floor(hodin / 24);
+  const pred = hodin < 48 ? 'před ' + hodin + ' h' : 'před ' + dnu + ' dny';
+  if (ms > ULO_ZALOHA_CERVENA_DNU * 86400000) return { barva: 'cervena', hodin, stitek: 'Stará (' + pred + ') — zkontrolujte' };
+  if (ms > ULO_ZALOHA_OK_HODIN * 3600000) return { barva: 'oranzova', hodin, stitek: 'Starší (' + pred + ') — zkontrolujte' };
+  if (chyba) return { barva: 'oranzova', hodin, stitek: 'Chyba — zkontrolujte' };
+  return { barva: 'zelena', hodin, stitek: 'V pořádku (' + pred + ')' };
+}
 /* `den` = den nočního otisku (klíč v Blobs; jinak dnešek v Praze), `prostredi`
  * ze serveru, `kdy` = čas pořízení zálohy (noční otisk: porizena). Bez platného
  * prostředí jméno nevznikne (vrací '') — kopie se pak nezapíše. */
@@ -2539,7 +2571,7 @@ function uloVsProblemy(zak, stara, opts) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { uloVsProblemy, uloVsMaData, ULO_VS_VYPNUTO, uloZalohaSloz, ULO_MUSTKY_MAX, ULO_MUSTKY_TEXT, ULO_MUSTKY_VOLBY, ULO_MUSTKY_KLICE, ULO_TYPY_HLAVICKA, uloRetenceVarovani, uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloKopieDiskStav, uloKopieDiskJmeno, uloKopieDiskProstredi, uloKopieDiskPosledniJmeno, uloPrahaCas, ULO_KOPIE_DISK_PROSTREDI, ULO_KOPIE_DISK_SLOZKA, ULO_KOPIE_DISK_HLIDKA_DNU, uloKopieDiskNocni, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
+  module.exports = { uloZalohaBarva, uloZalohaCas, ULO_ZALOHA_OK_HODIN, ULO_ZALOHA_CERVENA_DNU, uloVsProblemy, uloVsMaData, ULO_VS_VYPNUTO, uloZalohaSloz, ULO_MUSTKY_MAX, ULO_MUSTKY_TEXT, ULO_MUSTKY_VOLBY, ULO_MUSTKY_KLICE, ULO_TYPY_HLAVICKA, uloRetenceVarovani, uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloKopieDiskStav, uloKopieDiskJmeno, uloKopieDiskProstredi, uloKopieDiskPosledniJmeno, uloPrahaCas, ULO_KOPIE_DISK_PROSTREDI, ULO_KOPIE_DISK_SLOZKA, ULO_KOPIE_DISK_HLIDKA_DNU, uloKopieDiskNocni, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloMaCislo, uloUlozeniStav,
