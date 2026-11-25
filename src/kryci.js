@@ -1274,10 +1274,10 @@ function kryciPlatebniKalendar(zak, varianta, jekly) {
     splatky.push({ id, text, pct, proc, poradi: konecna ? null : ++poradi });
   });
   /* PD2 #771 V4: konečná s pořadím a % jen u neodeslané nabídky a u odeslané se
-   * snímkem podmínek, který nese značku `konecnaPoradi` (odeslaná po PD2). */
+   * snímkem podmínek, který nese značku `pd2Tisk` (odeslaná po PD2). */
   const sn = varianta && varianta.zamek && varianta.zamek.zamceno ? ((varianta.data && varianta.data.kryci && varianta.data.kryci.zmrazenoPodminky) || null) : undefined;
-  const konecnaPoradi = sn === undefined || !!(sn && sn.konecnaPoradi === 1);
-  return { stary, mesicne, splatky, vynechane, necitelne, hodnoty, podmEf: kryciPodmEfVarianty(varianta), konecnaPoradi };
+  const pd2Tisk = sn === undefined || !!(sn && sn.pd2Tisk === 1);
+  return { stary, mesicne, splatky, vynechane, necitelne, hodnoty, podmEf: kryciPodmEfVarianty(varianta), pd2Tisk };
 }
 
 /* SPLÁTKY OCK = 100 % (SEC-S5, rozhodnutí J. V. 26. 10. 2026 = A, #517).
@@ -1320,7 +1320,7 @@ function kryciVetaKonecna(kal, s, lang, tr_, V) {
   const PM = kryciPodm();
   const vlastni = ef && ef.vety && ef.vety.konecna && ef.vety.konecna.cz !== PM.PODMINKY_VYCHOZI.vety.konecna.cz;
   const vlastniJazyk = ef && ef.vety && ef.vety.konecna && lang !== 'cz' && ef.vety.konecna[lang];
-  if (kal.konecnaPoradi === false || vlastni || vlastniJazyk || typeof s.pct !== 'number' || !(s.pct > 0)) return V('konecna');
+  if (kal.pd2Tisk === false || vlastni || vlastniJazyk || typeof s.pct !== 'number' || !(s.pct > 0)) return V('konecna');
   const poradi = (kal.splatky || []).filter(x => x.id !== 'fakturaKonc').length + 1;
   const cesky = PM.podmDosad(KRYCI_VETA_KONECNA_PROC, 'cz', poradi, s.proc);
   return lang === 'cz' ? cesky : tr_(cesky);

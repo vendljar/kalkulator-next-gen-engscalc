@@ -20,6 +20,18 @@ function nabidkaPriplatkyVyberNovy(varianta) {
   const sn = (z.snimek && typeof z.snimek === 'object') ? z.snimek : null;
   return !!(sn && sn.priplatkyVyber === 1);
 }
+/* #800 (K61-N1): symboly bloku OPLÁŠTĚNÍ ŠACHTY kromě typu — u šachty bez
+ * opláštění prázdné. A je šachta bez opláštění? Všechny stěny (režim po
+ * stěnách) jen „bez“ a výsledek bez plochy opláštění (jako K58-I2). */
+const TS_OPL_BLOK = ['TS_MATERIAL_OPLASTENI', 'TS_POVRCH_OPLASTENI', 'TS_OPLASTENI_CELA', 'TS_ROZSAH_OPLASTENI',
+  'TS_OPLASTENI_NADSVETLIKU', 'TS_SVETLIKY_DVERI', 'TS_UMISTENI_OPLASTENI', 'TS_KOTVENI_OPLASTENI', 'TS_PARAMETRY_KOTVY', 'TS_NAPOJENI_DVERI'];
+function nabidkaBezOplasteni(r, Z) {
+  const o = Z && Z.oplasteni;
+  if (!o || o.rezim !== 'poStenach' || !o.steny || typeof o.steny !== 'object') return false;
+  const steny = Object.values(o.steny);
+  if (!steny.length || !steny.every(st => st && Array.isArray(st.pasy) && st.pasy.length && st.pasy.every(p => p && p.typ === 'bez'))) return false;
+  return !(r && r.oplasteni && (+r.oplasteni.plochaCelkem || 0) > 0);
+}
 function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
   if (typeof vzTiskHlidej === 'function') vzTiskHlidej(zak);   // VZ-E2 (revize U3): jen z pohledu zákazníka
   /* ODESLANÁ NABÍDKA ZŮSTÁVÁ ZMRAZENÁ (Z1, J. V. 22. 10. 2026): dotisk CN
@@ -197,7 +209,23 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
    * šachta = tytéž hodnoty jako dosud (TSv, r, Zv); u víc šachet se volá
    * pro každou šachtu s JEJÍ dvojicí (zadání, výsledek) a specifikací
    * (tsSachtaTechspec) — šablona v17 je dosadí do smyčky {#sachty}. */
+  /* #800 (K61-N1, J. V. 25. 11. 2026): šachta BEZ opláštění (všechny stěny
+   * „bez“, plocha opláštění 0) — z bloku OPLÁŠTĚNÍ ŠACHTY jen řádek
+   * „TYP OPLÁŠTĚNÍ: bez opláštění“, ostatní řádky prázdné (Word i online
+   * vypustí). Jen neodeslaná nabídka a odeslaná po PD2 (značka pd2Tisk ve
+   * snímku podmínek); dřív odeslaná se dotiskne, jak odešla. */
+  const zamS = varianta && varianta.zamek && varianta.zamek.zamceno;
+  const snPod = varianta && varianta.data && varianta.data.kryci && varianta.data.kryci.zmrazenoPodminky;
+  const pd2Tisk = !zamS || !!(snPod && snPod.pd2Tisk === 1);
   const tsSymbolySachty = (TSx, rx, Zx, mSk) => {
+    const out = tsSymbolySachtyZaklad(TSx, rx, Zx, mSk);
+    if (pd2Tisk && nabidkaBezOplasteni(rx, Zx)) {
+      TS_OPL_BLOK.forEach(k => { out[k] = ''; });
+      out.TS_TYP_OPLASTENI = P('bez opláštění');
+    }
+    return out;
+  };
+  const tsSymbolySachtyZaklad = (TSx, rx, Zx, mSk) => {
     const T = tsPro(TSx, rx, Zx);
     // vnější rozměr: z ručního přepisu pole „ROZMĚR ŠACHTY – VNĚJŠÍ“, je-li ve tvaru „š × h“
     const vnejsi = [' -', ' -'];
@@ -893,7 +921,9 @@ function nabidkaNahledSekce(ph, lang, platby, extra, sachty, rucni) {
       ['ROZSAH OPLÁŠTĚNÍ', ph.TS_ROZSAH_OPLASTENI], ['OPLÁŠTĚNÍ NADSVĚTLÍKŮ', ph.TS_OPLASTENI_NADSVETLIKU],
       ...(ph.TS_SVETLIKY_DVERI ? [['SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ', ph.TS_SVETLIKY_DVERI]] : []),   // #375
       ['VNĚJŠÍ OPLÁŠTĚNÍ ŠACHTY', ph.TS_UMISTENI_OPLASTENI], ['ZPŮSOB KOTVENÍ OPLÁŠTĚNÍ', ph.TS_KOTVENI_OPLASTENI],
-      ['VZHLED KOTVENÍ ZASKLENÍ', ph.TS_PARAMETRY_KOTVY], ['NAPOJENÍ ŠACHETNÍCH DVEŘÍ', ph.TS_NAPOJENI_DVERI]] },
+      ['VZHLED KOTVENÍ ZASKLENÍ', ph.TS_PARAMETRY_KOTVY], ['NAPOJENÍ ŠACHETNÍCH DVEŘÍ', ph.TS_NAPOJENI_DVERI]]
+      /* #800: bez opláštění (prázdné symboly bloku) jen řádek typu; jinak beze změny */
+      .filter((x, i) => i === 0 || !TS_OPL_BLOK.every(k => ph[k] === '') || !nabidkaHodnotaChybi(x[1])) },
     { sekce: 'DOPLŇKOVÉ KONSTRUKCE', radky: [
       ['MONTÁŽNÍ NOSNÍK NEBO OKA', ph.TS_MONTAZNI_NOSNIK], ['PŘÍPRAVA PRO KOTVENÍ VÝTAHU', ph.TS_PRIPRAVA_KOTVENI],
       ['ODVĚTRÁNÍ ŠACHTY', ph.TS_ODVETRANI], ['PODCHOZÍ NOSNÁ OCK', ph.TS_PODCHOZI_OCK],

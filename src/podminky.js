@@ -605,9 +605,10 @@ function podminkySnimek(firma, casti) {
     if (PODMINKY_ZMRAZ_CASTI.indexOf(k) >= 0) out[k] = podmKopie(ef[k]);
   });
   /* D8: s texty nabídky PROJ zamrzne i tabulka lhůt (čísla v termínech). */
-  /* PD2 #771 V4: značka „konečná faktura s pořadím a procentem“ — nabídka
-   * odeslaná před PD2 (snímek bez značky) se dotiskne s větou, se kterou odešla. */
-  if (out.vety) out.konecnaPoradi = 1;
+  /* PD2 (#771 V4, #800): značka „odesláno po PD2“ — nabídka odeslaná před PD2
+   * (snímek bez značky) se dotiskne tak, jak odešla: konečná faktura bez pořadí
+   * a procenta, opláštění šachty bez opláštění se všemi řádky. */
+  if (out.vety) out.pd2Tisk = 1;
   const lm = podmLhutyModul();
   if (out.nabidkaProj && lm) out.lhutyProj = lm.lhutyProjEf(firma && typeof firma === 'object' ? firma.lhutyProj : undefined);
   return out;

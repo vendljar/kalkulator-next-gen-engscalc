@@ -228,7 +228,7 @@ async function sablona() {
 
 async function wordText(zak, v, L) {
   const d = nabidkaData(zak, v, J, L, { symboly: SYMBOLY });
-  const blob = await docxVyplnSablonu(await sablona(), d.placeholders, d.priplatky, {}, { radkyNavic: d.tsRadkyNavic, sachty: d.sachtyWord || null });
+  const blob = await docxVyplnSablonu(await sablona(), d.placeholders, d.priplatky, {}, { radkyNavic: d.tsRadkyNavic, sachty: d.sachtyWord || null, odstavceTextPryc: d.odstavceTextPryc || null });
   const pol = await zipPrecti(new Uint8Array(await blob.arrayBuffer()));
   const xml = new TextDecoder().decode(pol.find(x => x.nazev === 'word/document.xml').data);
   return { text: nwTextZDocx(xml), xml };
@@ -389,7 +389,7 @@ const sleva = (zak, pct) => { const v = zak.varianty[0]; v.data.sleva = Object.a
     const v = zak.varianty[0];
     const d = nabidkaData(zak, v, J, 'cz', { symboly: SYMBOLY });
     ['TS_LESENI_UVNITR', 'TS_LESENI_VNE', 'TS_ZABRANY_VSTUPY'].forEach(k => { d.placeholders[k] = ' -'; });
-    const pol = await zipPrecti(new Uint8Array(await (await docxVyplnSablonu(await sablona(), d.placeholders, d.priplatky, {}, { radkyNavic: d.tsRadkyNavic })).arrayBuffer()));
+    const pol = await zipPrecti(new Uint8Array(await (await docxVyplnSablonu(await sablona(), d.placeholders, d.priplatky, {}, { radkyNavic: d.tsRadkyNavic, odstavceTextPryc: d.odstavceTextPryc || null })).arrayBuffer()));
     const w = nwTextZDocx(new TextDecoder().decode(pol.find(x => x.nazev === 'word/document.xml').data));
     const n = nwTextZHtml(nwHtml(nwBloky(d, 'cz', {})));
     const r = rozdil(w, n);
@@ -401,7 +401,7 @@ const sleva = (zak, pct) => { const v = zak.varianty[0]; v.data.sleva = Object.a
     const v = zak.varianty[0];
     const t = await docxPrelozSablonu(await sablona(), 'en', {});
     const d = nabidkaData(zak, v, J, 'en', { symboly: SYMBOLY });
-    const pol = await zipPrecti(new Uint8Array(await (await docxVyplnSablonu(await t.arrayBuffer(), d.placeholders, d.priplatky, {}, { radkyNavic: d.tsRadkyNavic })).arrayBuffer()));
+    const pol = await zipPrecti(new Uint8Array(await (await docxVyplnSablonu(await t.arrayBuffer(), d.placeholders, d.priplatky, {}, { radkyNavic: d.tsRadkyNavic, odstavceTextPryc: d.odstavceTextPryc || null })).arrayBuffer()));
     const w = nwTextZDocx(new TextDecoder().decode(pol.find(x => x.nazev === 'word/document.xml').data));
     const n = nwTextZHtml(nwHtml(nwBloky(nabidkaData(zak, v, J, 'en'), 'en', {})));
     /* Hodnoty (všechny řádky s číslem nebo částkou) ve stejném pořadí — pevný
