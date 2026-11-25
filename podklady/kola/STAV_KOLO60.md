@@ -1,6 +1,6 @@
 # STAV kola 60 — A8 z PIPEDRIVE_SPUSTENI: vazba z webhooku a vypnutý zápis (test v25.11.3, 5c42ca1)
 
-Stav: **PŘIPRAVENO, NEZAHÁJENO**. Kolo poběží v novém testovacím sezení (J. V. 25. 11.: kontext
+Stav: **ROZPRACOVÁNO** (TESTOVÁNÍ 5, 25. 11.) — bod 1 hotový, bod 2 čeká na vypnutí PIPEDRIVE_ZAPIS. Kolo poběží v novém testovacím sezení (J. V. 25. 11.: kontext
 sezení TESTOVÁNÍ 3 je nad 75 %). Tenhle soubor je zadání pro to sezení.
 
 ## Zadání (koordinace 25. 11.)
@@ -37,3 +37,11 @@ změna jeho čísla nabídky by skončila 409. Proto se použije nový TEST deal
 ## Úklid po kole
 
 Deal „TEST K60 vazba“ a zakázky TEST 9877 / 9878 mazat jen na pokyn J. V. PIPEDRIVE_ZAPIS musí být zpět „ano“.
+
+## Průběh (WIP, TESTOVÁNÍ 5)
+
+- Souhlas J. V. v sezení 25. 11.: „souhlasím, deal založ“; automatizace webhooku zůstává trvale zapnutá (TEST ve jménech nabídek).
+- Deal TEST 439 založen sezením (CN = TEST 9878, filtr 432). Automatizace „Pojmenování nového dealu v4“ při založení
+  přepsala CN na „CN-439“ → webhook založil novou kalkulaci CN-439 (vazba „webhook“). Pak CN v dealu ručně = TEST 9878
+  a nové „Vygenerovat nabídku“ → vazba „ceka“ u TEST 9878.
+- Bod 1: OK (podrobnosti doplním).
