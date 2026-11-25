@@ -1960,6 +1960,7 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   (HTML neescapuje — Pipedrive název zobrazuje jako text; UI aplikace ho
   escapuje). Volání z obrazovky po prodeji (`vzPoProdejiPd`) zapojí háček
   E4 (#603); do té doby se akce volá jen tlačítkem „Zkusit zápis znovu“.
+  Přijato J. V. 25. 11. 2026 jako zbytková mez (#636): duplicitní organizace se v Pipedrive sloučí ručně.
 - **B221 — E1 (#600, 16. 11. 2026): obrazovka víc zákazníků hlídá práva jen
   v prohlížeči.** Tlačítko „Přidat zákazníka“, formulář, přepínač a karta
   „Zákazníci zakázky“ (`src/ui/vice_zakazniku_ui.js`) se ukážou jen se
