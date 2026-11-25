@@ -142,7 +142,7 @@ test('#792 samostatná karta „Objednávka / Smlouva (PROJ)" zrušena', !/Objed
   const poz = tl.map(t => k.indexOf(t));
   test('#792 pořadí: objednávka PDF, objednávka Word, plná moc, SoD PROJ poslední, pak jazyk tisku',
     poz.every((x, i) => x >= 0 && (i === 0 || x > poz[i - 1])) && (k.match(/<button/g) || []).length === 4, poz);
-  test('#792 popis objednávky přesunut do karty, stavové řádky všech tří dokumentů', /Objednávka<\/b> je jednostránková/.test(k)
+  test('#792 popis objednávky přesunut do karty, stavové řádky všech tří dokumentů', /Objednávka<\/b> je stručný doklad/.test(k) && !/jednostránkov/.test(k)
     && /objednavkaProjStav/.test(k) && /sodStav_sodProj/.test(k) && /sodStav_plnaMoc/.test(k));
   test('#792 zábrany: objednávka objednavkaProj, smlouva sodProj, plná moc plnaMoc', /ukazkoveZabranaAttr\('objednavkaProj'\)/.test(obj)
     && /ukazkoveZabranaAttr\('sodProj'\)/.test(sod) && /ukazkoveZabranaAttr\('plnaMoc'\)/.test(sod));

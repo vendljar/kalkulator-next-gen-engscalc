@@ -23,9 +23,12 @@ Nad integrací `ebca8ebd` (v25.11.3). Rozhodnutí J. V. 25. 11. 2026 (ROZHODNUTI
   zvětšení přes celé okno: kolečko myši přibližuje kolem kurzoru, tlačítka +/−, Přizpůsobit, 1:1 (10–800 %),
   posun tažením, Esc / ✕ zavře. Bez externích knihoven.
 - **#791 Objednávka PROJ (PDF i Word): datum a podpis objednatele na konci** — za Poznámkou, Platebním
-  kalendářem, Termíny a „Vystavil“. Jinak beze změny; 4 činnosti dál ≤ 2 strany. Mění rozložení dokumentu
+  kalendářem, Termíny a „Vystavil“. **Podpis nikdy sám na straně** (revize Fable S1): poslední blok textu,
+  „Vystavil“ a odstup drží s podpisem (Word `w:keepNext`, tisk `break-after: avoid`) — při přetečení jde na
+  novou stranu celý poslední blok s podpisem; počet stran se neslibuje (plný rozsah). Mění rozložení dokumentu
   (porovnání sestavení: data objednávky `obj-proj` beze změny — viz `podklady/porovnani/ocekavane_pp_2026-11-25.txt`).
-- **#792 Krycí list PROJ: karta „Objednávka, smlouva o dílo a plná moc (PROJ)“.** Samostatná karta
+- **#792 Krycí list PROJ: karta „Objednávka, smlouva o dílo a plná moc (PROJ)“** (popis objednávky už neříká
+  „jednostránková“ — revize N3). Samostatná karta
   „Objednávka / Smlouva (PROJ)“ zrušena; tlačítka v pořadí Náhled a tisk objednávky (PDF), Vytvořit objednávku
   (Word), Vytvořit plnou moc (Word), Vytvořit smlouvu o dílo PROJ (Word); Jazyk tisku zůstává u smlouvy.
 - **#793 „Co by se zapsalo do Pipedrive“ jen pro administrátora** — karta v krycím listu OCK i PROJ i sbalovací
