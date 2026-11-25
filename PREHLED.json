@@ -74,6 +74,15 @@
    "verze": "v24.11.8"
   },
   {
+   "id": "744",
+   "typ": "nalez",
+   "nazev": "Na testu chybí jazykové šablony SoD projekce",
+   "alias": [
+    "K54-I2"
+   ],
+   "verze": "v25.11.1"
+  },
+  {
    "id": "743",
    "typ": "nalez",
    "nazev": "test_sablona_obsah: zastaralý seznam firemních šablon — CN v18 a PROJ v9 se přeskočily",
@@ -121,10 +130,22 @@
    "verze": "v24.11.6"
   },
   {
+   "id": "510",
+   "typ": "ukol",
+   "nazev": "Pipedrive: zkušební zápis na testovacím dealu",
+   "verze": "v25.11.1"
+  },
+  {
    "id": "116",
    "typ": "ukol",
    "nazev": "CRM-17 — Odeslání vygenerované nabídky do případu",
    "verze": "v24.11.10"
+  },
+  {
+   "id": "115",
+   "typ": "ukol",
+   "nazev": "CRM-16 — Potvrzený zápis do obchodního případu",
+   "verze": "v25.11.1"
   }
  ],
  "vady_ceny": [
@@ -139,9 +160,27 @@
    "kolo": "40",
    "stav": "oprava ve verzi v12.11.1, v testu ještě ne",
    "cekaNa": "—"
+  },
+  {
+   "id": "775",
+   "typ": "nalez",
+   "nazev": "Nová kalkulace: šachta bez opláštění bez plastových kotev, cestovného a čištění",
+   "alias": [
+    "K58-I2"
+   ],
+   "verze": "v25.11.3",
+   "kolo": "58",
+   "stav": "oprava ve verzi v25.11.3, v testu ještě ne",
+   "cekaNa": "—"
   }
  ],
  "ceka_na_jv": [
+  {
+   "id": "16",
+   "typ": "ukol",
+   "nazev": "CRM-12 — Pipedrive (zastřešující)",
+   "cekaNa": "spuštění na main podle PIPEDRIVE_SPUSTENI C3–C9 (#730); na testu vše ověřeno 25. 11."
+  },
   {
    "id": "19",
    "typ": "ukol",
@@ -159,12 +198,6 @@
    "typ": "ukol",
    "nazev": "CRM-14 — Výběr zakázky z Pipedrive v hlavičce kalkulace",
    "cekaNa": "API token a doména v proměnných Netlify (odsunuto 10. 8. 2026)"
-  },
-  {
-   "id": "115",
-   "typ": "ukol",
-   "nazev": "CRM-16 — Potvrzený zápis do obchodního případu",
-   "cekaNa": "rozhodnutí z kontrolní tabulky — kolize dvou kalkulací nad jedním polem v CRM (odsunuto 10. 8. 2026)"
   },
   {
    "id": "117",
@@ -188,7 +221,7 @@
    "id": "598",
    "typ": "ukol",
    "nazev": "VZ: Víc zákazníků na jedné zakázce (souhrn etap E0–E6, zkušební funkce viceZakazniku)",
-   "cekaNa": "ruční zkouška víc zákazníků na testu (vypínač viceZakazniku zapíná administrátor)"
+   "cekaNa": "zapnutí na main zatím ne (25. 11. 2026); znovu na pokyn"
   },
   {
    "id": "617",
@@ -199,21 +232,6 @@
     "B0.1"
    ],
    "cekaNa": "ruční zkouška víc šachet na testu; rozhodnutí odloženo do 25. 11. 2026"
-  },
-  {
-   "id": "621",
-   "typ": "otazka",
-   "nazev": "SoD v5: umístění řádků šachet, řádek slevy v rozpisu, žluté tečky v realizaci, šum kontroly nevyplněných polí",
-   "cekaNa": "rozhodnout (u řádku slevy doporučeno a)"
-  },
-  {
-   "id": "623",
-   "typ": "ukol",
-   "nazev": "Token Pipedrive na test a první zkušební zápis (poznámka šachet, organizace) nad dealem TEST",
-   "alias": [
-    "K40c-N6"
-   ],
-   "cekaNa": "dodat token, nebo odložit s datem (blokuje #510 a #16)"
   },
   {
    "id": "624",
@@ -258,12 +276,6 @@
    "cekaNa": "nahrát skilly (mimo repo)"
   },
   {
-   "id": "631",
-   "typ": "otazka",
-   "nazev": "Revize diffu S7 (CLAUDE.md, rozdělení PREDAVKA)",
-   "cekaNa": "revize (doporučeno schválit)"
-  },
-  {
    "id": "633",
    "typ": "otazka",
    "nazev": "Nástupiště A ↔ C u zrcadlové šachty — opravit?",
@@ -271,15 +283,6 @@
     "N46"
    ],
    "cekaNa": "pokyn (bez něj se neopravuje, fuzz hlásí jen INFO)"
-  },
-  {
-   "id": "636",
-   "typ": "otazka",
-   "nazev": "Zbytková mez B226: souběh dvou instancí může založit organizaci v Pipedrive dvakrát",
-   "alias": [
-    "B226"
-   ],
-   "cekaNa": "přijmout jako zbytkovou mez, nebo zadat zámek (doporučeno přijmout)"
   },
   {
    "id": "637",
@@ -315,30 +318,24 @@
    "cekaNa": "seznam polí pro #597 a uživatel tokenu (B1, B2)"
   },
   {
-   "id": "744",
-   "typ": "nalez",
-   "nazev": "Na testu chybí jazykové šablony SoD projekce",
-   "alias": [
-    "K54-I2"
-   ],
-   "cekaNa": "nahrát jazykové šablony SoD projekce (EN/DE/FR) na test"
+   "id": "776",
+   "typ": "otazka",
+   "nazev": "K58-I2 (#775) mění cenu i rozpracovaným neodeslaným kalkulacím s kalkVerze 2 (revize MD S1)",
+   "cekaNa": "potvrdit, že platí i pro rozpracované kalkulace kalkVerze 2 (doporučeno ano, jako #761)"
   },
   {
-   "id": "754",
+   "id": "777",
    "typ": "ukol",
-   "nazev": "Vlastnosti dokumentu šablony (docProps/core.xml: autor, kdo naposledy uložil) se kopírují do každé vygenerované nabídky",
-   "alias": [
-    "SA-META"
-   ],
-   "cekaNa": "má se ze šablony do nabídky kopírovat autor dokumentu? (doporučení: ne — při generování vyčistit)"
+   "nazev": "Částka „…“ (tečka jako oddělovač tisíců) jde do Pipedrive jako …; „-…“ jako 500 (revize MD S2)",
+   "cekaNa": "odmítnout s důvodem (doporučeno), nebo číst jako tisíce; pak dávka PD2"
   }
  ],
  "ceka_na_jv_odlozene": 13,
  "nehotove_podle_kdo": {
-  "J. V.": 39,
+  "J. V.": 35,
   "kolega": 4,
-  "koordinace": 9,
-  "integrátor": 2
+  "koordinace": 3,
+  "dávka": 5
  },
- "nehotovych": 54
+ "nehotovych": 47
 }

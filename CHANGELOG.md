@@ -8,7 +8,9 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## (verze přidělí koordinace) — MD: malá dávka #766, #767, #768, „Dne“ podle Prahy, barvy záloh, větev claude/md-mala-davka
+## v25.11.3 — MD: malá dávka #766, #767, #768, „Dne“ podle Prahy, barvy záloh, větev claude/md-mala-davka
+
+Revize Fable 25. 11.: SLOUČIT (`claude/revize-md` 35ef173, podklady/revize/REVIZE_MD.md); střední S1 → #776, S2 → #777, nízké → #778. Kolo VŠE ZELENÉ nad 4bea53c, porovnání 390: 388 SHODA + 2 očekávané.
 
 Nad integrací `cad7d93` (v25.11.1). Rozhodnutí J. V. 25. 11. 2026 (ROZHODNUTI_LOG). Poradce Fable navrhl postup
 #766 a #767; revize před sloučením přes koordinaci.
