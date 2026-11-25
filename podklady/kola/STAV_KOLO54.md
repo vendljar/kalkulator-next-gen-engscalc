@@ -59,7 +59,7 @@ uložení (Varianta 2) ji zapsalo znovu ze staré kopie; webhook pak jen aktuali
 | Druhá automatizace (Make) | UZAVŘENO | J. V. ji v Pipedrive zastavil (bod 1j kola 53) |
 | R3 | ROZHODNUTO | J. V.: zakázat USERINITIALS, USERADDRESS, LASTSAVEDBY, TEMPLATE, INFO, DOCPROPERTY — předáno koordinaci do dávky a ROZHODNUTI_LOG |
 | „Příplatky v nabídce“ | OK | J. V. změnil pole v Pipedrive na Velký text; po obnovení mapy polí (`/api/pd/pole?obnovit=1`, bez chybějících a nesouhlasných typů) náhled nanečisto s výčtem 858 znaků na deal 432 = „zapíše“ (dřív „nelze, pojme 255“) → K53-I3 vyřešen |
-| SoD projekce EN/DE/FR na test | PŘEDÁNO | prosba J. V. koordinaci (dohrát šablony z main) |
+| SoD projekce EN/DE/FR na test | OK | souhlas J. V. v sezení 25. 11.: z main (jen čtení) zveřejněno na testu sodProj_en v1 (587b2ad22049712c), sodProj_de v1 (8640937bec60dcab), sodProj_fr v1 (cc1e8c571de2b1ef), vše se `zdrojOtisk` platné CZ sodProj v4 (6fed289dd9609a0d) = shodné s main; nová kontrola SA bez vady. Ostatní platné šablony test × main: shodné otisky (CN v18, PROJ v9 ×4, SoD realizace v6 ×4, SoD projekce CZ v4, plná moc) |
 | Poznámky 1110/1111 v dealu 432 | ponechány | dle návrhu |
 | RJ #715 podpis při dotisku | **OK 6/6** | testovací obchodník: smyšlené jméno a zkušební podpis (souhlas J. V. v sezení). Zakázka `TEST - 2026 - OPR - CN - 9860`: CN obchodníka → zámek nese snímek zpracovatele s otiskem podpisu; dotisk správcem obsahuje tentýž obrázek podpisu a jméno obchodníka, sada obrázků shodná s originálem |
 
