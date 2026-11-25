@@ -1,0 +1,11 @@
+# Očekávané rozdíly MD (#766, #767, #768, #769 „Dne“ podle Prahy, #770 barvy záloh) × integrace cad7d93 (v25.11.1) — 25. 11. 2026
+# Formát: <vzor případu> <pole,pole|*>  # důvod   (popis v nastroje/porovnani_sada.js)
+#
+# Žádný očekávaný rozdíl: pevná sada nemá zakázku s víc šachtami (ock.dalsi), takže
+#   #767 (výběr příplatků v nabídce = sjednocení šachet) i #766 (ruční značky ATYP po šachtách)
+#   se v ní neprojeví — hlídají je src/test_767_priplatky_vic_sachet.js, src/test_766_rucni_po_sachtach.js
+#   a mutace [MD];
+# #768 mění jen mapu polí Pipedrive (typ pole), ne převod hodnot;
+# #769 kryciDnesIso = pražský den: v kontejneru v UTC shodné mimo 23–24 h UTC (léto 22–24 h);
+#   kolo běží mimo toto okno (jinak by šlo o rozdíl dokumentu krycí list / SoD — vědomý, ne nález);
+# #770 jen UI karty Online databáze (sada ho nepočítá).

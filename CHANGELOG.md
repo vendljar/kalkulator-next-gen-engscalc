@@ -8,6 +8,33 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## (verze přidělí koordinace) — MD: malá dávka #766, #767, #768, „Dne“ podle Prahy, barvy záloh, větev claude/md-mala-davka
+
+Nad integrací `cad7d93` (v25.11.1). Rozhodnutí J. V. 25. 11. 2026 (ROZHODNUTI_LOG). Poradce Fable navrhl postup
+#766 a #767; revize před sloučením přes koordinaci.
+
+- **#767 Víc šachet: příplatky v nabídce = sjednocení šachet (mění TEXT nabídky).** Nabídka bere výběr příplatků
+  stejně jako krycí list, Pipedrive a objednané / SoD (jedna funkce `vsPriplatkyVyber`): příplatek zaškrtnutý jen
+  v šachtě 2 se vytiskne a částka řádku = Σ ks × šachta jen přes šachty, které ho zaškrtly (do teď výběr šachty 1
+  a částka všech šachet). Engineering jednou za variantu (#757). Kontrola „dodatekCesky“ bere týž výběr.
+  Odeslané (zamčené) nabídky beze změny: nový zámek víc šachet nese ve snímku `priplatkyVyber: 1`, starší zámek
+  se dotiskne postaru. Jedna šachta beze změny. Test `src/test_767_priplatky_vic_sachet.js`.
+- **#766 Ruční značky ATYP po šachtách (mění cenu jen v okrajovém případě).** Šachta 2+ nové kalkulace (ER,
+  kalkVerze 2) má vlastní ruční značky (`zadani.zadaniRucni`, z kopie zdroje při přidání / kopii šachty): ruční
+  rezerva v šachtě 1 už nebrání automatu ATYP v šachtě 2. Šachta 1, staré kalkulace a dřív založené šachty beze
+  změny. Test `src/test_766_rucni_po_sachtach.js`.
+- **#768 Mapa polí Pipedrive:** „Příplatky v nabídce“ jen Velký text (jako platební kalendář); krátké pole hlásí
+  přehled jako „typ nesedí“ a nezapisuje se.
+- **Krycí list: pole „Dne“ podle pražského dne** (J. V. 25. 11.): `kryciDnesIso` = den v Europe/Prague (jako datum
+  nabídky DT #745), ne den prohlížeče. Test `src/test_md4_kryci_den.js` (falešné hodiny).
+- **Nastavení → Databáze: barvy řádků záloh** (J. V. 25. 11., jen UI): „Poslední záloha databáze“, „Poslední noční
+  záloha“, „Poslední kopie záloh na Disku Google“ — zelená ≤ 36 h a bez chyby, oranžová starší / s chybou nejvýš
+  5 dní, červená chybí nebo starší než 5 dní; štítek slovy („V pořádku (před 3 h)“, „Starší (před 3 dny) —
+  zkontrolujte“). Meze `ULO_ZALOHA_OK_HODIN`, `ULO_ZALOHA_CERVENA_DNU`. Příručka správce doplněna.
+  Test `src/test_md5_zalohy_barvy.js`.
+- Mutace `[MD]` (jádro, server #768); staré mutace VS-E5, VS-E2, ER N1/#757, K18-N96 a #512 přesměrované
+  na nové místo kódu.
+
 ## v25.11.1 — TZ-1: test „pole Dne“ v noci (jen test), větev claude/test-dne-praha
 
 - `overit_zobrazeni.mjs`: test „pole Dne se předvyplňuje dnešním datem“ porovnává
