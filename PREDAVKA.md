@@ -85,6 +85,17 @@ Stav 25. 11. 2026 15:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74
 - Mutace [PP] jádro 32/32, server 6/6; porovnání 390/390 očekávaných (#804, `ocekavane_pp_2026-11-25.txt`).
 - Detail: `podklady/predavky/PP_2026-11-25.md`. Revize Fable.
 
+## Dávka UK (`claude/uk-uklid`, 26. 11. 2026) — verzi přidělí koordinace
+
+- Nad integrací `2a61e6cd`; #807 (revize Fable G1 F3, F4, F5, F7) → #820–#822, roadmapa `verze: "UK"`, CHANGELOG „UK“.
+- #820 F3/F4 `src/docxgen.js`: náhrada vlastností přeskočí atribut s „>“ a CDATA, po náhradě `xmlStrukturaVada`
+  (vada → původní část); Manager prázdný; `w:author`/`w:initials`, `w15:author`/`w15:userId` = firma jen ve značkách.
+- #821 F5: `rucniPolozkaPomer` v `KONTROLY_PO_SACHTE` (text TX #809 nedotčen).
+- #822 F7: `novinky.py --docasne origin/main origin/test` v `kontrola_podkladu.sh` (upozornění; svěřené UK-T1).
+- `roadmapa.py` a `test_roadmapa.js`: výraz dočasné značky převzat z TX řádek po řádku (`\d{0,2}`).
+- Konflikty při slučování s TX: CHANGELOG (začátek), roadmap.json (řádek #807 sousedí s #808 z TX) — ručně.
+- Test `src/test_uk_uklid.js`, mutace `[UK]`.
+
 ## Čeká na J. V.
 
 Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.). Od S6 je zdrojem evidence

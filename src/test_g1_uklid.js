@@ -195,8 +195,9 @@ const CT = '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.o
       { nazev: 'vlast/moje.xml', data: enc.encode(CUSTOM) }, { nazev: 'word/document.xml', data: enc.encode(DOC) }]));
     const vyst3 = await zipPrecti(await bajty(await docxVyplnSablonu(sab3.buffer, { CENA: '100' }, [], {}, {})));
     const c3 = n => dec.decode(vyst3.find(p => p.nazev === n).data);
-    const comp = x => x.includes('<Company>ENGINEERS CZ s.r.o.</Company>') && !x.includes('Notebook') && x.includes('<Manager>Vedouci</Manager>');
-    test('D #794 Company v docProps/app.xml (bez záznamu v typech) = firma, ostatní (Manager) beze změny', comp(c3('docProps/app.xml')), c3('docProps/app.xml'));
+    /* UK F4: Manager se od dávky UK vyprazdňuje; Template zůstane */
+    const comp = x => x.includes('<Company>ENGINEERS CZ s.r.o.</Company>') && !x.includes('Notebook') && x.includes('<Manager></Manager>') && x.includes('<Template>Normal.dotm</Template>');
+    test('D #794 Company v docProps/app.xml (bez záznamu v typech) = firma, Manager prázdný (UK F4), Template beze změny', comp(c3('docProps/app.xml')), c3('docProps/app.xml'));
     test('D #794 Company i v další části app podle [Content_Types].xml', comp(c3('vlast/app2.xml')), c3('vlast/app2.xml'));
     const cus = x => x.includes('name="Company"><vt:lpwstr>ENGINEERS CZ s.r.o.</vt:lpwstr></property>') && !x.includes('MHMP') && x.includes('<vt:lpwstr>zustane</vt:lpwstr>');
     test('D #794 vlastnost Company v docProps/custom.xml = firma, jiné vlastnosti beze změny', cus(c3('docProps/custom.xml')), c3('docProps/custom.xml'));

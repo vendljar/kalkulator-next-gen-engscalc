@@ -5,6 +5,9 @@
 #   2. main musí být předkem pracovní větve — `git rev-list --count
 #      HEAD..origin/main` > 0 je UPOZORNĚNÍ (kolo nezastaví; bez origin/main,
 #      např. mělký checkout v CI, jen poznámka).
+#   3. (UK F7, revize Fable G1) roadmapa v origin/main a origin/test nesmí
+#      u hotové položky nést dočasnou značku dávky („G1“, „TX“) místo čísla
+#      verze — UPOZORNĚNÍ (nastroje/novinky.py --docasne).
 #   bash nastroje/kontrola_podkladu.sh            kontrola stromu (0 = v pořádku, 1 = chyba)
 #   bash nastroje/kontrola_podkladu.sh --pojistka  doloží, že kontrola chybu i upozornění opravdu ohlásí
 set -u
@@ -52,10 +55,21 @@ if [ "${1:-}" = "--pojistka" ]; then
     || { echo "POJISTKA SELHALA: chybějící commit main nenahlášen"; exit 1; }
   g merge -q hlavni
   main_predkem "$r" hlavni | grep -q 'UPOZORNĚNÍ' && { echo "POJISTKA SELHALA: upozornění i po sloučení main"; exit 1; }
-  echo "Pojistka v pořádku: PREDAVKA nad limit = chyba, na limitu projde; chybějící commit main = upozornění, po sloučení ticho."
+  mkdir -p "$r/roadmapa"
+  printf '{"polozky": [{"id": "1", "stav": "hotovo", "verze": "UK"}]}' > "$r/roadmapa/roadmap.json"
+  g add -A && g commit -q -m znacka || { echo "POJISTKA SELHALA: nejde zapsat pokusnou roadmapu"; exit 1; }
+  python3 nastroje/novinky.py --docasne --koren "$r" vetev | grep -q '^UPOZORNĚNÍ: vetev — .*#1 (UK)' \
+    || { echo "POJISTKA SELHALA: dočasná značka verze nenahlášena"; exit 1; }
+  printf '{"polozky": [{"id": "1", "stav": "hotovo", "verze": "v26.11.1"}]}' > "$r/roadmapa/roadmap.json"
+  g commit -q -am verze
+  python3 nastroje/novinky.py --docasne --koren "$r" vetev | grep -q 'UPOZORNĚNÍ' \
+    && { echo "POJISTKA SELHALA: upozornění i u čísla verze"; exit 1; }
+  echo "Pojistka v pořádku: PREDAVKA nad limit = chyba, na limitu projde; chybějící commit main = upozornění, po sloučení ticho;"
+  echo "  dočasná značka verze v roadmapě = upozornění, číslo verze ticho."
   exit 0
 fi
 chyba=0
 velikost PREDAVKA.md || chyba=1
 main_predkem .
+python3 nastroje/novinky.py --docasne origin/main origin/test
 exit "$chyba"

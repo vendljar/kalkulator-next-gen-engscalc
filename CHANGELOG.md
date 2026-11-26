@@ -8,6 +8,24 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## UK (verzi přidělí koordinace) — úklid nízkých návrhů revize G1 (#807), větev claude/uk-uklid
+
+Nad integrací `2a61e6cd`. Cena ani text dokumentu beze změny (porovnání proti integraci = SHODA).
+
+- **#820 F3 — náhrada vlastností Wordu bezpečná:** `docxPrvkyNahrad` přeskočí atribut v uvozovkách (i s „>“)
+  a obsah CDATA / komentáře; po náhradě `xmlStrukturaVada` — při vadě (např. vnořený prvek téhož jména) zůstane
+  původní část vlastností.
+- **#820 F4 — další stopy ve vlastnostech:** `Manager` v `docProps/app.xml` prázdný; u šablony s komentáři nebo
+  sledovanými změnami `w:author` a `w:initials` (`word/*.xml`) a `w15:author`, `w15:userId` (`word/people.xml`)
+  = „ENGINEERS CZ s.r.o.“ — jen uvnitř značek, text dokumentu se nemění.
+- **#821 F5 — varování `rucniPolozkaPomer` u víc šachet s názvem šachty** („Výtah B: …“, pravidlo mezi
+  `KONTROLY_PO_SACHTE`); jedna šachta beze změny, znění věty (#809, TX) nedotčeno.
+- **#822 F7 — pojistka dočasné značky verze:** `python3 nastroje/novinky.py --docasne origin/main origin/test`
+  v kroku `staticke` (`kontrola_podkladu.sh`) upozorní na hotovou položku roadmapy se značkou dávky místo čísla
+  verze; pojistka v `kontrola_podkladu.sh --pojistka`. Svěřené UK-T1.
+- Test `src/test_uk_uklid.js` 18/0 (pojistka: nad `2a61e6cd` padá 17 testů a výjimka), `test_g1_uklid.js` (Manager
+  se nově vyprazdňuje); mutace jádra `[UK]` 9.
+
 ## v25.11.6 — PD2 — pole krycího listu do dealu Pipedrive, vady tisku CN, nálezy revizí PV a MD, větev claude/pd2-pole-kl
 
 Nad integrací `5c42ca16`. Rozhodnutí J. V. 25. 11. 2026 (ROZHODNUTI_LOG: PD2 rozsah, Informováno, starý plán PROJ,

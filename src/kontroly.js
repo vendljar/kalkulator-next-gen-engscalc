@@ -1623,7 +1623,8 @@ const KONTROLY = [
  * variantu (cena, marže, sleva, ruční ceny, šablony, hlavička) běží jednou
  * nad SOUČTEM. Jedna šachta = beze změny. */
 const KONTROLY_PO_SACHTE = ['rozmery', 'profilNeznamy', 'zapornaPolozka', 'stanice', 'vysky', 'bokyDveri', 'mustky',
-  'mustkyPrechodove', 'mustekStrecha', 'mustekRozmer', 'statikaDvakrat', 'oplasteniBezKonstrukce', 'atypBezProjekce', 'atypBezCeny'];
+  'mustkyPrechodove', 'mustekStrecha', 'mustekRozmer', 'statikaDvakrat', 'oplasteniBezKonstrukce', 'atypBezProjekce', 'atypBezCeny',
+  'rucniPolozkaPomer'];   // UK F5 (revize Fable G1): u víc šachet s názvem šachty
 /* Data OCK varianty v režimu víc šachet, nebo null. `ctx.ock` (v.data.ock)
  * dodává UI; bez něj se varianta najde v zakázce podle zadání šachty. */
 function kontrolyVsOck(ctx) {
