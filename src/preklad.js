@@ -158,7 +158,7 @@ const PREKLAD = {
   "OPLÁŠTĚNÍ NADSVĚTLÍKŮ": ["TRANSOM PANEL CLADDING (ABOVE ENTRANCE)", "OBERLICHT-VERKLEIDUNG (ÜBER DEM EINGANG)", "HABILLAGE DES IMPOSTES (AU-DESSUS DE L’ENTRÉE)"],
   "OPLÁŠTĚNÍ PORTÁLŮ NÁSTUPIŠŤ": ["LANDING DOOR ENTRANCE CLADDING", "VERKLEIDUNG DER EINGANGSPORTALE", "HABILLAGE DES PORTAILS DE PALIER"],
   "OPLÁŠTĚNÍ ČELA POD NÁSTUPIŠTĚM": ["FRONT CLADDING BELOW LANDINGS", "VERKLEIDUNG DER FRONT UNTER DEN ZUGANGSSTELLEN", "HABILLAGE DE LA FAÇADE SOUS LES PALIERS"],
-  "OPLÁŠTĚNÍ ŠACHTY": ["SHAFT CLADDING", "SCHACHTVERKLEIDUNG", "HABILLAGE DE LA GAINE"],   // TX #815: DE jako hodnoty („Verkleidung“)
+  "OPLÁŠTĚNÍ ŠACHTY": ["SHAFT CLADDING", "SCHACHTAUSKLEIDUNG", "HABILLAGE DE LA GAINE"],   // TX #815: nové nabídky PREKLAD_TX
   "OSVĚTLENÍ NÁSTUPIŠŤ": ["LANDING LIGHTS","BELEUCHTUNG DER ZUGANGSSTELLEN","ÉCLAIRAGE DES PALIERS"],
   "OVĚŘOVACÍ STATICKÝ VÝPOČET KONSTRUKCE": ["STATIC CALCULATION", "STATISCHE BERECHNUNGEN", "CALCUL STATIQUE DE VÉRIFICATION"],
   "plnostěnné": ["Full wall","Vollwand","Plein"],
@@ -407,7 +407,7 @@ const PREKLAD = {
   "vrchní (konečný) nátěr": ["top coat", "Deckanstrich", "couche de finition"],
   "vstup": ["entrance", "Eingang", "entrée"],
   "VYBUDOVÁNÍ NOVÉ PROHLUBNĚ": ["NEW PIT","ERSTELLUNG EINER NEUEN SCHACHTGRUBE","RÉALISATION D'UNE NOUVELLE CUVETTE"],
-  "vypracoval": ["Compiled by:","Zusammengestellt von:","Établi par :"],   // TX #815 (K65-I2): popisek s dvojtečkou jako CZ „Vypracoval:“
+  "vypracoval": ["compiled by","Zusammengestellt von","établi par"],   // TX #815: nové nabídky PREKLAD_TX
   "VYTÁPĚNÍ POMOCÍ PŘÍMOTOPU": ["SHAFT HEATING", "SCHACHTHEIZUNG", "CHAUFFAGE DE LA GAINE"],
   "výtahová šachta": ["shaft", "Schacht", "gaine"],
   "X / X": ["X / X","X / X","X / X"],
@@ -442,9 +442,8 @@ const PREKLAD = {
   "8x sloupek ve vrcholech 8-mi úhelníkového půdorysu": ["8 columns at the corners of the octagonal plan","8 Stiele an den Ecken des achteckigen Grundrisses","8 poteaux aux sommets du plan octogonal"],
   "ano, oválné otvory pro kotvení konzolí vodítek a šachetních dveří v příčnících OCK včetně dodávky T šroubů M12 s podložkou": ["Yes, oval holes in the cross beams of the steel structure for fixing the guide rail brackets and landing doors, including supply of M12 T-bolts with washers","Ja, Langlöcher in den Querträgern der Stahlkonstruktion zur Befestigung der Führungsschienenbügel und der Schachttüren, inkl. Lieferung von T-Schrauben M12 mit Unterlegscheibe","Oui, trous oblongs dans les traverses de la structure pour la fixation des consoles de guides et des portes palières, y compris la fourniture de boulons en T M12 avec rondelle"],
   "bez dokrytí": ["Without cover plate","Ohne Abdeckung","Sans recouvrement"],
-  "bez opláštění, komplet dozdí stavba": ["Without cladding, fully bricked up by the building contractor","Ohne Verkleidung, komplett bauseits zugemauert","Sans habillage, entièrement rebouché en maçonnerie par l'entreprise"],
-  "bez opláštění": ["Without cladding","Ohne Verkleidung","Sans habillage"],   // TX #815: FR jako nadpis HABILLAGE
-  "přirozené, šachta bez opláštění": ["Natural, shaft without cladding","Natürlich, Schacht ohne Verkleidung","Naturelle, gaine sans habillage"],   // TX #815 (schválil J. V. 26. 11. 2026, #818)
+  "bez opláštění, komplet dozdí stavba": ["Without cladding, fully bricked up by the building contractor","Ohne Verkleidung, komplett bauseits zugemauert","Sans bardage, entièrement rebouché en maçonnerie par l'entreprise"],
+  "bez opláštění": ["Without cladding","Ohne Verkleidung","Sans bardage"],   // TX #815: nové nabídky PREKLAD_TX
   "bez předsazených portálů": ["Without projecting entrance portals","Ohne vorgesetzte Eingangsportale","Sans entrées d'étage en saillie"],
   "bez zastřešení (OCK končí pod stropem)": ["Without roofing (the steel structure ends below the ceiling)","Ohne Bedachung (die Stahlkonstruktion endet unter der Decke)","Sans toiture (la structure se termine sous le plafond)"],
   "bezúplatně zajistí objednatel": ["Provided by the customer free of charge","Wird vom Besteller kostenlos zur Verfügung gestellt","Fourni gratuitement par le client"],
@@ -1436,8 +1435,8 @@ const PREKLAD_VZORY = [
     de: (m, n, p) => 'Nach Abschluss der Fertigung, Lieferung des Materials auf die Baustelle und Beginn der Arbeiten wird die ' + n + '. Teilrechnung in Höhe von ' + p + ' % (zzgl. MwSt.) des Gesamtpreises ausgestellt. Die Bezahlung dieser Rechnung ist Voraussetzung für die Übergabe des Werks an den Auftraggeber.',
     fr: (m, n, p) => 'Après l’achèvement de la fabrication, la livraison du matériel sur le chantier et le début des travaux, la ' + prekladPoradiFr(n) + ' facture partielle sera émise pour un montant de ' + p + ' % (hors TVA) du prix total de l’ouvrage. Le paiement de cette facture conditionne la remise de l’ouvrage au client.' },
   /* PD2 #771 V4 (posudek CN-432): konečná faktura s pořadím a procentem
-   * (kryci.js KRYCI_VETA_KONECNA_PROC). NÁVRH PŘEKLADU ve stylu vět záloh
-   * výš — znění schválí J. V. spolu s českou větou. */
+   * (kryci.js KRYCI_VETA_KONECNA_PROC) — jen dotisk nabídek odeslaných po PD2 a před TX
+   * (vznikly jen na testu); neschvalovalo se. Nové nabídky: věta TX níž. */
   { re: /^Po ukončení všech výše uvedených prací a po řádném předání a převzetí celého díla předávacím protokolem bude vystaven (\d+)\. konečný daňový doklad ve výši (\d+(?:[.,]\d+)?) % \(bez DPH\) z celkové ceny díla s vyúčtováním DPH v zákonné výši\.$/,
     en: (m, n, p) => 'After completion of all the above work and proper handover and acceptance of the entire work by a handover report, the ' + prekladPoradiEn(n) + ' final tax invoice will be issued in the amount of ' + p.replace(',', '.') + ' % (excl. VAT) of the total contract price, with VAT charged at the statutory rate.',
     de: (m, n, p) => 'Nach Abschluss aller oben genannten Arbeiten und ordnungsgemäßer Übergabe und Abnahme des gesamten Werks mit Übergabeprotokoll wird die ' + n + '. Schlussrechnung in Höhe von ' + p + ' % (zzgl. MwSt.) des Gesamtpreises mit Abrechnung der MwSt. in gesetzlicher Höhe ausgestellt.',
@@ -1574,6 +1573,29 @@ function tr(cz, lang) {
   return trStav(cz, lang).text;
 }
 
+/* TX #815 (K65-I1/I2; J. V. 26. 11. 2026 — znění #818, jen nové nabídky J1): opravená hesla
+ * platí JEN pro nabídku neodeslanou a odeslanou po TX (značka txTisk ve snímku podmínek).
+ * Stará odeslaná nabídka se dotiskne s PŮVODNÍM překladem z PREKLAD — proto opravy nejsou
+ * v PREKLAD (otisk slovníku v zámku by se změnil a dotisk by hlásil změněný slovník).
+ * Klíče stejně jako PREKLAD (prekladNorm). Volající s `tx` = true: trTx / trStavTx. */
+const PREKLAD_TX = {
+  'OPLÁŠTĚNÍ ŠACHTY': ['SHAFT CLADDING', 'SCHACHTVERKLEIDUNG', 'HABILLAGE DE LA GAINE'],
+  'vypracoval': ['Compiled by:', 'Zusammengestellt von:', 'Établi par :'],
+  'bez opláštění': ['Without cladding', 'Ohne Verkleidung', 'Sans habillage'],
+  'bez opláštění, komplet dozdí stavba': ['Without cladding, fully bricked up by the building contractor', 'Ohne Verkleidung, komplett bauseits zugemauert', "Sans habillage, entièrement rebouché en maçonnerie par l'entreprise"],
+  'přirozené, šachta bez opláštění': ['Natural, shaft without cladding', 'Natürlich, Schacht ohne Verkleidung', 'Naturelle, gaine sans habillage'],
+};
+const PREKLAD_TX_IDX = Object.create(null);
+Object.keys(PREKLAD_TX).forEach(k => { PREKLAD_TX_IDX[prekladNorm(k)] = PREKLAD_TX[k]; });
+function trStavTx(cz, lang, tx) {
+  if (tx && lang && lang !== 'cz' && JAZYK_IDX[lang] !== undefined) {
+    const h = PREKLAD_TX_IDX[prekladNorm(cz)];
+    if (h && h[JAZYK_IDX[lang]]) return { text: h[JAZYK_IDX[lang]], prelozeno: true, zdroj: 'slovník TX' };
+  }
+  return trStav(cz, lang);
+}
+function trTx(cz, lang, tx) { return trStavTx(cz, lang, tx).text; }
+
 /* podrobná varianta: { text, prelozeno, zdroj } */
 function trStav(cz, lang) {
   const orig = String(cz == null ? '' : cz);
@@ -1681,6 +1703,6 @@ function prekladImport(data) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { JAZYKY, JAZYK_IDX, PREKLAD, PREKLAD_IDX, PREKLAD_ZABUDOVANY, PREKLAD_VZORY, PREKLAD_CHYBI,
+  module.exports = { PREKLAD_TX, trTx, trStavTx, JAZYKY, JAZYK_IDX, PREKLAD, PREKLAD_IDX, PREKLAD_ZABUDOVANY, PREKLAD_VZORY, PREKLAD_CHYBI,
     tr, trStav, prekladSledujZacni, prekladSledujKonec, prekladNorm, prekladNeutral, prekladKlicPovolen, PREKLAD_ZAKAZANE, prekladNastav, prekladSmaz, prekladPocet,
     prekladPokryti, prekladExport, prekladImport };

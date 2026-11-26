@@ -100,10 +100,12 @@ function nwPrazdna(v) {
  * odstavec bez symbolu celý slovníkem; se symbolem nejdřív celý (se stejnými
  * symboly), jinak po úsecích mezi symboly — neznámý úsek nechá celý odstavec
  * česky (jako Word). Neutrální text (bez jazyka) se nepřekládá. */
-function nwPreloz(text, L) {
+function nwPreloz(text, L, tx) {
   const t = String(text == null ? '' : text);
   if (!L || L === 'cz') return t;
-  const stav = (typeof trStav === 'function') ? trStav
+  /* TX J1: `tx` = nabídka neodeslaná / odeslaná po TX → opravená hesla PREKLAD_TX (preklad.js). */
+  const stav = (tx && typeof trStavTx === 'function') ? ((x, l) => trStavTx(x, l, true))
+    : (typeof trStav === 'function') ? trStav
     : ((typeof tr === 'function') ? ((x, l) => ({ text: tr(x, l), prelozeno: true })) : null);
   if (!stav) return t;
   /* tr() zapisuje text bez překladu do sběru náhledu (#518) — jako dosavadní náhled */
@@ -201,10 +203,11 @@ function nwTsSekce(sekce, jmena, ph, P, T) {
 function nwBloky(data, L, o) {
   L = L || 'cz';
   o = o || {};
-  const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
+  const tx = !!data.txTisk;   // TX J1: opravená hesla slovníku jen pro neodeslanou / odeslanou po TX
+  const P = t => (L !== 'cz' && typeof tr === 'function') ? (typeof trTx === 'function' ? trTx(t, L, tx) : tr(t, L)) : t;
   const ph = data.placeholders;
   /* Pevný text šablony: překlad jako docxPrelozSablonu (nwPreloz), pak symboly. */
-  const T = (klic) => nwDosad(nwPreloz(NW_TEXT[klic], L), ph);
+  const T = (klic) => nwDosad(nwPreloz(NW_TEXT[klic], L, tx), ph);
   const bloky = [];
 
   /* 1) HLAVIČKA */
@@ -229,7 +232,7 @@ function nwBloky(data, L, o) {
 
   /* 3) A. TECHNICKÁ ČÁST */
   const vse = (typeof nabidkaNahledSekce === 'function' ? nabidkaNahledSekce : require('./nabidka.js').nabidkaNahledSekce)(
-    ph, L, data.platbyOck, data.tsExtra, null, data.rucni);   // RP: ruční položky (jedna šachta / společné sekce)
+    ph, L, data.platbyOck, data.tsExtra, null, data.rucni, { tx });   // RP: ruční položky (jedna šachta / společné sekce)
   const jmSachty = NW_SEKCE_SACHTY.map(P);
   const ts = [{ typ: 'titul', text: T('tsTitul') }, { typ: 'pozn-titul', text: T('tsPozn') }];
   if (Array.isArray(data.sachty) && data.sachty.length) {
@@ -237,7 +240,7 @@ function nwBloky(data, L, o) {
     const sNahled = (typeof nabidkaNahledSekce === 'function' ? nabidkaNahledSekce : require('./nabidka.js').nabidkaNahledSekce);
     data.sachty.forEach(sa => {
       const phS = Object.assign({}, ph, sa.ph);
-      const radky = nwTsSekce(sNahled(phS, L, null, null, [], { tsRadky: sa.rucniTs || [] }), jmSachty, phS, P, T);
+      const radky = nwTsSekce(sNahled(phS, L, null, null, [], { tsRadky: sa.rucniTs || [] }, { tx }), jmSachty, phS, P, T);
       if (!nwPrazdna(sa.ph.SACHTA_TS_NAZEV)) ts.push({ typ: 'pruh', text: sa.ph.SACHTA_TS_NAZEV, sachta: true });
       radky.forEach(r => ts.push(r));
     });
@@ -288,7 +291,7 @@ function nwBloky(data, L, o) {
   cena.push({ popis: [T('celkem')], hodnota: [ph.CENA_S_DPH, T('vcDph')], styl: 'celkem' });
   bloky.push({ typ: 'cena', radky: cena });
   {
-    const pozn = NW_TEXT.poznCena.map(x => nwDosad(nwPreloz(x, L), ph));
+    const pozn = NW_TEXT.poznCena.map(x => nwDosad(nwPreloz(x, L, tx), ph));
     /* TX #771 V6 (posudek CN-432, J. V. 26. 11. 2026): poznámky k ceně jako SEZNAM —
      * nadpis „Poznámky k cenové nabídce:“ a body a. b. c. jako položky seznamu, ne odstavce
      * s písmenem v textu. Jen neodeslaná a odeslaná po TX (data.txTisk); věty a jejich překlady

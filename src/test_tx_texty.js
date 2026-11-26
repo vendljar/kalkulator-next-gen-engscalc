@@ -147,8 +147,31 @@ const zamkni = (v, znacky) => {
     zamkni(v, { pd2Tisk: 1 });
     const pho = N.nabidkaData(z, v, J, 'cz').placeholders;
     test('#815: odeslaná před TX → požární klasifikace jak odešla', pho.TS_POZARNI === 'materiály DP1, opláštění bez deklarované požární odolnosti', pho.TS_POZARNI);
-    test('#815 slovník: DE „SCHACHTVERKLEIDUNG“, EN „Compiled by:“, FR „Établi par :“', PR.tr('OPLÁŠTĚNÍ ŠACHTY', 'de') === 'SCHACHTVERKLEIDUNG'
-      && PR.tr('Vypracoval:', 'en') === 'Compiled by:' && PR.tr('Vypracoval:', 'fr') === 'Établi par :' && PR.tr('bez opláštění', 'fr') === 'Sans habillage');
+    /* TX J1 (J. V. 26. 11. 2026): opravená hesla jen pro nové nabídky (txTisk); stará odeslaná = původní překlad. */
+    test('#815 J1: PREKLAD drží PŮVODNÍ hesla (otisk slovníku starých zámků se nemění)', PR.tr('OPLÁŠTĚNÍ ŠACHTY', 'de') === 'SCHACHTAUSKLEIDUNG'
+      && PR.tr('Vypracoval:', 'en') === 'compiled by' && PR.tr('bez opláštění', 'fr') === 'Sans bardage' && PR.tr('bez opláštění, komplet dozdí stavba', 'fr').startsWith('Sans bardage'));
+    test('#815 J1: trTx s tx → opravená hesla (DE „SCHACHTVERKLEIDUNG“, EN „Compiled by:“, FR „Établi par :“, „Sans habillage“)',
+      typeof PR.trTx === 'function' && PR.trTx('OPLÁŠTĚNÍ ŠACHTY', 'de', true) === 'SCHACHTVERKLEIDUNG' && PR.trTx('Vypracoval:', 'en', true) === 'Compiled by:'
+      && PR.trTx('Vypracoval:', 'de', true) === 'Zusammengestellt von:' && PR.trTx('Vypracoval:', 'fr', true) === 'Établi par :'
+      && PR.trTx('bez opláštění', 'fr', true) === 'Sans habillage' && PR.trTx('bez opláštění', 'fr', false) === 'Sans bardage');
+    {
+      const bezZ = () => { const z = novaZ(), v = z.varianty[0]; Object.assign(v.data.ock.zadani, BEZ); return z; };
+      const podpis = (z, L) => NW.nwBloky(N.nabidkaData(z, z.varianty[0], J, L), L, { foto: '' }).find(b => b.typ === 'podpis').vypracoval.nadpis;
+      const pruhy = (z, L) => NW.nwBloky(N.nabidkaData(z, z.varianty[0], J, L), L, { foto: '' }).filter(b => b.typ === 'ts')
+        .flatMap(b => b.radky).filter(r => r.typ === 'pruh').map(r => r.text);
+      const zn = bezZ();
+      test('#815 J1 nová EN: „Compiled by:“', podpis(zn, 'en') === 'Compiled by:', podpis(zn, 'en'));
+      test('#815 J1 nová DE: pruh „SCHACHTVERKLEIDUNG“, „Zusammengestellt von:“', pruhy(zn, 'de').includes('SCHACHTVERKLEIDUNG') && podpis(zn, 'de') === 'Zusammengestellt von:', [pruhy(zn, 'de'), podpis(zn, 'de')]);
+      test('#815 J1 nová FR: „Sans habillage“, „Établi par :“', N.nabidkaData(zn, zn.varianty[0], J, 'fr').placeholders.TS_TYP_OPLASTENI === 'Sans habillage' && podpis(zn, 'fr') === 'Établi par :');
+      const zs = bezZ(); zamkni(zs.varianty[0], { pd2Tisk: 1 });
+      test('#815 J1 dotisk staré EN: „compiled by:“ (původní heslo)', podpis(zs, 'en') === 'compiled by:', podpis(zs, 'en'));
+      test('#815 J1 dotisk staré DE: pruh „SCHACHTAUSKLEIDUNG“, „Zusammengestellt von:“ z původního hesla', pruhy(zs, 'de').includes('SCHACHTAUSKLEIDUNG')
+        && !pruhy(zs, 'de').includes('SCHACHTVERKLEIDUNG'), pruhy(zs, 'de'));
+      test('#815 J1 dotisk staré FR: „Sans bardage“, „établi par :“', N.nabidkaData(zs, zs.varianty[0], J, 'fr').placeholders.TS_TYP_OPLASTENI === 'Sans bardage'
+        && podpis(zs, 'fr') === 'établi par :', [N.nabidkaData(zs, zs.varianty[0], J, 'fr').placeholders.TS_TYP_OPLASTENI, podpis(zs, 'fr')]);
+      zs.varianty[0].data.kryci.zmrazenoPodminky.txTisk = 1;
+      test('#815 J1 dotisk odeslané po TX: opravená hesla', podpis(zs, 'en') === 'Compiled by:' && N.nabidkaData(zs, zs.varianty[0], J, 'fr').placeholders.TS_TYP_OPLASTENI === 'Sans habillage');
+    }
   }
 
   /* ---------- #814 ---------- */

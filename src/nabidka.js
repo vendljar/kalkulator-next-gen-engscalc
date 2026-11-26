@@ -63,7 +63,11 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
     : vypocet(Zv, Cv, jekly, d.ock.fixes);
 
   const L = lang || 'cz';
-  const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
+  /* TX J1 (J. V. 26. 11. 2026): opravená hesla slovníku (#815, PREKLAD_TX) jen pro neodeslanou
+   * a odeslanou po TX — stejná podmínka jako txTisk níž. */
+  const txSlovnik = !(varianta.zamek && varianta.zamek.zamceno)
+    || !!(d.kryci && d.kryci.zmrazenoPodminky && d.kryci.zmrazenoPodminky.txTisk === 1);
+  const P = t => (L !== 'cz' && typeof tr === 'function') ? (typeof trTx === 'function' ? trTx(t, L, txSlovnik) : tr(t, L)) : t;
 
   /* OPLECHOVÁNÍ SOKLU PROHLUBNĚ — v které sekci nabídky stojí (16. 9. 2026,
    * nález J. V.: „přestože je součástí, zobrazuje se v sekci, kdy součástí
@@ -917,9 +921,11 @@ function usazeniBocniSloucene(ph, P) {
  * `tsRadky` (jedna šachta všechny, víc šachet jen společné sekce) a `ceny`
  * (rozpis ceny). U víc šachet nese řádky sekcí šachty `sachty[i].rucniTs`.
  * Texty už v jazyce dokumentu → { hotovo }. */
-function nabidkaNahledSekce(ph, lang, platby, extra, sachty, rucni) {
+function nabidkaNahledSekce(ph, lang, platby, extra, sachty, rucni, volby) {
   const L = lang || 'cz';
-  const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
+  /* TX J1: `volby.tx` = nabídka neodeslaná / odeslaná po TX (data.txTisk) → opravená hesla PREKLAD_TX. */
+  const tx = !!(volby && volby.tx);
+  const P = t => (L !== 'cz' && typeof tr === 'function') ? (typeof trTx === 'function' ? trTx(t, L, tx) : tr(t, L)) : t;
   const rucniTs = (rucni && Array.isArray(rucni.tsRadky)) ? rucni.tsRadky : [];
   const rucniCeny = (rucni && Array.isArray(rucni.ceny)) ? rucni.ceny : [];
   /* doplní ruční řádky do sekce `nazev` (česky) */

@@ -1331,8 +1331,8 @@ function kryciPlatbyOck100(kal) {
 const KRYCI_VETA_KONECNA_PROC = 'Po ukončení všech výše uvedených prací a po řádném předání a převzetí celého díla předávacím protokolem '
   + 'bude vystaven {PORADI} konečný daňový doklad ve výši {PROC} (bez DPH) z celkové ceny díla s vyúčtováním DPH v zákonné výši.';
 /* TX (J. V. 26. 11. 2026, K65-I2): „bez DPH“ a „s vyúčtováním DPH“ v jedné větě se četlo
- * rozporně — nové znění. Věta PD2 výš zůstává pro dotisk nabídek odeslaných po PD2 a před TX
- * (snímek podmínek se značkou pd2Tisk, bez txTisk). */
+ * rozporně — nové znění. Věta PD2 výš = jen dotisk nabídek odeslaných po PD2 a před TX
+ * (vznikly jen na testu; snímek podmínek se značkou pd2Tisk, bez txTisk); neschvalovalo se. */
 const KRYCI_VETA_KONECNA_TX = 'Po ukončení všech výše uvedených prací a po řádném předání a převzetí celého díla předávacím protokolem '
   + 'bude vystaven {PORADI} konečný daňový doklad na zbývajících {PROC} ceny díla bez DPH, k níž bude připočtena DPH v zákonné výši.';
 function kryciVetaKonecna(kal, s, lang, tr_, V) {
