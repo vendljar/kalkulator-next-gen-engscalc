@@ -158,7 +158,7 @@ const PREKLAD = {
   "OPLÁŠTĚNÍ NADSVĚTLÍKŮ": ["TRANSOM PANEL CLADDING (ABOVE ENTRANCE)", "OBERLICHT-VERKLEIDUNG (ÜBER DEM EINGANG)", "HABILLAGE DES IMPOSTES (AU-DESSUS DE L’ENTRÉE)"],
   "OPLÁŠTĚNÍ PORTÁLŮ NÁSTUPIŠŤ": ["LANDING DOOR ENTRANCE CLADDING", "VERKLEIDUNG DER EINGANGSPORTALE", "HABILLAGE DES PORTAILS DE PALIER"],
   "OPLÁŠTĚNÍ ČELA POD NÁSTUPIŠTĚM": ["FRONT CLADDING BELOW LANDINGS", "VERKLEIDUNG DER FRONT UNTER DEN ZUGANGSSTELLEN", "HABILLAGE DE LA FAÇADE SOUS LES PALIERS"],
-  "OPLÁŠTĚNÍ ŠACHTY": ["SHAFT CLADDING", "SCHACHTAUSKLEIDUNG", "HABILLAGE DE LA GAINE"],
+  "OPLÁŠTĚNÍ ŠACHTY": ["SHAFT CLADDING", "SCHACHTVERKLEIDUNG", "HABILLAGE DE LA GAINE"],   // TX #815: DE jako hodnoty („Verkleidung“)
   "OSVĚTLENÍ NÁSTUPIŠŤ": ["LANDING LIGHTS","BELEUCHTUNG DER ZUGANGSSTELLEN","ÉCLAIRAGE DES PALIERS"],
   "OVĚŘOVACÍ STATICKÝ VÝPOČET KONSTRUKCE": ["STATIC CALCULATION", "STATISCHE BERECHNUNGEN", "CALCUL STATIQUE DE VÉRIFICATION"],
   "plnostěnné": ["Full wall","Vollwand","Plein"],
@@ -407,7 +407,7 @@ const PREKLAD = {
   "vrchní (konečný) nátěr": ["top coat", "Deckanstrich", "couche de finition"],
   "vstup": ["entrance", "Eingang", "entrée"],
   "VYBUDOVÁNÍ NOVÉ PROHLUBNĚ": ["NEW PIT","ERSTELLUNG EINER NEUEN SCHACHTGRUBE","RÉALISATION D'UNE NOUVELLE CUVETTE"],
-  "vypracoval": ["compiled by","Zusammengestellt von","établi par"],
+  "vypracoval": ["Compiled by:","Zusammengestellt von:","Établi par :"],   // TX #815 (K65-I2): popisek s dvojtečkou jako CZ „Vypracoval:“
   "VYTÁPĚNÍ POMOCÍ PŘÍMOTOPU": ["SHAFT HEATING", "SCHACHTHEIZUNG", "CHAUFFAGE DE LA GAINE"],
   "výtahová šachta": ["shaft", "Schacht", "gaine"],
   "X / X": ["X / X","X / X","X / X"],
@@ -442,8 +442,9 @@ const PREKLAD = {
   "8x sloupek ve vrcholech 8-mi úhelníkového půdorysu": ["8 columns at the corners of the octagonal plan","8 Stiele an den Ecken des achteckigen Grundrisses","8 poteaux aux sommets du plan octogonal"],
   "ano, oválné otvory pro kotvení konzolí vodítek a šachetních dveří v příčnících OCK včetně dodávky T šroubů M12 s podložkou": ["Yes, oval holes in the cross beams of the steel structure for fixing the guide rail brackets and landing doors, including supply of M12 T-bolts with washers","Ja, Langlöcher in den Querträgern der Stahlkonstruktion zur Befestigung der Führungsschienenbügel und der Schachttüren, inkl. Lieferung von T-Schrauben M12 mit Unterlegscheibe","Oui, trous oblongs dans les traverses de la structure pour la fixation des consoles de guides et des portes palières, y compris la fourniture de boulons en T M12 avec rondelle"],
   "bez dokrytí": ["Without cover plate","Ohne Abdeckung","Sans recouvrement"],
-  "bez opláštění, komplet dozdí stavba": ["Without cladding, fully bricked up by the building contractor","Ohne Verkleidung, komplett bauseits zugemauert","Sans bardage, entièrement rebouché en maçonnerie par l'entreprise"],
-  "bez opláštění": ["Without cladding","Ohne Verkleidung","Sans bardage"],
+  "bez opláštění, komplet dozdí stavba": ["Without cladding, fully bricked up by the building contractor","Ohne Verkleidung, komplett bauseits zugemauert","Sans habillage, entièrement rebouché en maçonnerie par l'entreprise"],
+  "bez opláštění": ["Without cladding","Ohne Verkleidung","Sans habillage"],   // TX #815: FR jako nadpis HABILLAGE
+  "přirozené, šachta bez opláštění": ["Natural, shaft without cladding","Natürlich, Schacht ohne Verkleidung","Naturelle, gaine sans habillage"],   // TX #815 (návrh)
   "bez předsazených portálů": ["Without projecting entrance portals","Ohne vorgesetzte Eingangsportale","Sans entrées d'étage en saillie"],
   "bez zastřešení (OCK končí pod stropem)": ["Without roofing (the steel structure ends below the ceiling)","Ohne Bedachung (die Stahlkonstruktion endet unter der Decke)","Sans toiture (la structure se termine sous le plafond)"],
   "bezúplatně zajistí objednatel": ["Provided by the customer free of charge","Wird vom Besteller kostenlos zur Verfügung gestellt","Fourni gratuitement par le client"],
@@ -1239,6 +1240,9 @@ const PREKLAD = {
   "CENA ZA STUDII PROVEDITELNOSTI (SP):": ["PRICE FOR THE FEASIBILITY STUDY (SP):", "PREIS FÜR DIE MACHBARKEITSSTUDIE (SP):", "PRIX DE L'ÉTUDE DE FAISABILITÉ (SP) :"],
   "zajištění závazného stanoviska od odboru památkové péče HMP k předložené STUDII PROVEDITELNOSTI.": ["obtaining the binding opinion of the Prague heritage preservation department on the submitted FEASIBILITY STUDY.", "Einholung der verbindlichen Stellungnahme des Denkmalschutzamts der Hauptstadt Prag zur vorgelegten MACHBARKEITSSTUDIE.", "obtention de l'avis conforme du service du patrimoine de la Ville de Prague sur l'ÉTUDE DE FAISABILITÉ présentée."],
   "příprava podkladů pro jednání s odborem památkové péče HMP": ["preparation of documents for negotiations with the Prague heritage preservation department", "Vorbereitung der Unterlagen für die Verhandlungen mit dem Denkmalschutzamt der Hauptstadt Prag", "préparation des documents pour les échanges avec le service du patrimoine de la Ville de Prague"],
+  /* K66-I1 (koordinace 26. 11. 2026): šablona PROJ na testu opravena na „PROVEDITELNOSTI“ — heslo se
+   * správným tvarem; starý tvar s překlepem zůstává jako alias pro šablony vyrobené před opravou. */
+  "díky obsahu a zpracování je možné naší STUDII PROVEDITELNOSTI projednat v této fázi na odboru památkové péče HMP": ["thanks to its content and elaboration, our FEASIBILITY STUDY can already be discussed with the Prague heritage preservation department at this stage", "dank Inhalt und Ausarbeitung kann unsere MACHBARKEITSSTUDIE bereits in dieser Phase mit dem Denkmalschutzamt der Hauptstadt Prag abgestimmt werden", "grâce à son contenu et à son niveau d'élaboration, notre ÉTUDE DE FAISABILITÉ peut être présentée dès ce stade au service du patrimoine de la Ville de Prague"],
   "díky obsahu a zpracování je možné naší STUDII PROVDITELNOSTI projednat v této fázi na odboru památkové péče HMP": ["thanks to its content and elaboration, our FEASIBILITY STUDY can already be discussed with the Prague heritage preservation department at this stage", "dank Inhalt und Ausarbeitung kann unsere MACHBARKEITSSTUDIE bereits in dieser Phase mit dem Denkmalschutzamt der Hauptstadt Prag abgestimmt werden", "grâce à son contenu et à son niveau d'élaboration, notre ÉTUDE DE FAISABILITÉ peut être présentée dès ce stade au service du patrimoine de la Ville de Prague"],
   "STUDIE PROVEDITELNOSTI:": ["FEASIBILITY STUDY:", "MACHBARKEITSSTUDIE:", "ÉTUDE DE FAISABILITÉ :"],
   "Projednání": ["Approval", "Abstimmung", "Instruction"],
@@ -1438,6 +1442,12 @@ const PREKLAD_VZORY = [
     en: (m, n, p) => 'After completion of all the above work and proper handover and acceptance of the entire work by a handover report, the ' + prekladPoradiEn(n) + ' final tax invoice will be issued in the amount of ' + p.replace(',', '.') + ' % (excl. VAT) of the total contract price, with VAT charged at the statutory rate.',
     de: (m, n, p) => 'Nach Abschluss aller oben genannten Arbeiten und ordnungsgemäßer Übergabe und Abnahme des gesamten Werks mit Übergabeprotokoll wird die ' + n + '. Schlussrechnung in Höhe von ' + p + ' % (zzgl. MwSt.) des Gesamtpreises mit Abrechnung der MwSt. in gesetzlicher Höhe ausgestellt.',
     fr: (m, n, p) => 'Après l’achèvement de tous les travaux susmentionnés et la réception en bonne et due forme de l’ensemble de l’ouvrage par procès-verbal, la ' + prekladPoradiFr(n) + ' facture finale sera émise pour un montant de ' + p + ' % (hors TVA) du prix total de l’ouvrage, avec la TVA au taux légal.' },
+  /* TX (J. V. 26. 11. 2026): upřesněná věta konečné faktury (kryci.js KRYCI_VETA_KONECNA_TX).
+   * NÁVRH PŘEKLADU — schválí J. V. (zpráva dávky TX). */
+  { re: /^Po ukončení všech výše uvedených prací a po řádném předání a převzetí celého díla předávacím protokolem bude vystaven (\d+)\. konečný daňový doklad na zbývajících (\d+(?:[.,]\d+)?) % ceny díla bez DPH, k níž bude připočtena DPH v zákonné výši\.$/,
+    en: (m, n, p) => 'After completion of all the above work and proper handover and acceptance of the entire work by a handover report, the ' + prekladPoradiEn(n) + ' final tax invoice will be issued for the remaining ' + p.replace(',', '.') + ' % of the contract price excl. VAT, to which VAT at the statutory rate will be added.',
+    de: (m, n, p) => 'Nach Abschluss aller oben genannten Arbeiten und ordnungsgemäßer Übergabe und Abnahme des gesamten Werks mit Übergabeprotokoll wird die ' + n + '. Schlussrechnung über die verbleibenden ' + p + ' % des Werkpreises ohne MwSt. ausgestellt, zuzüglich der MwSt. in gesetzlicher Höhe.',
+    fr: (m, n, p) => 'Après l’achèvement de tous les travaux susmentionnés et la réception en bonne et due forme de l’ensemble de l’ouvrage par procès-verbal, la ' + prekladPoradiFr(n) + ' facture finale sera émise pour les ' + p + ' % restants du prix de l’ouvrage hors TVA, auxquels s’ajoutera la TVA au taux légal.' },
   /* Plán plateb projekce (etapa B, 30. 9. 2026): „30 % z nabídkové ceny za DPZ",
    * „12,5 % z nabídkové ceny za tuto činnost" — procento libovolné. */
   { re: /^(\d+(?:,\d+)?)\s*%\s+z nabídkové ceny za (zaměření|studii|projednání|DPZ|IČ|DPS|EZC|tuto činnost|geodetické zaměření)$/,

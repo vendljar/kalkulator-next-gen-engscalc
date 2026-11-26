@@ -98,14 +98,17 @@ const text = async (ph, volby) => {
     const z = novaZ(), v = z.varianty[0];
     const posl = s => String(s.PODM_PLATEBNI_KALENDAR || '').split('\n').pop();
     const sym = (zz, vv, L = 'cz') => KR.kryciPlatebniSymboly(KR.kryciPlatebniKalendar(zz, vv, J), L === 'cz' ? (x => x) : (t => PR.tr(t, L)), L);
-    test('V4: neodeslaná nabídka — „3. konečný daňový doklad ve výši 10 % (bez DPH)…“', /bude vystaven 3\. konečný daňový doklad ve výši 10 % \(bez DPH\)/.test(posl(sym(z, v))), posl(sym(z, v)));
+    /* TX (J. V. 26. 11. 2026): neodeslaná nabídka má upřesněnou větu (test_tx_texty.js). */
+    test('V4: neodeslaná nabídka — „3. konečný daňový doklad na zbývajících 10 %…“ (TX)', /bude vystaven 3\. konečný daňový doklad na zbývajících 10 % ceny díla bez DPH/.test(posl(sym(z, v))), posl(sym(z, v)));
     test('V4: EN / DE / FR přeloženo (žádná čeština)', ['en', 'de', 'fr'].every(L => !/konečný/.test(posl(sym(z, v, L))) && /\b3/.test(posl(sym(z, v, L)))),
       ['en', 'de', 'fr'].map(L => posl(sym(z, v, L))));
     /* Odeslaná PŘED PD2: snímek podmínek bez značky → stará věta. */
     KR.kryciZmrazPodminky(z, v);
     ZM.zamkniVariantu(v, { typ: 'nabidka', kdo: 'Test', cislo: z.cislo });
     test('V4: nový zámek nese značku pd2Tisk ve snímku podmínek', v.data.kryci.zmrazenoPodminky && v.data.kryci.zmrazenoPodminky.pd2Tisk === 1);
-    test('V4: odeslaná po PD2 (se značkou) → nová věta i při dotisku', /3\. konečný daňový doklad ve výši 10 %/.test(posl(sym(z, v))), posl(sym(z, v)));
+    test('V4: odeslaná po TX (značky pd2Tisk i txTisk) → věta TX i při dotisku', /3\. konečný daňový doklad na zbývajících 10 %/.test(posl(sym(z, v))), posl(sym(z, v)));
+    delete v.data.kryci.zmrazenoPodminky.txTisk;
+    test('V4: odeslaná po PD2, před TX (jen pd2Tisk) → věta PD2 „ve výši 10 % (bez DPH)“', /3\. konečný daňový doklad ve výši 10 % \(bez DPH\)/.test(posl(sym(z, v))), posl(sym(z, v)));
     delete v.data.kryci.zmrazenoPodminky.pd2Tisk;
     test('V4: odeslaná PŘED PD2 (snímek bez značky) → dotisk se starou větou „na zbývající část“',
       /konečný daňový doklad na zbývající část/.test(posl(sym(z, v))), posl(sym(z, v)));
