@@ -1505,6 +1505,6 @@ if (typeof module !== 'undefined')
     kryciSymbolyZeSekci, kryciPodminkoveSymboly, kryciSodSymboly, kryciZmrazPodminky, KRYCI_SOD_OPIS, kryciZmrazSod, kryciDatumCz,
     kryciZKrycihoListuProj,
     kryciFaktura2Dopocet, kryciFaktura2Sync,
-    KRYCI_PRAVIDLA_PLATEB, KRYCI_FAKTURACE_MESICNE_VETA, KRYCI_VETY_V13, KRYCI_VETA_KONECNA_PROC, kryciVetaKonecna, kryciPlatbaProcento, kryciPlatbyStary,
+    KRYCI_PRAVIDLA_PLATEB, KRYCI_FAKTURACE_MESICNE_VETA, KRYCI_VETY_V13, KRYCI_VETA_KONECNA_PROC, KRYCI_VETA_KONECNA_TX, kryciVetaKonecna, kryciPlatbaProcento, kryciPlatbyStary,
     kryciPlatebniKalendar, kryciPlatebniSymboly, kryciSodPlatby, kryciSodMilnik,
     KRYCI_MISTO_PLNENI, KRYCI_DPH_REZIMY, KRYCI_EU_DIC, kryciDphRezimVychozi, kryciDnesIso, kryciDatumNabidky, kryciPokutaStav, kryciPoleHodnota, kryciDatumTisk, kryciTiskHodnota };
