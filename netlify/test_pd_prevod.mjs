@@ -171,6 +171,9 @@ test('dokumentace: obojí prázdné = neposílat', P('dokumentace', 'ock', { dsp
 
 test('datum: ISO z pole typu date projde', P('terminPrevzeti', 'ock', { terminPrevzeti: '2026-11-30' }).hodnota === '2026-11-30');
 test('datum: „30. 11. 2026" se převede na ISO', P('terminPrevzeti', 'ock', { terminPrevzeti: '30. 11. 2026' }).hodnota === '2026-11-30');
+/* TX #804 (J. V. 26. 11. 2026): krycí list tiskne datum „25.11.2026" (bez mezer) — převod ho čte. */
+test('datum: „25.11.2026" (tvar tisku KL, #804) se převede na ISO', P('terminPrevzeti', 'ock', { terminPrevzeti: '25.11.2026' }).hodnota === '2026-11-25');
+test('datum: „05.01.2027" s nulami se převede na ISO', P('terminPrevzeti', 'ock', { terminPrevzeti: '05.01.2027' }).hodnota === '2027-01-05');
 test('datum: neexistující den se nepošle', !!P('terminPrevzeti', 'ock', { terminPrevzeti: '2026-02-31' }).duvod);
 test('datum: slovy se nepošle', !!P('terminPrevzeti', 'ock', { terminPrevzeti: 'koncem listopadu' }).duvod);
 /* OCK předvyplňuje datum podpisu DATEM TISKU — to není podpis. */

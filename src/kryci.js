@@ -1069,12 +1069,11 @@ function kryciZKrycihoListuProj(c, id) {
   return String(h[id] == null ? '' : h[id]).trim();
 }
 /* #804 (K61-I3, 25. 11. 2026): pole typu datum (Dne, Datum podpisu smlouvy, termíny) se ve
- * výstupu krycího listu (tisk, Word, náhled zápisu prodeje) píše česky „25. 11. 2026", ne
- * ISO 2026-11-25 z pole formuláře. Uložená hodnota i symboly smlouvy (kryciDatumCz) beze změny;
- * jiný než ISO text (ruční přepis) projde, jak je. */
+ * výstupu krycího listu (tisk, Word, náhled zápisu prodeje) píše česky, ne ISO 2026-11-25
+ * z pole formuláře. TX (J. V. 26. 11. 2026): tvar „25.11.2026" jako nabídka a SoD
+ * (= kryciDatumCz). Uložená hodnota beze změny; jiný než ISO text (ruční přepis) projde, jak je. */
 function kryciDatumTisk(iso) {
-  const m = String(iso == null ? '' : iso).match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  return m ? (+m[3]) + '. ' + (+m[2]) + '. ' + m[1] : (iso == null ? '' : iso);
+  return iso == null ? '' : kryciDatumCz(iso);
 }
 function kryciTiskHodnota(pole, v) { return pole && pole.typ === 'date' ? kryciDatumTisk(v) : v; }
 function kryciDatumCz(iso) {
