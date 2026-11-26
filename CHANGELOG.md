@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## Rychlá #813 (verzi přidělí koordinace) — dotisk staré nabídky víc šachet drží pořadí příplatků, větev claude/rychla-813
+## v26.11.1 — Rychlá #813 — dotisk staré nabídky víc šachet drží pořadí příplatků, větev claude/rychla-813
 
 Nad integrací `ad0be0c` (test v25.11.6). Rychlá cesta pro vady dokumentu.
 - **#813 (K65-N1, kolo 65):** MD N1 (#778, PD2) řadí příplatky víc šachet podle ceníku; řazení platilo i pro
