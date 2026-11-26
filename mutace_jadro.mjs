@@ -1389,7 +1389,7 @@ const MUTACE = [
     proc: 'objednaný příplatek šachty se 2 ks by ve smlouvě stál jako za jeden kus', sady: ['test_vs_vystupy.js', 'test_767_priplatky_vic_sachet.js'] },
   { nazev: 'VS-E5: objednané podle výběru šachty 1 [#570 E5]', soubor: 'objednane.js',
     /* #767: objednané berou vsPriplatkyVyber; bez něj padnou na výběr šachty 1. */
-    hledej: "  const vyber = vyberFn(r, v.data && v.data.ock);",
+    hledej: "  const vyber = vyberFn(r, v.data && v.data.ock, { poradiCeniku: poradiFn(v) });",
     nahrad: "  const vyber = null;",
     proc: 'šlo by objednat příplatek šachty, která ho v nabídce neměla', sady: ['test_vs_vystupy.js', 'test_767_priplatky_vic_sachet.js'] },
   { nazev: 'VS-E5: controlling bez počtu šachet [#570 E5]', soubor: 'controlling.js',
