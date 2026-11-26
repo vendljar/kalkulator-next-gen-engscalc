@@ -593,7 +593,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
    * (odeslaná) nabídka bez značky `priplatkyVyber` ve snímku zámku se tiskne
    * postaru — dotisk je týž papír, jaký má zákazník. */
   const vyberVs = (typeof vsPriplatkyVyber === 'function' && nabidkaPriplatkyVyberNovy(varianta))
-    ? vsPriplatkyVyber(r, d.ock) : null;
+    ? vsPriplatkyVyber(r, d.ock, { poradiCeniku: typeof vsPriplatkyPoradiCeniku !== 'function' || vsPriplatkyPoradiCeniku(varianta) }) : null;
   const vybrane = vyberVs ? vyberVs.map(x => x.radek) : r.priplatky.filter(p => !vynech.includes(p.key));
   const plechy = vybrane.filter(p => PLECHY.includes(p.key));
   /* POPIS POLOŽKY V NABÍDCE (#267, 18. 9. 2026, zadání J. V.).

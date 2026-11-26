@@ -635,7 +635,7 @@ function kryciCtx(zak, varianta, jekly) {
      * u příplatku se vypíše, kterých šachet se týká. */
     vs = (typeof vsVystup === 'function') ? vsVystup(rOck) : null;
     if (vs) {
-      const pv = vsPriplatkyVNabidce(rOck, d.ock) || [];
+      const pv = vsPriplatkyVNabidce(rOck, d.ock, { poradiCeniku: typeof vsPriplatkyPoradiCeniku !== 'function' || vsPriplatkyPoradiCeniku(varianta) }) || [];  // #813
       priplatky = pv.length ? (pv.length + ' – ' + pv.map(pp => pp.nazev + ' (' + pp.sachty.join(', ') + ')').join(', ')) : 'bez příplatků';
     }
   } catch (e) {}

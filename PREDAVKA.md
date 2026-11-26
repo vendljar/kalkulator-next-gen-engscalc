@@ -52,6 +52,7 @@ ZK #755 (v24.11.8, `claude/zk-zakaznici-ze-zakazek`): předávka dávky v `podkl
 Stav 25. 11. 2026 15:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74 % → doporučeno nové sezení; kokpit https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2):
 - **main** v24.11.7 (4e69c27, tag a release vydány 25. 11.). **test** v25.11.1 (7144623). **integrace** v25.11.2 (K56-D) + podklady; počty commitů ukazuje kokpit.
 - **Kokpit:** vždy počty commitů main → test → integrace (J. V.).
+- **Nové sezení:** `source_revision` = jméno větve (např. `claude/integrace-16-10`), ne zkrácený SHA — se zkráceným SHA sezení někdy nenastartuje (ref_not_found, #813 a UK 26. 11.). Konkrétní commit uvést v promptu.
 - **MD** (`claude/md-mala-davka`, session_018mwHQK79SjnYBqnyzH8Q5t: #766–#770, #763, engineering v Příplatcích, K58-N1/N2/I2): finální kolo nad d27a980 běží; pak revize PORADCE FABLE → integrace → test (J. V. 25. 11.: dokončit připomínky a poslat na test) → testovací sezení zopakuje zápisy na deal 432/437.
 - **PD2** po MD: K53-N3, kontakty/podpisy/Informováno jen do prázdných polí, odchylky i PROJ, starý plán PROJ pryč (Platba 1–8), #752 PV N1–N6, #771 vady tisku CN V1–V6. Novinky CN 7–12 J. V. zamítl.
 - **G1** (`claude/g1-uklid`): úklid vlny G — #753, #754, #756. Víc zákazníků (#598) na main zatím ne (J. V. 25. 11.).

@@ -38,6 +38,18 @@ ATYP. **#812** po uložení bez čísla / názvu jedna hláška. **#809** varov�
 **Testy a nástroje:** `src/test_tx_texty.js` (59 kontrol; na 2e5f90cc 17 OK / 39 FAIL); zlatá sada VS přegenerována
 (mění se jen `ph-cz`, `ph-en`, `docx`, `sod`); `NAB_ZARUKA` mezi novými symboly #560; TX-T1 (dočasná verze
 „TX“ v roadmapě). Mutace [TX] jádra 30, serveru 2. Roadmapa #816–#819.
+## v26.11.1 — Rychlá #813 — dotisk staré nabídky víc šachet drží pořadí příplatků, větev claude/rychla-813
+
+Nad integrací `ad0be0c` (test v25.11.6). Rychlá cesta pro vady dokumentu.
+- **#813 (K65-N1, kolo 65):** MD N1 (#778, PD2) řadí příplatky víc šachet podle ceníku; řazení platilo i pro
+  nabídky odeslané před PD2 — dotisk staré odeslané nabídky (CZ i EN) měl jiné pořadí řádků příplatků (madla před
+  zábranami), částky beze změny. Nově se podle ceníku řadí jen neodeslaná nabídka a odeslaná se značkou `pd2Tisk`
+  ve snímku podmínek (odeslaná po PD2, stejné pravidlo jako #800 a #771 V4); starší zámek tiskne v pořadí prvního
+  zaškrtnutého výskytu, jak odešel. Totéž pořadí krycí list („Příplatky v nabídce“) a objednané / SoD
+  (`vsPriplatkyPoradiCeniku` ve `vice_sachet.js`). Ceny se nemění.
+- Test `src/test_813_poradi_priplatku.js` (pojistka: bez opravy 5× FAIL), mutace `[R813]` (6) v `mutace_jadro.mjs`.
+- **Které kalkulace se změní:** jen dotisk nabídky / krycího listu odeslané nabídky víc šachet, odeslané před v25.11.6,
+  u které je některý příplatek zaškrtnutý jen v další šachtě — vrací se pořadí, s jakým odešla (např. TEST 9961).
 
 ## v25.11.6 — PD2 — pole krycího listu do dealu Pipedrive, vady tisku CN, nálezy revizí PV a MD, větev claude/pd2-pole-kl
 

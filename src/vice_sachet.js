@@ -456,7 +456,7 @@ function vsAtyp(ock) {
  * Vrací null (jedna šachta) nebo [{ klic, key, nazev, sachty: [názvy], radek }]
  * v pořadí prvního zaškrtnutého výskytu (šachta 1, pak ostatní); `radek` je
  * kopie řádku příplatku s částkami výběru. */
-function vsPriplatkyVyber(vysl, ock) {
+function vsPriplatkyVyber(vysl, ock, moznosti) {
   const vo = vsVystup(vysl);
   if (!vo) return null;
   const l = sachtyZ(ock);
@@ -492,14 +492,27 @@ function vsPriplatkyVyber(vysl, ock) {
     const v1 = vsPriplatekJednou(vo.sachty.map(t => t.vysl), zad, x.key);
     if (v1) VS_SCITANA_POLE.forEach(f => { if (typeof v1.radek[f] === 'number') x.radek[f] = v1.radek[f]; });
   });
+  /* #813 (K65-N1): odeslaná nabídka před PD2 (vsPriplatkyPoradiCeniku = false)
+   * drží původní pořadí prvního zaškrtnutého výskytu — dotisk beze změny. */
+  if (moznosti && moznosti.poradiCeniku === false) return out;
   /* Stabilní řazení: stejný klíč s jinou sazbou drží pořadí výskytu. */
   return out.map((x, i) => ({ x, i, p: poradi.has(x.key) ? poradi.get(x.key) : Infinity }))
     .sort((a, b) => (a.p - b.p) || (a.i - b.i)).map(o => o.x);
 }
 
+/* #813 (K65-N1): řadí se příplatky víc šachet podle ceníku (MD N1 #778, PD2)?
+ * Neodeslaná ano; odeslaná (zamčená) jen se značkou `pd2Tisk` ve snímku podmínek
+ * (kryciZmrazPodminky, odeslaná po PD2) — starší se dotiskne v pořadí, v jakém
+ * odešla (první zaškrtnutý výskyt). Totéž pravidlo jako #800 a #771 V4. */
+function vsPriplatkyPoradiCeniku(varianta) {
+  if (!(varianta && varianta.zamek && varianta.zamek.zamceno)) return true;
+  const sn = varianta.data && varianta.data.kryci && varianta.data.kryci.zmrazenoPodminky;
+  return !!(sn && sn.pd2Tisk === 1);
+}
+
 /* Příplatky v nabídce po šachtách pro krycí list (VS-E5): [{ nazev, sachty }]. */
-function vsPriplatkyVNabidce(vysl, ock) {
-  const v = vsPriplatkyVyber(vysl, ock);
+function vsPriplatkyVNabidce(vysl, ock, moznosti) {
+  const v = vsPriplatkyVyber(vysl, ock, moznosti);
   return v ? v.map(x => ({ nazev: x.nazev, sachty: x.sachty })) : null;
 }
 
@@ -530,7 +543,7 @@ function vsZamekZmenaSachet(v) {
 
 if (typeof module !== 'undefined' && module.exports)
   Object.assign(module.exports, { vsVariantText, vsPoctyPopis, vsMaMustky, vsVystup, vsSeznamText, vsPredmetText, vsAtyp,
-    vsPriplatkyVNabidce, vsPriplatkyVyber, vsZamekZmenaSachet, vsSachtaZadani });
+    vsPriplatkyVNabidce, vsPriplatkyVyber, vsPriplatkyPoradiCeniku, vsZamekZmenaSachet, vsSachtaZadani });
 
 /* ============================================================
  * VS-E4 (#570 / roadmapa #594) — šablona cenové nabídky a víc šachet.

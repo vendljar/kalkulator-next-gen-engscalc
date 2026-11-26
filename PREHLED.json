@@ -7,12 +7,21 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "f9b31b8c",
-  "verze": "v25.11.5",
+  "sha": "10b9bede",
+  "verze": "v25.11.6",
   "datum": "25. 11. 2026"
  },
- "test_navic_commitu": 172,
+ "test_navic_commitu": 192,
  "v_testu_ne_v_main": [
+  {
+   "id": "810",
+   "typ": "otazka",
+   "nazev": "Šablona SoD PROJ v4 (z LibreOffice) nemá ve vlastnostech prvek Company → Společnost zůstane prázdná (generátor chybějící prvek nepřidává)",
+   "alias": [
+    "K62-I1"
+   ],
+   "verze": "v25.11.6"
+  },
   {
    "id": "804",
    "typ": "nalez",
@@ -50,6 +59,15 @@
    "verze": "v25.11.5"
   },
   {
+   "id": "800",
+   "typ": "nalez",
+   "nazev": "Specifikace šachty bez opláštění v nabídce dál píše opláštění (plnostěnné, kotevní terče, vzhled kotvení zasklení, vnější opláštění kotvené…",
+   "alias": [
+    "K61-N1"
+   ],
+   "verze": "v25.11.6"
+  },
+  {
    "id": "795",
    "typ": "ukol",
    "nazev": "Jazykové verze šablony SoD projekce v4 (EN/DE/FR, 16 kB, o měsíc starší) proti české (124 kB) — ověřit úplnost",
@@ -80,6 +98,18 @@
    "verze": "v25.11.5"
   },
   {
+   "id": "783",
+   "typ": "ukol",
+   "nazev": "Protokol zápisu prodeje uřízl větu o převzetí dealu",
+   "verze": "v25.11.6"
+  },
+  {
+   "id": "782",
+   "typ": "davka",
+   "nazev": "PD2: doplnění polí krycího listu do dealu Pipedrive + vady tisku CN + nálezy revizí",
+   "verze": "v25.11.6"
+  },
+  {
    "id": "781",
    "typ": "ukol",
    "nazev": "Připomínky: obchodník označí na obrazovce, kde je problém (zvýraznění na snímku)",
@@ -90,6 +120,27 @@
    "typ": "ukol",
    "nazev": "Připomínky: snímek obrazovky jde zvětšit (otevřít v plné velikosti, přiblížit a posouvat)",
    "verze": "v25.11.5"
+  },
+  {
+   "id": "779",
+   "typ": "nalez",
+   "nazev": "Poznámka dealu PROJ: závěrečná značka „— nabídka …“ nese předlohu čísla OCK (ZAK.cislo) místo čísla PROJ",
+   "alias": [
+    "K59-N1"
+   ],
+   "verze": "v25.11.6"
+  },
+  {
+   "id": "778",
+   "typ": "ukol",
+   "nazev": "Nízké nálezy revize MD: N1 pořadí příplatku jen z další šachty, N2 hláška 409 bez rady Ctrl+F5, N4 dodatekCesky u staré odeslané nabídky ví…",
+   "verze": "v25.11.6"
+  },
+  {
+   "id": "777",
+   "typ": "ukol",
+   "nazev": "Částka „…“ (tečka jako oddělovač tisíců) jde do Pipedrive jako …; „-…“ jako 500 (revize MD S2)",
+   "verze": "v25.11.6"
   },
   {
    "id": "776",
@@ -254,6 +305,20 @@
     "SA-R10"
    ],
    "verze": "v25.11.4"
+  },
+  {
+   "id": "752",
+   "typ": "ukol",
+   "nazev": "Nízké nálezy revize PV (zápis prodeje do Pipedrive): N1–N6",
+   "alias": [
+    "PV-N1",
+    "PV-N2",
+    "PV-N3",
+    "PV-N4",
+    "PV-N5",
+    "PV-N6"
+   ],
+   "verze": "v25.11.6"
   },
   {
    "id": "744",
@@ -488,22 +553,20 @@
    "cekaNa": "nahrát upravený skill (mimo repo)"
   },
   {
+   "id": "726",
+   "typ": "ukol",
+   "nazev": "Zastaralé řádky termínu DPZ ve Firmě: oprava dat testu + varování v aplikaci",
+   "alias": [
+    "VZD-N1"
+   ],
+   "verze": "v23.11.2",
+   "cekaNa": "bod 3 — zkontrolovat Firmu na main (test bod 1 není potřeba: výchozí znění, 26. 11.)"
+  },
+  {
    "id": "730",
    "typ": "davka",
    "nazev": "Spuštění propojení s Pipedrive na main — procedura (podklady/PIPEDRIVE_SPUSTENI.md)",
    "cekaNa": "seznam polí pro #597 a uživatel tokenu (B1, B2)"
-  },
-  {
-   "id": "771",
-   "typ": "ukol",
-   "nazev": "Vady tisku cenové nabídky CN (posudek CN-432): V1–V6",
-   "cekaNa": "V4 znění a překlady (v kódu jako návrh, v25.11.6), V5/V6 způsob (šablona CN)"
-  },
-  {
-   "id": "782",
-   "typ": "davka",
-   "nazev": "PD2: doplnění polí krycího listu do dealu Pipedrive + vady tisku CN + nálezy revizí",
-   "cekaNa": "#771 V4 znění + překlady EN/DE/FR (J1), V5/V6 (šablona), tabulka zmrazení KL — Odchylky PROJ (J2); PD2 jinak v25.11.6"
   },
   {
    "id": "805",
@@ -512,7 +575,7 @@
    "alias": [
     "K61-I4"
    ],
-   "cekaNa": "opravit v šabloně PROJ a zveřejnit"
+   "cekaNa": "zveřejnit opravenou šablonu nabídky PROJ (čeština v8, na testu 26. 11.) i na main — postup v STAV_KOLO66 (claude/testovani-4)"
   },
   {
    "id": "806",
@@ -521,23 +584,15 @@
    "alias": [
     "K60-I1"
    ],
-   "cekaNa": "návod pro obchodníky (CN změnit až po založení) nebo úprava automatizace v Pipedrive"
-  },
-  {
-   "id": "810",
-   "typ": "otazka",
-   "nazev": "Šablona SoD PROJ v4 (z LibreOffice) nemá ve vlastnostech prvek Company → Společnost zůstane prázdná (generátor chybějící prvek nepřidává)",
-   "alias": [
-    "K62-I1"
-   ],
-   "cekaNa": "nechat prázdné (doporučeno), nebo doplnit firmu i tam, kde šablona prvek nemá"
+   "cekaNa": "27. 11. projde pojmenování CN a sladí s nastavením Pipedrive (návod vs. úprava automatizace)"
   }
  ],
  "ceka_na_jv_odlozene": 14,
  "nehotove_podle_kdo": {
-  "J. V.": 35,
+  "J. V.": 33,
   "kolega": 4,
-  "koordinace": 7
+  "koordinace": 7,
+  "dávka": 2
  },
  "nehotovych": 46
 }
