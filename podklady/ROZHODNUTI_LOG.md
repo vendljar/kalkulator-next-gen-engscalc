@@ -10,6 +10,7 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
+| 26. 11. 2026 | #804 datum v krycím listu ve tvaru „25.11.2026“ (jako nabídka a SoD). V4 (#771) upřesnit: „…bude vystaven 3. konečný daňový doklad na zbývajících 10 % ceny díla bez DPH, k níž bude připočtena DPH v zákonné výši.“ + EN/DE/FR. V5/V6: kód (symbol záruky, seznam v online tisku) + úprava šablony CN na testu (J. V. / kolega). #810 Společnost v SoD PROJ v4 nechat prázdnou. Tabulka zmrazení KL: „Jiné odchylky…“ PROJ upravitelné i po odeslání (jako OCK) — schváleno. #815 opravit v další dávce (zmínky o opláštění u šachty bez opláštění, překlady FR/DE/EN), znění ke schválení. | #804, #771, #810, ZMRAZENI_KL, #815 |
 | 25. 11. 2026 | Testovací web: automatizace webhooku Pipedrive zůstává trvale zapnutá; v testovacích nabídkách vždy slovo TEST (kolo 60). | test, C9 |
 | 25. 11. 2026 | PD2 Platba 1–8 (PROJ): pole platí jen podle kalkulačky — při prodeji se pole bez platby v plánu vymaže, potvrzení ukáže „vymaže se“. #800: šachta bez opláštění — v technické specifikaci nabídky z bloku Opláštění jen „TYP OPLÁŠTĚNÍ: bez opláštění“, ostatní řádky vypadnou (PD2). | PD2, #800 |
 | 25. 11. 2026 | #771 V3 (odrážka „Zajištění montážního lešení“ v kapitole IV): zatím nechat, jak je — z PD2 vypuštěno; chování z 22. 9. platí. | #771, PD2 |
