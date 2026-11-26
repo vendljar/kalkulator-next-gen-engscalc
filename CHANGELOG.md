@@ -35,9 +35,13 @@ odeslaná po PD2 a před TX se dotiskne zněním PD2.
 (`zamekJenDotisk`, výjimka v `onlineUloz` jako u prodeje); dialog při přepnutí nabídne „Uložit záznam“ a nesvádí na
 ATYP. **#812** po uložení bez čísla / názvu jedna hláška. **#809** varování #756 v jednotném / množném čísle.
 
-**Testy a nástroje:** `src/test_tx_texty.js` (59 kontrol; na 2e5f90cc 17 OK / 39 FAIL); zlatá sada VS přegenerována
+**Slovník jen pro nové nabídky (J1, J. V. 26. 11.):** opravená hesla #815 v `PREKLAD_TX` (`trTx`) se použijí jen se
+značkou `txTisk`; `PREKLAD` drží původní hesla, takže stará odeslaná nabídka se dotiskne s původním překladem a bez
+upozornění na změnu slovníku. **#808 N1 (revize Fable):** výjimka jen pro typ tisku, který varianta už má.
+
+**Testy a nástroje:** `src/test_tx_texty.js` (67 kontrol; na 2e5f90cc 17 OK / 39 FAIL); zlatá sada VS přegenerována
 (mění se jen `ph-cz`, `ph-en`, `docx`, `sod`); `NAB_ZARUKA` mezi novými symboly #560; TX-T1 (dočasná verze
-„TX“ v roadmapě). Mutace [TX] jádra 30, serveru 2. Roadmapa #816–#819.
+„TX“ v roadmapě). Mutace [TX] jádra 36, serveru 2. Roadmapa #816–#819.
 ## v26.11.1 — Rychlá #813 — dotisk staré nabídky víc šachet drží pořadí příplatků, větev claude/rychla-813
 
 Nad integrací `ad0be0c` (test v25.11.6). Rychlá cesta pro vady dokumentu.
