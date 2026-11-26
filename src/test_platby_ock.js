@@ -258,8 +258,9 @@ const kapIII = (sek) => (Array.isArray(sek) ? sek.find(x => /^III\./.test(x.sekc
     /* od NP (19. 11. 2026) skládá náhled podkladů nahled_word.js (nwBloky) — volá
      * nabidkaNahledSekce s týmž kalendářem a vlastními řádky; šachty zvlášť po šachtách */
     /* od RP #736 (24. 11. 2026) i ruční položky jako 6. parametr (data.rucni) — povinně (revize N10) */
-    (ui.match(/nabidkaNahledSekce\(p, L, data\.platbyOck, data\.tsExtra, data\.sachty, data\.rucni\)/g) || []).length === 1
-    && /\(\s*ph, L, data\.platbyOck, data\.tsExtra, null, data\.rucni\)/.test(fs.readFileSync(path.join(__dirname, 'nahled_word.js'), 'utf8')));
+    /* od TX J1 (26. 11. 2026) i volby { tx } jako 7. parametr (opravená hesla slovníku jen pro nové nabídky) */
+    (ui.match(/nabidkaNahledSekce\(p, L, data\.platbyOck, data\.tsExtra, data\.sachty, data\.rucni, \{ tx: !!data\.txTisk \}\)/g) || []).length === 1
+    && /\(\s*ph, L, data\.platbyOck, data\.tsExtra, null, data\.rucni, \{ tx \}\)/.test(fs.readFileSync(path.join(__dirname, 'nahled_word.js'), 'utf8')));
 }
 
 /* ---------------- 8) smlouva o dílo realizace ---------------- */
