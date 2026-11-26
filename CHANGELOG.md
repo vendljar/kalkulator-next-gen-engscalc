@@ -19,14 +19,14 @@ odeslaná po PD2 a před TX se dotiskne zněním PD2.
   Převod do Pipedrive tvar čte (`netlify/test_pd_prevod.mjs` +3).
 - **#771 V4** věta konečné faktury: „… bude vystaven 3. konečný daňový doklad na zbývajících 10 % ceny díla bez DPH,
   k níž bude připočtena DPH v zákonné výši.“ (pořadí a procento dál automaticky; vlastní znění Firmy beze změny);
-  překlady EN/DE/FR — **návrh ke schválení J. V. (#818)**.
+  překlady EN/DE/FR schválil J. V. 26. 11. 2026 (#818).
 - **#771 V5** symbol `{{NAB_ZARUKA}}` („Záruka: 60 měsíců“); z kapitoly V. záruka zmizí jen u šablony se symbolem.
   **#771 V6** online tisk: poznámky k ceně jako nadpis + seznam a. b. c. Šablona CN v19 = datový úkol #817
   (`podklady/NAVOD_SABLONA_CN_TX.md`).
 - **#815** šachta bez opláštění (jen předvyplněné znění, ruční přepis vyhrává): požární klasifikace „materiály DP1“,
   odvětrání „přirozené, šachta bez opláštění“, vnější lešení „je součástí dodávky pouze po dobu stavby šachty“
   (jen když jsou bez opláštění všechny šachty). Slovník: FR „Sans habillage“, DE „SCHACHTVERKLEIDUNG“,
-  „Vypracoval:“ EN „Compiled by:“, DE „Zusammengestellt von:“, FR „Établi par :“. **Znění ke schválení (#818).**
+  „Vypracoval:“ EN „Compiled by:“, DE „Zusammengestellt von:“, FR „Établi par :“. Znění schválil J. V. 26. 11. 2026 (#818).
 - **#814** Word nabídky PROJ bez fotky: nadpis „POHLED NA OBJEKT“ v textovém poli rámečku fotky se vymaže.
 - **#811** objednávka PROJ: nadpisy Poznámka / Platební kalendář / Termíny drží se svým textem (PDF i Word).
 - **#816 (K66-I1)** slovník: heslo „… STUDII PROVEDITELNOSTI projednat …“ (starý tvar s překlepem jako alias).

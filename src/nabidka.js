@@ -32,7 +32,7 @@ function nabidkaBezOplasteni(r, Z) {
   if (!steny.length || !steny.every(st => st && Array.isArray(st.pasy) && st.pasy.length && st.pasy.every(p => p && p.typ === 'bez'))) return false;
   return !(r && r.oplasteni && (+r.oplasteni.plochaCelkem || 0) > 0);
 }
-/* #815 (K65-I1, J. V. 26. 11. 2026 — ZNĚNÍ KE SCHVÁLENÍ): šachta bez opláštění — zmínky
+/* #815 (K65-I1, J. V. 26. 11. 2026; znění schválil J. V. 26. 11. 2026, #818): šachta bez opláštění — zmínky
  * o opláštění mimo blok Opláštění šachty. Mění se jen předvyplněné znění (= tyto věty). */
 const NABIDKA_POZARNI_S_OPL = 'materiály DP1, opláštění bez deklarované požární odolnosti';
 const NABIDKA_POZARNI_BEZ_OPL = 'materiály DP1';

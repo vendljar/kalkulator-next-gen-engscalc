@@ -444,7 +444,7 @@ const PREKLAD = {
   "bez dokrytí": ["Without cover plate","Ohne Abdeckung","Sans recouvrement"],
   "bez opláštění, komplet dozdí stavba": ["Without cladding, fully bricked up by the building contractor","Ohne Verkleidung, komplett bauseits zugemauert","Sans habillage, entièrement rebouché en maçonnerie par l'entreprise"],
   "bez opláštění": ["Without cladding","Ohne Verkleidung","Sans habillage"],   // TX #815: FR jako nadpis HABILLAGE
-  "přirozené, šachta bez opláštění": ["Natural, shaft without cladding","Natürlich, Schacht ohne Verkleidung","Naturelle, gaine sans habillage"],   // TX #815 (návrh)
+  "přirozené, šachta bez opláštění": ["Natural, shaft without cladding","Natürlich, Schacht ohne Verkleidung","Naturelle, gaine sans habillage"],   // TX #815 (schválil J. V. 26. 11. 2026, #818)
   "bez předsazených portálů": ["Without projecting entrance portals","Ohne vorgesetzte Eingangsportale","Sans entrées d'étage en saillie"],
   "bez zastřešení (OCK končí pod stropem)": ["Without roofing (the steel structure ends below the ceiling)","Ohne Bedachung (die Stahlkonstruktion endet unter der Decke)","Sans toiture (la structure se termine sous le plafond)"],
   "bezúplatně zajistí objednatel": ["Provided by the customer free of charge","Wird vom Besteller kostenlos zur Verfügung gestellt","Fourni gratuitement par le client"],
@@ -1443,7 +1443,7 @@ const PREKLAD_VZORY = [
     de: (m, n, p) => 'Nach Abschluss aller oben genannten Arbeiten und ordnungsgemäßer Übergabe und Abnahme des gesamten Werks mit Übergabeprotokoll wird die ' + n + '. Schlussrechnung in Höhe von ' + p + ' % (zzgl. MwSt.) des Gesamtpreises mit Abrechnung der MwSt. in gesetzlicher Höhe ausgestellt.',
     fr: (m, n, p) => 'Après l’achèvement de tous les travaux susmentionnés et la réception en bonne et due forme de l’ensemble de l’ouvrage par procès-verbal, la ' + prekladPoradiFr(n) + ' facture finale sera émise pour un montant de ' + p + ' % (hors TVA) du prix total de l’ouvrage, avec la TVA au taux légal.' },
   /* TX (J. V. 26. 11. 2026): upřesněná věta konečné faktury (kryci.js KRYCI_VETA_KONECNA_TX).
-   * NÁVRH PŘEKLADU — schválí J. V. (zpráva dávky TX). */
+   * Překlad EN/DE/FR schválil J. V. 26. 11. 2026 (#818). */
   { re: /^Po ukončení všech výše uvedených prací a po řádném předání a převzetí celého díla předávacím protokolem bude vystaven (\d+)\. konečný daňový doklad na zbývajících (\d+(?:[.,]\d+)?) % ceny díla bez DPH, k níž bude připočtena DPH v zákonné výši\.$/,
     en: (m, n, p) => 'After completion of all the above work and proper handover and acceptance of the entire work by a handover report, the ' + prekladPoradiEn(n) + ' final tax invoice will be issued for the remaining ' + p.replace(',', '.') + ' % of the contract price excl. VAT, to which VAT at the statutory rate will be added.',
     de: (m, n, p) => 'Nach Abschluss aller oben genannten Arbeiten und ordnungsgemäßer Übergabe und Abnahme des gesamten Werks mit Übergabeprotokoll wird die ' + n + '. Schlussrechnung über die verbleibenden ' + p + ' % des Werkpreises ohne MwSt. ausgestellt, zuzüglich der MwSt. in gesetzlicher Höhe.',

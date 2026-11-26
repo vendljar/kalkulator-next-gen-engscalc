@@ -68,7 +68,7 @@ Stav 25. 11. 2026 15:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74
 - `src/test_tx_texty.js` 57 (pojistka 2e5f90cc 17/39); zlatá VS přegenerována (jen ph/docx/sod); TX-T1.
 - Kolo `--proti` integrace: sady 464/0 (i hodiny), porovnání 395 jen očekávané (`ocekavane_tx_2026-11-26.txt`);
   ✗ jen verze.txt × den commitu (verzi přidělí koordinace). Mutace [TX] jádro 29/29, server 2/2.
-- Čeká: #818 J. V. znění (V4 EN/DE/FR, #815); #817 šablona CN v19 (`podklady/NAVOD_SABLONA_CN_TX.md`); #819 zkouška.
+- #818 znění schválil J. V. 26. 11. Čeká: #817 šablona CN v19 (`podklady/NAVOD_SABLONA_CN_TX.md`); #819 zkouška.
 
 ## Dávka PD2 (`claude/pd2-pole-kl`, 25. 11. 2026)
 
