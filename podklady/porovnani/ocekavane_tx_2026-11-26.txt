@@ -1,15 +1,14 @@
-# Očekávané rozdíly TX (#804, #771 V4–V6, #815, #814, #811, #812, #808, #809, K66-I1) × integrace ad0be0ca — 26. 11. 2026
+# Očekávané rozdíly TX (#804, #771 V4–V6, #815, #814, #811, #812, #808, #809, K66-I1, revize N1, J1) × integrace a9d8770f (v26.11.1) — 26. 11. 2026
 # Formát: <případ> <pole,pole>  # důvod   (popis v nastroje/porovnani_sada.js)
 # Každý případ jmenovitě s přesným výčtem polí, žádné vzory „*“ (revize Fable N3 u PD2). Vyrobeno z otisků obou
 #   stran (porovnani_sada.js otisky, rozdilyPripadu). Výpočet, ceny, řádky, zámek, Pipedrive, controlling = SHODA.
-# kryci-bo/tech, kryci-proj-bo/tech (395×): #804 datum „25.11.2026“ (pole „Dne“ má předvyplnění v každém případu).
-# ph-cz/ph-en: nový symbol NAB_ZARUKA (V5; u odeslané před TX prázdný); PODM_PLATEBNI_KALENDAR (V4, jen neodeslané:
-#   384 CZ / 380 EN); TS_POZARNI, TS_ODVETRANI (#815, jen k58 bez opláštění, 4×). docx/docx-en/docx-de/sod/sod-en/sod-de:
-#   tytéž symboly (zkušební šablona má všechny symboly; data SoD nesou symboly nabídky).
-# nahled-np-*/odstavce:POZN-CENA → nahled-np-*/seznam (V6), ramecek splátek (V4) — jen neodeslané.
-# nahled-np-en/podpis: „Compiled by:“ (#815, slovník) — i u odeslaných (dotisk v cizím jazyce upozorní na změněný slovník).
+# kryci-bo/tech, kryci-proj-bo/tech: #804 datum „25.11.2026“ (pole „Dne“ má předvyplnění v každém případu).
+# ph-cz/ph-en: nový symbol NAB_ZARUKA (V5; u odeslané před TX prázdný); PODM_PLATEBNI_KALENDAR (V4, jen neodeslané);
+#   TS_POZARNI, TS_ODVETRANI (#815, jen k58 bez opláštění). docx/docx-en/docx-de/sod/sod-en/sod-de: tytéž symboly.
+# nahled-np-*/odstavce:POZN-CENA → nahled-np-*/seznam (V6), rámeček splátek (V4) — jen neodeslané.
+# nahled-np-en/podpis: „Compiled by:“ (#815, PREKLAD_TX) — JEN neodeslané; odeslané před TX = původní heslo (J1, SHODA).
 # nahled-cz/en, nahled-np-*/ts:KONSTRUKCNI-RESENI-SACHTY|DOPLNKOVE-KONSTRUKCE (EN SHAFT-SOLUTION|ADDITIONAL-…): #815, k58.
-# Odeslané (dotisk:*, proj:prodana-*, vs:*, vz:*, fixtury se zámkem): V4, V6, #815, #814 beze změny (značka txTisk).
+# Odeslané (dotisk:*, proj:prodana-*, vs:*, vz:*, zamčené fixtury): V4, V6, #815, #814 a hesla slovníku beze změny (txTisk).
 
 fixtura:zakazka_2026-08-08_odeslana_bez_otisku.json:vmuhkstzr0  docx,kryci-bo,kryci-proj-bo,kryci-proj-tech,kryci-tech,ph-cz,sod
 fixtura:zakazka_2026-08-08_odeslana_bez_otisku.json:vmuhkstzx1  docx,kryci-bo,kryci-proj-bo,kryci-proj-tech,kryci-tech,nahled-np-cz/odstavce:POZN-CENA,nahled-np-cz/ramecek:CENA-DILA-JE-SPLATNA-V-NASLEDUJICICH-DILCICH-SPL,nahled-np-cz/seznam,ph-cz,sod
@@ -82,15 +81,15 @@ lak:ext-tomas-vlastni-polozka:m2  docx,docx-de,docx-en,kryci-bo,kryci-proj-bo,kr
 lak:ext-tomas-vlastni-polozka:m1  docx,docx-de,docx-en,kryci-bo,kryci-proj-bo,kryci-proj-tech,kryci-tech,nahled-np-cz/odstavce:POZN-CENA,nahled-np-cz/ramecek:CENA-DILA-JE-SPLATNA-V-NASLEDUJICICH-DILCICH-SPL,nahled-np-cz/seznam,nahled-np-en/odstavce:POZN-CENA,nahled-np-en/podpis,nahled-np-en/ramecek:THE-PRICE-OF-THE-WORK-IS-PAYABLE-IN-THE-FOLLOWIN,nahled-np-en/seznam,ph-cz,ph-en,sod,sod-de,sod-en
 vs:vychozi-nazvy:m2  docx,docx-de,docx-en,kryci-bo,kryci-proj-bo,kryci-proj-tech,kryci-tech,nahled-np-cz/odstavce:POZN-CENA,nahled-np-cz/ramecek:CENA-DILA-JE-SPLATNA-V-NASLEDUJICICH-DILCICH-SPL,nahled-np-cz/seznam,nahled-np-en/odstavce:POZN-CENA,nahled-np-en/podpis,nahled-np-en/ramecek:THE-PRICE-OF-THE-WORK-IS-PAYABLE-IN-THE-FOLLOWIN,nahled-np-en/seznam,ph-cz,ph-en,sod,sod-de,sod-en
 vs:rucni-nazvy:m2  docx,docx-de,docx-en,kryci-bo,kryci-proj-bo,kryci-proj-tech,kryci-tech,nahled-np-cz/odstavce:POZN-CENA,nahled-np-cz/ramecek:CENA-DILA-JE-SPLATNA-V-NASLEDUJICICH-DILCICH-SPL,nahled-np-cz/seznam,nahled-np-en/odstavce:POZN-CENA,nahled-np-en/podpis,nahled-np-en/ramecek:THE-PRICE-OF-THE-WORK-IS-PAYABLE-IN-THE-FOLLOWIN,nahled-np-en/seznam,ph-cz,ph-en,sod,sod-de,sod-en
-dotisk:se-snimkem-zpracovatele:m2  docx,docx-de,docx-en,kryci-bo,kryci-proj-bo,kryci-proj-tech,kryci-tech,nahled-np-en/podpis,ph-cz,ph-en,sod,sod-de,sod-en
-dotisk:bez-snimku:m2  docx,docx-de,docx-en,kryci-bo,kryci-proj-bo,kryci-proj-tech,kryci-tech,nahled-np-en/podpis,ph-cz,ph-en,sod,sod-de,sod-en
+dotisk:se-snimkem-zpracovatele:m2  docx,docx-de,docx-en,kryci-bo,kryci-proj-bo,kryci-proj-tech,kryci-tech,ph-cz,ph-en,sod,sod-de,sod-en
+dotisk:bez-snimku:m2  docx,docx-de,docx-en,kryci-bo,kryci-proj-bo,kryci-proj-tech,kryci-tech,ph-cz,ph-en,sod,sod-de,sod-en
 proj:vychozi:m2  docx,docx-de,docx-en,kryci-bo,kryci-proj-bo,kryci-proj-tech,kryci-tech,nahled-np-cz/odstavce:POZN-CENA,nahled-np-cz/ramecek:CENA-DILA-JE-SPLATNA-V-NASLEDUJICICH-DILCICH-SPL,nahled-np-cz/seznam,nahled-np-en/odstavce:POZN-CENA,nahled-np-en/podpis,nahled-np-en/ramecek:THE-PRICE-OF-THE-WORK-IS-PAYABLE-IN-THE-FOLLOWIN,nahled-np-en/seznam,ph-cz,ph-en,sod,sod-de,sod-en
 proj:sleva-100:m2  docx,docx-de,docx-en,kryci-bo,kryci-proj-bo,kryci-proj-tech,kryci-tech,nahled-np-cz/odstavce:POZN-CENA,nahled-np-cz/ramecek:CENA-DILA-JE-SPLATNA-V-NASLEDUJICICH-DILCICH-SPL,nahled-np-cz/seznam,nahled-np-en/odstavce:POZN-CENA,nahled-np-en/podpis,nahled-np-en/ramecek:THE-PRICE-OF-THE-WORK-IS-PAYABLE-IN-THE-FOLLOWIN,nahled-np-en/seznam,ph-cz,ph-en,sod,sod-de,sod-en
 proj:sleva-30:m2  docx,docx-de,docx-en,kryci-bo,kryci-proj-bo,kryci-proj-tech,kryci-tech,nahled-np-cz/odstavce:POZN-CENA,nahled-np-cz/ramecek:CENA-DILA-JE-SPLATNA-V-NASLEDUJICICH-DILCICH-SPL,nahled-np-cz/seznam,nahled-np-en/odstavce:POZN-CENA,nahled-np-en/podpis,nahled-np-en/ramecek:THE-PRICE-OF-THE-WORK-IS-PAYABLE-IN-THE-FOLLOWIN,nahled-np-en/seznam,ph-cz,ph-en,sod,sod-de,sod-en
 proj:studie-vyrazena:m2  docx,docx-de,docx-en,kryci-bo,kryci-proj-bo,kryci-proj-tech,kryci-tech,nahled-np-cz/odstavce:POZN-CENA,nahled-np-cz/ramecek:CENA-DILA-JE-SPLATNA-V-NASLEDUJICICH-DILCICH-SPL,nahled-np-cz/seznam,nahled-np-en/odstavce:POZN-CENA,nahled-np-en/podpis,nahled-np-en/ramecek:THE-PRICE-OF-THE-WORK-IS-PAYABLE-IN-THE-FOLLOWIN,nahled-np-en/seznam,ph-cz,ph-en,sod,sod-de,sod-en
-proj:prodana-lhuty:m2  docx,docx-de,docx-en,kryci-bo,kryci-proj-bo,kryci-proj-tech,kryci-tech,nahled-np-en/podpis,ph-cz,ph-en,sod,sod-de,sod-en
-proj:zamek-cislo-ock:m2  docx,docx-de,docx-en,kryci-bo,kryci-proj-bo,kryci-proj-tech,kryci-tech,nahled-np-en/podpis,ph-cz,ph-en,sod,sod-de,sod-en
-proj:prodana-sleva-100:m2  docx,docx-de,docx-en,kryci-bo,kryci-proj-bo,kryci-proj-tech,kryci-tech,nahled-np-en/podpis,ph-cz,ph-en,sod,sod-de,sod-en
+proj:prodana-lhuty:m2  docx,docx-de,docx-en,kryci-bo,kryci-proj-bo,kryci-proj-tech,kryci-tech,ph-cz,ph-en,sod,sod-de,sod-en
+proj:zamek-cislo-ock:m2  docx,docx-de,docx-en,kryci-bo,kryci-proj-bo,kryci-proj-tech,kryci-tech,ph-cz,ph-en,sod,sod-de,sod-en
+proj:prodana-sleva-100:m2  docx,docx-de,docx-en,kryci-bo,kryci-proj-bo,kryci-proj-tech,kryci-tech,ph-cz,ph-en,sod,sod-de,sod-en
 vz:ridici:m2  kryci-proj-bo,kryci-proj-tech
 vz:ridici-vymena:m2  kryci-proj-bo,kryci-proj-tech
 vz:ico-nula:m2  kryci-proj-bo,kryci-proj-tech
