@@ -897,8 +897,9 @@ test('pole Dne se předvyplňuje dnešním datem (datum tisku)',
     const praha = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Prague' }).format(new Date());
     return kryciDnesIso() === praha && zamekDenPraha() === praha
       && kryciData(ZAK, aktivniVarianta(ZAK), JEKLY, 'bo').sekce
-           /* #804 (K61-I3): ve výstupu krycího listu česky „25. 11. 2026“ (prefill zůstává ISO) */
-           .some(s => s.radky.some(r => r[0] === 'Dne' && r[1] === kryciDatumTisk(praha) && /^\d{1,2}\. \d{1,2}\. \d{4}$/.test(r[1])));
+           /* #804 (K61-I3): ve výstupu krycího listu česky (prefill zůstává ISO); TX (J. V. 26. 11. 2026):
+            * tvar „25.11.2026“ jako nabídka a SoD */
+           .some(s => s.radky.some(r => r[0] === 'Dne' && r[1] === kryciDatumTisk(praha) && /^\d{2}\.\d{2}\.\d{4}$/.test(r[1])));
   }));
 test('krycí list PROJ má odpovědnou osobu za projekci (vyplňuje obchodník)',
   await page.evaluate(() => {
