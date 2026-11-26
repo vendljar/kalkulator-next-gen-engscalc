@@ -72,7 +72,9 @@ Stav 25. 11. 2026 15:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74
   #560 `NAB_ZARUKA` mezi novými symboly; TX-T1 regex verze dávky.
 - Čeká: **#818** J. V. schválí znění (V4 EN/DE/FR, #815 texty a popisky); **#817** šablona CN v19 (návod
   `podklady/NAVOD_SABLONA_CN_TX.md`, kolega / J. V. na testu); **#819** ruční zkouška po sloučení do testu.
-- Výsledky kola, mutací a seznam očekávaných rozdílů: viz zpráva koordinaci a commit „TX: kolo …“.
+- Kolo `--bez-mutaci --proti origin/claude/integrace-16-10`: sady 464/0, s hodinami 464/0; porovnání 395 jen očekávané
+  (`podklady/porovnani/ocekavane_tx_2026-11-26.txt`, jmenovitě). ✗ jen kontrola verze.txt × den commitu (verzi
+  nezvyšovat — přidělí koordinace). Mutace [TX] jádro 29/29, server 2/2.
 
 ## Dávka PD2 (`claude/pd2-pole-kl`, 25. 11. 2026)
 
