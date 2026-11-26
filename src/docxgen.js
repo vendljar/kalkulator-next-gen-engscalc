@@ -1533,8 +1533,13 @@ async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky, v
 const DOCX_AUTOR_FIRMA = 'ENGINEERS CZ s.r.o.';
 /* Obsah prvků s místním jménem z `jmena` (libovolný prefix) → `hodnota`
  * (už escapovaná); prázdný prvek <x/> dostane hodnotu, je-li neprázdná. */
+/* UK F3 (revize Fable G1, 26. 11. 2026): atribut v uvozovkách smí nést „>“
+ * a obsah prvku CDATA s „</…>“ — obojí se přeskočí celé. Vnořený prvek
+ * téhož jména regulární výraz správně neuzavře; to chytí kontrola struktury
+ * v docxVlastnostiAutor (část pak zůstane původní). */
 function docxPrvkyNahrad(xml, jmena, hodnota) {
-  const re = new RegExp('<((?:[^\\s<>\\/=:]+:)?(' + jmena + '))((?:\\s[^>]*?)?)(?:\\/>|>[\\s\\S]*?<\\/\\1\\s*>)', 'g');
+  const re = new RegExp('<((?:[^\\s<>\\/=:]+:)?(' + jmena + '))((?:\\s(?:[^>"\']|"[^"]*"|\'[^\']*\')*?)?)'
+    + '(?:\\/>|>(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>|<!--[\\s\\S]*?-->|[\\s\\S])*?<\\/\\1\\s*>)', 'g');
   return String(xml).replace(re, (cely, jmeno, _mistni, attr) => (!hodnota && /\/>$/.test(cely)) ? cely
     : '<' + jmeno + attr.replace(/\s+$/, '') + '>' + hodnota + '</' + jmeno + '>');
 }
@@ -1543,8 +1548,9 @@ function docxVlastnostiAutorXml(xml, autor) {
   return docxPrvkyNahrad(docxPrvkyNahrad(xml, 'creator|lastModifiedBy', firma), 'title', '');
 }
 /* #794: docProps/app.xml — Company. */
+/* UK F4 (revize Fable G1): i Manager (vedoucí ze šablony) → prázdný. */
 function docxVlastnostiAppXml(xml, firma) {
-  return docxPrvkyNahrad(xml, 'Company', xmlEsc(firma == null ? DOCX_AUTOR_FIRMA : firma));
+  return docxPrvkyNahrad(docxPrvkyNahrad(xml, 'Company', xmlEsc(firma == null ? DOCX_AUTOR_FIRMA : firma)), 'Manager', '');
 }
 /* #794: docProps/custom.xml — vlastnost name="Company" (bez ohledu na velikost
  * písmen); hodnota jako text (vt:lpwstr s prefixem, který část používá). */
@@ -1598,16 +1604,31 @@ function docxCastiVlastnosti(polozky) {
   }
   return casti;
 }
+/* UK F4 (revize Fable G1, 26. 11. 2026): komentáře a sledované změny ze
+ * šablony nesou jméno a iniciály toho, kdo je psal (w:author, w:initials
+ * u w:comment, w:ins, w:del, w:rPrChange…; w15:author a přihlášení
+ * w15:userId v word/people.xml). Hodnoty atributů → firma; jen uvnitř
+ * značek, text dokumentu se nemění. Část bez těch atributů zůstane, jak je. */
+const DOCX_AUTOR_ATRIBUTY = /(\s(?:w:author|w:initials|w15:author|w15:userId)\s*=\s*)("[^"]*"|'[^']*')/g;
+function docxAutorRevizi(xml, autor) {
+  const s = String(xml);
+  if (!/\s(?:w:author|w:initials|w15:author|w15:userId)\s*=/.test(s)) return s;
+  const firma = xmlEsc(autor == null ? DOCX_AUTOR_FIRMA : autor);
+  return s.replace(/<[A-Za-z_][^<>"']*(?:(?:"[^"]*"|'[^']*')[^<>"']*)*>/g, z => z.replace(DOCX_AUTOR_ATRIBUTY,
+    (_c, pred, hod) => pred + hod.charAt(0) + firma + hod.charAt(0)));
+}
 function docxVlastnostiAutor(polozky, autor) {
   const dek = new TextDecoder(), enk = new TextEncoder();
   const casti = docxCastiVlastnosti(polozky);
   const uprav = { core: docxVlastnostiAutorXml, app: docxVlastnostiAppXml, custom: docxVlastnostiCustomXml };
   for (const p of polozky) {
     const druh = casti.get(p.nazev.toLowerCase());
-    if (!druh) continue;
+    const fn = druh ? uprav[druh] : (/^word\/.+\.xml$/i.test(p.nazev) ? docxAutorRevizi : null);
+    if (!fn) continue;
     const pred = dek.decode(p.data);
-    const po = uprav[druh](pred, autor);
-    if (po !== pred) p.data = enk.encode(po);
+    const po = fn(pred, autor);
+    /* UK F3: náhrada nesmí rozbít strukturu části — při vadě zůstane původní. */
+    if (po !== pred && !xmlStrukturaVada(po)) p.data = enk.encode(po);
   }
 }
 
@@ -2019,7 +2040,7 @@ function docxCisloStrankyVarovani(c) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { odstranOdstavceSTextem, docxPopiskyBezHodnoty, DOCX_AUTOR_FIRMA, docxVlastnostiAutorXml, docxVlastnostiAppXml, docxVlastnostiCustomXml, docxVlastnostiAutor, docxCastiVlastnosti, docxCisloStranky, docxCisloStrankyXml, docxCisloStrankyVarovani, docxPodbarveniTecek, docxBehRozdel, docxRPrZluta, docxStudieBezZamereni, docxDpzBezZamereni, DOCX_DPZ_STAVAJICI, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
+  module.exports = { odstranOdstavceSTextem, docxPopiskyBezHodnoty, DOCX_AUTOR_FIRMA, docxVlastnostiAutorXml, docxVlastnostiAppXml, docxVlastnostiCustomXml, docxVlastnostiAutor, docxCastiVlastnosti, docxAutorRevizi, docxPrvkyNahrad, docxCisloStranky, docxCisloStrankyXml, docxCisloStrankyVarovani, docxPodbarveniTecek, docxBehRozdel, docxRPrZluta, docxStudieBezZamereni, docxDpzBezZamereni, DOCX_DPZ_STAVAJICI, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
     odstranPrazdneTsRadky, docxSmyckaSachet, DOCX_CENA_CASTI, DOCX_TECKY, docxTecky, docxTeckySada, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,

@@ -22,9 +22,17 @@ z CHANGELOG (stejně jako popis releasu).
 Bez cen: řádek s částkou v Kč/EUR se vynechá. `release_odkaz.py` skládá
 z téhož textu začátek popisu releasu (`--od`, nebo NOVINKY.md, jejíž
 nadpis nese tutéž verzi), aby kolegové a release říkali totéž.
+
+  python3 nastroje/novinky.py --docasne [--koren <repo>] <ref>...
+      (UK F7) upozorní, když roadmapa ve větvi <ref> (origin/main, origin/test)
+      nese u hotové položky dočasnou značku dávky místo čísla verze; vždy kód 0
+      (upozornění, ne chyba), nedostupný ref = poznámka. Volá krok `staticke`
+      (nastroje/kontrola_podkladu.sh).
 """
+import json
 import os
 import re
+import subprocess
 import sys
 
 KOREN = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -67,10 +75,43 @@ def je_oprava(p):
     return bool(RE_OPRAVA.search(str(p.get('nazev', ''))))
 
 
+# Dočasná značka dávky („G1“, „TX“, „R813“): velká písmena + nejvýš 3 číslice.
+# Vlastní výraz (UK F7) — nezávislý na tom, co právě povoluje roadmapa.py;
+# číslo verze začíná malým „v“, takže se s ním nikdy nepotká.
+RE_DOCASNA = re.compile(r'^[A-Z]{1,4}\d{0,3}$')
+
+
 def docasne_znacky(db):
     """Hotové položky s dočasnou značkou dávky místo verze (svěřené G1-T1)."""
     return ['#%s (%s)' % (p.get('id'), p.get('verze')) for p in db.get('polozky', [])
-            if p.get('stav') == 'hotovo' and rm.RE_VERZE_DAVKA.match(str(p.get('verze') or ''))]
+            if p.get('stav') == 'hotovo' and RE_DOCASNA.match(str(p.get('verze') or ''))]
+
+
+def docasne_v_refu(ref, koren=KOREN):
+    """UK F7: dočasné značky v roadmapě větve `ref`; None = ref (nebo soubor) nedostupný."""
+    try:
+        obsah = subprocess.check_output(['git', '-C', koren, 'show', ref + ':roadmapa/roadmap.json'],
+                                        stderr=subprocess.DEVNULL)
+        return docasne_znacky(json.loads(obsah.decode('utf-8')))
+    except (subprocess.CalledProcessError, OSError, ValueError):
+        return None
+
+
+def docasne_hlaseni(refy, koren=KOREN):
+    """Řádky hlášení pro krok `staticke` (UPOZORNĚNÍ / Poznámka / v pořádku)."""
+    out = []
+    for ref in refy:
+        z = docasne_v_refu(ref, koren)
+        if z is None:
+            out.append('Poznámka: roadmapu v %s nejde přečíst (mělký checkout?) — dočasné značky neověřeny.' % ref)
+        elif z:
+            out.append('UPOZORNĚNÍ: %s — hotové položky s dočasnou značkou dávky místo verze: %s. '
+                       'Koordinace přepíše značku na vDEN.MĚSÍC.pořadí.' % (ref, ', '.join(z)))
+            if os.environ.get('GITHUB_ACTIONS') == 'true':
+                out.append('::warning title=Dočasná značka verze v %s::%s' % (ref, ', '.join(z)))
+        else:
+            out.append('%s: hotové položky nesou čísla verzí (žádná dočasná značka).' % ref)
+    return out
 
 
 def radky(changelog_text, db, od, do):
@@ -127,6 +168,16 @@ def ze_souboru(cesta, verze):
 
 def main(argv):
     a = list(argv)
+    if a[:1] == ['--docasne']:
+        a = a[1:]
+        koren = KOREN
+        if a[:1] == ['--koren'] and len(a) > 1:
+            koren, a = a[1], a[2:]
+        if not a:
+            print(__doc__)
+            return 2
+        print('\n'.join(docasne_hlaseni(a, koren)))
+        return 0
 
     def vezmi(volba, vychozi):
         if volba in a:

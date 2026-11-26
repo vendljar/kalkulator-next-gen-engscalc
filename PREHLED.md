@@ -8,16 +8,16 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | prostředí | verze |
 |---|---|
 | ostrý web (`main`) | **v24.11.7** (`4e69c276`, 24. 11. 2026) |
-| testovací web (`test`) | **v25.11.6** (`10b9bede`, 25. 11. 2026) |
+| testovací web (`test`) | **v26.11.1** (`a9d8770f`, 26. 11. 2026) |
 
-Test je proti main napřed o 192 commitů.
+Test je proti main napřed o 203 commitů.
 
 ## V testu, ještě ne v main
 
 | # | typ | co | verze |
 |---|---|---|---|
+| #813 (dřív K65-N1) | nález | Dotisk staré odeslané nabídky víc šachet změnil pořadí řádků příplatků (madla před zábranami) — odeslané má zůstat beze změny (pravděpodobn… | v26.11.1 |
 | #810 (dřív K62-I1) | otázka | Šablona SoD PROJ v4 (z LibreOffice) nemá ve vlastnostech prvek Company → Společnost zůstane prázdná (generátor chybějící prvek nepřidává) | v25.11.6 |
-| #804 (dřív K61-I3) | nález | Krycí list tiskne „Dne“ a datum podpisu ve tvaru 2026-11-25 místo 25. 11. 2026 | v25.11.5 |
 | #803 (dřív K61-N4) | nález | Skloňování „4 položek“ v kartě Cenová nabídka | v25.11.5 |
 | #802 (dřív K61-N3) | nález | Kontrola před odesláním míchá SoD OCK a PROJ (zakázka jen PROJ hlásí 28 míst SoD realizace a obráceně) | v25.11.5 |
 | #801 (dřív K61-N2) | nález | Uložit zakázku bez čísla / názvu přepne na Přehled, hláška „Vyplňte v hlavičce…“ zůstane na skryté stránce Kalkulace (i main od #727) | v25.11.5 |
@@ -104,4 +104,4 @@ K tomu 14 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --ziv
 
 ## Nehotové položky evidence
 
-Celkem 46: J. V. 33, kolega 4, koordinace 7, dávka 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 40: J. V. 33, kolega 5, koordinace 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.

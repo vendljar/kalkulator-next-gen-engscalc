@@ -61,41 +61,6 @@ Stav 25. 11. 2026 15:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74
 - Sloučené dnes: PV, MT2, UT, R3, DT, K54-N1, RP — předávky v `podklady/predavky/2026-11.md`.
 - Sloučené dávky (SA, PD, CN, RA, LAK, JT, NN, PR, BZ, HN, RJ, VZD, MT) — oddíly přesunuty do `podklady/predavky/2026-11.md` (23. 11. 2026). Běží: PV (#734 + #597), RP (prototyp ručních položek, čeká na J. V.).
 
-## Dávka TX (`claude/tx-texty`, 26. 11. 2026)
-
-- Nad 2e5f90cc, sloučeno s integrací a9d8770f (v26.11.1, #813); verze „TX“ (koordinace: v26.11.2). Revize Fable SLOUČIT.
-- #804, #771 V4–V6, #815, #814, #811, #812, #808, #809, #816 (K66-I1); znění V4 a #815 schválil J. V. (#818).
-- Značka `txTisk` ve snímku podmínek: V4, V5 `NAB_ZARUKA`, V6, #815, #814 i opravená hesla slovníku (`PREKLAD_TX`,
-  `trTx`; J1) jen neodeslaná / odeslaná po TX. #808 `zamekJenDotisk` jen typy tisků, které varianta už má (N1).
-- `src/test_tx_texty.js` 67; kolo `--proti` integrace VŠE ZELENÉ (sady 568/0, hodiny 465/0, statické 12/12,
-  porovnání 395 jen očekávané `ocekavane_tx_2026-11-26.txt`). Mutace [TX] jádro 36/36, server 2/2.
-- Čeká: #817 šablona CN v19 (`podklady/NAVOD_SABLONA_CN_TX.md`); #819 ruční zkouška po sloučení.
-
-## Dávka PD2 (`claude/pd2-pole-kl`, 25. 11. 2026)
-
-- Nad integrací 5c42ca16, verzi přidělí koordinace. #782: A (Pipedrive) + B (#771 V1, V2, V4; #800) + #752 PV N1–N6
-  + #778 MD N1/N2/N4/N5 + #777 + #779; návrh postupu zrevidoval Fable (UPRAVIT, U1–U9 zapracovány).
-- **A:** kontakty / Podepisující firma / Druhý podepisující / Zmocnitel / Informováno jen do prázdných polí dealu
-  (`jenPrazdne`, dohledání `netlify/lib/pd_dohledani.mjs`, jen GET, nic se nezakládá); K53-N3 ze snímku zpracovatele
-  v zámku; Odchylky i PROJ (nové pole KL PROJ); Firma „Způsob fakturace — projekce“ zrušen, u PROJ se nezapisuje;
-  Platba 1–8 z plánu (bez milníku = vymazat, J. V. 25. 11.); #777, #779. Podpisy, Informováno, Platby jen prodej.
-- **B:** dotisk dřív odeslané nabídky beze změny (značka `pd2Tisk` ve snímku podmínek). V3 vypuštěn (J. V.).
-  **Čeká: V5 a V6** — pevný text šablony CN; návrh (symbol {{NAB_ZARUKA}} / úprava šablony datovým úkolem)
-  poslán koordinaci, odpověď nepřišla.
-- Sloučeno s integrací f9b31b8c (v25.11.5, PP); revize Fable SLOUČIT (`claude/revize-pd2`): N1 (Platba 0 = vymazat),
-  N2 (test U8), N3 (očekávané rozdíly jmenovitě) hotové. Kolo `--bez-mutaci --proti origin/claude/integrace-16-10`
-  VŠE ZELENÉ (566/0, hodiny 463/0); porovnání 395 jen očekávané. Mutace [PD2] server 27/27, jádro 20/20.
-- J. V. potvrzuje: J1 znění V4 + překlady, J2 tabulka zmrazení KL (Odchylky PROJ), U7e mazání Plateb do ROZHODNUTI_LOG.
-- Po nasazení do testu: testovací sezení zkušební zápis na dealy 432 / 437 (kontakty, podpisy, Informováno, Platby,
-  „ponechá se“); V4 překlad konečné faktury EN/DE/FR je návrh — ověřit s J. V.
-- Pro J. V. / koordinaci: Platby se při prodeji MAŽOU, když plán milník nemá (výjimka ze zásady „zápis nemaže“).
-
-## Dávka PP (`claude/pp-pripominky-kl`, 25. 11. 2026)
-
-- Nad ebca8ebd: #780, #781 (připomínky: zvětšení a značky na snímku), #791–#793, kolo 61 #801–#804; verze „PP“.
-- Mutace [PP] jádro 32/32, server 6/6; porovnání 390/390 očekávaných (#804, `ocekavane_pp_2026-11-25.txt`).
-- Detail: `podklady/predavky/PP_2026-11-25.md`. Revize Fable.
-
 ## Čeká na J. V.
 
 Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.). Od S6 je zdrojem evidence

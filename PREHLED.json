@@ -7,12 +7,21 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "10b9bede",
-  "verze": "v25.11.6",
-  "datum": "25. 11. 2026"
+  "sha": "a9d8770f",
+  "verze": "v26.11.1",
+  "datum": "26. 11. 2026"
  },
- "test_navic_commitu": 192,
+ "test_navic_commitu": 203,
  "v_testu_ne_v_main": [
+  {
+   "id": "813",
+   "typ": "nalez",
+   "nazev": "Dotisk staré odeslané nabídky víc šachet změnil pořadí řádků příplatků (madla před zábranami) — odeslané má zůstat beze změny (pravděpodobn…",
+   "alias": [
+    "K65-N1"
+   ],
+   "verze": "v26.11.1"
+  },
   {
    "id": "810",
    "typ": "otazka",
@@ -21,15 +30,6 @@
     "K62-I1"
    ],
    "verze": "v25.11.6"
-  },
-  {
-   "id": "804",
-   "typ": "nalez",
-   "nazev": "Krycí list tiskne „Dne“ a datum podpisu ve tvaru 2026-11-25 místo 25. 11. 2026",
-   "alias": [
-    "K61-I3"
-   ],
-   "verze": "v25.11.5"
   },
   {
    "id": "803",
@@ -590,9 +590,8 @@
  "ceka_na_jv_odlozene": 14,
  "nehotove_podle_kdo": {
   "J. V.": 33,
-  "kolega": 4,
-  "koordinace": 7,
-  "dávka": 2
+  "kolega": 5,
+  "koordinace": 2
  },
- "nehotovych": 46
+ "nehotovych": 40
 }
