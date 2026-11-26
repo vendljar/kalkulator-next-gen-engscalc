@@ -35,9 +35,9 @@ odeslaná po PD2 a před TX se dotiskne zněním PD2.
 (`zamekJenDotisk`, výjimka v `onlineUloz` jako u prodeje); dialog při přepnutí nabídne „Uložit záznam“ a nesvádí na
 ATYP. **#812** po uložení bez čísla / názvu jedna hláška. **#809** varování #756 v jednotném / množném čísle.
 
-**Testy a nástroje:** `src/test_tx_texty.js` (56 kontrol; na 2e5f90cc 17 OK / 39 FAIL); zlatá sada VS přegenerována
+**Testy a nástroje:** `src/test_tx_texty.js` (59 kontrol; na 2e5f90cc 17 OK / 39 FAIL); zlatá sada VS přegenerována
 (mění se jen `ph-cz`, `ph-en`, `docx`, `sod`); `NAB_ZARUKA` mezi novými symboly #560; TX-T1 (dočasná verze
-„TX“ v roadmapě). Mutace [TX] jádra 29, serveru 2. Roadmapa #816–#819.
+„TX“ v roadmapě). Mutace [TX] jádra 30, serveru 2. Roadmapa #816–#819.
 
 ## v25.11.6 — PD2 — pole krycího listu do dealu Pipedrive, vady tisku CN, nálezy revizí PV a MD, větev claude/pd2-pole-kl
 

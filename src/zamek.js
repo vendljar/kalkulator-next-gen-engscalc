@@ -1606,6 +1606,11 @@ function zamekJenDotisk(ted, ulozeno) {
     const tb = vb.zamek && Array.isArray(vb.zamek.tisky) ? vb.zamek.tisky : [];
     if (ta.length !== tb.length) {
       if (!(vb.zamek && vb.zamek.zamceno) || ta.length < tb.length || !stejne(ta.slice(0, tb.length), tb)) return false;
+      /* Revize Fable N1: jen DOTISK — připsaný tisk smí být jen typu, který varianta v uložené verzi
+       * už má (zamek.typ nebo dřívější tisky). První smlouva (sod / sodProj) u varianty, která ji
+       * dosud netiskla, výjimkou neprojde. */
+      const typy = new Set([vb.zamek.typ].concat(tb.map(t => t && t.typ)).filter(Boolean));
+      if (!ta.slice(tb.length).every(t => t && typy.has(t.typ))) return false;
       novy = true;
     }
     if (va.zamek) delete va.zamek.tisky;

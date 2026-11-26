@@ -65,9 +65,9 @@ Stav 25. 11. 2026 15:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74
 - Nad 2e5f90cc + ad0be0ca; verze „TX“. #804, #771 V4–V6, #815, #814, #811, #812, #808, #809, #816 (K66-I1); #813 nedotčen.
 - Značka `txTisk` ve snímku podmínek: V4, V5 `NAB_ZARUKA`, V6, #815, #814 jen neodeslaná / odeslaná po TX
   (po PD2 a před TX = znění PD2). #808: `zamekJenDotisk` → `onlineUloz` uloží dotisk i jen ke čtení.
-- `src/test_tx_texty.js` 57 (pojistka 2e5f90cc 17/39); zlatá VS přegenerována (jen ph/docx/sod); TX-T1.
+- `src/test_tx_texty.js` 59 (pojistka 2e5f90cc 17/39); zlatá VS přegenerována (jen ph/docx/sod); TX-T1.
 - Kolo `--proti` integrace: sady 464/0 (i hodiny), porovnání 395 jen očekávané (`ocekavane_tx_2026-11-26.txt`);
-  ✗ jen verze.txt × den commitu (verzi přidělí koordinace). Mutace [TX] jádro 29/29, server 2/2.
+  ✗ jen verze.txt × den commitu (verzi přidělí koordinace). Mutace [TX] jádro 30/30 (+N1), server 2/2.
 - #818 znění schválil J. V. 26. 11. Čeká: #817 šablona CN v19 (`podklady/NAVOD_SABLONA_CN_TX.md`); #819 zkouška.
 
 ## Dávka PD2 (`claude/pd2-pole-kl`, 25. 11. 2026)

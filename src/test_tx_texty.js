@@ -241,6 +241,13 @@ const zamkni = (v, znacky) => {
     const g = JSON.parse(ulozeno); g.varianty[0].zamek.zamceno = false; const gu = JSON.stringify(g);
     g.varianty[0].zamek.tisky.push({ kdy: '2026-11-26T12:00:00Z', typ: 'nabidka', kdo: 'Test' });
     test('#808: nový tisk u ODEMČENÉ varianty → false', false === ZM.zamekJenDotisk(JSON.stringify(g), gu));
+    /* Revize Fable N1: nový typ tisku (první smlouva o dílo) není dotisk */
+    const h = JSON.parse(ulozeno);
+    h.varianty[0].zamek.tisky.push({ kdy: '2026-11-26T12:00:00Z', typ: 'sod', kdo: 'Test' });
+    test('#808 N1: první tisk SoD u varianty, která smlouvu netiskla → false', false === ZM.zamekJenDotisk(JSON.stringify(h), ulozeno));
+    const hu = JSON.stringify(h), h2 = JSON.parse(hu);
+    h2.varianty[0].zamek.tisky.push({ kdy: '2026-11-26T13:00:00Z', typ: 'sod', kdo: 'Test' });
+    test('#808 N1: dotisk SoD, kterou varianta už tiskla → true', ZM.zamekJenDotisk(JSON.stringify(h2), hu) === true);
     const ui = cti('ui/online_ui.js');
     test('#808 UI: onlineUloz pustí jen dotisk nad zakázkou jen ke čtení', /!onlineJenProdej\(\) && !onlineJenDotisk\(\)\)/.test(ui));
     test('#808 UI: dialog při přepnutí nesvádí na ATYP a nabídne Uložit záznam', /const jenDotisk = jenCteni && onlineJenDotisk\(\);/.test(ui) && /Uložit záznam a otevřít jinou/.test(ui));

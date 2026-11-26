@@ -6888,6 +6888,10 @@ const MUTACE = [
     hledej: "naší STUDII PROVEDITELNOSTI projednat",
     nahrad: "naší STUDII PROVEDITELNOSTI_ projednat",
     proc: "věta opravené šablony PROJ by zůstala česky", sady: ["test_tx_texty.js"] },
+  { nazev: "[TX] #808 N1 dotisk libovolného typu", soubor: "zamek.js",
+    hledej: "      if (!ta.slice(tb.length).every(t => t && typy.has(t.typ))) return false;\n",
+    nahrad: "",
+    proc: "první smlouva o dílo nad zakázkou jen ke čtení by prošla jako dotisk (revize Fable N1)", sady: ["test_tx_texty.js"] },
 ];
 
 /* ============================================================
