@@ -24,7 +24,9 @@ Nad integrací `2a61e6cd`. Cena ani text dokumentu beze změny (porovnání prot
   v kroku `staticke` (`kontrola_podkladu.sh`) upozorní na hotovou položku roadmapy se značkou dávky místo čísla
   verze; pojistka v `kontrola_podkladu.sh --pojistka`. Svěřené UK-T1.
 - Test `src/test_uk_uklid.js` 18/0 (pojistka: nad `2a61e6cd` padá 17 testů a výjimka), `test_g1_uklid.js` (Manager
-  se nově vyprazdňuje); mutace jádra `[UK]` 9.
+  se nově vyprazdňuje); mutace jádra `[UK]` 9/9, `[G1]` 26/26, `#756` 5/5.
+- Kolo `--bez-mutaci --proti origin/claude/integrace-16-10`: sady 464/0 (i +400 dní), statické 11/12 (jen
+  verze.txt × datum — verzi přidělí koordinace), porovnání 395/395 SHODA.
 
 ## v25.11.6 — PD2 — pole krycího listu do dealu Pipedrive, vady tisku CN, nálezy revizí PV a MD, větev claude/pd2-pole-kl
 
