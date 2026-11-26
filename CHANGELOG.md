@@ -8,6 +8,37 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## TX (verzi přidělí koordinace) — texty a drobné vady tisku, větev claude/tx-texty
+
+Nad integrací `2e5f90cc` (v25.11.6 + podklady), sloučeno s `ad0be0ca` (kolo 66). Rozhodnutí J. V. 26. 11. 2026
+(ROZHODNUTI_LOG). Odeslané nabídky se při dotisku nemění: nový snímek podmínek nese značku `txTisk` (vedle `pd2Tisk`);
+odeslaná po PD2 a před TX se dotiskne zněním PD2.
+
+**Mění text dokumentu:**
+- **#804** krycí list OCK i PROJ: „Dne“, datum podpisu a termíny ve tvaru „25.11.2026“ (jako nabídka a SoD).
+  Převod do Pipedrive tvar čte (`netlify/test_pd_prevod.mjs` +3).
+- **#771 V4** věta konečné faktury: „… bude vystaven 3. konečný daňový doklad na zbývajících 10 % ceny díla bez DPH,
+  k níž bude připočtena DPH v zákonné výši.“ (pořadí a procento dál automaticky; vlastní znění Firmy beze změny);
+  překlady EN/DE/FR — **návrh ke schválení J. V. (#818)**.
+- **#771 V5** symbol `{{NAB_ZARUKA}}` („Záruka: 60 měsíců“); z kapitoly V. záruka zmizí jen u šablony se symbolem.
+  **#771 V6** online tisk: poznámky k ceně jako nadpis + seznam a. b. c. Šablona CN v19 = datový úkol #817
+  (`podklady/NAVOD_SABLONA_CN_TX.md`).
+- **#815** šachta bez opláštění (jen předvyplněné znění, ruční přepis vyhrává): požární klasifikace „materiály DP1“,
+  odvětrání „přirozené, šachta bez opláštění“, vnější lešení „je součástí dodávky pouze po dobu stavby šachty“
+  (jen když jsou bez opláštění všechny šachty). Slovník: FR „Sans habillage“, DE „SCHACHTVERKLEIDUNG“,
+  „Vypracoval:“ EN „Compiled by:“, DE „Zusammengestellt von:“, FR „Établi par :“. **Znění ke schválení (#818).**
+- **#814** Word nabídky PROJ bez fotky: nadpis „POHLED NA OBJEKT“ v textovém poli rámečku fotky se vymaže.
+- **#811** objednávka PROJ: nadpisy Poznámka / Platební kalendář / Termíny drží se svým textem (PDF i Word).
+- **#816 (K66-I1)** slovník: heslo „… STUDII PROVEDITELNOSTI projednat …“ (starý tvar s překlepem jako alias).
+
+**Aplikace:** **#808** dotisk nad zakázkou otevřenou jen ke čtení — záznam tisku a protokolu se uloží
+(`zamekJenDotisk`, výjimka v `onlineUloz` jako u prodeje); dialog při přepnutí nabídne „Uložit záznam“ a nesvádí na
+ATYP. **#812** po uložení bez čísla / názvu jedna hláška. **#809** varování #756 v jednotném / množném čísle.
+
+**Testy a nástroje:** `src/test_tx_texty.js` (56 kontrol; na 2e5f90cc 17 OK / 39 FAIL); zlatá sada VS přegenerována
+(mění se jen `ph-cz`, `ph-en`, `docx`, `sod`); `NAB_ZARUKA` mezi novými symboly #560; TX-T1 (dočasná verze
+„TX“ v roadmapě). Mutace [TX] jádra 29, serveru 2. Roadmapa #816–#819.
+
 ## v25.11.6 — PD2 — pole krycího listu do dealu Pipedrive, vady tisku CN, nálezy revizí PV a MD, větev claude/pd2-pole-kl
 
 Nad integrací `5c42ca16`. Rozhodnutí J. V. 25. 11. 2026 (ROZHODNUTI_LOG: PD2 rozsah, Informováno, starý plán PROJ,

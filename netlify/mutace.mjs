@@ -9244,6 +9244,15 @@ const MUTACE = [
   { nazev: "[PD2] Odchylky jen OCK", soubor: "lib/pd_mapa.mjs",
     hledej: "{ ock: 'odchylky', proj: 'odchylky' }", nahrad: "{ ock: 'odchylky' }",
     proc: "odchylky PROJ by se do dealu nezapsaly (A3)", sady: ["test_pd2_pole.mjs"] },
+  /* TX (26. 11. 2026): #804 krycí list tiskne „25.11.2026“ — převod do Pipedrive ho čte. [TX] */
+  { nazev: "[TX] #804 převod data jen s mezerami (25. 11. 2026)", soubor: "lib/pd_prevod.mjs",
+    hledej: "  m = /^(\\d{1,2})\\.\\s*(\\d{1,2})\\.\\s*(\\d{4})$/.exec(t);",
+    nahrad: "  m = /^(\\d{1,2})\\.\\s+(\\d{1,2})\\.\\s+(\\d{4})$/.exec(t);",
+    proc: "datum krycího listu „25.11.2026“ (TX) by se do Pipedrive nepřevedlo", sady: ["test_pd_prevod.mjs"] },
+  { nazev: "[TX] #804 převod data bez doplnění nul", soubor: "lib/pd_prevod.mjs",
+    hledej: "  const cz = m ? [m[3], m[2].padStart(2, '0'), m[1].padStart(2, '0')] : null;",
+    nahrad: "  const cz = m ? [m[3], m[2], m[1]] : null;",
+    proc: "„5.1.2027“ by šlo do Pipedrive jako neplatné ISO", sady: ["test_pd_prevod.mjs"] },
 ];
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------
  * (nález T5 revize v22.9.9, 22. 9. 2026)

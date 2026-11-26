@@ -52,7 +52,8 @@ const tr = L => x => PR.tr(x, L);
   const kal = kr.kryciPlatebniKalendar(zak, v, JEKLY);
   const [v13zal, v13f2, v13kon] = kr.KRYCI_VETY_V13;
   /* PD2 #771 V4: konečná faktura s pořadím a procentem (KRYCI_VETA_KONECNA_PROC), zálohy beze změny */
-  const konecnaV4 = kr.KRYCI_VETA_KONECNA_PROC.replace('{PORADI}', '3.').replace('{PROC}', '10 %');
+  /* TX (J. V. 26. 11. 2026): neodeslaná nabídka má upřesněnou větu KRYCI_VETA_KONECNA_TX. */
+  const konecnaV4 = kr.KRYCI_VETA_KONECNA_TX.replace('{PORADI}', '3.').replace('{PROC}', '10 %');
   const dnes = L => [v13zal.replace('{{PODM_ZALOHA1_PROC}}', '50 %'), v13f2.replace('{{PODM_FAKTURA2_PROC}}', '40 %'), konecnaV4]
     .map(x => L === 'cz' ? x : PR.tr(x, L)).join('\n');
   ['cz'].concat(JAZ).forEach(L => {

@@ -71,6 +71,12 @@ const porusit = [
   const v = kontrola(db);
   test('kontrola pustí dočasnou verzi dávky „G1“', v.status === 0, v.stdout);
 }
+/* TX-T1 (26. 11. 2026): i značka bez číslice („TX“) — pojistka: s regexem G1-T1 (\d{1,2}) FAIL. */
+{
+  const db = zaklad(); db.polozky[3].verze = 'TX';
+  const v = kontrola(db);
+  test('kontrola pustí dočasnou verzi dávky „TX“ (bez číslice)', v.status === 0, v.stdout);
+}
 porusit.forEach(([nazev, uprav, vzor]) => {
   const db = zaklad(); uprav(db);
   const v = kontrola(db);
