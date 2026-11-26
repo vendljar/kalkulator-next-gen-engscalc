@@ -131,7 +131,7 @@ if (polozky) {
     if (p.typ === 'nalez' && !/^\d{1,3}$/.test(String(p.kolo || ''))) s6.kolo.push(id);
     if (p.stav === 'hotovo' && p.typ !== undefined && !verzeP(p)) s6.verze.push(id);
     /* dočasná značka dávky („G1“) — svěřené G1-T1, totéž pravidlo jako roadmapa.py RE_VERZE_DAVKA */
-    if (p.verze !== undefined && !/^v\d{1,2}\.\d{1,2}\.\d{1,2}$/.test(p.verze) && !/^[A-Z]{1,4}\d{1,2}$/.test(p.verze)) s6.format.push(id + ' verze');
+    if (p.verze !== undefined && !/^v\d{1,2}\.\d{1,2}\.\d{1,2}$/.test(p.verze) && !/^[A-Z]{1,4}\d{1,3}$/.test(p.verze)) s6.format.push(id + ' verze');
     if (p.vetev !== undefined && !/^[A-Za-z0-9._\/-]+$/.test(p.vetev)) s6.format.push(id + ' vetev');
     if (p.dopadCena !== undefined && ['ano', 'ne'].indexOf(p.dopadCena) < 0) s6.format.push(id + ' dopadCena');
     if (p.alias !== undefined) {

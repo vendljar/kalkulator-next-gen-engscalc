@@ -77,7 +77,9 @@ function objNabidnute(v, jekly) {
    * #767: týž výběr jako nabídka a krycí list (vsPriplatkyVyber), engineering
    * jednou za variantu (#757). */
   const vyberFn = (typeof vsPriplatkyVyber === 'function') ? vsPriplatkyVyber : require('./vice_sachet.js').vsPriplatkyVyber;
-  const vyber = vyberFn(r, v.data && v.data.ock);
+  /* #813: odeslaná před PD2 drží pořadí, v jakém odešla (vsPriplatkyPoradiCeniku). */
+  const poradiFn = (typeof vsPriplatkyPoradiCeniku === 'function') ? vsPriplatkyPoradiCeniku : require('./vice_sachet.js').vsPriplatkyPoradiCeniku;
+  const vyber = vyberFn(r, v.data && v.data.ock, { poradiCeniku: poradiFn(v) });
   if (vyber) {
     const mapa = new Map();
     vyber.forEach(x => {

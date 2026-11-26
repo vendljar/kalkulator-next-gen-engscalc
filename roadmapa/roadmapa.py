@@ -101,8 +101,9 @@ RE_CEKANA = re.compile(r'^(' + '|'.join(re.escape(k) for k in KDO) + r'): \S')
 RE_VERZE = re.compile(r'^v\d{1,2}\.\d{1,2}\.\d{1,2}$')
 # Dočasná značka dávky („G1“, svěřené G1-T1, 25. 11. 2026): dávka, které číslo
 # verze přidělí koordinace, píše do `verze` jméno dávky; koordinace ho při
-# sloučení přepíše na vDEN.MĚSÍC.pořadí. Velká písmena + číslice, nejvýš 6 znaků.
-RE_VERZE_DAVKA = re.compile(r'^[A-Z]{1,4}\d{1,2}$')
+# sloučení přepíše na vDEN.MĚSÍC.pořadí. Velká písmena + číslice (rychlá oprava
+# „R813“ nese číslo nálezu, svěřené R813-T1: až 3 číslice).
+RE_VERZE_DAVKA = re.compile(r'^[A-Z]{1,4}\d{1,3}$')
 RE_VETEV = re.compile(r'^[A-Za-z0-9._/-]+$')
 RE_VERZE_V_TEXTU = re.compile(r'v\d{1,2}\.\d{1,2}\.\d{1,2}')
 STARA_ID = {'xx', '151a', '151b'}        # jediné nečíselné značky (před S6)

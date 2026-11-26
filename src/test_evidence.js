@@ -71,6 +71,15 @@ const porusit = [
   const v = kontrola(db);
   test('kontrola pustí dočasnou verzi dávky „G1“', v.status === 0, v.stdout);
 }
+/* Rychlá oprava nese číslo nálezu (svěřené R813-T1): „R813“ projde, „R8130“ ne. */
+{
+  const db = zaklad(); db.polozky[3].verze = 'R813';
+  const v = kontrola(db);
+  test('kontrola pustí značku rychlé opravy „R813“', v.status === 0, v.stdout);
+  const db2 = zaklad(); db2.polozky[3].verze = 'R8130';
+  const v2 = kontrola(db2);
+  test('kontrola nepustí „R8130“ (víc než 3 číslice)', v2.status === 1, v2.stdout);
+}
 porusit.forEach(([nazev, uprav, vzor]) => {
   const db = zaklad(); uprav(db);
   const v = kontrola(db);

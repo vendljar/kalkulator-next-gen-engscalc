@@ -8,6 +8,19 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## Rychlá #813 (verzi přidělí koordinace) — dotisk staré nabídky víc šachet drží pořadí příplatků, větev claude/rychla-813
+
+Nad integrací `ad0be0c` (test v25.11.6). Rychlá cesta pro vady dokumentu.
+- **#813 (K65-N1, kolo 65):** MD N1 (#778, PD2) řadí příplatky víc šachet podle ceníku; řazení platilo i pro
+  nabídky odeslané před PD2 — dotisk staré odeslané nabídky (CZ i EN) měl jiné pořadí řádků příplatků (madla před
+  zábranami), částky beze změny. Nově se podle ceníku řadí jen neodeslaná nabídka a odeslaná se značkou `pd2Tisk`
+  ve snímku podmínek (odeslaná po PD2, stejné pravidlo jako #800 a #771 V4); starší zámek tiskne v pořadí prvního
+  zaškrtnutého výskytu, jak odešel. Totéž pořadí krycí list („Příplatky v nabídce“) a objednané / SoD
+  (`vsPriplatkyPoradiCeniku` ve `vice_sachet.js`). Ceny se nemění.
+- Test `src/test_813_poradi_priplatku.js` (pojistka: bez opravy 5× FAIL), mutace `[R813]` (6) v `mutace_jadro.mjs`.
+- **Které kalkulace se změní:** jen dotisk nabídky / krycího listu odeslané nabídky víc šachet, odeslané před v25.11.6,
+  u které je některý příplatek zaškrtnutý jen v další šachtě — vrací se pořadí, s jakým odešla (např. TEST 9961).
+
 ## v25.11.6 — PD2 — pole krycího listu do dealu Pipedrive, vady tisku CN, nálezy revizí PV a MD, větev claude/pd2-pole-kl
 
 Nad integrací `5c42ca16`. Rozhodnutí J. V. 25. 11. 2026 (ROZHODNUTI_LOG: PD2 rozsah, Informováno, starý plán PROJ,
