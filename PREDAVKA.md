@@ -62,19 +62,13 @@ Stav 25. 11. 2026 15:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74
 
 ## Dávka TX (`claude/tx-texty`, 26. 11. 2026)
 
-- Nad 2e5f90cc + sloučeno ad0be0ca (kolo 66); verze „TX“ (přidělí koordinace). Rozsah J. V. 26. 11.: #804, #771 V4–V6,
-  #815, #814, #811, #812, #808, #809 + K66-I1 (= #816). Do řazení příplatků (#813, `claude/rychla-813`) se nesahalo.
-- Značka `txTisk` ve snímku podmínek (vedle `pd2Tisk`): V4 věta, V5 `NAB_ZARUKA`, V6 seznam online, #815, #814 jen
-  u neodeslané a odeslané po TX; odeslaná po PD2 a před TX = znění PD2, před PD2 = původní.
-- #808: `zamekJenDotisk` (zamek.js) — jediná změna = nové `zamek.tisky` zamčené varianty + nové řádky protokolu →
-  `onlineUloz` uloží i nad zakázkou jen ke čtení; dialog přepnutí „Uložit záznam“.
-- Test `src/test_tx_texty.js` (56; pojistka na 2e5f90cc 17/39). Zlatá VS přegenerována (jen ph/docx/sod);
-  #560 `NAB_ZARUKA` mezi novými symboly; TX-T1 regex verze dávky.
-- Čeká: **#818** J. V. schválí znění (V4 EN/DE/FR, #815 texty a popisky); **#817** šablona CN v19 (návod
-  `podklady/NAVOD_SABLONA_CN_TX.md`, kolega / J. V. na testu); **#819** ruční zkouška po sloučení do testu.
-- Kolo `--bez-mutaci --proti origin/claude/integrace-16-10`: sady 464/0, s hodinami 464/0; porovnání 395 jen očekávané
-  (`podklady/porovnani/ocekavane_tx_2026-11-26.txt`, jmenovitě). ✗ jen kontrola verze.txt × den commitu (verzi
-  nezvyšovat — přidělí koordinace). Mutace [TX] jádro 29/29, server 2/2.
+- Nad 2e5f90cc + ad0be0ca; verze „TX“. #804, #771 V4–V6, #815, #814, #811, #812, #808, #809, #816 (K66-I1); #813 nedotčen.
+- Značka `txTisk` ve snímku podmínek: V4, V5 `NAB_ZARUKA`, V6, #815, #814 jen neodeslaná / odeslaná po TX
+  (po PD2 a před TX = znění PD2). #808: `zamekJenDotisk` → `onlineUloz` uloží dotisk i jen ke čtení.
+- `src/test_tx_texty.js` 57 (pojistka 2e5f90cc 17/39); zlatá VS přegenerována (jen ph/docx/sod); TX-T1.
+- Kolo `--proti` integrace: sady 464/0 (i hodiny), porovnání 395 jen očekávané (`ocekavane_tx_2026-11-26.txt`);
+  ✗ jen verze.txt × den commitu (verzi přidělí koordinace). Mutace [TX] jádro 29/29, server 2/2.
+- Čeká: #818 J. V. znění (V4 EN/DE/FR, #815); #817 šablona CN v19 (`podklady/NAVOD_SABLONA_CN_TX.md`); #819 zkouška.
 
 ## Dávka PD2 (`claude/pd2-pole-kl`, 25. 11. 2026)
 
