@@ -140,6 +140,10 @@ function objednavkaProjCss() {
     /* #791 S1: podpis nikdy sám na straně — poslední odstavec poznámek a „Vystavil" drží s podpisem */
     .vystavil,.pozn p:last-child,.pozn b:last-of-type{break-after:avoid;page-break-after:avoid}
     .vystavil,.podpis{break-before:avoid;page-break-before:avoid}
+    /* TX #811 (K63-N1): KAŽDÝ nadpis poznámek (Poznámka, Platební kalendář, Termíny) drží se svým
+     * odstavcem — blokový, aby break-after platil; odstavec za nadpisem nezačne stránku. */
+    .pozn b{display:block;break-after:avoid;page-break-after:avoid}
+    .pozn b+p{break-before:avoid;page-break-before:avoid}
     ${dokHlavickaCss()}
     .bar{position:sticky;top:0;background:#fff;border-bottom:1px solid #e5e9f0;padding:8px 0;margin-bottom:8px;z-index:5}
     .bar button{font:13px "Segoe UI";padding:6px 14px;border:1px solid #1d4ed8;background:#1d4ed8;color:#fff;border-radius:6px;cursor:pointer}

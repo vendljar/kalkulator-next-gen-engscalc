@@ -295,9 +295,12 @@ function objednavkaProjDocxTelo(o) {
    * s následujícím odstavcem (w:keepNext). Počet stran se neslibuje (plný rozsah, J. V. 19. 11.). */
   const posledni = o.terminy.length ? 'terminy' : (o.platebniKalendar.length ? 'kalendar' : 'poznamka');
   const drzP = k => (k === posledni ? { keep: true } : {});
-  body += B('Poznámka', Object.assign({ sz: 16 }, drzP('poznamka'))) + objDocxOdst(o.poznamka, Object.assign({ after: 80 }, drzP('poznamka')));
-  if (o.platebniKalendar.length) body += B('Platební kalendář', drzP('kalendar')) + objDocxOdst(o.platebniKalendar.join('\n'), Object.assign({ after: 80 }, drzP('kalendar')));
-  if (o.terminy.length) body += B('Termíny', drzP('terminy')) + objDocxOdst(o.terminy.map(x => x[0] + (x[1] ? ' – ' + x[1] : '')).join('\n'), Object.assign({ after: 80 }, drzP('terminy')));
+  /* TX #811 (K63-N1): nadpis (Poznámka, Platební kalendář, Termíny) drží VŽDY se svým odstavcem
+   * (keepNext) — nesmí zůstat sám na konci strany; odstavce dál jen u posledního bloku (#791). */
+  const nadpisP = { keep: true };
+  body += B('Poznámka', Object.assign({ sz: 16 }, nadpisP)) + objDocxOdst(o.poznamka, Object.assign({ after: 80 }, drzP('poznamka')));
+  if (o.platebniKalendar.length) body += B('Platební kalendář', nadpisP) + objDocxOdst(o.platebniKalendar.join('\n'), Object.assign({ after: 80 }, drzP('kalendar')));
+  if (o.terminy.length) body += B('Termíny', nadpisP) + objDocxOdst(o.terminy.map(x => x[0] + (x[1] ? ' – ' + x[1] : '')).join('\n'), Object.assign({ after: 80 }, drzP('terminy')));
   if (o.vystavil) body += objDocxOdst('Vystavil: ' + o.vystavil, { after: 0, keep: true });
   /* #791 (J. V. 25. 11. 2026): datum a podpis objednatele až na konci — za Poznámkou,
    * Platebním kalendářem, Termíny a „Vystavil" (prázdný odstavec = odstup jako v náhledu). */

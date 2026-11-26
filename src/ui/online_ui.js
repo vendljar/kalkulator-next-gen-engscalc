@@ -1369,6 +1369,15 @@ function onlineJenProdej() {
   catch (e) { return false; }
 }
 
+/* TX #808 (K62-N1): jedinou změnou je záznam dotisku odeslané nabídky (zamek.tisky + protokol)
+ * — uloží se i nad zakázkou jen ke čtení (model zamekJenDotisk v zamek.js; zmrazená data
+ * zámku hlídá server sám). Dřív záznam zůstal jen v okně a při přepnutí zmizel. */
+function onlineJenDotisk() {
+  if (typeof zamekJenDotisk !== 'function' || !ONLINE_STAV.posledni) return false;
+  try { return zamekJenDotisk(JSON.stringify(ZAK), ONLINE_STAV.posledni); }
+  catch (e) { return false; }
+}
+
 /* CHYBA ULOŽENÍ ČESKY (K7-K4, audit 23. 10. 2026). Výpadek sítě hlásí
  * prohlížeč anglicky („Failed to fetch", „NetworkError…", „Load failed") jako
  * TypeError — obchodník z toho nepoznal, co se stalo. Hláška serveru jde
@@ -1519,7 +1528,7 @@ function onlineUloz(opts) {
    * a nález C6 byl přesně o tom, že ho autosave přes tenhle zámek zahazoval.
    * Rozhoduje `poznamkyJedinaZmena()` — ne „je mezi změnami poznámka?", ale
    * „je poznámka JEDINÁ změna?". */
-  if (typeof zamekCteniJe === 'function' && zamekCteniJe() && !onlineJenZapisnik() && !onlineJenProdej()) {
+  if (typeof zamekCteniJe === 'function' && zamekCteniJe() && !onlineJenZapisnik() && !onlineJenProdej() && !onlineJenDotisk()) {
     if (!opts.tiche) {
       onlineZprava('Zakázka je otevřená jen ke čtení, takže se výpočet neukládá. '
         + 'Chcete-li změny zapsat, nejdřív ji vědomě odemkněte. '
@@ -1887,13 +1896,23 @@ async function onlineOtevri(soubor, volby) {
      * Zůstává „Zahodit" a „Zůstat" a věta, co dál — odemknout a uložit vědomě.
      * Zápisník se v tomhle dialogu neřeší: ten se ukládá průběžně sám. */
     const jenCteni = typeof zamekCteniJe === 'function' && zamekCteniJe();
-    const otazka = jenCteni
+    /* TX #808: neuložený je jen záznam dotisku (uložení po tisku selhalo — síť, kolize) —
+     * nesvádět na ATYP; „Uložit" nabídnout (onlineUloz ho nad zakázkou jen ke čtení pustí). */
+    const jenDotisk = jenCteni && onlineJenDotisk();
+    const otazka = jenDotisk
+      ? 'Záznam o dotisku odeslané nabídky se zatím neuložil do databáze. Uložit ho teď? '
+        + '(Jiné změny zakázka nemá; odeslaná nabídka se tím nemění.)'
+      : jenCteni
       ? 'Zakázka je otevřená jen ke čtení a její výpočet se liší od uloženého '
         + '(část změn udělala aplikace sama — například automatické odškrtnutí ATYP). '
         + 'Uložit je odsud nejde; chcete-li je zapsat, zůstaňte tady, zakázku vědomě '
         + 'odemkněte a uložte. Co teď?'
       : 'Otevřená zakázka má neuložené změny. Co s nimi?';
-    const moznosti = jenCteni
+    const moznosti = jenDotisk
+      ? [{ kod: 'ulozit', popis: 'Uložit záznam a otevřít jinou', primary: true },
+         { kod: 'zahodit', popis: 'Zahodit záznam' },
+         { kod: 'zustat', popis: 'Zůstat tady' }]
+      : jenCteni
       ? [{ kod: 'zahodit', popis: 'Zahodit změny a otevřít jinou' },
          { kod: 'zustat', popis: 'Zůstat tady', primary: true }]
       : [{ kod: 'ulozit', popis: 'Uložit změny', primary: true },

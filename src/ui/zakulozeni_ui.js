@@ -183,8 +183,10 @@ function zakUlozeniRadek() {
       radky.push(`<div class="${zapisTridaHlasky('')} zak-ulozeni ulozeno-ok zak-ulozeni-doba noprint">${esc(s.text)}</div>`);
       zakUlozeniZhasniPoChvili(ZAKULO_OKNO - pred);
     }
-  } else if (s.stav !== 'ceka') {
-    /* Stavy, které se musí řešit, svítí pořád. */
+  } else if (s.stav !== 'ceka' && !(s.stav === 'vyplnit' && ZAKULO_STAV.hlaska)) {
+    /* Stavy, které se musí řešit, svítí pořád. TX #812 (K63-I1): po kliknutí na „Uložit
+     * zakázku" bez čísla / názvu nese hláška tlačítka (ZAKULO_STAV.hlaska) totéž „Vyplňte
+     * v hlavičce …" i s radou o souboru — stavová věta se pak nezdvojuje. */
     radky.push(`<div class="${zapisTridaHlasky('varovani')} zak-ulozeni noprint">${esc(s.text)}</div>`);
   }
   /* Duplicitní číslo nabídky (zadání 19. 8. 2026): štítek u pole v hlavičce

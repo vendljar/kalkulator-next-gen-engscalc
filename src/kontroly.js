@@ -977,10 +977,15 @@ const KONTROLY = [
       } else pol = RPk.rpPomerPrepsany(r, ctx.zadani);
       if (!pol.length) return null;
       const radky = pol.map(p => RPk.RP_RADEK_HRUBE[p.sekce]).filter((x, i, a) => a.indexOf(x) === i);
-      return { text: (pol.length === 1 ? 'Ruční položka ' : 'Ruční položky ') + kontrolyVyctem(pol.map(p => '„' + p.nazev + '"'))
-        + ' bere cenu z poměru řádku ' + kontrolyVyctem(radky.map(n => '„' + n + '"'))
-        + ' v Hrubé OCK, který je ručně přepsaný (množství nebo cena). Cena položky v rozpisu nabídky je proto jen podíl '
-        + 'přepsaného řádku; celková cena nabídky sedí. Zkontrolujte rozpis, nebo zrušte přepis řádku.' };
+      /* TX #809 (K62-N2): jednotné / množné číslo podle počtu položek (bere / berou) a řádků
+       * (řádku, který je … / řádků, které jsou …). Jedna položka a jeden řádek beze změny. */
+      const vic = pol.length > 1, vicR = radky.length > 1;
+      return { text: (vic ? 'Ruční položky ' : 'Ruční položka ') + kontrolyVyctem(pol.map(p => '„' + p.nazev + '"'))
+        + (vic ? ' berou' : ' bere') + ' cenu z poměru ' + (vicR ? 'řádků ' : 'řádku ') + kontrolyVyctem(radky.map(n => '„' + n + '"'))
+        + ' v Hrubé OCK, ' + (vicR ? 'které jsou ručně přepsané' : 'který je ručně přepsaný') + ' (množství nebo cena). '
+        + (vic ? 'Ceny položek v rozpisu nabídky jsou proto jen podíly ' : 'Cena položky v rozpisu nabídky je proto jen podíl ')
+        + (vicR ? 'přepsaných řádků' : 'přepsaného řádku') + '; celková cena nabídky sedí. Zkontrolujte rozpis, nebo zrušte '
+        + (vicR ? 'přepisy řádků.' : 'přepis řádku.') };
     },
   },
   {
