@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## TX (verzi přidělí koordinace) — texty a drobné vady tisku, větev claude/tx-texty
+## v26.11.2 — TX — texty a drobné vady tisku, větev claude/tx-texty
 
 Nad integrací `2e5f90cc` (v25.11.6 + podklady), sloučeno s `ad0be0ca` (kolo 66). Rozhodnutí J. V. 26. 11. 2026
 (ROZHODNUTI_LOG). Odeslané nabídky se při dotisku nemění: nový snímek podmínek nese značku `txTisk` (vedle `pd2Tisk`);
