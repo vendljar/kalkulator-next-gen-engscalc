@@ -72,7 +72,7 @@ const V3 = 'Po ukončení všech výše uvedených prací a po řádném předá
 /* PD2 #771 V4 (posudek CN-432, J. V. 25. 11. 2026): konečná faktura s pořadím
  * a procentem — výchozí věta Firmy a známé procento. V3 zůstává znění šablony v13. */
 const V3N = (n, p) => 'Po ukončení všech výše uvedených prací a po řádném předání a převzetí celého díla předávacím protokolem bude vystaven '
-  + n + '. konečný daňový doklad ve výši ' + p + ' (bez DPH) z celkové ceny díla s vyúčtováním DPH v zákonné výši.';
+  + n + '. konečný daňový doklad na zbývajících ' + p + ' ceny díla bez DPH, k níž bude připočtena DPH v zákonné výši.';   // TX (J. V. 26. 11. 2026)
 const MES = 'Fakturace probíhá měsíčně podle skutečně provedených prací.';
 /* Šablonové věty v13 se symbolem (klíče slovníku, z nich vznikla EN/DE/FR v13). */
 const V1S = V1(1, '{{PODM_ZALOHA1_PROC}}'), V2S = V2(2, '{{PODM_FAKTURA2_PROC}}');
@@ -258,8 +258,9 @@ const kapIII = (sek) => (Array.isArray(sek) ? sek.find(x => /^III\./.test(x.sekc
     /* od NP (19. 11. 2026) skládá náhled podkladů nahled_word.js (nwBloky) — volá
      * nabidkaNahledSekce s týmž kalendářem a vlastními řádky; šachty zvlášť po šachtách */
     /* od RP #736 (24. 11. 2026) i ruční položky jako 6. parametr (data.rucni) — povinně (revize N10) */
-    (ui.match(/nabidkaNahledSekce\(p, L, data\.platbyOck, data\.tsExtra, data\.sachty, data\.rucni\)/g) || []).length === 1
-    && /\(\s*ph, L, data\.platbyOck, data\.tsExtra, null, data\.rucni\)/.test(fs.readFileSync(path.join(__dirname, 'nahled_word.js'), 'utf8')));
+    /* od TX J1 (26. 11. 2026) i volby { tx } jako 7. parametr (opravená hesla slovníku jen pro nové nabídky) */
+    (ui.match(/nabidkaNahledSekce\(p, L, data\.platbyOck, data\.tsExtra, data\.sachty, data\.rucni, \{ tx: !!data\.txTisk \}\)/g) || []).length === 1
+    && /\(\s*ph, L, data\.platbyOck, data\.tsExtra, null, data\.rucni, \{ tx \}\)/.test(fs.readFileSync(path.join(__dirname, 'nahled_word.js'), 'utf8')));
 }
 
 /* ---------------- 8) smlouva o dílo realizace ---------------- */

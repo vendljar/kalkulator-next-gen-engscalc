@@ -544,6 +544,13 @@ function docxTextNorm(t) { return String(t == null ? '' : t).replace(/[\u00a0\u2
 function odstranOdstavceSTextem(xml, texty) {
   const k = new Set((Array.isArray(texty) ? texty : []).map(docxTextNorm).filter(Boolean));
   if (!k.size) return xml;
+  /* TX #814 (K65-N2): popisek v TEXTOVÉM POLI (rámeček fotky šablony PROJ v9, `w:txbxContent`
+   * ve `wps:txbx` i ve `v:textbox` náhradní podoby) — odstavec pole s celým textem popisku se
+   * vyprázdní (`<w:p/>`; textové pole musí mít aspoň jeden odstavec, rámeček zůstane). Vnější
+   * odstavec s kresbou průchod níž nemaže (nese `<w:drawing>`), takže pole by jinak zůstalo. */
+  xml = xml.replace(/(<w:txbxContent[^>]*>)([\s\S]*?)(<\/w:txbxContent>)/g, (cele, zac, telo, kon) =>
+    zac + telo.replace(/<w:p[\s>](?:(?!<\/w:p>)[\s\S])*?<\/w:p>/g, p =>
+      (!/<w:drawing|<w:pict|<v:shape|<w:object/.test(p) && k.has(docxTextNorm(odstavecText(p))) ? '<w:p/>' : p)) + kon);
   return xml.replace(/<w:p[\s>](?:(?!<\/w:p>)[\s\S])*?<\/w:p>/g, (p, pos) =>
     (!/<w:drawing|<w:pict|<v:shape|<w:object/.test(p) && k.has(docxTextNorm(odstavecText(p)))
       ? (docxVBunce(xml, pos) ? '<w:p/>' : '') : p));
@@ -556,6 +563,9 @@ function docxPopiskyBezHodnoty(o) {
   const P = (o && typeof o.P === 'function') ? o.P : (x => x);
   const out = [];
   if (!(o && o.foto)) out.push('Pohled na objekt z ulice:', P('Pohled na objekt z ulice:'));
+  /* TX #814: nadpis rámečku fotky (textové pole šablony PROJ v9) — jen když o to volající
+   * požádá (`ramecek`: nabídka PROJ neodeslaná / odeslaná po TX). */
+  if (!(o && o.foto) && o && o.ramecek) out.push('POHLED NA OBJEKT', P('POHLED NA OBJEKT'));
   if (!(o && String(o.tel == null ? '' : o.tel).trim())) {
     const t = P('Tel');
     out.push('Tel:', 'Tel.:', t + ':', t + ' :');

@@ -912,7 +912,7 @@ async function nabidkaOckDokument() {
   /* sekce z nabidka.js: [0] hlavička (tiskne se jako tabulka nahoře),
    * pak technická část, obchodní část (rozepsaná níže vlastní tabulkou)
    * a nakonec nepovinný Dodavatel. */
-  const vse = nabidkaNahledSekce(p, L, data.platbyOck, data.tsExtra, data.sachty, data.rucni);   // platební kalendář OCK (D1/D2)
+  const vse = nabidkaNahledSekce(p, L, data.platbyOck, data.tsExtra, data.sachty, data.rucni, { tx: !!data.txTisk });   // TX J1   // platební kalendář OCK (D1/D2)
   let iObchod = vse.findIndex(s => s.radky.some(r => r[1] === p.CENA_S_DPH));
   if (iObchod < 0) iObchod = vse.length - 1;
   const radek = (l, v) => `<tr><td>${esc(l)}</td><td>${esc(v).replace(/\n/g, '<br>')}</td></tr>`;   // RP: dodatkový text pod množstvím

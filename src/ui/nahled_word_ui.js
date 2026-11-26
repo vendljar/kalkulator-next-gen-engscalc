@@ -92,6 +92,9 @@ function nwCss() {
   table.nw-cena-celkem td{color:#fff;padding:3mm 2mm}
   .nw-pozn-cena{margin-top:1.5mm;font-size:7.5pt}
   .nw-pozn-cena p:first-child{text-decoration:none}
+  ol.nw-ol-pism{list-style:lower-alpha;margin:0;padding-left:6mm}
+  ol.nw-ol-pism li{padding:0}
+  ol.nw-ol-pism li::marker{content:counter(list-item, lower-alpha) ". "}
   .nw-kurziva{margin-top:3mm;font-size:7.5pt;font-style:italic;font-weight:700;border-bottom:1px solid #bfbfbf;padding-bottom:3mm}
   .nw-drobne{font-size:7.5pt;margin-top:1mm}
   table.nw-priplatek{margin:2mm 0 5mm}

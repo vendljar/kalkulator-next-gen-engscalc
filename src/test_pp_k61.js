@@ -38,8 +38,9 @@ const cti = f => fs.readFileSync(path.join(__dirname, f), 'utf8');
 const JEKLY = JSON.parse(cti('jekly.json'));
 
 /* ---------- #804 datum v krycím listu ---------- */
-test('#804 kryciDatumTisk: ISO → „25. 11. 2026“, jiný text beze změny', typeof kr.kryciDatumTisk === 'function'
-  && kr.kryciDatumTisk('2026-11-25') === '25. 11. 2026' && kr.kryciDatumTisk('2026-01-05') === '5. 1. 2026'
+/* TX (J. V. 26. 11. 2026): tvar „25.11.2026“ jako nabídka a SoD (dřív „25. 11. 2026“). */
+test('#804 kryciDatumTisk: ISO → „25.11.2026“, jiný text beze změny', typeof kr.kryciDatumTisk === 'function'
+  && kr.kryciDatumTisk('2026-11-25') === '25.11.2026' && kr.kryciDatumTisk('2026-01-05') === '05.01.2026'
   && kr.kryciDatumTisk('podle dohody') === 'podle dohody' && kr.kryciDatumTisk('') === '' && kr.kryciDatumTisk(null) === '');
 test('#804 symbol SoD dál DD.MM.RRRR (kryciDatumCz beze změny)', kr.kryciDatumCz('2026-11-25') === '25.11.2026');
 {
@@ -52,8 +53,8 @@ test('#804 symbol SoD dál DD.MM.RRRR (kryciDatumCz beze změny)', kr.kryciDatum
   try { d = kr.kryciData(zak, v, JEKLY, 'bo'); } catch (e) { e1 = e.message; }
   const r = d ? rad(d) : [];
   const dne = r.find(x => x[0] === 'Dne'), pod = r.find(x => x[0] === 'Datum podpisu smlouvy');
-  test('#804 KL OCK: „Dne“ 25. 11. 2026', dne && dne[1] === '25. 11. 2026', dne || e1);
-  test('#804 KL OCK: „Datum podpisu smlouvy“ 1. 12. 2026', pod && pod[1] === '1. 12. 2026', pod);
+  test('#804 KL OCK: „Dne“ 25.11.2026', dne && dne[1] === '25.11.2026', dne || e1);
+  test('#804 KL OCK: „Datum podpisu smlouvy“ 01.12.2026', pod && pod[1] === '01.12.2026', pod);
   test('#804 KL OCK: v tisku žádné ISO datum', !r.some(x => /^\d{4}-\d{2}-\d{2}$/.test(String(x[1]))), r.filter(x => /^\d{4}-/.test(String(x[1]))));
   test('#804 uložená hodnota zůstává ISO (pole formuláře)', v.data.kryci.hodnoty.podpisDne === '2026-11-25');
   const zp = zk.novaZakazka(); zp.cislo = '2026 - OVP - CN - 302'; zp.nazevAkce = 'TEST PROJ'; zp.jenProj = true;
@@ -63,7 +64,7 @@ test('#804 symbol SoD dál DD.MM.RRRR (kryciDatumCz beze změny)', kr.kryciDatum
   try { dp = krp.kryciProjData(zp, vp, JEKLY, 'bo'); } catch (e) { e2 = e.message; }
   const rp = dp ? rad(dp) : [];
   const dneP = rp.find(x => x[0] === 'Dne');
-  test('#804 KL PROJ: „Dne“ 25. 11. 2026, žádné ISO', dneP && dneP[1] === '25. 11. 2026' && !rp.some(x => /^\d{4}-\d{2}-\d{2}$/.test(String(x[1]))), dneP || e2);
+  test('#804 KL PROJ: „Dne“ 25.11.2026, žádné ISO', dneP && dneP[1] === '25.11.2026' && !rp.some(x => /^\d{4}-\d{2}-\d{2}$/.test(String(x[1]))), dneP || e2);
 }
 
 /* ---------- #802 kontrola nevyplněných míst SoD podle stran ---------- */

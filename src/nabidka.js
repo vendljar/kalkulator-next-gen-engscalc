@@ -32,6 +32,23 @@ function nabidkaBezOplasteni(r, Z) {
   if (!steny.length || !steny.every(st => st && Array.isArray(st.pasy) && st.pasy.length && st.pasy.every(p => p && p.typ === 'bez'))) return false;
   return !(r && r.oplasteni && (+r.oplasteni.plochaCelkem || 0) > 0);
 }
+/* #815 (K65-I1, J. V. 26. 11. 2026; znění schválil J. V. 26. 11. 2026, #818): šachta bez opláštění — zmínky
+ * o opláštění mimo blok Opláštění šachty. Mění se jen předvyplněné znění (= tyto věty). */
+const NABIDKA_POZARNI_S_OPL = 'materiály DP1, opláštění bez deklarované požární odolnosti';
+const NABIDKA_POZARNI_BEZ_OPL = 'materiály DP1';
+const NABIDKA_ODVETRANI_ZADNI = 'přirozené, větrací mřížka v horní i dolní části zadní stěny výtahové šachty';
+const NABIDKA_ODVETRANI_BEZ_OPL = 'přirozené, šachta bez opláštění';
+const NABIDKA_LESENI_VNE_OPL = 'je součástí dodávky pro provedení kompletního opláštění šachty';
+const NABIDKA_LESENI_VNE_BEZ_OPL = 'je součástí dodávky pouze po dobu stavby šachty';
+/* Jsou bez opláštění VŠECHNY šachty zakázky (víc šachet: každá svým zadáním a výsledkem)? */
+function nabidkaVsechnyBezOplasteni(d, r) {
+  if (r && Array.isArray(r.sachty) && r.sachty.length) {
+    const sz = (typeof sachtyZ === 'function') ? sachtyZ : require('./vice_sachet.js').sachtyZ;
+    const zad = sz(d.ock) || [];
+    return r.sachty.every((s, i) => nabidkaBezOplasteni(s.vysl || r, (zad[i] && zad[i].zadani) || d.ock.zadani));
+  }
+  return nabidkaBezOplasteni(r, d && d.ock && d.ock.zadani);
+}
 function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
   if (typeof vzTiskHlidej === 'function') vzTiskHlidej(zak);   // VZ-E2 (revize U3): jen z pohledu zákazníka
   /* ODESLANÁ NABÍDKA ZŮSTÁVÁ ZMRAZENÁ (Z1, J. V. 22. 10. 2026): dotisk CN
@@ -46,7 +63,11 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
     : vypocet(Zv, Cv, jekly, d.ock.fixes);
 
   const L = lang || 'cz';
-  const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
+  /* TX J1 (J. V. 26. 11. 2026): opravená hesla slovníku (#815, PREKLAD_TX) jen pro neodeslanou
+   * a odeslanou po TX — stejná podmínka jako txTisk níž. */
+  const txSlovnik = !(varianta.zamek && varianta.zamek.zamceno)
+    || !!(d.kryci && d.kryci.zmrazenoPodminky && d.kryci.zmrazenoPodminky.txTisk === 1);
+  const P = t => (L !== 'cz' && typeof tr === 'function') ? (typeof trTx === 'function' ? trTx(t, L, txSlovnik) : tr(t, L)) : t;
 
   /* OPLECHOVÁNÍ SOKLU PROHLUBNĚ — v které sekci nabídky stojí (16. 9. 2026,
    * nález J. V.: „přestože je součástí, zobrazuje se v sekci, kdy součástí
@@ -217,11 +238,20 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
   const zamS = varianta && varianta.zamek && varianta.zamek.zamceno;
   const snPod = varianta && varianta.data && varianta.data.kryci && varianta.data.kryci.zmrazenoPodminky;
   const pd2Tisk = !zamS || !!(snPod && snPod.pd2Tisk === 1);
+  /* TX (J. V. 26. 11. 2026): #771 V5 (záruka jako vlastní bod), V6 (poznámky k ceně jako
+   * seznam v online tisku), #815 (zmínky o opláštění u šachty bez opláštění) — jen neodeslaná
+   * a odeslaná po TX (značka txTisk ve snímku podmínek); dřív odeslaná se dotiskne, jak odešla. */
+  const txTisk = !zamS || !!(snPod && snPod.txTisk === 1);
   const tsSymbolySachty = (TSx, rx, Zx, mSk) => {
     const out = tsSymbolySachtyZaklad(TSx, rx, Zx, mSk);
     if (pd2Tisk && nabidkaBezOplasteni(rx, Zx)) {
       TS_OPL_BLOK.forEach(k => { out[k] = ''; });
       out.TS_TYP_OPLASTENI = P('bez opláštění');
+      /* #815 (K65-I1, J. V. 26. 11. 2026): zmínky o opláštění MIMO blok Opláštění —
+       * jen předvyplněné znění (ruční přepis ve specifikaci vyhrává), jen od TX. */
+      const hx = (TSx && TSx.hodnoty) || {};
+      if (txTisk && hx.pozarni == null && out.TS_POZARNI === P(NABIDKA_POZARNI_S_OPL)) out.TS_POZARNI = P(NABIDKA_POZARNI_BEZ_OPL);
+      if (txTisk && hx.odvetrani == null && out.TS_ODVETRANI === P(NABIDKA_ODVETRANI_ZADNI)) out.TS_ODVETRANI = P(NABIDKA_ODVETRANI_BEZ_OPL);
     }
     return out;
   };
@@ -330,7 +360,12 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
       return nabidkaHodnotaChybi(m) ? '' : uvod + ': ' + m + '.';
     })(),
     ...tsS1Cast('TS_PRECHODOVE_PLECHY', 'TS_SOKL'),
-    TS_LESENI_UVNITR: ts('leseniUvnitr'), TS_LESENI_VNE: ts('leseniVne'),
+    TS_LESENI_UVNITR: ts('leseniUvnitr'),
+    /* #815: vnější lešení „pro provedení kompletního opláštění“ jen když je opláštěná aspoň
+     * jedna šachta zakázky; jinak (všechny bez opláštění, od TX, bez ručního přepisu) znění
+     * „pouze po dobu stavby šachty“. */
+    TS_LESENI_VNE: (txTisk && (TSv.hodnoty || {}).leseniVne == null && ts('leseniVne') === P(NABIDKA_LESENI_VNE_OPL)
+      && nabidkaVsechnyBezOplasteni(d, r)) ? P(NABIDKA_LESENI_VNE_BEZ_OPL) : ts('leseniVne'),
     TS_ZABRANY_VSTUPY: ts('zabranyVstupy'),
     TS_SKEN3D: ts('sken3d'), TS_VYSTUP_ZAMERENI: ts('vystupZamereni'),
     TS_DILENSKA_DOK: ts('dilenskaDok'), TS_STATIKA: ts('statika'),
@@ -525,7 +560,15 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
         .filter(r => r.trim() !== '' && !nabidkaJeVetaOZaruce(r, L)));
     /* Záruka jen ke kapitole, která má i jiný obsah — prázdná kapitola
      * zmizí celá jako dosud (hlídá ji kontrola „Nevyplněné kapitoly"). */
-    placeholders.NAB_KAP_TERMINY = obsah.concat(obsah.length && zaruka ? [P('Záruka') + ': ' + P(zaruka)] : [])
+    /* TX #771 V5 (J. V. 26. 11. 2026): záruka jako VLASTNÍ BOD — symbol {{NAB_ZARUKA}}
+     * („Záruka: 60 měsíců"). Z kapitoly V. zmizí JEN když šablona symbol má (jinak by
+     * záruka z dokumentu vypadla); šablona bez symbolu a online tisk beze změny.
+     * Nabídka odeslaná před TX: NAB_ZARUKA prázdný (blok {{NAB_ZARUKA_ZAC}}…_KON}}
+     * zmizí) a záruka zůstane v Termínech, jak odešla. */
+    const zarukaRadek = zaruka ? P('Záruka') + ': ' + P(zaruka) : '';
+    const zarukaVlastni = txTisk && !!(sablona && sablona.symboly && sablona.symboly.has('NAB_ZARUKA'));
+    placeholders.NAB_ZARUKA = txTisk ? zarukaRadek : '';
+    placeholders.NAB_KAP_TERMINY = obsah.concat(obsah.length && zaruka && !zarukaVlastni ? [zarukaRadek] : [])
       .join('\n');
   }
 
@@ -676,6 +719,8 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
            /* PD2 #771 V1, V2 (posudek CN-432): nadpis fotky bez fotky a „Tel:“ bez čísla pryč */
            odstavceTextPryc: pd2Tisk && typeof docxPopiskyBezHodnoty === 'function' ? docxPopiskyBezHodnoty({ P,
              foto: typeof uvodniFotoObrazky === 'function' && !!uvodniFotoObrazky(zak).UVODNI_FOTO, tel: placeholders.ZPRAC_TEL }) : [],
+           /* TX #771 V6: online tisk dá poznámky k ceně jako seznam (nahled_word.js). */
+           ...(txTisk ? { txTisk: true } : {}),
            nazevSouboru: nazevSouboru.replace(/[\\/:*?"<>|]+/g, '-') };
 }
 
@@ -876,9 +921,11 @@ function usazeniBocniSloucene(ph, P) {
  * `tsRadky` (jedna šachta všechny, víc šachet jen společné sekce) a `ceny`
  * (rozpis ceny). U víc šachet nese řádky sekcí šachty `sachty[i].rucniTs`.
  * Texty už v jazyce dokumentu → { hotovo }. */
-function nabidkaNahledSekce(ph, lang, platby, extra, sachty, rucni) {
+function nabidkaNahledSekce(ph, lang, platby, extra, sachty, rucni, volby) {
   const L = lang || 'cz';
-  const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
+  /* TX J1: `volby.tx` = nabídka neodeslaná / odeslaná po TX (data.txTisk) → opravená hesla PREKLAD_TX. */
+  const tx = !!(volby && volby.tx);
+  const P = t => (L !== 'cz' && typeof tr === 'function') ? (typeof trTx === 'function' ? trTx(t, L, tx) : tr(t, L)) : t;
   const rucniTs = (rucni && Array.isArray(rucni.tsRadky)) ? rucni.tsRadky : [];
   const rucniCeny = (rucni && Array.isArray(rucni.ceny)) ? rucni.ceny : [];
   /* doplní ruční řádky do sekce `nazev` (česky) */

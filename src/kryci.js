@@ -1069,12 +1069,11 @@ function kryciZKrycihoListuProj(c, id) {
   return String(h[id] == null ? '' : h[id]).trim();
 }
 /* #804 (K61-I3, 25. 11. 2026): pole typu datum (Dne, Datum podpisu smlouvy, termíny) se ve
- * výstupu krycího listu (tisk, Word, náhled zápisu prodeje) píše česky „25. 11. 2026", ne
- * ISO 2026-11-25 z pole formuláře. Uložená hodnota i symboly smlouvy (kryciDatumCz) beze změny;
- * jiný než ISO text (ruční přepis) projde, jak je. */
+ * výstupu krycího listu (tisk, Word, náhled zápisu prodeje) píše česky, ne ISO 2026-11-25
+ * z pole formuláře. TX (J. V. 26. 11. 2026): tvar „25.11.2026" jako nabídka a SoD
+ * (= kryciDatumCz). Uložená hodnota beze změny; jiný než ISO text (ruční přepis) projde, jak je. */
 function kryciDatumTisk(iso) {
-  const m = String(iso == null ? '' : iso).match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  return m ? (+m[3]) + '. ' + (+m[2]) + '. ' + m[1] : (iso == null ? '' : iso);
+  return iso == null ? '' : kryciDatumCz(iso);
 }
 function kryciTiskHodnota(pole, v) { return pole && pole.typ === 'date' ? kryciDatumTisk(v) : v; }
 function kryciDatumCz(iso) {
@@ -1286,10 +1285,13 @@ function kryciPlatebniKalendar(zak, varianta, jekly) {
    * snímkem podmínek, který nese značku `pd2Tisk` (odeslaná po PD2). */
   const sn = varianta && varianta.zamek && varianta.zamek.zamceno ? ((varianta.data && varianta.data.kryci && varianta.data.kryci.zmrazenoPodminky) || null) : undefined;
   const pd2Tisk = sn === undefined || !!(sn && sn.pd2Tisk === 1);
+  /* TX: upřesněná věta konečné faktury jen u neodeslané a u odeslané po TX (značka txTisk). */
+  const txTisk = sn === undefined || !!(sn && sn.txTisk === 1);
   const kal = { stary, mesicne, splatky, vynechane, necitelne, hodnoty, podmEf: kryciPodmEfVarianty(varianta) };
   /* Neviditelná vlastnost: data kalendáře (platbyOck v datech nabídky, otisky
    * porovnání) zůstanou u staré odeslané nabídky bajt po bajtu stejná. */
   Object.defineProperty(kal, 'pd2Tisk', { value: pd2Tisk, enumerable: false });
+  Object.defineProperty(kal, 'txTisk', { value: txTisk, enumerable: false });
   return kal;
 }
 
@@ -1328,6 +1330,11 @@ function kryciPlatbyOck100(kal) {
  * Cizí jazyk: slovníkový vzor v preklad.js (jako věty záloh). */
 const KRYCI_VETA_KONECNA_PROC = 'Po ukončení všech výše uvedených prací a po řádném předání a převzetí celého díla předávacím protokolem '
   + 'bude vystaven {PORADI} konečný daňový doklad ve výši {PROC} (bez DPH) z celkové ceny díla s vyúčtováním DPH v zákonné výši.';
+/* TX (J. V. 26. 11. 2026, K65-I2): „bez DPH“ a „s vyúčtováním DPH“ v jedné větě se četlo
+ * rozporně — nové znění. Věta PD2 výš = jen dotisk nabídek odeslaných po PD2 a před TX
+ * (vznikly jen na testu; snímek podmínek se značkou pd2Tisk, bez txTisk); neschvalovalo se. */
+const KRYCI_VETA_KONECNA_TX = 'Po ukončení všech výše uvedených prací a po řádném předání a převzetí celého díla předávacím protokolem '
+  + 'bude vystaven {PORADI} konečný daňový doklad na zbývajících {PROC} ceny díla bez DPH, k níž bude připočtena DPH v zákonné výši.';
 function kryciVetaKonecna(kal, s, lang, tr_, V) {
   const ef = kal.podmEf || kryciPodmEf();
   const PM = kryciPodm();
@@ -1335,7 +1342,7 @@ function kryciVetaKonecna(kal, s, lang, tr_, V) {
   const vlastniJazyk = ef && ef.vety && ef.vety.konecna && lang !== 'cz' && ef.vety.konecna[lang];
   if (kal.pd2Tisk === false || vlastni || vlastniJazyk || typeof s.pct !== 'number' || !(s.pct > 0)) return V('konecna');
   const poradi = (kal.splatky || []).filter(x => x.id !== 'fakturaKonc').length + 1;
-  const cesky = PM.podmDosad(KRYCI_VETA_KONECNA_PROC, 'cz', poradi, s.proc);
+  const cesky = PM.podmDosad(kal.txTisk === false ? KRYCI_VETA_KONECNA_PROC : KRYCI_VETA_KONECNA_TX, 'cz', poradi, s.proc);
   return lang === 'cz' ? cesky : tr_(cesky);
 }
 function kryciPlatebniSymboly(kal, P, lang) {
@@ -1498,6 +1505,6 @@ if (typeof module !== 'undefined')
     kryciSymbolyZeSekci, kryciPodminkoveSymboly, kryciSodSymboly, kryciZmrazPodminky, KRYCI_SOD_OPIS, kryciZmrazSod, kryciDatumCz,
     kryciZKrycihoListuProj,
     kryciFaktura2Dopocet, kryciFaktura2Sync,
-    KRYCI_PRAVIDLA_PLATEB, KRYCI_FAKTURACE_MESICNE_VETA, KRYCI_VETY_V13, KRYCI_VETA_KONECNA_PROC, kryciVetaKonecna, kryciPlatbaProcento, kryciPlatbyStary,
+    KRYCI_PRAVIDLA_PLATEB, KRYCI_FAKTURACE_MESICNE_VETA, KRYCI_VETY_V13, KRYCI_VETA_KONECNA_PROC, KRYCI_VETA_KONECNA_TX, kryciVetaKonecna, kryciPlatbaProcento, kryciPlatbyStary,
     kryciPlatebniKalendar, kryciPlatebniSymboly, kryciSodPlatby, kryciSodMilnik,
     KRYCI_MISTO_PLNENI, KRYCI_DPH_REZIMY, KRYCI_EU_DIC, kryciDphRezimVychozi, kryciDnesIso, kryciDatumNabidky, kryciPokutaStav, kryciPoleHodnota, kryciDatumTisk, kryciTiskHodnota };

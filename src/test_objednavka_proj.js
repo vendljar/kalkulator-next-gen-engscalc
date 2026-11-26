@@ -302,7 +302,10 @@ const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 768
     const iP4 = od4.findIndex(x => /Podpis objednatele/.test(x)), iN4 = od4.findIndex(x => />Poznámka</.test(x));
     test('#791 S1 Word: bez termínů a kalendáře drží s podpisem Poznámka', iP4 === od4.length - 1 && iN4 >= 0
       && od4.slice(iN4, iP4).every(keep), { iP4, iN4 });
-    test('#791 S1 Word: dřívější bloky keepNext nemají (jen poslední blok)', !keep(odst[odst.findIndex(x => />Poznámka</.test(x))]));
+    /* TX #811 (K63-N1): nadpis Poznámka drží se svým textem (keepNext) i u dřívějšího bloku;
+     * text dřívějšího bloku keepNext dál nemá (#791 — drží jen poslední blok). */
+    const iN = odst.findIndex(x => />Poznámka</.test(x));
+    test('#791 S1 + TX #811 Word: nadpis Poznámka keepNext, jeho text u dřívějšího bloku ne', keep(odst[iN]) && !keep(odst[iN + 1]), { iN });
   }
   test('Word: poznámka k termínům bez osiřelé pomlčky', text.indexOf('nemůže zhotovitel z velké části ovlivnit. –') < 0 && text.indexOf('nemůže zhotovitel z velké části ovlivnit.') >= 0);
   test('Word: sloupce jako vzor (J. cena, C. cena, …)', O.OBJ_PROJ_SLOUPCE.every(t => text.indexOf(t) >= 0) && /Součet/.test(text));

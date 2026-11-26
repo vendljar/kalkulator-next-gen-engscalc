@@ -243,9 +243,25 @@ function rozdil(a, b) {
   for (let i = 0; i < n; i++) if (a[i] !== b[i]) return { radek: i, word: a.slice(Math.max(0, i - 2), i + 3), nahled: b.slice(Math.max(0, i - 2), i + 3) };
   return null;
 }
+/* TX #771 V6 (J. V. 26. 11. 2026): online tisk dává poznámky k ceně jako nadpis + seznam
+ * (písmeno = číslování, ne text); syntetická šablona tu má pevný text CN v17 („Poznámky …: a. …“,
+ * „b. …“, „c. …“). Dokud šablonu CN v18 neupraví datový úkol (podklady/NAVOD_SABLONA_CN_TX.md),
+ * převede se Word na tvar seznamu — JEN když ho náhled má (nadpis jako samostatný řádek). */
+function v6Seznam(word, nahled) {
+  const out = [];
+  for (let i = 0; i < word.length; i++) {
+    const m = String(word[i]).match(/^(.*?:)\s*a\.\s+(.+)$/);
+    if (m && nahled.includes(m[1]) && /^b\.\s+/.test(word[i + 1] || '')) {
+      out.push(m[1], m[2]);
+      while (/^[b-z]\.\s+/.test(word[i + 1] || '')) out.push(word[++i].replace(/^[b-z]\.\s+/, ''));
+    } else out.push(word[i]);
+  }
+  return out;
+}
 async function shoda(nazev, zak, v, L) {
   let w, n;
   try { w = await wordText(zak, v, L || 'cz'); n = nahledText(zak, v, L || 'cz'); } catch (e) { test(nazev + ': bez chyby', false, String(e && e.stack || e).slice(0, 400)); return null; }
+  w.text = v6Seznam(w.text, n);
   const r = rozdil(w.text, n);
   test(nazev + ': náhled = Word (' + w.text.length + ' řádků)', !r && !/\{\{|\{#|\{\//.test(w.text.join('\n')), r || w.text.filter(t => /\{\{/.test(t)).slice(0, 3));
   return { w: w.text, n };
@@ -392,7 +408,7 @@ const sleva = (zak, pct) => { const v = zak.varianty[0]; v.data.sleva = Object.a
     const pol = await zipPrecti(new Uint8Array(await (await docxVyplnSablonu(await sablona(), d.placeholders, d.priplatky, {}, { radkyNavic: d.tsRadkyNavic, odstavceTextPryc: d.odstavceTextPryc || null })).arrayBuffer()));
     const w = nwTextZDocx(new TextDecoder().decode(pol.find(x => x.nazev === 'word/document.xml').data));
     const n = nwTextZHtml(nwHtml(nwBloky(d, 'cz', {})));
-    const r = rozdil(w, n);
+    const r = rozdil(v6Seznam(w, n), n);
     test('C sekce bez hodnot: náhled = Word a pruh STAVEBNÍ A PŘÍPRAVNÉ PRÁCE zmizí v obou', !r && !n.includes('STAVEBNÍ A PŘÍPRAVNÉ PRÁCE') && !w.includes('STAVEBNÍ A PŘÍPRAVNÉ PRÁCE'), r);
   }
   {

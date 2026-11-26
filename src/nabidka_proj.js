@@ -1308,7 +1308,11 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     odstavceTextPryc: (!(varianta && varianta.zamek && varianta.zamek.zamceno)
       || !!(varianta.data && varianta.data.kryciProj && varianta.data.kryciProj.zmrazenoPodminky && varianta.data.kryciProj.zmrazenoPodminky.pd2Tisk === 1))
       && typeof docxPopiskyBezHodnoty === 'function' ? docxPopiskyBezHodnoty({ P,
-      foto: typeof uvodniFotoObrazky === 'function' && !!uvodniFotoObrazky(zak, 'proj').UVODNI_FOTO, tel: placeholders.ZPRAC_TEL }) : [],
+      foto: typeof uvodniFotoObrazky === 'function' && !!uvodniFotoObrazky(zak, 'proj').UVODNI_FOTO, tel: placeholders.ZPRAC_TEL,
+      /* TX #814 (K65-N2): i nadpis „POHLED NA OBJEKT“ v textovém poli rámečku fotky (šablona PROJ v9)
+       * — jen neodeslaná a odeslaná po TX (značka txTisk ve snímku podmínek PROJ). */
+      ramecek: !(varianta && varianta.zamek && varianta.zamek.zamceno)
+        || !!(varianta.data && varianta.data.kryciProj && varianta.data.kryciProj.zmrazenoPodminky && varianta.data.kryciProj.zmrazenoPodminky.txTisk === 1) }) : [],
     souhrn: { bezDph: celkemBezDph, bezDphPred: soucetSekci, zaokrKc: 0,
               soucetSekci, slevaPct: slevaPodilProj, slevaKc: slevaKcNum,
               dphPct: dphPct, dphKc: dphKc, sDph: celkemBezDph + dphKc } };

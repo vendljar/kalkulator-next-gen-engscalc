@@ -61,6 +61,16 @@ Stav 25. 11. 2026 15:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74
 - Sloučené dnes: PV, MT2, UT, R3, DT, K54-N1, RP — předávky v `podklady/predavky/2026-11.md`.
 - Sloučené dávky (SA, PD, CN, RA, LAK, JT, NN, PR, BZ, HN, RJ, VZD, MT) — oddíly přesunuty do `podklady/predavky/2026-11.md` (23. 11. 2026). Běží: PV (#734 + #597), RP (prototyp ručních položek, čeká na J. V.).
 
+## Dávka TX (`claude/tx-texty`, 26. 11. 2026)
+
+- Nad 2e5f90cc, sloučeno s integrací a9d8770f (v26.11.1, #813); verze „TX“ (koordinace: v26.11.2). Revize Fable SLOUČIT.
+- #804, #771 V4–V6, #815, #814, #811, #812, #808, #809, #816 (K66-I1); znění V4 a #815 schválil J. V. (#818).
+- Značka `txTisk` ve snímku podmínek: V4, V5 `NAB_ZARUKA`, V6, #815, #814 i opravená hesla slovníku (`PREKLAD_TX`,
+  `trTx`; J1) jen neodeslaná / odeslaná po TX. #808 `zamekJenDotisk` jen typy tisků, které varianta už má (N1).
+- `src/test_tx_texty.js` 67; kolo `--proti` integrace VŠE ZELENÉ (sady 568/0, hodiny 465/0, statické 12/12,
+  porovnání 395 jen očekávané `ocekavane_tx_2026-11-26.txt`). Mutace [TX] jádro 36/36, server 2/2.
+- Čeká: #817 šablona CN v19 (`podklady/NAVOD_SABLONA_CN_TX.md`); #819 ruční zkouška po sloučení.
+
 ## Dávka PD2 (`claude/pd2-pole-kl`, 25. 11. 2026)
 
 - Nad integrací 5c42ca16, verzi přidělí koordinace. #782: A (Pipedrive) + B (#771 V1, V2, V4; #800) + #752 PV N1–N6

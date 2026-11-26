@@ -43,7 +43,8 @@ const SCENARE = [
   ['stare-2ks-pausal', 'exteriérová', { mustkyKs: 2, mustekHloubkaMm: 1200 }, 'pausal'],
   ['stare-zaskrtnuty-pausal', 'interiérová', { mustek: true, mustekHloubkaMm: 900, mustekSirkaMm: 1500 }, 'pausal'],
 ];
-const NOVE_SYMBOLY = /^(TS_MUSTKY_|CENA_SACHTA_BEZ_DPH$|CENA_MUSTKY_BEZ_DPH$|CENA_BEZ_DPH_SACHTA$|CENA_BEZ_DPH_CELKEM$)/;
+/* TX (26. 11. 2026): NAB_ZARUKA (#771 V5) je nový symbol — stará verze ho nezná. */
+const NOVE_SYMBOLY = /^(TS_MUSTKY_|CENA_SACHTA_BEZ_DPH$|CENA_MUSTKY_BEZ_DPH$|CENA_BEZ_DPH_SACHTA$|CENA_BEZ_DPH_CELKEM$|NAB_ZARUKA$)/;
 
 function otisk(o) { return crypto.createHash('sha256').update(JSON.stringify(o)).digest('hex').slice(0, 24); }
 /* D4 (19. 11. 2026): popisek a pořadí zobrazení Volitelných se z otisku

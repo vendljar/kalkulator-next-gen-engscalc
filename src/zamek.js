@@ -1580,8 +1580,59 @@ function listaZakazkyRozhodni(zak, zaloha, ja, prava, ctx) {
   return nic;
 }
 
+/* TX #808 (K62-N1): JEDINOU změnou proti uložené verzi je záznam DOTISKU — nové položky
+ * `zamek.tisky` u varianty, která už v uložené verzi zamčená byla (staré záznamy beze
+ * změny, jen přibyly na konci), a nové řádky protokolu (staré všechny zůstaly). Vše ostatní
+ * stejné. Pak se smí uložit i zakázka otevřená jen ke čtení (onlineUloz) — dotisk nad
+ * odeslanou nabídkou je povolená akce a záznam o něm se nesmí ztratit. Server hlídá
+ * zmrazená data zámku sám (jako u prvního tisku). Čistá funkce: `ted` a `ulozeno` jsou
+ * JSON text nebo objekt zakázky; vrací true / false. */
+function zamekJenDotisk(ted, ulozeno) {
+  const rozbal = x => {
+    if (typeof x === 'string') { try { return JSON.parse(x); } catch (e) { return null; } }
+    return (x && typeof x === 'object' && !Array.isArray(x)) ? JSON.parse(JSON.stringify(x)) : null;
+  };
+  const a = rozbal(ted), b = rozbal(ulozeno);
+  if (!a || !b || !Array.isArray(a.varianty) || !Array.isArray(b.varianty)) return false;
+  const stejne = (x, y) => JSON.stringify(x) === JSON.stringify(y);
+  let novy = false;
+  /* zamek.tisky: u každé varianty uložená verze = začátek okna */
+  for (const va of a.varianty) {
+    const vb = b.varianty.find(x => x && va && x.id === va.id);
+    if (!va || !vb) return false;
+    if (va.zamek && typeof va.zamek === 'object') delete va.zamek.prijato;   // razítko serveru (K40-S1)
+    if (vb.zamek && typeof vb.zamek === 'object') delete vb.zamek.prijato;
+    const ta = va.zamek && Array.isArray(va.zamek.tisky) ? va.zamek.tisky : [];
+    const tb = vb.zamek && Array.isArray(vb.zamek.tisky) ? vb.zamek.tisky : [];
+    if (ta.length !== tb.length) {
+      if (!(vb.zamek && vb.zamek.zamceno) || ta.length < tb.length || !stejne(ta.slice(0, tb.length), tb)) return false;
+      /* Revize Fable N1: jen DOTISK — připsaný tisk smí být jen typu, který varianta v uložené verzi
+       * už má (zamek.typ nebo dřívější tisky). První smlouva (sod / sodProj) u varianty, která ji
+       * dosud netiskla, výjimkou neprojde. */
+      const typy = new Set([vb.zamek.typ].concat(tb.map(t => t && t.typ)).filter(Boolean));
+      if (!ta.slice(tb.length).every(t => t && typy.has(t.typ))) return false;
+      novy = true;
+    }
+    if (va.zamek) delete va.zamek.tisky;
+    if (vb.zamek) delete vb.zamek.tisky;
+  }
+  if (!novy) return false;
+  /* protokol: všechny uložené řádky zůstaly (podle id), nové jen přibyly */
+  const pa = Array.isArray(a.protokol) ? a.protokol : [], pb = Array.isArray(b.protokol) ? b.protokol : [];
+  const ida = new Set(pa.map(z => z && z.id)), idb = new Set(pb.map(z => z && z.id));
+  /* Přetečení PROTOKOL_MAX smí odříznout jen NEJSTARŠÍ uložené řádky (začátek); zbytek uložených
+   * musí v okně být beze změny a ve stejném pořadí. */
+  let k = 0;
+  while (k < pb.length && !(pb[k] && ida.has(pb[k].id))) k++;
+  const zbyle = pb.slice(k);
+  if (!zbyle.every(z => z && ida.has(z.id)) || !stejne(pa.filter(z => z && idb.has(z.id)), zbyle)) return false;
+  delete a.protokol; delete b.protokol;
+  delete a.aktivni; delete b.aktivni;
+  return stejne(a, b);
+}
+
 if (typeof module !== 'undefined')
-  module.exports = { variantaCisloZ, ZAMEK_TYPY_PROJ, zamekCisloPapir, zamekCisloSedi, zamekCisloZobraz, nabidkaDatum, zamekDatumZeSymbolu, zamekDenPraha, zamekDatumPlatne, zamekDatumNabidkyProblem, ZAMEK_DATUM_NABIDKY_ZPET_DNI, zamekNesouhlasiText, zamekZpracovatelSnimek, zamekZakVzOdeslano, variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, ZAMEK_PRODANO_TERMINY, zamekProdanoTerminVolny, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
+  module.exports = { zamekJenDotisk, variantaCisloZ, ZAMEK_TYPY_PROJ, zamekCisloPapir, zamekCisloSedi, zamekCisloZobraz, nabidkaDatum, zamekDatumZeSymbolu, zamekDenPraha, zamekDatumPlatne, zamekDatumNabidkyProblem, ZAMEK_DATUM_NABIDKY_ZPET_DNI, zamekNesouhlasiText, zamekZpracovatelSnimek, zamekZakVzOdeslano, variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, ZAMEK_PRODANO_TERMINY, zamekProdanoTerminVolny, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
                      zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, ZAMEK_OVERENI_JADRO, ZAMEK_OVERENI_JADRO_PRISNE, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
                      zamekCteniSmiOdemknout, zamekCteniDuvod, priponaPrvniNalez, priponaPrvniOprav,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,

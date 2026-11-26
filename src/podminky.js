@@ -609,6 +609,10 @@ function podminkySnimek(firma, casti) {
    * (snímek bez značky) se dotiskne tak, jak odešla: konečná faktura bez pořadí
    * a procenta, opláštění šachty bez opláštění se všemi řádky. */
   out.pd2Tisk = 1;
+  /* TX (#771 V4 upřesněné, #815, J. V. 26. 11. 2026): značka „odesláno po TX“ —
+   * nabídka odeslaná po PD2, ale před TX, se dotiskne se zněním PD2 (konečná
+   * faktura „ve výši … (bez DPH)“, zmínky o opláštění u šachty bez opláštění). */
+  out.txTisk = 1;
   const lm = podmLhutyModul();
   if (out.nabidkaProj && lm) out.lhutyProj = lm.lhutyProjEf(firma && typeof firma === 'object' ? firma.lhutyProj : undefined);
   return out;
