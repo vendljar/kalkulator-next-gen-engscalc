@@ -20,6 +20,15 @@ function nabidkaPriplatkyVyberNovy(varianta) {
   const sn = (z.snimek && typeof z.snimek === 'object') ? z.snimek : null;
   return !!(sn && sn.priplatkyVyber === 1);
 }
+/* K70-I3 (J. V. 27. 11. 2026): tiskne nabídka ruční položky v tvaru RP
+ * (řádky specifikace, rozpis ceny)? Neodeslaná ano; odeslaná (zamčená) jen
+ * se značkou `rpTisk` ve snímku podmínek (podminkySnimek při odeslání) —
+ * starší odeslaná (i ta z testu mezi 24. 11. a opravou) se dotiskne bez nich. */
+function nabidkaRpTisk(varianta) {
+  if (!(varianta && varianta.zamek && varianta.zamek.zamceno)) return true;
+  const sn = varianta.data && varianta.data.kryci && varianta.data.kryci.zmrazenoPodminky;
+  return !!(sn && sn.rpTisk === 1);
+}
 /* #800 (K61-N1): symboly bloku OPLÁŠTĚNÍ ŠACHTY kromě typu — u šachty bez
  * opláštění prázdné. A je šachta bez opláštění? Všechny stěny (režim po
  * stěnách) jen „bez“ a výsledek bez plochy opláštění (jako K58-I2). */
@@ -220,9 +229,15 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
    * `rozpisRucni` = null a všechny symboly ceny jsou jako dosud. */
   const RP = (typeof rucniPolozkyVysledku === 'function')
     ? { rucniPolozkyVysledku, rpRozpisCeny, rpRadkyWord, rpRadekTs, RP_SEKCE_SACHTY } : require('./rucni_polozky.js');
+  /* K70-I3 (J. V. 27. 11. 2026): odeslaná nabídka bez značky `rpTisk` ve
+   * snímku podmínek (odešla před opravou K70-I3) se dotiskne BEZE ZMĚNY, jak
+   * odešla — bez řádků ruční položky ve specifikaci i bez rozpisu ceny (text
+   * jako před dávkou RP). Neodeslaná a odeslaná se značkou: tvar RP. Ceny
+   * se nemění (ruční položka je v ceně šachty i bez rozpisu). */
+  const rpTisk = nabidkaRpTisk(varianta);
   const viceSachetRp = !!(r && Array.isArray(r.sachty) && r.sachty.length);
-  const rucniPol = viceSachetRp ? [] : RP.rucniPolozkyVysledku(r, Zv);
-  const rozpisRucni = (cn && !viceSachetRp)
+  const rucniPol = (viceSachetRp || !rpTisk) ? [] : RP.rucniPolozkyVysledku(r, Zv);
+  const rozpisRucni = (cn && !viceSachetRp && rpTisk)
     ? RP.rpRozpisCeny(rucniPol, cenaPredSlevou, mustkySk ? cenaMustkyNum : 0, mena.eur ? mena.na : null, L, P) : null;
 
   /* SYMBOLY TECHNICKÉ ČÁSTI, KTERÉ POPISUJÍ ŠACHTU (VS-E4 #570): sekce
@@ -456,7 +471,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
    * nese šachty (obal vypocetZakazkyOck: Model 2 a víc šachet nebo ks > 1);
    * jedna šachta nedostane ani jeden nový symbol (zlatá sada VS-E0 — symboly
    * přebírá i smlouva o dílo). */
-  const vs = nabidkaVsData(d, r, sablona, { P, kc, cenaPredSlevou, cenaBezDphNum, tsSymbolySachty, L, RP });
+  const vs = nabidkaVsData(d, r, sablona, { P, kc, cenaPredSlevou, cenaBezDphNum, tsSymbolySachty, L, RP: rpTisk ? RP : null });   // K70-I3: bez značky šachty bez ručních řádků
   if (vs.sachty) Object.assign(placeholders, vs.placeholders);
 
   if (typeof zpracovatelPlaceholders === 'function')
@@ -1143,4 +1158,4 @@ if (typeof dokumentRegistruj === 'function')
     builder: (zak, varianta, jekly, lang, sablona) => nabidkaData(zak, varianta, jekly, lang, sablona),
   });
 
-if (typeof module !== 'undefined') module.exports = { nabidkaData, nabidkaPriplatkyVyberNovy, nabidkaKapitolyFirma, usazeniBocniSloucene, nabidkaNahledSekce, nabidkaPopisZameru, nabidkaVsData };
+if (typeof module !== 'undefined') module.exports = { nabidkaData, nabidkaPriplatkyVyberNovy, nabidkaRpTisk, nabidkaKapitolyFirma, usazeniBocniSloucene, nabidkaNahledSekce, nabidkaPopisZameru, nabidkaVsData };

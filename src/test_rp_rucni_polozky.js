@@ -209,6 +209,7 @@ for (const [jm, o, L] of [['CZ bez slevy', {}, 'cz'], ['CZ sleva 5 %', { sleva: 
 {
   const { zak, v } = zakazka({ sleva: 5 });
   const z = kop(zak); const vv = z.varianty[0];
+  kryciZmrazPodminky(z, vv, J);   // K70-I3: odeslání po opravě (snímek podmínek se značkou rpTisk)
   const vys = zamekVysledekSpocti(vv, J, 'test');
   vv.zamek = { zamceno: true, kdy: '2026-11-20T10:00:00.000Z', kdo: 'test@priklad.cz', cislo: z.cislo,
     vysledek: kop(vys), snimek: zamekSnimekSpocti(vv) };
@@ -255,6 +256,7 @@ for (const [jm, o, L] of [['CZ bez slevy', {}, 'cz'], ['CZ sleva 5 %', { sleva: 
   const kt = kryciData(zak, v, J, 'techdata').sekce[0].radky.find(x => x[0] === 'Ruční položky v ceně');
   test('H N1 krycí list BO i Tech: ks > 1 „cena/ks × N ks = celkem“, 1 ks jen cena', kl && kt && n1(kl[1]) && n1(kt[1]), kl && kl[1]);
   const z2 = kop(zak); const v2 = z2.varianty[0];
+  kryciZmrazPodminky(z2, v2, J);   // K70-I3: odeslání po opravě (značka rpTisk)
   v2.zamek = { zamceno: true, kdy: '2026-11-20T10:00:00.000Z', kdo: 'test@priklad.cz', cislo: z2.cislo,
     vysledek: kop(zamekVysledekSpocti(v2, J, 'test')), snimek: zamekSnimekSpocti(v2) };
   v2.data.ock.dalsi[0].zadani.vlastniPolozky.oplasteni[0].cena = 5000;   // podvrh po odeslání — KL ze zámku
