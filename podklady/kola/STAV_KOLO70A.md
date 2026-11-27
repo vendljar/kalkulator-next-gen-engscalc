@@ -61,6 +61,21 @@ K70-N1 (dialog slovníku u každého cizojazyčného dotisku, nízká) main nebl
   - **RP:** rozdíl dotisku (K70-I3).
   - **v19:** se šablonou v19 se mění vzhled a popisky (K70-I5).
 
+## A4 opakování — nový kandidát a40abbbe (v27.11.2: #823 K70-N1, #824 K70-I3), 27. 11. odpoledne
+
+Web testu `/api/zdravi` 27.11.2. Renderer: kód main 4e69c27 × a40abbb (sestavení prošlo), stejná data testu (452 zakázek), stejné šablony.
+
+| část | výsledek |
+|---|---|
+| (a) kód main × a40abbb, šablona v18, 134 starých odeslaných variant | **CN CZ/EN/DE/FR: 1 / 134** = jen 9856 „Datum“ (den zámku 25. 11. místo data zakázky 23. 11.; DT, přijato K70-I4; originál byl vytištěn už s DT). **64 s ruční položkou: 0 rozdílů** (dřív 64). SoD CZ/EN/DE/FR 1 / 134 (9856 „ze dne“, DT). Nabídka PROJ 4 jazyky, SoD PROJ, plná moc: 0. Objednávka PROJ 10 / 134: jen odstup řádku „Datum / Podpis objednatele“ (PP #791, přijato). |
+| (a) krycí list | 9502-K19T-C002: navíc jen řádek **„Ruční položky v ceně“** (RP N1, přijato) a tvar data dd.mm.rrrr (#804). |
+| (b) a40abbb s v19 × s v18, staré odeslané CN | 474 / 536 dokumentů se liší, **4 druhy rozdílu, všechny přijaté (K70-I5)**: poznámky k ceně jako nadpis + seznam (4 jazyky), „Compiled by:“ / „Zusammengestellt von:“ / „Établi par :“, DE „SCHACHTVERKLEIDUNG“ (#815). **Částky: 0 změn; záruka: v žádném rozdílu** (zůstává v kapitole V.). Zbylých 62 jsou chybové případy (zakázka jen PROJ, cizí jazyk v Kč) — stejné s oběma šablonami. |
+| (c) naživo dotisk 9961 CZ/EN/DE/FR (jen čtení, zamčená) | **Dialog slovníku se neukázal ani jednou** (K70-N1 opraveno). Text proti dotisku v26.11.3 se šablonou v18: jen rozdíly v19 z (b), nic jiného. |
+| (d) nová nabídka s ruční položkou (TEST - 2026 - OPR - CN - 9971, kalkVerze 2, Word CZ a EN) | Tvar RP: řádek položky v technické specifikaci (Doplňkové konstrukce), v „I. CENOVÁ NABÍDKA“ rozpad výtahová šachta + položka + CENA CELKEM (součet sedí na korunu). V19: „Záruka: 60 měsíců“ samostatně za kapitolou V., poznámky jako seznam, „Vypracoval:“ / „Compiled by:“. EN tiskne český název položky (překlad nezadán — kontrola RP `rucniPolozkaCesky`, záměr). |
+| porovnání sestavení main × a40abbb (`ocekavane_main_test_2026-11-27.txt` + `ocekavane_k70i3_2026-11-27.txt`) | **395 kalkulací, 395 očekávaných, 0 neočekávaných**, kontroly neprázdnosti 8 + 8, „JEN OČEKÁVANÉ ROZDÍLY“. |
+
+**Verdikt A4 opakování: ZELENÁ.** K70-I3 a K70-N1 opraveny, žádný nový nález. Na testu přibyla zakázka 9971 (odeslaná, TEST).
+
 ## A1 — sestavení a weby
 
 - `build.py` (KNG_NEZVYSOVAT_VERZI=1) nad 694ddee a 4e69c27: obě sestavení projdou. **Web testu = sestavení kandidáta, web main = sestavení main** bajt po bajtu
@@ -127,10 +142,10 @@ všemi 478 variantami: CN CZ/EN/DE/FR, SoD CZ/EN/DE/FR, plná moc, nabídka PROJ
 
 | ID | vážnost | cena | co |
 |---|---|---|---|
-| K70-N1 | nízká | ne | Dialog se ukáže u **každého** cizojazyčného dotisku každé nabídky odeslané před 26. 11. (#816 změnil otisk slovníku 218f8566 → 75f7a57f; TX přitom slibuje dotisk staré nabídky „bez upozornění na změnu slovníku“). Text se nemění. Dialog navíc píše „při odeslání: zveřejněná verze 1, teď: zveřejněná verze 1“ — slovník se změnil (otisk), ale číslo verze stejné; uživatel nepozná, co se změnilo. Navrhuji uvádět datum / „upravený slovník“ místo stejného čísla verze. |
+| K70-N1 | nízká, **opraveno v27.11.2 (#823)** | ne | Dialog se ukáže u **každého** cizojazyčného dotisku každé nabídky odeslané před 26. 11. (#816 změnil otisk slovníku 218f8566 → 75f7a57f; TX přitom slibuje dotisk staré nabídky „bez upozornění na změnu slovníku“). Text se nemění. Dialog navíc píše „při odeslání: zveřejněná verze 1, teď: zveřejněná verze 1“ — slovník se změnil (otisk), ale číslo verze stejné; uživatel nepozná, co se změnilo. Navrhuji uvádět datum / „upravený slovník“ místo stejného čísla verze. |
 | K70-I1 | info | ne | Main má vypínače víc šachet i víc zákazníků **zapnuté** (J. V. 25. 11. 15:17); PREDAVKA.md uvádí „víc šachet vypnuto“ — opravit předávku. |
 | K70-I2 | info, **vyřešeno** | ne | (vyřešeno zveřejněním CN v19 na testu, viz níže) Na testu nebyla CN v19 (úprava šablony pro V5 / V6, zadání §0.4): V5 (záruka, symbol `NAB_ZARUKA`) se ve Wordu neprojeví; V6 ověřitelný jen online. |
-| K70-I3 | **k rozhodnutí** | ne | **Dotisk staré odeslané nabídky s ruční položkou se na kandidátovi liší od main** (64 ze 134 starých odeslaných variant v datech testu): RP (v24.11.6) při dotisku přidá ruční položky do specifikace a cenového bloku — záměr RP („Odeslaná nabídka se při dotisku vytiskne s ručními položkami“, J. V. 24. 11.). Zadání §2.3 ale chce dotisk znak po znaku jako main. Částky a zámek beze změny. Bisekce: mění to jen RP (7339a9e), viz oddíl níže; cena celkem stejná. Rozhodnout: přijmout (zapsat do očekávaných rozdílů), nebo dotisk zámků před RP vrátit na starý tvar. |
+| K70-I3 | **opraveno v27.11.2 (#824)**, J. V.: staré beze změny | ne | **Dotisk staré odeslané nabídky s ruční položkou se na kandidátovi liší od main** (64 ze 134 starých odeslaných variant v datech testu): RP (v24.11.6) při dotisku přidá ruční položky do specifikace a cenového bloku — záměr RP („Odeslaná nabídka se při dotisku vytiskne s ručními položkami“, J. V. 24. 11.). Zadání §2.3 ale chce dotisk znak po znaku jako main. Částky a zámek beze změny. Bisekce: mění to jen RP (7339a9e), viz oddíl níže; cena celkem stejná. Rozhodnout: přijmout (zapsat do očekávaných rozdílů), nebo dotisk zámků před RP vrátit na starý tvar. |
 | K70-I5 | **přijato J. V. 27. 11.** (přijatý rozdíl dotisku) | ne | **CN v19 mění pevný text i u dotisku starých odeslaných nabídek** (dotisk bere platnou šablonu): poznámky k ceně jako seznam a. b. c. místo „a. … b. … c.“ v řádcích, DE nadpis „SCHACHTVERKLEIDUNG“, popisky „Compiled by:“ / „Zusammengestellt von:“ / „Établi par :“. Záruka zůstává správně v kapitole V. Požadavek „dotisk znak po znaku stejný jako dřív“ tak s v19 splnit nejde — leda by dotisk bral šablonu z razítka zámku. Rozhodnout: přijmout (jen vzhled a popisky), nebo dotisk se starou šablonou. |
 | K70-I4 | info | ne | DT: SoD (realizace i PROJ) neodeslané zakázky nese v příloze č. 1 „ze dne <den tisku>“ místo data zakázky; u odeslané 9856 datum zámku. Záměr DT #745 (kolo 57). |
 
