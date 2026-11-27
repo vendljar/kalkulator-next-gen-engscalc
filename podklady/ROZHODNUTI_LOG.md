@@ -10,6 +10,7 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
+| 27. 11. 2026 | Č. 761 potvrzeno: nová kalkulace má výstup ze zaměření v režii vždy 1× (i když tím roste přirážka ATYP, např. 9963 +3,25 %); ceník test = main, nic se nevrací. Nabídka konkurence ATA: všechny náměty zapracovat do vzoru nabídky + PDF porovnání (dávka NÁVRH ATA); co se použije, rozhodne J. V. potom. | #761, 9963, ATA |
 | 27. 11. 2026 | K70-I5 přijato: šablona CN v19 smí měnit pevný text i u dotisku starých odeslaných nabídek (poznámky k ceně jako seznam a. b. c., „Vypracoval:“ s dvojtečkou v EN/DE/FR); záruka u starých zůstává v kapitole V., částky beze změny. CN v19 na main nahraje J. V. se sloučením. 9963 ATYP projekce: koordinace ověří a vysvětlí. | K70-I5, #817, 9963 |
 | 27. 11. 2026 | K70-N1: dialog „Dotisk se změněným slovníkem“ u starých cizojazyčných dotisků opravit rychlou cestou dnes (plané upozornění, text se nemění). K70-I3: stará odeslaná nabídka s ruční položkou se dotiskne BEZE ZMĚNY (bez rozpadu RP ve specifikaci a cenovém bloku); tvar RP jen pro nabídky odeslané po opravě — rychlá cesta dnes. | K70-N1, K70-I3, RP |
 | 27. 11. 2026 | Šablonu CN v19 (V5 záruka, V6 seznam poznámek, #815; 4 jazyky) připraví na testu TESTOVÁNÍ 4 podle NAVOD_SABLONA_CN_TX.md (zápis se souhlasem J. V. v sezení); na main ji nahraje J. V. až s verzí aplikace s TX. #805 opravenou šablonu PROJ cz v8 z testu nahraje J. V. na main hned (27. 11.), nezávisle na nasazení. | #817, #805 |
