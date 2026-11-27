@@ -8,16 +8,29 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | prostředí | verze |
 |---|---|
 | ostrý web (`main`) | **v24.11.7** (`4e69c276`, 24. 11. 2026) |
-| testovací web (`test`) | **v26.11.1** (`a9d8770f`, 26. 11. 2026) |
+| testovací web (`test`) | **v26.11.3** (`694ddeef`, 26. 11. 2026) |
 
-Test je proti main napřed o 203 commitů.
+Test je proti main napřed o 224 commitů.
 
 ## V testu, ještě ne v main
 
 | # | typ | co | verze |
 |---|---|---|---|
+| #822 | úkol | Pojistka dočasné značky verze i mimo novinky.py: krok staticke upozorní na hotovou položku s dočasnou značkou v origin/main a origin/test (… | v26.11.3 |
+| #821 | úkol | Varování rucniPolozkaPomer u víc šachet uvádí šachtu (F5) | v26.11.3 |
+| #820 | úkol | Vlastnosti Wordu: náhrada bezpečná i u CDATA / atributu s „>“ / vnořeného prvku (F3); Manager prázdný, autor a iniciály komentářů a sledova… | v26.11.3 |
+| #818 | otázka | Schválit znění TX: V4 překlady EN/DE/FR, #815 texty šachty bez opláštění (požární klasifikace, odvětrání, vnější lešení) a překlady popisků | v26.11.2 |
+| #816 (dřív K66-I1) | nález | Slovník: heslo „… naší STUDII PROVDITELNOSTI projednat …“ s překlepem — po opravě šablony PROJ (#805) by se věta nepřeložila | v26.11.2 |
+| #815 (dřív K65-I1, K65-I2) | otázka | Texty: šachta bez opláštění — zmínky o opláštění mimo blok (požární klasifikace, odvětrání zadní stěnou, lešení vně); V4 česká věta „10 % (… | v26.11.2 |
+| #814 (dřív K65-N2) | nález | Word nabídky PROJ bez fotky tiskne „POHLED NA OBJEKT“ (textové pole rámečku fotky v šabloně PROJ v9; V1 maže jen odstavec) | v26.11.2 |
 | #813 (dřív K65-N1) | nález | Dotisk staré odeslané nabídky víc šachet změnil pořadí řádků příplatků (madla před zábranami) — odeslané má zůstat beze změny (pravděpodobn… | v26.11.1 |
+| #812 (dřív K63-I1) | nález | Uložení zakázky bez čísla / názvu: dvě skoro stejné hlášky pod sebou (#801) | v26.11.2 |
+| #811 (dřív K63-N1) | nález | Objednávka PROJ (PDF): nadpis „Poznámka“ zůstane sám na konci strany, text až na další | v26.11.2 |
 | #810 (dřív K62-I1) | otázka | Šablona SoD PROJ v4 (z LibreOffice) nemá ve vlastnostech prvek Company → Společnost zůstane prázdná (generátor chybějící prvek nepřidává) | v25.11.6 |
+| #809 (dřív K62-N2) | nález | Text upozornění #756 v množném čísle i u jedné položky („Ruční položky … řádku „A“ a „B“ …, který je přepsaný“) | v26.11.2 |
+| #808 (dřív K62-N1) | nález | Dotisk (CN, SoD) nad odeslanou zakázkou otevřenou jen ke čtení zapíše záznam tisku a protokolu jen v paměti a neuloží ho; při přepnutí zaká… | v26.11.2 |
+| #807 | úkol | Nízké návrhy revize G1: F3 náhrada vlastností Wordu bezpečná i u CDATA / atributu s „>“ (po náhradě ověřit strukturu, při vadě nechat původ… | v26.11.3 |
+| #804 (dřív K61-I3) | nález | Krycí list tiskne „Dne“ a datum podpisu ve tvaru 2026-11-25 místo 25. 11. 2026 | v26.11.2 |
 | #803 (dřív K61-N4) | nález | Skloňování „4 položek“ v kartě Cenová nabídka | v25.11.5 |
 | #802 (dřív K61-N3) | nález | Kontrola před odesláním míchá SoD OCK a PROJ (zakázka jen PROJ hlásí 28 míst SoD realizace a obráceně) | v25.11.5 |
 | #801 (dřív K61-N2) | nález | Uložit zakázku bez čísla / názvu přepne na Přehled, hláška „Vyplňte v hlavičce…“ zůstane na skryté stránce Kalkulace (i main od #727) | v25.11.5 |
@@ -39,6 +52,7 @@ Test je proti main napřed o 203 commitů.
 | #774 | úkol | Ceník OCK: řádek Engineering v sekci Příplatkové položky (jen zobrazení) | v25.11.3 |
 | #773 (dřív K58-N2) | nález | Pipedrive: částka převzatá jako jediné číslo z libovolného textu | v25.11.3 |
 | #772 (dřív K58-N1) | nález | Zámek nabídky PROJ nese číslo OCK (předlohu) místo čísla PROJ | v25.11.3 |
+| #771 | úkol | Vady tisku cenové nabídky CN (posudek CN-432): V1–V6 | v26.11.2 |
 | #770 | úkol | Nastavení → Databáze: barvy stavových řádků záloh (zelená / oranžová / červená) | v25.11.3 |
 | #769 | úkol | Krycí list: pole „Dne“ podle pražského dne (kryciDnesIso) | v25.11.3 |
 | #768 | úkol | Mapa polí Pipedrive: „Příplatky v nabídce“ jen pole typu text | v25.11.3 |

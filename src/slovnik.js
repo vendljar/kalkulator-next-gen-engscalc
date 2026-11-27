@@ -433,6 +433,109 @@ function slovnikRazitko(preklad, verze) {
   return { verze: (Number.isInteger(v) && v >= 1 && v <= SLOVNIK_MEZE.verze) ? v : null,
            otisk: ('0000000' + h.toString(16)).slice(-8) };
 }
+/* PŘIDANÁ HESLA BEZ VLIVU NA DOTISK (K70-N1, kolo 70A, 27. 11. 2026).
+ * Otisk v razítku je z CELÉHO živého slovníku, takže ho změní i heslo, které
+ * nové sestavení jen PŘIDÁ. Seznam vyjmenovává přidaná zabudovaná hesla, která
+ * dotisk staré nabídky nepoužije (rozdíl PREKLAD main v24.11.7
+ * 4e69c27 → test v26.11.3 694ddee = právě těchto 5 hesel). Pořadí skupin =
+ * pořadí přidání (nejstarší nahoře). Žádné pevné otisky: shoda se počítá
+ * z dnešního slovníku bez těchto hesel, takže platí na testu i na ostrém webu.
+ * Druh hesla:
+ *   `dvojce`  — heslo je dvojčetem hesla, které ve slovníku už bylo, se STEJNÝM
+ *               překladem (odebere se, jen když to dnes pořád platí);
+ *   `kdyz`    — heslo, které stará data nenesou: odebere se, jen když se mu
+ *               nerovná žádný text dat varianty (slovnikDataVarianty — každá
+ *               textová hodnota i každý její řádek, normalizované jako klíč
+ *               slovníku, mimo větve ceníku) a u ENGINEERING navíc nejde
+ *               o novou kalkulaci. Bez dat nebo nad stropem velikosti se
+ *               heslo neodebere (dialog se ukáže).
+ *   RP #736 (v24.11.6): jednotky ruční položky; zadání před RP pole `jednotka`
+ *     nemá a ruční položka se tiskne s „ks“ (rpJednotka).
+ *   ER #757 (v24.11.9): příplatek ENGINEERING jen u nové kalkulace (kalkVerze 2);
+ *     řádek ENGINEERING staré režie (zmrazený výsledek v zámku, ne v datech)
+ *     dotisk nepřekládá (test K70-N1). Text „Engineering“ kdekoli v datech
+ *     (ruční položka, vlastní řádek specifikace…) by ho použil.
+ *   K66-I1 (v26.11.2, TX): česká šablona PROJ v8 opravila „PROVDITELNOSTI" →
+ *     „PROVEDITELNOSTI"; heslo se starým tvarem v PREKLAD zůstává. */
+const SLOVNIK_PRIDANA_HESLA = [
+  { id: 'RP #736', od: 'v24.11.6', hesla: [
+    { klic: 'bm', kdyz: 'rucniJednotka' }, { klic: 'kpl', kdyz: 'rucniJednotka' }, { klic: 'm²', kdyz: 'rucniJednotka' }] },
+  { id: 'ER #757', od: 'v24.11.9', hesla: [{ klic: 'ENGINEERING', kdyz: 'engineering' }] },
+  { id: 'K66-I1', od: 'v26.11.2', hesla: [{
+    klic: 'díky obsahu a zpracování je možné naší STUDII PROVEDITELNOSTI projednat v této fázi na odboru památkové péče HMP',
+    dvojce: 'díky obsahu a zpracování je možné naší STUDII PROVDITELNOSTI projednat v této fázi na odboru památkové péče HMP' }] },
+];
+/* Texty dat varianty (i víc šachet, krycí list, specifikace…) pro
+ * podmíněná hesla: { texty: Set normalizovaných textů a jejich řádků,
+ * nova: bool }. Větve `cenik` se přeskakují (sazby a ceníkové položky,
+ * ne text dokumentu). Nad stropem hloubky nebo počtu uzlů vrací null =
+ * „nevím" (revize Fable K70 S1) — heslo se pak neodebere. */
+const SLOVNIK_DATA_STROP = { hloubka: 12, uzlu: 20000 };
+function slovnikDataVarianty(data) {
+  const texty = new Set();
+  let nova = false, uzlu = 0, pres = false;
+  const text = (t) => { texty.add(slovnikNorm(t)); if (t.indexOf('\n') >= 0) t.split('\n').forEach(r => texty.add(slovnikNorm(r))); };
+  const projdi = (o, hl) => {
+    if (pres) return;
+    if (++uzlu > SLOVNIK_DATA_STROP.uzlu || hl > SLOVNIK_DATA_STROP.hloubka) { pres = true; return; }
+    if (typeof o === 'string') { text(o); return; }
+    if (!o || typeof o !== 'object') return;
+    if (Array.isArray(o)) { o.forEach(x => projdi(x, hl + 1)); return; }
+    if (Number.isInteger(o.kalkVerze) && o.kalkVerze >= 2) nova = true;
+    Object.keys(o).forEach(k => { if (k !== 'cenik') projdi(o[k], hl + 1); });
+  };
+  projdi(data, 0);
+  return pres ? null : { texty, nova };
+}
+/* Smí se heslo `h` (druh `kdyz`) odebrat — data `dv` ho nenesou? */
+function slovnikHesloNepouzite(h, dv) {
+  if (!dv) return false;
+  if (dv.texty.has(slovnikNorm(h.klic))) return false;
+  if (h.kdyz === 'rucniJednotka') return true;
+  if (h.kdyz === 'engineering') return !dv.nova;
+  return false;
+}
+/* Dotisk smí bez upozornění, když razítko z odeslání `puv` odpovídá dnešnímu
+ * slovníku `preklad` (zveřejněná verze `verze`): buď otisk sedí přímo, nebo
+ * — při TÉŽE zveřejněné verzi — sedí otisk dnešního slovníku bez hesel
+ * přidaných od některého sestavení dál (SLOVNIK_PRIDANA_HESLA). `data` =
+ * data odesílané varianty (varianta.data). Heslo, u kterého se nedá doložit,
+ * že ho dotisk nepoužije, se neodebere a ta skupina ani starší se nezkouší.
+ * Vrací true = slovník se pro dotisk nezměnil. */
+function slovnikRazitkoShoda(puv, preklad, verze, data, pridana) {
+  const p = slovnikRazitkoOciste(puv);
+  if (!p) return false;
+  const P = preklad || {};
+  const ted = slovnikRazitko(P, verze);
+  if (ted.otisk === p.otisk) return true;
+  if (ted.verze !== p.verze) return false;
+  const sk = Array.isArray(pridana) ? pridana : SLOVNIK_PRIDANA_HESLA;
+  const ma = (k) => Object.prototype.hasOwnProperty.call(P, k);
+  const dv = (data && typeof data === 'object') ? slovnikDataVarianty(data) : null;
+  const bez = Object.assign({}, P);
+  for (let i = sk.length - 1; i >= 0; i--) {
+    const hesla = (sk[i] && sk[i].hesla) || [];
+    for (const h of hesla) {
+      if (!ma(h.klic)) return false;
+      if (h.dvojce != null) {
+        if (!ma(h.dvojce) || JSON.stringify(P[h.klic]) !== JSON.stringify(P[h.dvojce])) return false;
+      } else if (!slovnikHesloNepouzite(h, dv)) return false;
+      delete bez[h.klic];
+    }
+    if (slovnikRazitko(bez, verze).otisk === p.otisk) return true;
+  }
+  return false;
+}
+/* Text upozornění na změněný slovník — při téže zveřejněné verzi neříká
+ * „verze 1 → verze 1" (K70-N1), ale že se změnil slovník v aplikaci. */
+function slovnikZmenaPopis(puv, ted) {
+  const v = (r) => r && r.verze ? 'zveřejněná verze ' + r.verze : 'jen slovník zabudovaný v aplikaci';
+  const a = puv || {}, b = ted || {};
+  if ((a.verze || null) === (b.verze || null))
+    return 'změnil se slovník zabudovaný v aplikaci (nová verze aplikace); '
+      + (a.verze ? 'zveřejněná verze ' + a.verze + ' je stejná' : 'zveřejněný slovník není');
+  return 'při odeslání: ' + v(a) + ', teď: ' + v(b);
+}
 /* Razítko z cizích dat (zámek ze zakázky) — jen známý tvar, jinak null. */
 function slovnikRazitkoOciste(r) {
   if (!r || typeof r !== 'object' || Array.isArray(r)) return null;
@@ -464,5 +567,5 @@ if (typeof module !== 'undefined' && module.exports)
     slovnikPorovnej, slovnikAplikuj, slovnikNoveJakoZmeny, slovnikCsvJenVApp,
     slovnikToSheets, slovnikPrehled,
     SLOVNIK_MEZE, SLOVNIK_ZAKAZANE_KLICE, SLOVNIK_RIDICI, slovnikBajty, slovnikNorm, slovnikPrazdnePrepisy,
-    slovnikPrazdnePrepisyText, slovnikRazitko, slovnikRazitkoOciste, slovnikHeslaKontrola, slovnikOdchylky, slovnikOtisk,
+    slovnikPrazdnePrepisyText, slovnikRazitko, slovnikRazitkoOciste, SLOVNIK_PRIDANA_HESLA, SLOVNIK_DATA_STROP, slovnikDataVarianty, slovnikHesloNepouzite, slovnikRazitkoShoda, slovnikZmenaPopis, slovnikHeslaKontrola, slovnikOdchylky, slovnikOtisk,
     slovnikBezeZmeny, slovnikDbNovaVerze, slovnikDbOciste, slovnikPoloz };

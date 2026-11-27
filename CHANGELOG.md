@@ -8,6 +8,25 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v27.11.1 — Rychlá K70-N1 — planý dialog „Dotisk se změněným slovníkem“, větev claude/rychla-K70-N1
+
+Nad integrací `7c2d42e` (kód = test v26.11.3). Rychlá cesta; tisk, ceny, zámky ani slovník se nemění.
+- **K70-N1 (kolo 70A, #823 dočasně, značka RN70):** cizojazyčný dotisk nabídky odeslané před TX (i z main v24.11.7)
+  ukazoval dialog změněného slovníku, protože otisk razítka je z celého slovníku a nová sestavení do `PREKLAD` jen
+  přidala hesla. Rozdíl main 4e69c27 → test 694ddee = 5 hesel: bm, kpl, m² (RP #736), ENGINEERING (ER #757),
+  „… STUDII PROVEDITELNOSTI …“ (K66-I1). Nově `slovnikRazitkoShoda` (`slovnik.js`): při téže zveřejněné verzi se
+  zkusí otisk dnešního slovníku bez přidaných hesel ze seznamu `SLOVNIK_PRIDANA_HESLA`: dvojče se stejným překladem
+  (K66-I1); bm, kpl, m² a ENGINEERING jen tehdy, když se jim nerovná žádný text dat varianty (každá textová hodnota
+  i její řádek, normalizované jako klíč slovníku, mimo větve ceníku — ruční položky, vlastní řádky specifikace, krycí
+  list, další šachty) a u ENGINEERING nejde o novou kalkulaci. Bez dat nebo nad stropem velikosti (hloubka 12,
+  20 000 uzlů) se heslo neodebere (revize Fable K70 S1, S2). Jiný otisk nebo jiná zveřejněná verze dál varuje. Text dialogu při téže verzi: „změnil se slovník zabudovaný v aplikaci (nová verze
+  aplikace); zveřejněná verze N je stejná“.
+- Test `src/test_k70n1_slovnik_dialog.js` s fixturou zámků pořízených kódem main (`src/test_k70n1_zamek_main.json`,
+  s ruční položkou i bez; dotisk EN/DE/FR současným kódem přidaná hesla nečte) a `src/test_k70n1_rozdil_main.js`
+  (rozdíl PREKLAD proti main 4e69c27 přes git = `SLOVNIK_PRIDANA_HESLA`; bez gitu přeskočeno, kód 3).
+  Mutace `[K70N1]` (15).
+- **Které kalkulace se změní:** žádné — mění se jen to, zda se před dotiskem EN/DE/FR odeslané nabídky ukáže dialog.
+
 ## v26.11.3 — UK — úklid nízkých návrhů revize G1 (#807), větev claude/uk-uklid
 
 Nad integrací `2a61e6cd`. Cena ani text dokumentu beze změny (porovnání proti integraci = SHODA).
