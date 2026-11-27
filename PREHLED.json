@@ -696,11 +696,12 @@
    "cekaNa": "27. 11. projde pojmenování CN a sladí s nastavením Pipedrive (návod vs. úprava automatizace)"
   }
  ],
- "ceka_na_jv_odlozene": 14,
+ "ceka_na_jv_odlozene": 15,
  "nehotove_podle_kdo": {
-  "J. V.": 33,
+  "J. V.": 34,
   "kolega": 5,
-  "koordinace": 2
+  "koordinace": 2,
+  "dávka": 3
  },
- "nehotovych": 40
+ "nehotovych": 44
 }

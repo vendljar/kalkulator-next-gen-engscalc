@@ -1,0 +1,14 @@
+# Očekávané rozdíly K70-I3 (#824 dočasně, RI70) × origin/test 694ddee (v26.11.3) — 27. 11. 2026
+# Formát: <vzor případu> <pole,pole|*>  # důvod   (popis v nastroje/porovnani_sada.js)
+#
+# Mění se jen dotisk ODESLANÉ (zamčené) nabídky CN s ruční položkou, jejíž snímek podmínek nemá
+# značku rpTisk (odeslaná před opravou): bez řádku ruční položky ve specifikaci, bez rozpisu
+# cenového bloku (CENA_SACHTA_BEZ_DPH, CENA_BEZ_DPH_SACHTA, CENA_BEZ_DPH_CELKEM) — tvar jako main
+# 4e69c27. Cena (CENA_BEZ_DPH, DPH, s DPH), výsledek, zámek, krycí list, Pipedrive beze změny.
+# SoD odeslané varianty staví na týchž datech (moznosti.zive, zámek trvá) → také bez řádku RP.
+# V sadě je jediný takový případ; ostatní případy s ruční položkou nejsou zamčené (tvar RP trvá).
+fixtura:zakazka_2026-08-08_odeslana_bez_otisku.json:vmuhkstzr0  ph-cz,radky-cz,docx,sod,nahled-np-cz/cena,nahled-np-cz/ts:DOPLNKOVE-KONSTRUKCE   # K70-I3: starý zámek bez rozpisu RP
+# Jen při porovnání PROTI origin/main (koordinace 27. 11., bod 3): krycí list OCK starého zámku s ruční
+# položkou má na testu řádek „Ruční položky v ceně“ (RP N1, J. V. 24. 11. — platí i pro odeslané ze zámku),
+# main ne. Značka rpTisk ho NEŘÍDÍ (KL je interní doklad, neměněno). Proti origin/test se nevyskytne.
+fixtura:zakazka_2026-08-08_odeslana_bez_otisku.json:vmuhkstzr0  kryci-bo,kryci-tech   # RP N1: řádek ruční položky v KL (proti main)

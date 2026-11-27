@@ -114,8 +114,8 @@ Test je proti main napřed o 224 commitů.
 | #805 (dřív K61-I4) | nález | Překlep „PROVDITELNOSTI“ v šabloně nabídky PROJ | zveřejnit opravenou šablonu nabídky PROJ (čeština v8, na testu 26. 11.) i na main — postup v STAV_KOLO66 (claude/testovani-4) |
 | #806 (dřív K60-I1) | otázka | Automatizace Pipedrive „Pojmenování nového dealu v4“ přepíše při založení dealu „Číslo nabídky (CN)“ na CN-<id> → existující kalkulaci nejd… | 27. 11. projde pojmenování CN a sladí s nastavením Pipedrive (návod vs. úprava automatizace) |
 
-K tomu 14 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
+K tomu 15 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
 
 ## Nehotové položky evidence
 
-Celkem 40: J. V. 33, kolega 5, koordinace 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 44: J. V. 34, kolega 5, koordinace 2, dávka 3. Výpis: `python3 roadmapa/roadmapa.py --zive`.

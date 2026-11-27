@@ -8,6 +8,19 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v27.11.2 — Rychlá K70-I3 — dotisk staré odeslané nabídky s ruční položkou beze změny, větev claude/rychla-K70-I3
+
+- **K70-I3 (#824, kolo 70A, vada dokumentu):** dotisk nabídky odeslané před opravou s ruční (vlastní) položkou
+  přidával řádek položky do technické specifikace a rozpis ceny v „I. CENOVÁ NABÍDKA“ (dávka RP, v main dosud nebyla).
+  Rozhodnutí J. V. 27. 11.: stará odeslaná nabídka se dotiskne beze změny. Při odeslání se do snímku podmínek zapíše
+  značka `rpTisk` (`src/podminky.js`); zámek bez ní tiskne bez řádků a rozpisu RP (`nabidkaRpTisk`, `src/nabidka.js`)
+  — Word, online tisk, víc šachet, SoD, CZ/EN/DE/FR stejně jako main. Částky, zámek a Pipedrive beze změny.
+- Krycí list: řádek „Ruční položky v ceně“ u starého zámku zůstává (interní doklad, rozhodnutí RP N1 z 24. 11.) —
+  očekávaný rozdíl proti main.
+- Jen test: nabídky odeslané na testu mezi 24. 11. a opravou s ruční položkou ztratí v dotisku rozpis.
+- Test `src/test_k70i3_rp_dotisk.js` 51 OK (pojistka: před opravou 28 FAIL), mutace [K70I3] 5/5; revize Fable SLOUČIT.
+  Očekávané rozdíly `podklady/porovnani/ocekavane_k70i3_2026-11-27.txt`.
+
 ## v27.11.1 — Rychlá K70-N1 — planý dialog „Dotisk se změněným slovníkem“, větev claude/rychla-K70-N1
 
 Nad integrací `7c2d42e` (kód = test v26.11.3). Rychlá cesta; tisk, ceny, zámky ani slovník se nemění.

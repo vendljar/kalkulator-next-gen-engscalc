@@ -613,6 +613,10 @@ function podminkySnimek(firma, casti) {
    * nabídka odeslaná po PD2, ale před TX, se dotiskne se zněním PD2 (konečná
    * faktura „ve výši … (bez DPH)“, zmínky o opláštění u šachty bez opláštění). */
   out.txTisk = 1;
+  /* K70-I3 (J. V. 27. 11. 2026): značka „odesláno po K70-I3“ — ruční položky
+   * kalkulace (dávka RP) v nabídce CN: řádky specifikace a rozpis ceny. Nabídka
+   * odeslaná bez značky se dotiskne bez nich (nabidkaRpTisk v nabidka.js). */
+  out.rpTisk = 1;
   const lm = podmLhutyModul();
   if (out.nabidkaProj && lm) out.lhutyProj = lm.lhutyProjEf(firma && typeof firma === 'object' ? firma.lhutyProj : undefined);
   return out;
