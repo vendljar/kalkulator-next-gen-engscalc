@@ -1,0 +1,129 @@
+# Nabídka konkurence (ATA, interiérová šachta, 11/2026) — OČIŠTĚNÝ TEXT jen pro interní porovnání
+# Bez kontaktů, jmen a částek (nahrazeno [..] / X €). Zdroj: příloha J. V. 27. 11. 2026. Nezveřejňovat.
+
+Vážení obchodní přátelé,
+na základě vaší poptávky a zadávacích podkladů, které jsme od Vás pro zpracování této cenové nabídky obdrželi, Vám tímto předkládáme cenovou nabídku na výrobu, dodávku a montáž výtahové šachty ATA. Nabídka je zpracována v rozsahu a provedení specifikovaném touto nabídkou v několika níže uvedených bodech. Technické řešení díla specifikované v této cenové nabídce odpovídá standardům a platným certifikátům Zhotovitele.
+Provedení díla vč. opláštění výtahové šachty NEODPOVÍDÁ zadávací projektové dokumentaci.
+Zhotovitel ocelovou konstrukci výtahové šachty sám navrhne a její únosnost doloží statickým výpočtem.
+S pozdravem a očekáváním spolupráce
+ATA ENGINEERING s.r.o.
+[jméno]
+[telefon, e-mail]
+=== TABULKY
+--- T 0
+
+--- T 1
+[kontaktní blok odběratele a dodavatele vynechán]
+--- T 2
+1	Specifikace technologie výtahu:
+Typ výtahu: | trakční bez strojovny
+Jednostranné zavěšení – RUKSAK: | NE
+Nosnost výtahu: (kg) | 1 000
+Počet stanic / nástupišť: | 6/6
+Průchozí kabina výtahu: | NE
+Možnost pohybu osob pod výtahem: | NE
+Horní přejezd šachty: (mm) | Varianta 1 – 3 580 / Varianta 2 – 3 400
+Dopravní zdvih výtahu: (mm) | 22 850
+Prohlubeň výtahu: (mm) | Varianta 1 – 1 250 / Varianta 2 – 1 100
+Vnitřní sv. půdorysné rozměry šachty: (mm) | Varianta 1 –  (š) 1 810 x (d) 2 100 / Varianta 2 –  (š) 1 850 x (d) 2 105
+Doporučení ATA: Všechny tyto parametry i rozměry nutno u dodavatele výtahové technologie ověřit před uzavřením Smlouvy o dílo.
+--- T 3
+2	Specifikace ocelové konstrukce výtahové šachty ATA:
+Typ instalace: | INTERIÉROVÁ
+Celková výška ocelové konstrukce: (mm) | Varianta 1 –  27 680 + horní rám / Varianta 2 –  27 350 + horní rám
+Nosná konstrukce pod OK:  / (koza) | NE – OK osazena na dně ŽB základu
+Odstupová vzdálenost opláštění OK od světlých půdorys. rozměrů šachty: | min. 110 mm – tento rozměr musí dodavatel výtahu zohlednit v nutnosti instalace zábradlí na kabině výtahu nebo v nutnosti doplnění hákové dveřní uzávěry ke kabinovým dveřím výtahu
+Typy nosných profilů: | jäklové nebo systémové ATA, umožňující přenos sil pouze od výtahu. Pro zatížení ocelové konstrukce (OK) od jiných stavebních částí (např. od schodišťových ramen, střešní konstrukce objektu, balkónů atp.) není OK staticky navržena.
+Typ montáže: | svařovaná, montovaná, příp. kombinace svařované a montované OK
+Systém montáže: | dle technologických postupů Zhotovitele
+Jakost nosných profilů: | S235JR
+Členění půdorysné: | pravoúhlé - pravidelný obdélník
+Členění svislé: | pravoúhlé
+Svislá vzdálenost vodorovných profilů: (mm) | 1250
+Průběžná konstrukce šachty: | ANO
+Kotvící body: | v prohlubni - krytí hydroizolace v ŽB prohlubni výtahové šachty pro kotvení OK min. 200 mm - zajistí Objednatel, podesty, mezi-podesty, schodnice, stropní konstrukce
+Typ kotvení: | dilatační ATA, chemické kotvy lepené do přilehlých nosných konstrukcí objektů (např. cihla plná, železobeton, ocel). Konstrukce objektů musí být pro kotvení OK výtahové šachty staticky vyhovující, jinak Zhotovitel navrhne jiný způsob kotvení jako vícepráce s tím, že Objednatel pro toto náhradní opatření poskytne vlastní součinnost (např. stavební práce atp.).
+Kotvení anti-vibrační: | NE - Zhotovitel předpokládá s anti-vibračním kotvením pohonu výtahu
+Montážní nosníky nebo oka: | ANO
+Příprava pro kotvení tech. výtahu: | ANO – ocelové plotny s bodovými závitovými prvky  / Alternativně - HALFEN profily HM40/22 – WB za příplatek X € bez DPH / 1 běžný metr profilu
+Nástupní můstky: | NE
+Podchozí OCK: | NE
+Požární odolnost nosné konstrukce: | NE
+Poznámka: | V hlavě šachty budou diagonální táhla
+--- T 4
+3	Povrchová úprava ocelové konstrukce ATA:
+Příprava povrchů profilů: | chemicky čištěno
+Povrchová úprava OK: | dle ČSN EN ISO 12944-2 pro prostředí se stupněm korozní agresivity C2.
+Odstín vrchního laku: | dle vzorníku RAL. Metalické nebo kovářské laky a pastelové odstíny (např. žlutá, oranžová, červená, modrá, fialová, zelená) budou na žádost Objednatele nabídnuty dle individuální kalkulace.
+Systém aplikace laku: | válečkem
+Tryskání OCK: | NE
+Požární odolnost OCK: | NE
+Žárové zinkování OCK: | NE
+--- T 5
+4	Opláštění ocelové konstrukce ATA dle ČSN EN 81-20:
+Typ opláštění: | ATA-ADI 1 předsazené strukturální zasklení s bodově kotvenými skly „ve spáře“
+Umístění opláštění: | z vnější strany ocelové konstrukce výtahové šachty
+Členění opláštění: | výška skel 1230 mm, šířka skel max. 2100 mm, nad 2100 mm svislé dělení skel na středovém stojném profilu šachty
+Kotvící prvky: | uchycení skel ve spárách na ocelové kruhové úchyty v RAL OCK s pohledově přiznanými šrouby v provedení NEREZ, skla předsazena přes stojky a příčky konstrukce
+Typ skel: | všechna skla v ČIRÉM provedení, hrany skel strojově broušeny – hrana matná
+Čelní stěna: | VSG - vrstvené bezpečnostní sklo Connex – tepelně netvrzené (nekalené)
+Levá boční stěna: | VSG - vrstvené bezpečnostní sklo Connex – tepelně netvrzené (nekalené)
+Pravá boční stěna: | VSG - vrstvené bezpečnostní sklo Connex – tepelně netvrzené (nekalené)
+Zadní stěna: | VSG - vrstvené bezpečnostní sklo Connex – tepelně netvrzené (nekalené)
+Činitel prostupu UV záření: (τuv) | max. 1 %
+Záklop šachty z horní strany: | NE
+Čelní stěna (vnitřní opláštění): | NE - kabinové dveře budou vybaveny hákovou dveřní uzávěrou
+Levá stěna nástupního můstku: | NE
+Pravá stěna nástupního můstku: | NE
+Požární odolnost opláštění OCK: | NE – opláštění je bez požární odolnosti
+Poznámka: | Sklo bude svisle dělené jelikož šachta je postavena na šesti stojkách
+Poznámka ATA:  / Nabídka neobsahuje náklady na zhotovení otvorů do opláštění výtahové šachty pro instalaci displejů (LIP), přivolávačů (LOP) a dalších prvků od výtahu nebo jiných zařízení.
+--- T 6
+5	Zajištění prostředí dle ČSN EN 81.20:
+Odvětrání dle ČSN EN 81.20: | ANO – přirozená cirkulace vzduchu
+Odvětrání provedeno: | ANO – v celé ploše opláštění výtahové šachty do prostor objektu, prostřednictvím mezer mezi skly a nosnou ocelovou konstrukcí
+Jiný typ zajištění prostřední ve výtahové šachtě: | NE
+--- T 7
+6             Cena:
+Základní nabídková cena pro rozsah prací dle odstavců 1 až 5 této nabídky činí: | X € bez DPH
+Poznámka ATA: Za správnost výše sazby DPH nese odpovědnost Objednatel. K uplatnění snížené sazby DPH (12%) dle zákona 235/2004Sb. o dani z  / přidané hodnoty se změnou dle zákona č.261/2007Sb. o stabilizaci veřejných rozpočtů, doloží Objednatel Zhotoviteli ke smlouvě o dílo písemné prohlášení,  / že se jedná o "bytový dům určený pro sociální bydleni".
+--- T 8
+7	Příplatky: (nad rámec základní nabídkové ceny)
+Lešení pro realizaci díla | X € bez DPH | Cena obsahuje pronájem lešení v délce 60 (šedesát) kalendářních dnů.  / V případě, že lešení pro realizaci díla bude muset být instalováno na stavbě  / déle, a to z důvodu pracovních činností nebo překážek v práci zapříčiněných Objednatelem nebo třetí osobou, budou náklady za pronájem lešení ve výši  / X € bez DPH za každý započatý den přeúčtovány Objednateli.
+Úchyty skel – NEREZ BRUS | X € bez DPH | Estetický příplatek.
+Sklo Connex s mléčnou bezpečnostní fólií | X € bez DPH | Estetický příplatek.
+Trubková madla v odstínu RAL | neobsazeno | S instalací na stěnu výtahové šachty, alternativně na stěnu schodiště.
+Trubková madla v provedení NEREZ Brus | neobsazeno | S instalací na stěnu výtahové šachty, alternativně na stěnu schodiště.
+Dokrytí dveří – NEREZ BRUS | X € bez DPH / 1 kus | Součástí základní nabídkové ceny je dodávka ocelových profilů s povrchovou úpravou v odstínu ocelové konstrukce výtahové šachty. Nabídková cena platí pro dokrytí dveří s rozvinutou šíří plechu max. 100 mm.
+Přechod mezi prahem dveří výtahu a stavební podlahou nástupiště – NEREZ BRUS | X € bez DPH / 1 kus | Bez volby tohoto příplatku Objednatel tento podlahový přechod zrealizuje stavebně – např. dobetonováním, pokládkou dlažby atp. Nabídková cena platí pro přechod s rozvinutou šíří plechu max. 100 mm.
+Montovaná ocelová konstrukce (OK) / výtahové šachty | X € bez DPH | OK v lakované povrchové úpravě v odstínu dle vzorníku RAL.
+Poznámka ATA: U montované OK výtahové šachty je nutno počítat s delší projekční a výrobní přípravou, která je v porovnání se standardní svařovanou  / ocelovou konstrukcí výtahové šachty cca o 3 až 4 kalendářní týdny delší.  /  / Výhodami dodávky montované OK výtahové šachty jsou:  / rychlost montáže / čistota montáže bez zápachu (bez nátěrů a svařování) / nízká úroveň hluku (bez broušení) / přesnost / nízká energetická náročnost při montáži (bez broušení a svařování) / snížený nárok na kvalitu prostředí při realizaci / OK je do místa realizace dodána již ve finální povrchové úpravě, kdy montáž OK může být realizována i za nízkých teplot
+--- T 9
+8	Standardní rozsah činností Zhotovitele v rámci nabídkové ceny:
+Zaměření skutečného stavu v místě realizace: | X | Vydání prováděcí dokumentace v tištěné papírové  / podobě: | X
+Vyhodnocení zaměření: | X | Doprava osob a transport materiálu na stavbu,  / manipulace: | X
+Koordinace projektu s dodavatelem  / technologie výtahu: | X | Výroba, dodávka a montáž ocelové konstrukce  / výtahové šachty vč. opláštění: | X
+Koordinace projektu s dodavatelem  / stavebních konstrukcí: | X | Vedení stavebního deníku: | X
+Návrh prováděcí dokumentace: | X | Likvidace odpadů Zhotovitele: | X
+Statické posouzení ocelové konstrukce: | X | Úklid po činnostech Zhotovitele: | X
+--- T 10
+9	Požadavky Zhotovitele na Objednatele spojené s plněním zakázky:
+Objednatel nejpozději ke dni podpisu smlouvy o dílo (potvrzení objednávky) Zhotoviteli předá: | platnou stavební dokumentaci - min. výkresy ve formátech PDF nebo DWG + technickou zprávu
+Objednatel nejpozději ke dni podpisu smlouvy o dílo (potvrzení objednávky) Zhotoviteli předá: | platnou dokumentaci technologie výtahu (platný dispoziční výkres)
+Objednatel nejpozději ke dni podpisu smlouvy o dílo (potvrzení objednávky) Zhotoviteli předá: | platné požárně bezpečnostní řešení stavby (PBŘ)
+Objednatel nejpozději ke dni podpisu smlouvy o dílo (potvrzení objednávky) Zhotoviteli předá: | požadovaný odstín povrchové úpravy ocelové konstrukce výtahové šachty dle vzorníku RAL
+Objednatel nejpozději ke dni podpisu smlouvy o dílo (potvrzení objednávky) Zhotoviteli předá: | požadovaný odstín klempířských prvků (lakovaný pozinkovaný plech v odstínu RAL dle vzorníku Zhotovitele)
+--- T 11
+10	Standardní dodávka Zhotovitele NEOBSAHUJE: (zajistí Objednatel, pokud není ve smlouvě o dílo dohodnuto jinak)
+prováděcí dokumentaci založení výtahové šachty vč. statiky / projektovou dokumentaci pro stavební povolení ani stavebně prováděcí dokumentaci / zhotovení stavební připravenosti (ŽB základu atp.) + ostatní stavební činnosti jako např. jsou: začištění ostění čelní stěny po osazení dveří výtahu, doplnění požadované vzdálenosti dle normy, dotažení dlažeb na nástupištích k prahu šachetních dveří, nebo zajištění napojení podlahové konstrukce na prahy šachetních dveří jinými způsoby, uzemnění OCK výtahové šachty, zabezpečení (zakrytí atd.) podlahových krytin (koberce, lino,) proti poškození při realizaci díla Zhotovitelem. Vnitřní stěny ve výtahové šachtě, jež by řešily odstupové vzdálenosti od výtahové kabiny k vnějším stěnám výtahové šachty, jež jsou dodávkou Zhotovitele dle této cenové nabídky. Zhotovitel v předložené cenové nabídce počítá s tím, že odstupové vzdálenosti dle platných norem (pokud jsou pro danou výtahovou technologii nevyhovující) budou ze strany Objednatele (resp. dodavatele výtahu) řešeny prostřednictvím dodávky zábradlí na kabině výtahu nebo jiným technickým opatřením. / lešení pro výstavbu výtahu (bude-li dodavatel výtahu požadovat) / zajištění odpovídajícího prostředí v souladu s technickými listy materiálů od jednotlivých výrobců pro provádění činností Zhotovitelem / zajištění zařízení staveniště (min. umyvadlo s tekoucí vodou, pevné či mobilní WC, stavební elektrickou přípojku 1x230V, jištění min. 16 A, ve vzdálenosti do 20 -ti metrů od místa realizace, vč. spotřeby el. energie, úložný prostor pro dočasné uložení nářadí a materiálu o velikosti min. 3x4 m / podíl na nákladech za pojištění stavby, podíl na nákladech za zařízení staveniště, podíl na ostraze staveniště / zádržné do předání díla investorovi ani po dobu záruky / osvětlení výtahové šachty, osvětlení nástupišť dle platné ČSN EN 81.20 / dohled po svařování v délce dle platné legislativy (min. 8 hod.) / geodetické zaměření ocelové konstrukce výtahové šachty / práce prováděné mimo běžnou pracovní dobu (běžná pracovní doba je v pracovní dny od 7:00 do 17:00 hodin) / čištění, případně novou povrchovou úpravu na ocelových konstrukcích po dlouhodobém přerušení prací zapříčiněné např. ze strany Objednatele / čištění výtahové šachty od nečistot způsobených jinými staveb. subjekty (např. znečištění od broušení SDK, od omítek, od betonáže, od maleb atp.) / po ukončení prací ze strany Zhotovitele, zabalení výtahové šachty do ochranných fólií
+--- T 12
+11 	Platební podmínky:
+Zálohová faktura č. 1: | 30 % / z ceny díla | Po podpisu smlouvy o dílo nebo po obdržení a potvrzení závazné objednávky.  / Úhrada této platby je podmínkou pro zadání výtahové šachty do výroby.
+Zálohová faktura č. 2: | 30 % / z ceny díla | Po ukončení výroby a po dodání ocelové konstrukce výtahové šachty na stavbu nebo do externího skladu Zhotovitele (v případě, že by nebylo možné montáž předmětu díla provádět pro překážky ze strany Objednatele). Úhrada této platby je podmínkou pro započetí montáže ocelové konstrukce výtahové šachty.
+Zálohová faktura č. 3: | 30 % / z ceny díla | Po ukončení výroby a po dodání opláštění výtahové šachty na stavbu nebo do externího skladu Zhotovitele (v případě, že by nebylo možné montáž předmětu díla provádět pro překážky ze strany Objednatele). Úhrada této platby je podmínkou pro předání díla Objednateli.
+Konečná faktura: | 10 % / z ceny díla | Po ukončení montáže výtahové šachty Zhotovitelem bude vystaven konečný daňový  / doklad na zbývající část ceny díla.
+Splatnost všech faktur: | 14 dnů | 
+Platnost cenové nabídky: | 14 dnů | Po uplynutí platnosti nutno vyžádat si aktualizaci této cenové nabídky na centrálním obchodním e-mailu Zhotovitele: [e-mail]
+Poznámka ATA: Při nedodržení termínů splatnosti u jednotlivých faktur Zhotovitele ze strany Objednatele, přeruší Zhotovitel práce na díle do doby uhrazení  / všech splatných pohledávek ze strany Objednatele. Dohodnuté termíny realizace díla se posunou dle aktuálních montážních kapacit Zhotovitele.
+--- T 13
+PODMÍNKY A POŽADAVKY PRO ZAJIŠTĚNÍ MONTÁŽÍ VÝTAHOVÝCH ŠACHET ATA /  / 1.    Objednatel stanoví svého koordinátora prací, který bude s vedoucím montážní skupiny ATA provádět zápisy v montážním deníku. / 2.    Podmínky převzetí stavební připravenosti k realizaci díla (zajistí Objednatel) pokud ve Smlouvě o dílo není uvedeno jinak: / zhotovit či stavebně upravit prohlubeň sloužící pro instalaci výtahové šachty v souladu s dispozičními výkresy ATA / zajistit čistou a suchou prohlubeň výtahové šachty. Dle ČSN EN 81-20 v prostoru výtahové šachty nesmí být žádné zařízení nebo instalováno elektrické i jiné vedení či potrubí, které nemá přímou souvislost s provozem výtahu / zajistit zhutnění zásypu okolo prohlubně výtahové šachty pro možnost bezpečné výstavby lešení / zajistit výstavbu lešení (je-li dodávkou Objednatele) dle dispozičního výkresu Zhotovitele se vzdáleností podlážek okolo výtahové šachty ve vzdálenosti maximálně do 300 mm od ocelového skeletu výtahové šachty. Výšková úroveň první podlážky musí být nainstalována ve výšce minimálně 2,2 metrů nad pochůzí plochou (nad rostlým terénem) okolo výtahové šachty. Horní část lešení bude ukončena ve výšce min. 5,5 metrů nad čistou podlahou nejvyšší stanice, kde napříč výtahové šachty (cca v ose hlavních vodítek výtahu) bude nainstalován montážní nosník (lešenářská trubka) pro minimální zatížení 5 kN (500 kg). Nejvyšší ochoz u lešení instalovaného u interiérových výtahových šachet musí být umístěn ve vzdálenosti minimálně 2 metry pod stropem daného objektu. / provézt statické zajištění (např. podepření, podstojkování atp.) stavebních konstrukcí v případě, že lešení Zhotovitele pro realizaci díla nebude založeno na zhutněném rostlém terénu, ale bude založeno na jiných stavebních konstrukcích (okolní střešní konstrukce atp.), a zároveň zabezpečit pochozí plochu (střešní hydroizolační plášť atp.) proti poškození Zhotovitele, které může nastat při výstavbě jim realizovaného lešení pro montáž výtahové šachty / zajistit úklid montážního pracoviště, zbavit jej od stavebního materiálu, odpadu a zabezpečit jej proti úrazu / při předání stavební připravenosti předá Objednatel prostory zajištěné proti vstupu nepovolaných osob a proti pádu do výtahové šachty. Pracovníci Objednatele i Zhotovitele, kteří vstupů používají, jsou povinni je vždy zajistit bezpečným uzavřením. Odpovědnost za dodržování tohoto požadavku bude určena v montážním deníku / zajistit hasicí přístroj / stavební otvory pro instalaci šachetních dveří výtahu budou zhotoveny dle podkladu Zhotovitele / u exteriérových výtahových šachet zajistit, aby fasáda objektu v místě instalace výtahové šachty vykazovala svislou (vertikální) rovinu s tolerancí +- 20 mm. Na fasádě objektu musí být odstraněny všechny výstupky, jež jsou mimo výše uvedenou toleranci, jakožto i střešní římsy a okapy, budou-li v kolizi s nově instalovanou výtahovou šachtou  / ostatní dle Přílohy č. 1 - Cenová nabídka vč. technické specifikace Zhotovitele / 3.	Požadavky pro zajištění výpomocných prací v průběhu montáže / 	Objednatel zajistí na své vlastní náklady všechny stavební práce včetně materiálu dle pokynů vedoucího montážní skupiny ATA, pokud ve Smlouvě o dílo není uvedeno jinak.  / Kromě jiného se jedná především o zajištění: / podbetonování prahů u všech šachetních výtahových dveří po jejich montáži / stavebního nebo zámečnického zapravení mezer okolo nově nainstalovaných šachetních dveří výtahu / malířských oprav stěn výtahové šachty po dokončení její montáže / oprav nátěru prohlubně po dokončení montáže výtahové šachty / dohledu po ukončení svářečských prací dle platné legislativy / příjezdu nákladních vozidel do 30-ti metrů od místa realizace / bezpečného přístupu k místu realizace vč. osvětlení přístupových cest / skladování volně ložených dílů ocelové konstrukce výtahové šachty vč. vymezení prostoru pro bezpečné skladování skleněných výplní sloužících pro opláštění výtahové šachty. Sklady musí být v základním prostředí, uzamykatelné, větratelné, suché a osvětlené a musejí se nacházet do 20-ti metrů od montážní zóny. / připojení k zásuvce 1x 230 V jištěné jističem pro proudové zatížení minimálně 16 A ve vzdálenosti do 20-ti metrů od montážní zóny / elektrické přívody 1x 230V pro ventilátor i elektrický přímotop vč. elektro revize. Elektro přívody budou dotaženy do vzdálenosti cca 1 metru od ventilátoru instalovaného pod stropem výtahové šachty a cca 1 metru od elektrického přímotopu instalovaného v prohlubni výtahové šachty, kde Objednatel oba tyto elektro přívody ukončí zásuvkou 1x 230V. / v prohlubni výtahové šachty vyvézt zemnící pásek (zemnící kabel) pro provedení uzemnění ocelové konstrukce výtahové šachty / Výpomocné práce budou Objednatelem průběžně zajišťovány v termínech dohodnutých s vedoucím montážní skupiny ATA na základě požadavků s dostatečným předstihem zapsaných do montážního deníku. / 4.	Požadavky na přívody elektrického proudu a osvětlení / 	Objednatel zajistí na své vlastní náklady: / přívod elektrického proudu k výtahu dle dispozičního výkresu dodavatele výtahu včetně elektro-revizní zprávy / stabilní osvětlení nástupišť - min. intenzita 50 luxů / stabilní osvětlení skladu a všech přístupových cest - min. intenzita 50 luxů / v případě nezajištění stabilního osvětlení dle bodu 4b, c, je nutno zřídit provizorní osvětlení ve výše uvedených minimálních hodnotách uvedených minimální intenzity. / spotřebovanou energii při instalaci výtahu a jeho zkouškách / 5.	Zvláštní ujednání / Objednatel nejpozději do 7 dnů po podpisu Smlouvy doručí Zhotoviteli platné požárně bezpečnostní řešení stavby, platnou stavební dokumentaci, platný dispoziční výkres výtahu, poskytne informaci o odstínu nátěru ocelové konstrukce dle vzorkovníku RAL a o odstínu klempířských prvků dle vzorkovníku Zhotovitele. Dále pak zajistí Zhotoviteli přístup do místo realizace díla pro zaměření skutečného stavu a jiné potřeby Zhotovitele související s plněním předmětu smlouvy o dílo. / Objednatel zajistí sociální zázemí na stavbě obdobně jako pro své pracovníky (šatny, WC, umývárna…) / Montáž díla lze provádět jen za předpokladu splnění minimálních teplotních limitů pro realizaci jednotlivých částí díla dle ČSN od +5 °C, vše v souladu s technickými listy materiálů od jednotlivých výrobců apod. Při poklesu teplot pod tyto technologické limity budou dodatkem ke Smlouvě o dílo dohodnuty nové termíny realizace díla. / Předáním hrubé ocelové konstrukce výtahové šachty pro montáž výtahu se rozumí předání ocelového skeletu výtahové šachty vč. povrchové úpravy bez opláštění, kdy případné dočasné zaplachtování výtahové šachty proti dešti a povětrnostním vlivům pro montáž výtahu je dodávkou Objednatele.
