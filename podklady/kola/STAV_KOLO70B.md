@@ -42,3 +42,10 @@ jen v polích PD2 — v souladu s dávkou, ne nález.)
 1. Souhlas J. V. v tomto sezení se zápisem na test a do dealů TEST 432 / 437 (a případně nové TEST zakázky / deal
    pro B6, B9) pro kolo 70 B.
 2. Pro B10 „vypnutý zápis“ přepnutí `PIPEDRIVE_ZAPIS` J. V. (nebo převzít výsledek kola 60).
+
+## Průběh zápisové části (WIP, 27. 11.)
+
+- Souhlas J. V. v sezení 27. 11.: „souhlasím, založ vlastní TEST organizaci“; vypínání znovu netestovat (převzít kolo 60).
+- Pipedrive: TEST organizace 1876, TEST osoby 2934–2938 (smyšlené, `@priklad.cz`).
+- B0 vyplněná: deal 439 — osoba a organizace se vrací jako celé číslo ID (prázdné = null). OK.
+- B2 OK, B3 OK, B4 OK, B5 OK (včetně mazání Platby 3 bez milníku), B7 OK, B8 OK — podrobnosti v konečném STAV.
