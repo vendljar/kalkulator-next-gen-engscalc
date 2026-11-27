@@ -94,7 +94,7 @@ všemi 478 variantami: CN CZ/EN/DE/FR, SoD CZ/EN/DE/FR, plná moc, nabídka PROJ
 | K70-N1 | nízká | ne | Dialog se ukáže u **každého** cizojazyčného dotisku každé nabídky odeslané před 26. 11. (#816 změnil otisk slovníku 218f8566 → 75f7a57f; TX přitom slibuje dotisk staré nabídky „bez upozornění na změnu slovníku“). Text se nemění. Dialog navíc píše „při odeslání: zveřejněná verze 1, teď: zveřejněná verze 1“ — slovník se změnil (otisk), ale číslo verze stejné; uživatel nepozná, co se změnilo. Navrhuji uvádět datum / „upravený slovník“ místo stejného čísla verze. |
 | K70-I1 | info | ne | Main má vypínače víc šachet i víc zákazníků **zapnuté** (J. V. 25. 11. 15:17); PREDAVKA.md uvádí „víc šachet vypnuto“ — opravit předávku. |
 | K70-I2 | info | ne | Na testu není CN v19 (úprava šablony pro V5 / V6, zadání §0.4): V5 (záruka, symbol `NAB_ZARUKA`) se ve Wordu neprojeví; V6 ověřitelný jen online. |
-| K70-I3 | **k rozhodnutí** | ne | **Dotisk staré odeslané nabídky s ruční položkou se na kandidátovi liší od main** (64 ze 134 starých odeslaných variant v datech testu): RP (v24.11.6) při dotisku přidá ruční položky do specifikace a cenového bloku — záměr RP („Odeslaná nabídka se při dotisku vytiskne s ručními položkami“, J. V. 24. 11.). Zadání §2.3 ale chce dotisk znak po znaku jako main. Částky a zámek beze změny. Rozhodnout: přijmout (zapsat do očekávaných rozdílů), nebo dotisk zámků před RP vrátit na starý tvar. |
+| K70-I3 | **k rozhodnutí** | ne | **Dotisk staré odeslané nabídky s ruční položkou se na kandidátovi liší od main** (64 ze 134 starých odeslaných variant v datech testu): RP (v24.11.6) při dotisku přidá ruční položky do specifikace a cenového bloku — záměr RP („Odeslaná nabídka se při dotisku vytiskne s ručními položkami“, J. V. 24. 11.). Zadání §2.3 ale chce dotisk znak po znaku jako main. Částky a zámek beze změny. Bisekce: mění to jen RP (7339a9e), viz oddíl níže; cena celkem stejná. Rozhodnout: přijmout (zapsat do očekávaných rozdílů), nebo dotisk zámků před RP vrátit na starý tvar. |
 | K70-I5 | **k rozhodnutí** | ne | **CN v19 mění pevný text i u dotisku starých odeslaných nabídek** (dotisk bere platnou šablonu): poznámky k ceně jako seznam a. b. c. místo „a. … b. … c.“ v řádcích, DE nadpis „SCHACHTVERKLEIDUNG“, popisky „Compiled by:“ / „Zusammengestellt von:“ / „Établi par :“. Záruka zůstává správně v kapitole V. Požadavek „dotisk znak po znaku stejný jako dřív“ tak s v19 splnit nejde — leda by dotisk bral šablonu z razítka zámku. Rozhodnout: přijmout (jen vzhled a popisky), nebo dotisk se starou šablonou. |
 | K70-I4 | info | ne | DT: SoD (realizace i PROJ) neodeslané zakázky nese v příloze č. 1 „ze dne <den tisku>“ místo data zakázky; u odeslané 9856 datum zámku. Záměr DT #745 (kolo 57). |
 
@@ -126,6 +126,26 @@ všemi 478 variantami: CN CZ/EN/DE/FR, SoD CZ/EN/DE/FR, plná moc, nabídka PROJ
 Surové ověření rozdílů jsem udělal na skutečných Wordech nad daty testu (A4 / A5 / A7 výše): každý rozdíl tam patří k DT, RP, ER, MD, PP, PD2 nebo TX.
 Poznámka k seznamu: vzory `scenar:* *`, `k29:* *`, `vs:* *`, `proj:* *` … (ER) kryjí všechna pole včetně ceny — širší, než chce zadání §0.3; seznam také přijímá RP a DT
 u odeslané fixtury (`fixtura:…odeslana_bez_otisku`), tedy rozdíl dotisku z K70-I3.
+
+## K70-I3 — bisekce (pokyn koordinace 27. 11.)
+
+Případ `TEST-2026-OPR-CN-9502-K19T-C002` (odeslaná 1. 10. 2026, vlastní položka oplášťování „Stříška nad vstupem na dvůr“, je v zámku v `sekce.oplasteni`),
+CN CZ rendererem nad kódem jednotlivých commitů, stejná šablona v18 a stejná data:
+
+| commit | co | text CN |
+|---|---|---|
+| 4e69c27 | main v24.11.7 | A |
+| c89e872 | integrace v24.11.5 (předek RP) | A |
+| **7339a9e** | **RP = v24.11.6** | **B** |
+| 0d8a95f | ER v24.11.9 | B |
+| 63d1d9e / 10b9bed / a9d8770 / 92761c9 / 694ddee | v25.11.3 / v25.11.6 / v26.11.1 / v26.11.2 / v26.11.3 | B |
+
+- **Změnu přináší RP (7339a9e)**, žádná jiná dávka → K70-N2 nevzniká. RP **není** v main (7339a9e ani 19ad174 nejsou předky 4e69c27, main nemá
+  `src/rucni_polozky.js` ani oddíl RP v CHANGELOG), proto main dotiskne starý tvar.
+- Co přibude (B proti A): v technické specifikaci (blok opláštění) řádek „STŘÍŠKA NAD VSTUPEM NA DVŮR (POUZE U PRŮCHOZÍ EXTERIÉROVÉ ŠACHTY) – 1 ks“;
+  v „I. CENOVÁ NABÍDKA“ rozpad na řádek výtahové šachty, řádek položky a „CENA CELKEM“. **Cena celkem je stejná** (main ji má
+  i s položkou, jen ji neuvádí zvlášť). Částky ze zámku se nemění. Odeslaný originál (1. 10.) měl tvar A, dotisk na kandidátovi tedy vypadá jinak
+  než originál. Odpovídá to záměru RP („odeslaná nabídka se při dotisku vytiskne s ručními položkami“).
 
 ## Šablona CN v19 (TX #771 V5, V6, #815) — zveřejněno na TESTU (J. V. 27. 11. přes koordinaci; souhlas se zápisy na test dal J. V. v tomto sezení)
 
