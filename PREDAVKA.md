@@ -8,12 +8,9 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 
 | větev | commit | verze | poznámka |
 |---|---|---|---|
-| `main` | 6c4bc80 | v11.11.1 | ostrý web; víc šachet vypnuto |
-| `test` | dcb1678 | v18.11.3 | = integrace |
-| `claude/integrace-16-10` (integrace) | dcb1678 | v18.11.3 | C9 #608 (v18.11.1), víc zákazníků VZ #598 E0–E6 (v18.11.2, vypínač výchozí VYP), S3 #611 porovnání sestavení (v18.11.3); `main` je předkem |
-| `claude/navrh-rezie` | e6c1020 | — | návrh režie vývoje (S1–S8) + rozhodnutí J. V. 18. 11.; kopie návrhu v `podklady/NAVRH_REZIE_2026-11-18.md` |
-| `claude/s7-podklady` | (tato dávka) | v18.11.4 | S7 startovní podklady #612, sloučeno s integrací dcb1678 |
-| `claude/s6s8-evidence` | (tato dávka) | v18.11.5 | S6 + S8 #613: jedna evidence, PREHLED.md, NOVINKY; nad integrací 9bd6dc8 |
+| `main` | 4e69c27 | v24.11.7 | ostrý web; víc šachet i víc zákazníků ZAPNUTO správcem (J. V. 25. 11. 15:17, K70-I1) |
+| `test` | 694ddee | v26.11.3 | = kandidát plného kola 70 (27. 11.) |
+| `claude/integrace-16-10` (integrace) | d77ca6a+ | v26.11.3 | nad test jen dokumenty (seznam kola 70, rozhodnutí); další sloučení = v27.11.N; `main` je předkem |
 | `claude/vz-t1` | (tato dávka) | v19.11.2 | VZ T1 #669: řídící varianta a zákazník v hlavičce; s d8e4fc1 a 82cbd72; revize poradce; viz CHANGELOG |
 | `claude/vz-f2` | (tato dávka) | v19.11.4 | VZ-F2 #660–#663 + VZF1-I1 nad a3fad44; číslo verze přečísluje koordinace |
 | `claude/d3-objednavka-proj` | (tato dávka) | v19.11.11 | D3 #688 Objednávka / Smlouva PROJ nad integrací 042fcbc; číslo verze přečísluje koordinace |
@@ -97,7 +94,7 @@ Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.)
   „Pipedrive API integrace“ (session_01HpevFD8dLfB4Keo5veExeG); kód jde paralelní větví, slučuje koordinace.
   Kontrola: `git grep -n -i '\bmake\b' -- 'podklady/PIPEDRIVE_*'` nesmí najít nic. #553: podklad odeslán 4. 11.
   (`podklady/PIPEDRIVE_WEBHOOK_553.md`), čeká na pole „Vygenerovat nabídku“, „Odkaz na kalkulaci“ a automatizaci.
-- **Víc šachet a víc zákazníků** jsou za vypínači správce (výchozí VYP); klíč `funkce` je výjimkou zálohy (po obnově
+- **Víc šachet a víc zákazníků** jsou za vypínači správce (výchozí VYP; na main i testu zapnuto J. V. 25. 11.); klíč `funkce` je výjimkou zálohy (po obnově
   vypnuto). Stabilní API jádra VZ: `src/vice_zakazniku.js` a předávka VZ-E0 v `podklady/predavky/2026-11.md`.
 - **Číslování:** roadmapa a meze B — další volná čísla podle `roadmapa/roadmap.json` a `BEZPECNOST_MEZE.md`
   (koordinace drží rezervu, např. B229). Roadmapa obsazená do #643 (#609/#610 `claude/sl-sod-sleva`, #613–#643 S6).
