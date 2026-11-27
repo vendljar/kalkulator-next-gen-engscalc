@@ -237,7 +237,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
   const rpTisk = nabidkaRpTisk(varianta);
   const viceSachetRp = !!(r && Array.isArray(r.sachty) && r.sachty.length);
   const rucniPol = (viceSachetRp || !rpTisk) ? [] : RP.rucniPolozkyVysledku(r, Zv);
-  const rozpisRucni = (cn && !viceSachetRp && rpTisk)
+  const rozpisRucni = (cn && !viceSachetRp)   // bez značky rucniPol = [] → rpRozpisCeny vrátí null
     ? RP.rpRozpisCeny(rucniPol, cenaPredSlevou, mustkySk ? cenaMustkyNum : 0, mena.eur ? mena.na : null, L, P) : null;
 
   /* SYMBOLY TECHNICKÉ ČÁSTI, KTERÉ POPISUJÍ ŠACHTU (VS-E4 #570): sekce
