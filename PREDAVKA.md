@@ -38,6 +38,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/r3-pole-wordu` | (tato dávka) | — | R3 #751 zákaz dalších polí Wordu nad 3cab0c5 (v24.11.2); verzi přidělí koordinace |
 | `claude/er-engineering-rezerva` | (tato dávka) | v24.11.9 | ER #757 #758 #761 nová kalkulace; předávka v archivu |
 | `claude/zk-zakaznici-ze-zakazek` | (tato dávka) | v24.11.8 | ZK #755 zákazníci ze zakázek podle ARES (nástroj správce) nad c89e872, sloučeno s integrací d3d449b (v24.11.7); revize Fable SLOUČIT |
+| `claude/rychla-K70-I3` | (tato dávka) | RI70 | K70-I3 #824 (dočasně): dotisk staré odeslané CN s ruční položkou beze změny (značka rpTisk) nad 7c2d42e; čeká revize Fable; verzi přidělí koordinace |
 
 Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontrola: `python3 nastroje/release_odkaz.py --chybejici`
 (22. 11.: žádná — main v19.11.11, tag vydán).
@@ -57,6 +58,14 @@ Stav 25. 11. 2026 15:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74
 - **Fronta:** K56-D hotovo (`claude/k56-porovnani`, předávka v `podklady/predavky/2026-11.md`); doprava a přesun hmot OCK (PDF návrh u majitele); R1 RP Word na skutečných šablonách CN v18 před main (testovací sezení).
 - Sloučené dnes: PV, MT2, UT, R3, DT, K54-N1, RP — předávky v `podklady/predavky/2026-11.md`.
 - Sloučené dávky (SA, PD, CN, RA, LAK, JT, NN, PR, BZ, HN, RJ, VZD, MT) — oddíly přesunuty do `podklady/predavky/2026-11.md` (23. 11. 2026). Běží: PV (#734 + #597), RP (prototyp ručních položek, čeká na J. V.).
+
+### Rychlá K70-I3 (`claude/rychla-K70-I3`, 27. 11. 2026)
+- Oprava: značka `rpTisk` ve snímku podmínek (`podminkySnimek`), čte `nabidkaRpTisk` (src/nabidka.js). Zámek bez značky: bez řádků RP ve specifikaci, bez rozpisu ceny, bez ručních řádků u šachet (Word, online). Částky, zámek, KL, PD beze změny.
+- Test `src/test_k70i3_rp_dotisk.js` (51 OK; před opravou 28 FAIL), test G/H v `test_rp_rucni_polozky.js` odesílá přes `kryciZmrazPodminky`; mutace [K70I3] 6.
+- Očekávané rozdíly: `podklady/porovnani/ocekavane_k70i3_2026-11-27.txt`.
+- Hlášeno, neopraveno: KL starých nabídek s ruční položkou má na testu řádek „Ruční položky v ceně“, main ne (RP N1).
+- Nabídky odeslané na testu 24. 11. – nasazení opravy nemají značku → dotisk starým tvarem (přijatelné, J. V. 27. 11.).
+- Další krok: revize Fable (koordinace) → integrace → test.
 
 ## Čeká na J. V.
 
