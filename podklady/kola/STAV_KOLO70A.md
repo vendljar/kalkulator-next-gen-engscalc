@@ -20,10 +20,46 @@
 | A6 nová kalkulace (rozdíly pro J. V.) | ✅ | 12 nových: řádky jen ER #757/#758/#761 a #775 (+1 ATYP projekce, viz níže) |
 | A7 SoD, plná moc, objednávka PROJ | ✅ | SoD / SoD PROJ: jen datum „ze dne“ (DT); plná moc shodná; objednávka PROJ: jen odstup před podpisem (PP #791) |
 | A8 krycí listy | ✅ | datum „25.11.2026“ (#804 TX); řádek Jiné odchylky v KL PROJ; stará odeslaná PROJ: jinak beze změny |
-| A9 tok Word / zámek, fuzz, víc šachet, víc zákazníků | ⏳ | |
+| A9 tok Word / zámek, fuzz, víc šachet, víc zákazníků | ✅ (automat) | harnessy a sady v A12 zelené: zámek / prodáno (`test_vs_zamek`, `overit_vz_zamek`, `test_prodano_zamek` …), Word (`test_vs_docx_v17`, `test_k16_proj_word`, `test_np_nahled_word`), fuzz `test_fuzz_invarianty.js`, víc šachet `*_vs_*` (19), víc zákazníků `*_vz_*` (25). Balíček K49 není v gitu → ruční část A9 jen přes A4/A10 naživo |
 | A10 kontroly před odesláním | ✅ / info | jen PROJ → jen SoD PROJ, OCK → jen SoD realizace; #801 jedna hláška; „kombinovaná“ v datech nevznikne (K63-I2) |
 | A11 připomínky | ✅ | neplatné značky 400, akce správce 403; záloha bez snímků a značek |
-| A12 automat (sady, harnessy) | ⏳ | `testovaci_kolo.sh --bez-mutaci` nad worktree kandidáta běží |
+| A12 automat (sady, harnessy) | ✅ | `testovaci_kolo.sh --bez-mutaci` nad 694ddee: **VŠE ZELENÉ**, rc 0 (49 min). Sady 569 ✓ / 0 ✗ / 6 přeskočeno; hodiny +400 dní 466 ✓ / 0 ✗ / 1 přeskočeno; statické 12/12. Přeskočeno: `test.js` (Excel není v exportu), `overit_manual`, `overit_nabidka_proj_word`, `overit_prirucka_admin`, `overit_sablona`, `overit_sablony_online` (chybí KNG_PODKLADY). Upozornění: PREHLED.md neodpovídá stavu (obnovit `prehled_stavu.py`). Mutace v Actions. |
+
+## Verdikt části A
+
+**ZELENÁ s rozhodnutím J. V.** Nenašel jsem žádnou vadu ceny: staré kalkulace a odeslané nabídky mají 0 rozdílů ceny, A3 dalo 0 neočekávaných rozdílů a automat je VŠE ZELENÉ.
+Před main musí J. V. rozhodnout:
+- **K70-I3:** dotisk starých odeslaných nabídek s ruční nebo vlastní položkou se liší od originálu. Mění to jen RP, cena celkem je stejná.
+- **K70-I5:** CN v19 mění pevný text i u dotisků.
+- **CN v19 na main:** zveřejnit podle postupu níže, jinak se V5 ve Wordu na main neprojeví.
+
+K70-N1 (dialog slovníku u každého cizojazyčného dotisku, nízká) main neblokuje.
+
+**Rozdíly pro J. V. (A5 / A6), co uvidí na main po sloučení:**
+- **Nová nabídka CN:**
+  - **V1:** bez fotky není nadpis „Pohled na objekt z ulice:“.
+  - **V2:** bez telefonu není „Tel:“.
+  - **V4:** nové znění konečné splátky.
+  - **V5:** se šablonou v19 záruka jako samostatný odstavec za kapitolou V.
+  - **V6:** poznámky k ceně jako seznam a. b. c.
+  - **#800:** šachta bez opláštění, blok jen typ.
+  - **#815:** popisky „Compiled by:“ / „Zusammengestellt von:“ / „Établi par :“, DE „SCHACHTVERKLEIDUNG“.
+  - **RP:** ruční položky.
+  - **#804:** datum dd.mm.rrrr v krycích listech.
+  - **KL PROJ:** řádek Jiné odchylky.
+  - **SoD:** v příloze 1 „ze dne“ = den tisku (DT).
+  - **Objednávka PROJ:** jen odstup před podpisem (PP).
+- **Nová kalkulace (kalkVerze 2, ER):**
+  - **#757:** řádek ENGINEERING.
+  - **#761:** VÝSTUP ZE ZAMĚŘENÍ (množství).
+  - **#758:** ceny příplatků s rezervou.
+  - **#775:** u šachty bez opláštění plastové kotvy, cestovní náklady, čištění.
+  - **K ověření:** u 9963 se mění i cena řádku PŘIRÁŽKA ZA ATYP – PROJEKČNÍ A KOORDINAČNÍ PRÁCE (zřejmě #761).
+- **Staré kalkulace:** beze změny ceny.
+- **Dotisk starých odeslaných:**
+  - **DE/FR:** před TX a po TX stejné.
+  - **RP:** rozdíl dotisku (K70-I3).
+  - **v19:** se šablonou v19 se mění vzhled a popisky (K70-I5).
 
 ## A1 — sestavení a weby
 
@@ -93,7 +129,7 @@ všemi 478 variantami: CN CZ/EN/DE/FR, SoD CZ/EN/DE/FR, plná moc, nabídka PROJ
 |---|---|---|---|
 | K70-N1 | nízká | ne | Dialog se ukáže u **každého** cizojazyčného dotisku každé nabídky odeslané před 26. 11. (#816 změnil otisk slovníku 218f8566 → 75f7a57f; TX přitom slibuje dotisk staré nabídky „bez upozornění na změnu slovníku“). Text se nemění. Dialog navíc píše „při odeslání: zveřejněná verze 1, teď: zveřejněná verze 1“ — slovník se změnil (otisk), ale číslo verze stejné; uživatel nepozná, co se změnilo. Navrhuji uvádět datum / „upravený slovník“ místo stejného čísla verze. |
 | K70-I1 | info | ne | Main má vypínače víc šachet i víc zákazníků **zapnuté** (J. V. 25. 11. 15:17); PREDAVKA.md uvádí „víc šachet vypnuto“ — opravit předávku. |
-| K70-I2 | info | ne | Na testu není CN v19 (úprava šablony pro V5 / V6, zadání §0.4): V5 (záruka, symbol `NAB_ZARUKA`) se ve Wordu neprojeví; V6 ověřitelný jen online. |
+| K70-I2 | info, **vyřešeno** | ne | (vyřešeno zveřejněním CN v19 na testu, viz níže) Na testu nebyla CN v19 (úprava šablony pro V5 / V6, zadání §0.4): V5 (záruka, symbol `NAB_ZARUKA`) se ve Wordu neprojeví; V6 ověřitelný jen online. |
 | K70-I3 | **k rozhodnutí** | ne | **Dotisk staré odeslané nabídky s ruční položkou se na kandidátovi liší od main** (64 ze 134 starých odeslaných variant v datech testu): RP (v24.11.6) při dotisku přidá ruční položky do specifikace a cenového bloku — záměr RP („Odeslaná nabídka se při dotisku vytiskne s ručními položkami“, J. V. 24. 11.). Zadání §2.3 ale chce dotisk znak po znaku jako main. Částky a zámek beze změny. Bisekce: mění to jen RP (7339a9e), viz oddíl níže; cena celkem stejná. Rozhodnout: přijmout (zapsat do očekávaných rozdílů), nebo dotisk zámků před RP vrátit na starý tvar. |
 | K70-I5 | **k rozhodnutí** | ne | **CN v19 mění pevný text i u dotisku starých odeslaných nabídek** (dotisk bere platnou šablonu): poznámky k ceně jako seznam a. b. c. místo „a. … b. … c.“ v řádcích, DE nadpis „SCHACHTVERKLEIDUNG“, popisky „Compiled by:“ / „Zusammengestellt von:“ / „Établi par :“. Záruka zůstává správně v kapitole V. Požadavek „dotisk znak po znaku stejný jako dřív“ tak s v19 splnit nejde — leda by dotisk bral šablonu z razítka zámku. Rozhodnout: přijmout (jen vzhled a popisky), nebo dotisk se starou šablonou. |
 | K70-I4 | info | ne | DT: SoD (realizace i PROJ) neodeslané zakázky nese v příloze č. 1 „ze dne <den tisku>“ místo data zakázky; u odeslané 9856 datum zámku. Záměr DT #745 (kolo 57). |
