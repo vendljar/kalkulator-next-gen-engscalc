@@ -8,14 +8,16 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | prostředí | verze |
 |---|---|
 | ostrý web (`main`) | **v24.11.7** (`4e69c276`, 24. 11. 2026) |
-| testovací web (`test`) | **v26.11.3** (`694ddeef`, 26. 11. 2026) |
+| testovací web (`test`) | **v27.11.2** (`a40abbbe`, 27. 11. 2026) |
 
-Test je proti main napřed o 224 commitů.
+Test je proti main napřed o 240 commitů.
 
 ## V testu, ještě ne v main
 
 | # | typ | co | verze |
 |---|---|---|---|
+| #824 (dřív K70-I3) | nález | Dotisk staré odeslané nabídky s ruční položkou se liší od originálu (řádek ve specifikaci, rozpis cenového bloku) | v27.11.2 |
+| #823 (dřív K70-N1) | nález | Dotisk cizojazyčné nabídky odeslané před 26. 11. ukazuje planý dialog „Dotisk se změněným slovníkem“ (text „verze 1 → verze 1“) | v27.11.1 |
 | #822 | úkol | Pojistka dočasné značky verze i mimo novinky.py: krok staticke upozorní na hotovou položku s dočasnou značkou v origin/main a origin/test (… | v26.11.3 |
 | #821 | úkol | Varování rucniPolozkaPomer u víc šachet uvádí šachtu (F5) | v26.11.3 |
 | #820 | úkol | Vlastnosti Wordu: náhrada bezpečná i u CDATA / atributu s „>“ / vnořeného prvku (F3); Manager prázdný, autor a iniciály komentářů a sledova… | v26.11.3 |

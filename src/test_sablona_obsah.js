@@ -341,7 +341,20 @@ const enc = new TextEncoder(), dec = new TextDecoder();
     const vel = new Uint8Array(s.cista); const dvV = new DataView(vel.buffer);
     dvV.setUint32(vel.length - 22 + 12, dvV.getUint32(vel.length - 22 + 12, true) + 1000, true);
     const v3 = await SO.sablonaObsahVady(vel);
-    test('B142: velikost adresáře přesahuje konec adresáře → odmítnuto', v3.length > 0, v3);
+    /* MT3 (Actions #218): bez kontroly velikosti adresáře by archiv odmítla až
+     * pozdější pojistka R6 (jiná zpráva) — test proto hlídá, že ho odmítne už
+     * věrohodnost konce („není platný“), ne náhodou jiná kontrola. */
+    test('B142: velikost adresáře přesahuje konec adresáře → odmítnuto (konec není věrohodný)', v3.length > 0 && v3.every(x => /není platný \.docx \(ZIP\)/.test(x)), v3);
+    /* Podvržený konec v komentáři archivu: ukazuje na skutečný adresář, ale jeho
+     * velikost zasahuje přes podvržený konec → nevěrohodný konec za archivem. */
+    const podv = new Uint8Array(s.cista.length + 22); podv.set(s.cista);
+    const dvP = new DataView(podv.buffer), eP = s.cista.length - 22;
+    dvP.setUint16(eP + 20, 22, true);                            // komentář = podvržený konec
+    podv.set(s.cista.subarray(eP, eP + 20), s.cista.length);     // kopie skutečného konce…
+    dvP.setUint32(s.cista.length + 12, podv.length, true);       // …s adresářem přes celý soubor
+    dvP.setUint16(s.cista.length + 20, 0, true);
+    const v3b = await SO.sablonaObsahVady(podv);
+    test('B142: podvržený konec s adresářem přes konec (v komentáři) → odmítnuto jako nevěrohodný konec', v3b.length > 0 && v3b.every(x => /Nevěrohodný konec ZIP/.test(x)), v3b);
     /* Revize 12. 10. 2026 (R1): 4 bajty podpisu konce náhodou v datech
      * obrázku těsně před adresářem nesmí čistou šablonu odmítnout. */
     const obr = new Uint8Array(200); obr.set([0x50, 0x4b, 0x05, 0x06], 100);

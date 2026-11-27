@@ -7,12 +7,30 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "694ddeef",
-  "verze": "v26.11.3",
-  "datum": "26. 11. 2026"
+  "sha": "a40abbbe",
+  "verze": "v27.11.2",
+  "datum": "27. 11. 2026"
  },
- "test_navic_commitu": 224,
+ "test_navic_commitu": 240,
  "v_testu_ne_v_main": [
+  {
+   "id": "824",
+   "typ": "nalez",
+   "nazev": "Dotisk staré odeslané nabídky s ruční položkou se liší od originálu (řádek ve specifikaci, rozpis cenového bloku)",
+   "alias": [
+    "K70-I3"
+   ],
+   "verze": "v27.11.2"
+  },
+  {
+   "id": "823",
+   "typ": "nalez",
+   "nazev": "Dotisk cizojazyčné nabídky odeslané před 26. 11. ukazuje planý dialog „Dotisk se změněným slovníkem“ (text „verze 1 → verze 1“)",
+   "alias": [
+    "K70-N1"
+   ],
+   "verze": "v27.11.1"
+  },
   {
    "id": "822",
    "typ": "ukol",

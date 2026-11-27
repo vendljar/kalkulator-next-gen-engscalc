@@ -8,6 +8,14 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v27.11.3 — MT3 — tři nechycené mutace z Actions #218 (jen testy), větev claude/mt3-mutace
+
+- **VZ E5b P2** (`netlify/test_vz_organizace.mjs`): test porovnával jen razítko (ISO čas s ms) — v rychlém CI padly
+  oba stisky do téže ms a přepis byl neviditelný. Test počká na změnu ms a porovná celou uloženou zakázku.
+- **#114** (`netlify/test_pd_prevod.mjs`): „0,05 %“, „0,05 % za den“, „0,05% bez DPH“ → nelze s důvodem „procento“.
+- **B142** (`src/test_sablona_obsah.js`): hlídá zprávu o nevěrohodném konci ZIPu + případ podvrženého konce v komentáři.
+- Kód aplikace beze změny; cíleně všechny tři mutace chycené 1 z 1; kolo VŠE ZELENÉ, SHODA 395/395. Svěřené MT3-1, #829.
+
 ## v27.11.2 — Rychlá K70-I3 — dotisk staré odeslané nabídky s ruční položkou beze změny, větev claude/rychla-K70-I3
 
 - **K70-I3 (#824, kolo 70A, vada dokumentu):** dotisk nabídky odeslané před opravou s ruční (vlastní) položkou
