@@ -196,6 +196,13 @@ test('částka: měna z textu má přednost', P('spravniPoplatky', 'proj', { sod
 test('částka: bez měny v textu platí měna zakázky',
   P('pokutaSoucinnost', 'ock', { sodPokutaDenni: '500' }, {}, { mena: 'EUR' }).hodnota.currency === 'EUR');
 test('částka: procento do pole s měnou nepatří', !!P('pokutaSoucinnost', 'ock', { sodPokutaDenni: '0,05 % z ceny díla' }).duvod);
+/* MT3 (Actions #218): od K58-N2 text „… z ceny díla“ odmítne i kontrola „jen částka“,
+ * takže výše uvedený test hlídku procenta neověří. Samotné „0,05 %“ / „0,05 % za den“
+ * projde kontrolou slov — zastavit ho musí právě hlídka procenta (jinak 0,05 Kč za den). */
+for (const t of ['0,05 %', '0,05 % za den', '0,05% bez DPH']) {
+  const r = P('pokutaSoucinnost', 'ock', { sodPokutaDenni: t });
+  test('částka: „' + t + '" je procento → důvod, do pole s měnou nic', r.hodnota === undefined && /procento/.test(r.duvod || ''), r);
+}
 /* K58-N2 (kolo 58, J. V. 25. 11. 2026): částka jen jako číslo s nepovinnou měnou / „Kč“, „bez DPH“, „za den“ —
  * jediné číslo v libovolném textu („TEST K57 – Správní poplatky…“ → 57) se nepošle. */
 {

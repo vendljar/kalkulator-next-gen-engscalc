@@ -404,9 +404,15 @@ let S1, D1, ORG1;
   const r1 = await vitez(s, cAutor);
   const raz1 = zakazka(s).uloRazitko;
   const rej1 = pamet.get('zakazky/_rejstrik');
+  /* MT3 (Actions #218): razítko i `kdy` jsou časy s přesností na ms — v rychlém
+   * běhu padly oba stisky do téže ms a přepis by test nepoznal. Počkat, až se
+   * ms změní, a porovnat celou uloženou zakázku, ne jen razítko. */
+  const zak1 = pamet.get('zakazky/z/' + s);
+  const t1 = Date.now(); while (Date.now() <= t1 + 1) await new Promise(h => setTimeout(h, 1));
   const r2 = await vitez(s, cAutor);
   test('15 P2: druhý stisk se stejným stavem bez-ico → zakázka ani rejstřík se nemění, odpověď nese uložené razítko', r1.stav === 'bez-ico' && r2.stav === 'bez-ico'
-    && zakazka(s).uloRazitko === raz1 && r2.razitko === raz1 && pamet.get('zakazky/_rejstrik') === rej1, { r1: r1.razitko, r2: r2.razitko, raz1 });
+    && zakazka(s).uloRazitko === raz1 && r2.razitko === raz1 && pamet.get('zakazky/z/' + s) === zak1
+    && pamet.get('zakazky/_rejstrik') === rej1, { r1: r1.razitko, r2: r2.razitko, raz1 });
   let posl;
   for (let i = 0; i < 10; i++) posl = await vitez(s, cAutor);
   test('15 P2: strop se počítá i u bez-ico (11. a další stisk → strop)', posl.stav === 'strop' && zakazka(s).pdOrgVitez.stav === 'strop', posl);
