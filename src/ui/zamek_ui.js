@@ -337,9 +337,12 @@ async function tiskSlovnikUpozorni(typ, varianta) {
   if (!L || L === 'cz') return true;
   const ted = zamekSlovnikTed();
   if (!ted || ted.otisk === puv.otisk) return true;
-  const v = (r) => r.verze ? 'zveřejněná verze ' + r.verze : 'slovník zabudovaný v aplikaci';
-  return await potvrd('Slovník překladů se od odeslání této nabídky změnil (při odeslání: ' + v(puv)
-    + ', teď: ' + v(ted) + ').\n\nDotisk v jazyce ' + L.toUpperCase() + ' ponese DNEŠNÍ znění překladů, '
+  /* K70-N1: přidaná hesla, která dotisk staré nabídky nezmění (slovnik.js). */
+  if (typeof slovnikRazitkoShoda === 'function' && typeof PREKLAD !== 'undefined'
+      && slovnikRazitkoShoda(puv, PREKLAD, ted.verze)) return true;
+  const popis = (typeof slovnikZmenaPopis === 'function') ? slovnikZmenaPopis(puv, ted)
+    : 'při odeslání: ' + (puv.verze || '—') + ', teď: ' + (ted.verze || '—');
+  return await potvrd('Slovník překladů se od odeslání této nabídky změnil (' + popis + ').\n\nDotisk v jazyce ' + L.toUpperCase() + ' ponese DNEŠNÍ znění překladů, '
     + 'takže se textem může lišit od dokumentu, který zákazník dostal. Částky jsou zmrazené a nemění se.',
     { nadpis: 'Dotisk se změněným slovníkem', ano: 'Tisknout', ne: 'Zrušit' });
 }

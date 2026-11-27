@@ -8,6 +8,19 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## Rychlá K70-N1 (verzi přidělí koordinace) — planý dialog „Dotisk se změněným slovníkem“, větev claude/rychla-K70-N1
+
+Nad integrací `7c2d42e` (kód = test v26.11.3). Rychlá cesta; tisk, ceny, zámky ani slovník se nemění.
+- **K70-N1 (kolo 70A, #823 dočasně, značka RN70):** cizojazyčný dotisk nabídky odeslané před TX ukazoval dialog
+  změněného slovníku, protože otisk razítka je z celého slovníku a #816 (K66-I1) do `PREKLAD` jen přidal dvojče hesla
+  „… PROVDITELNOSTI …“ se stejným překladem. Nově `slovnikRazitkoShoda` (`slovnik.js`): při téže zveřejněné verzi
+  se zkusí otisk dnešního slovníku bez hesel ze seznamu `SLOVNIK_PRIDANA_HESLA` (jen dvojčata se stejným
+  překladem; heslo s jiným překladem se neodebere). Jiný otisk nebo jiná zveřejněná verze dál varuje. Text dialogu
+  při téže verzi: „změnil se slovník zabudovaný v aplikaci (nová verze aplikace); zveřejněná verze N je stejná“.
+- Test `src/test_k70n1_slovnik_dialog.js` (pojistka: se starým `zamek_ui.js` 4× FAIL), mutace `[K70N1]` (6).
+- **Které kalkulace se změní:** žádné — mění se jen to, zda se před dotiskem EN/DE/FR nabídky odeslané v25.11.6
+  až v26.11.1 ukáže dialog.
+
 ## v26.11.3 — UK — úklid nízkých návrhů revize G1 (#807), větev claude/uk-uklid
 
 Nad integrací `2a61e6cd`. Cena ani text dokumentu beze změny (porovnání proti integraci = SHODA).

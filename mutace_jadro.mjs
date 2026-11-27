@@ -222,7 +222,11 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
    * ui/pripominky_ui.js), #793 náhled Pipedrive jen administrátor (ui/pd_nanecisto_ui.js). */
   'pripominky.js', 'ui/pripominky_ui.js', 'ui/pd_nanecisto_ui.js',
   /* PP kolo 61 (#801): uložení bez hlavičky zůstane u hlášky (ui/zakulozeni_ui.js). */
-  'ui/zakulozeni_ui.js'];
+  'ui/zakulozeni_ui.js',
+  /* slovnik.js (K70-N1, 27. 11. 2026): shoda razítka slovníku při dotisku staré
+   * nabídky (přidaná hesla bez vlivu na text) a popis změny v dialogu.
+   * Hlídá src/test_k70n1_slovnik_dialog.js. */
+  'slovnik.js'];
 /* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
  * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
  * nastroje/mutace_cast.mjs). */
@@ -6830,6 +6834,31 @@ const MUTACE = [
     hledej: "      } else pol = RPk.rpPomerPrepsany(r, ctx.zadani);",
     nahrad: "      } else pol = [];",
     proc: "kombinace ruční položky a přepsaného řádku by prošla bez upozornění", sady: ["test_g1_uklid.js"] },
+  /* K70-N1 (27. 11. 2026): planý dialog dotisku se změněným slovníkem. [K70N1] */
+  { nazev: "[K70N1] dotisk staré nabídky bez shody přidaných hesel", soubor: "ui/zamek_ui.js",
+    hledej: "      && slovnikRazitkoShoda(puv, PREKLAD, ted.verze)) return true;",
+    nahrad: "      && false) return true;",
+    proc: "každý cizojazyčný dotisk nabídky z doby před TX by dál ukazoval planý dialog změněného slovníku (K70-N1)", sady: ["test_k70n1_slovnik_dialog.js", "test_slovnik.js"] },
+  { nazev: "[K70N1] přímá shoda otisku se nezkouší", soubor: "slovnik.js",
+    hledej: "  if (ted.otisk === p.otisk) return true;\n  if (ted.verze !== p.verze) return false;",
+    nahrad: "  if (ted.verze !== p.verze) return false;",
+    proc: "razítko shodné s dnešním slovníkem by hlásilo změnu, kdyby ho seznam přidaných hesel nepokryl", sady: ["test_k70n1_slovnik_dialog.js", "test_slovnik.js"] },
+  { nazev: "[K70N1] jiná zveřejněná verze projde", soubor: "slovnik.js",
+    hledej: "  if (ted.verze !== p.verze) return false;\n",
+    nahrad: "",
+    proc: "nová zveřejněná verze slovníku od J. V. by dotisk nevarovala, ač nese jiné znění", sady: ["test_k70n1_slovnik_dialog.js", "test_slovnik.js"] },
+  { nazev: "[K70N1] dvojče s jiným překladem projde", soubor: "slovnik.js",
+    hledej: " || JSON.stringify(P[h.klic]) !== JSON.stringify(P[h.dvojce])) return false;",
+    nahrad: ") return false;",
+    proc: "přidané heslo s jiným překladem než jeho dvojče by se vypustilo a změna textu dotisku by zůstala skrytá", sady: ["test_k70n1_slovnik_dialog.js", "test_slovnik.js"] },
+  { nazev: "[K70N1] přidané heslo se neodebere", soubor: "slovnik.js",
+    hledej: "      delete bez[h.klic];\n",
+    nahrad: "",
+    proc: "shoda bez přidaných hesel by se nikdy nenašla — planý dialog zůstává", sady: ["test_k70n1_slovnik_dialog.js", "test_slovnik.js"] },
+  { nazev: "[K70N1] popis při téže verzi zase „verze 1 → verze 1“", soubor: "slovnik.js",
+    hledej: "  if ((a.verze || null) === (b.verze || null))\n",
+    nahrad: "  if (false)\n",
+    proc: "dialog by dál mátl textem „při odeslání: verze 1, teď: verze 1“", sady: ["test_k70n1_slovnik_dialog.js", "test_slovnik.js"] },
   /* TX (26. 11. 2026): #804, #771 V4–V6, #815, #814, #811, #812, #809, #808, K66-I1. [TX] */
   { nazev: "[TX] V4 konečná faktura větou PD2", soubor: "kryci.js",
     hledej: "kal.txTisk === false ? KRYCI_VETA_KONECNA_PROC : KRYCI_VETA_KONECNA_TX",

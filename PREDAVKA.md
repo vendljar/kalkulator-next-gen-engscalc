@@ -44,6 +44,16 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 
 ## Běžící dávky
 
+### Rychlá K70-N1 (`claude/rychla-K70-N1`, 27. 11. 2026)
+- Nad integrací 7c2d42e (kód = test 694ddee v26.11.3). Roadmapa #823 (alias K70-N1, dočasná verze `RN70` —
+  `R70N1` neprojde tvarem `^[A-Z]{1,4}\d{0,3}$`); číslo a verzi přidělí koordinace.
+- Oprava: `slovnikRazitkoShoda` + `SLOVNIK_PRIDANA_HESLA` + `slovnikZmenaPopis` (`src/slovnik.js`), volá
+  `tiskSlovnikUpozorni` (`src/ui/zamek_ui.js`). Test `src/test_k70n1_slovnik_dialog.js` (25 OK; se starým
+  `zamek_ui.js` 4× FAIL), mutace `[K70N1]` 6/6 (`slovnik.js` přidán do JADRA).
+- Rozdíl PREKLAD test v25.11.6 → v26.11.3 = jen heslo K66-I1; main v24.11.7 → v26.11.3 navíc bm, kpl, m² (RP #736)
+  a ENGINEERING (ER #757) — ty v seznamu NEJSOU, staré nabídky z main po nasazení dialog dál uvidí (otázka koordinaci).
+- Další krok: revize poradce Fable → integrace → test.
+
 ZK #755 (v24.11.8, `claude/zk-zakaznici-ze-zakazek`): předávka dávky v `podklady/predavky/2026-11.md` (nahoře).
 
 Stav 25. 11. 2026 15:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74 % → doporučeno nové sezení; kokpit https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2):
