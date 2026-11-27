@@ -16,12 +16,12 @@
 | A2 kalkulace T × Mt | ✅ | 478 variant / 452 zakázek; staré: 0 rozdílů ceny; nové: jen ER / #775 |
 | A3 porovnání sestavení main × kandidát | ⏳ | čeká na seznam očekávaných rozdílů od koordinace |
 | A4 dotisk starých odeslaných nabídek | ✅ / rozhodnout | Word 4 jazyky: rozdíl jen RP (64) a DT (1) → K70-I3; DE/FR před × po TX bajt po bajtu stejné; dialog slovníku 1× na dotisk → K70-N1 (text) |
-| A5 nová nabídka (rozdíly pro J. V.) | ⏳ | |
+| A5 nová nabídka (rozdíly pro J. V.) | ✅ | V1, V2, V4 (TX), #800/#815, #767, ER podle dávek; V6 v náhledu podkladů; V5 jen se šablonou CN v19 (na testu není) |
 | A6 nová kalkulace (rozdíly pro J. V.) | ✅ | 12 nových: řádky jen ER #757/#758/#761 a #775 (+1 ATYP projekce, viz níže) |
 | A7 SoD, plná moc, objednávka PROJ | ✅ | SoD / SoD PROJ: jen datum „ze dne“ (DT); plná moc shodná; objednávka PROJ: jen odstup před podpisem (PP #791) |
-| A8 krycí listy | ⏳ | |
+| A8 krycí listy | ✅ | datum „25.11.2026“ (#804 TX); řádek Jiné odchylky v KL PROJ; stará odeslaná PROJ: jinak beze změny |
 | A9 tok Word / zámek, fuzz, víc šachet, víc zákazníků | ⏳ | |
-| A10 kontroly před odesláním | ⏳ | |
+| A10 kontroly před odesláním | ✅ / info | jen PROJ → jen SoD PROJ, OCK → jen SoD realizace; #801 jedna hláška; „kombinovaná“ v datech nevznikne (K63-I2) |
 | A11 připomínky | ✅ | neplatné značky 400, akce správce 403; záloha bez snímků a značek |
 | A12 automat (sady, harnessy) | ⏳ | `testovaci_kolo.sh --bez-mutaci` nad worktree kandidáta běží |
 
@@ -91,8 +91,29 @@ všemi 478 variantami: CN CZ/EN/DE/FR, SoD CZ/EN/DE/FR, plná moc, nabídka PROJ
 
 | ID | vážnost | cena | co |
 |---|---|---|---|
-| K70-N1 | nízká | ne | Dialog „Dotisk se změněným slovníkem“ píše „při odeslání: zveřejněná verze 1, teď: zveřejněná verze 1“ — slovník se změnil (otisk), ale číslo verze stejné; uživatel nepozná, co se změnilo. Navrhuji uvádět datum / „upravený slovník“ místo stejného čísla verze. |
+| K70-N1 | nízká | ne | Dialog se ukáže u **každého** cizojazyčného dotisku každé nabídky odeslané před 26. 11. (#816 změnil otisk slovníku 218f8566 → 75f7a57f; TX přitom slibuje dotisk staré nabídky „bez upozornění na změnu slovníku“). Text se nemění. Dialog navíc píše „při odeslání: zveřejněná verze 1, teď: zveřejněná verze 1“ — slovník se změnil (otisk), ale číslo verze stejné; uživatel nepozná, co se změnilo. Navrhuji uvádět datum / „upravený slovník“ místo stejného čísla verze. |
 | K70-I1 | info | ne | Main má vypínače víc šachet i víc zákazníků **zapnuté** (J. V. 25. 11. 15:17); PREDAVKA.md uvádí „víc šachet vypnuto“ — opravit předávku. |
 | K70-I2 | info | ne | Na testu není CN v19 (úprava šablony pro V5 / V6, zadání §0.4): V5 (záruka, symbol `NAB_ZARUKA`) se ve Wordu neprojeví; V6 ověřitelný jen online. |
 | K70-I3 | **k rozhodnutí** | ne | **Dotisk staré odeslané nabídky s ruční položkou se na kandidátovi liší od main** (64 ze 134 starých odeslaných variant v datech testu): RP (v24.11.6) při dotisku přidá ruční položky do specifikace a cenového bloku — záměr RP („Odeslaná nabídka se při dotisku vytiskne s ručními položkami“, J. V. 24. 11.). Zadání §2.3 ale chce dotisk znak po znaku jako main. Částky a zámek beze změny. Rozhodnout: přijmout (zapsat do očekávaných rozdílů), nebo dotisk zámků před RP vrátit na starý tvar. |
 | K70-I4 | info | ne | DT: SoD (realizace i PROJ) neodeslané zakázky nese v příloze č. 1 „ze dne <den tisku>“ místo data zakázky; u odeslané 9856 datum zámku. Záměr DT #745 (kolo 57). |
+
+## A5 — nová neodeslaná nabídka (naživo na kandidátovi, nic se nezamklo)
+
+- Kompletní náhled podkladů (vzhled Wordu): **V4** „… bude vystaven 3. konečný daňový doklad na zbývajících 10 % ceny díla bez DPH, k níž bude připočtena DPH
+  v zákonné výši.“; **V6** „Poznámky k cenové nabídce:“ jako nadpis a seznam a. b. c.; **V5** „Záruka: 60 měsíců“ zatím v kapitole V (bez šablony CN v19 se symbol nepoužije).
+  „Kompletní náhled a tisk nabídky“ (online tisk) má platební podmínky dál jako tabulku a poznámky k ceně nemá.
+- Word (renderer, A4/A5 tabulka výše): V1, V2, V4, ER (Engineering, výstup ze zaměření „ano“), #800 a #815 (šachta bez opláštění: blok opláštění jen typ,
+  „materiály DP1“), RP — vše jen u neodeslaných nabídek.
+
+## A8 — krycí listy
+
+- Main × kandidát (data krycího listu, stará odeslaná OCK 9501 a PROJ 9817): liší se **jen tvar data** („Dne“, „Datum podpisu smlouvy“: „2026-10-01“ → „01.10.2026“, #804 TX)
+  a u PROJ nový řádek „Jiné odchylky oproti smluvnímu standardu“ (prázdný u staré zakázky). Způsob fakturace staré odeslané PROJ beze změny.
+- Naživo: KL OCK 9961 a KL PROJ 9964 „Dne 25.11.2026“.
+
+## A10 — kontroly před odesláním
+
+- Tisk KL PROJ zakázky jen PROJ (9964): hlásí jen SoD PROJ; KL OCK (9961, PROJ vyřazená): jen SoD realizace (#802). „Kombinovaná“ zakázka s oběma SoD v datech
+  vzniknout nemůže — strana s číslem OCK je vždy vedoucí (D6e), bez čísla se SoD nekontroluje (stejně jako K63-I2); větev kryje jen `src/test_pp_k61.js`.
+- Uložení bez čísla a názvu: stránka Kalkulace zůstane, **jedna** hláška „Vyplňte v hlavičce…“ (#801, #812 — K63-I1 opraveno).
+- #808: dotisk nad zakázkou otevřenou jen ke čtení se teď ukládá (9961: 5 nových záznamů tisku na serveru) — K62-N1 opraveno.
