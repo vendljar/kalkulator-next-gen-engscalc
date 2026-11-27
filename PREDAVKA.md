@@ -60,12 +60,13 @@ Stav 25. 11. 2026 15:00 (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx, kontext 74
 - Sloučené dávky (SA, PD, CN, RA, LAK, JT, NN, PR, BZ, HN, RJ, VZD, MT) — oddíly přesunuty do `podklady/predavky/2026-11.md` (23. 11. 2026). Běží: PV (#734 + #597), RP (prototyp ručních položek, čeká na J. V.).
 
 ### Rychlá K70-I3 (`claude/rychla-K70-I3`, 27. 11. 2026)
-- Oprava: značka `rpTisk` ve snímku podmínek (`podminkySnimek`), čte `nabidkaRpTisk` (src/nabidka.js). Zámek bez značky: bez řádků RP ve specifikaci, bez rozpisu ceny, bez ručních řádků u šachet (Word, online). Částky, zámek, KL, PD beze změny.
-- Test `src/test_k70i3_rp_dotisk.js` (51 OK; před opravou 28 FAIL), test G/H v `test_rp_rucni_polozky.js` odesílá přes `kryciZmrazPodminky`; mutace [K70I3] 6.
-- Očekávané rozdíly: `podklady/porovnani/ocekavane_k70i3_2026-11-27.txt`.
-- Hlášeno, neopraveno: KL starých nabídek s ruční položkou má na testu řádek „Ruční položky v ceně“, main ne (RP N1).
-- Nabídky odeslané na testu 24. 11. – nasazení opravy nemají značku → dotisk starým tvarem (přijatelné, J. V. 27. 11.).
-- Další krok: revize Fable (koordinace) → integrace → test.
+- Oprava: značka `rpTisk` ve snímku podmínek (`podminkySnimek`), čte `nabidkaRpTisk` (src/nabidka.js). Zámek bez značky: bez řádků RP ve specifikaci, bez rozpisu ceny, bez ručních řádků u šachet (Word, online, SoD). Částky, zámek, KL, PD beze změny.
+- Test `src/test_k70i3_rp_dotisk.js` 51 OK (před opravou 28 FAIL); G/H v `test_rp_rucni_polozky.js` odesílá přes `kryciZmrazPodminky`; zlatá VS: jen fixtura vmuhkstzr0 (pole RP). Mutace [K70I3] 5/5.
+- Kolo: sady 570/0, hodiny 467/0, S3 proti test 394 + 1 očekávaný; ✗ jen kontrola verze (verze.txt 26.11.3, verzi nezvyšovat — přidělí koordinace).
+- Proti main: vmuhkstzr0 má týž vzor rozdílů jako odeslané fixtury bez ruční položky (vmuhkstzy3, vmuhksu015) — RP nic nepřidává.
+- KL starých nabídek s ruční položkou: řádek „Ruční položky v ceně“ na testu, ne na main (RP N1) — neměněno, v seznamu očekávaných (proti main).
+- Testovací data: nabídky odeslané na testu 24. 11. – nasazení (a z neobnovené stránky po nasazení) nemají značku → dotisk bez rozpisu RP.
+- Další krok: revize Fable → integrace → test.
 
 ## Čeká na J. V.
 
