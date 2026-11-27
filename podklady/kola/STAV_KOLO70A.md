@@ -54,7 +54,7 @@ K70-N1 (dialog slovníku u každého cizojazyčného dotisku, nízká) main nebl
   - **#761:** VÝSTUP ZE ZAMĚŘENÍ (množství).
   - **#758:** ceny příplatků s rezervou.
   - **#775:** u šachty bez opláštění plastové kotvy, cestovní náklady, čištění.
-  - **K ověření:** u 9963 se mění i cena řádku PŘIRÁŽKA ZA ATYP – PROJEKČNÍ A KOORDINAČNÍ PRÁCE (zřejmě #761).
+  - **9963:** cena řádku PŘIRÁŽKA ZA ATYP – PROJEKČNÍ A KOORDINAČNÍ PRÁCE +3,25 % (důsledek #761, viz rozbor níže).
 - **Staré kalkulace:** beze změny ceny.
 - **Dotisk starých odeslaných:**
   - **DE/FR:** před TX a po TX stejné.
@@ -131,7 +131,7 @@ všemi 478 variantami: CN CZ/EN/DE/FR, SoD CZ/EN/DE/FR, plná moc, nabídka PROJ
 | K70-I1 | info | ne | Main má vypínače víc šachet i víc zákazníků **zapnuté** (J. V. 25. 11. 15:17); PREDAVKA.md uvádí „víc šachet vypnuto“ — opravit předávku. |
 | K70-I2 | info, **vyřešeno** | ne | (vyřešeno zveřejněním CN v19 na testu, viz níže) Na testu nebyla CN v19 (úprava šablony pro V5 / V6, zadání §0.4): V5 (záruka, symbol `NAB_ZARUKA`) se ve Wordu neprojeví; V6 ověřitelný jen online. |
 | K70-I3 | **k rozhodnutí** | ne | **Dotisk staré odeslané nabídky s ruční položkou se na kandidátovi liší od main** (64 ze 134 starých odeslaných variant v datech testu): RP (v24.11.6) při dotisku přidá ruční položky do specifikace a cenového bloku — záměr RP („Odeslaná nabídka se při dotisku vytiskne s ručními položkami“, J. V. 24. 11.). Zadání §2.3 ale chce dotisk znak po znaku jako main. Částky a zámek beze změny. Bisekce: mění to jen RP (7339a9e), viz oddíl níže; cena celkem stejná. Rozhodnout: přijmout (zapsat do očekávaných rozdílů), nebo dotisk zámků před RP vrátit na starý tvar. |
-| K70-I5 | **k rozhodnutí** | ne | **CN v19 mění pevný text i u dotisku starých odeslaných nabídek** (dotisk bere platnou šablonu): poznámky k ceně jako seznam a. b. c. místo „a. … b. … c.“ v řádcích, DE nadpis „SCHACHTVERKLEIDUNG“, popisky „Compiled by:“ / „Zusammengestellt von:“ / „Établi par :“. Záruka zůstává správně v kapitole V. Požadavek „dotisk znak po znaku stejný jako dřív“ tak s v19 splnit nejde — leda by dotisk bral šablonu z razítka zámku. Rozhodnout: přijmout (jen vzhled a popisky), nebo dotisk se starou šablonou. |
+| K70-I5 | **přijato J. V. 27. 11.** (přijatý rozdíl dotisku) | ne | **CN v19 mění pevný text i u dotisku starých odeslaných nabídek** (dotisk bere platnou šablonu): poznámky k ceně jako seznam a. b. c. místo „a. … b. … c.“ v řádcích, DE nadpis „SCHACHTVERKLEIDUNG“, popisky „Compiled by:“ / „Zusammengestellt von:“ / „Établi par :“. Záruka zůstává správně v kapitole V. Požadavek „dotisk znak po znaku stejný jako dřív“ tak s v19 splnit nejde — leda by dotisk bral šablonu z razítka zámku. Rozhodnout: přijmout (jen vzhled a popisky), nebo dotisk se starou šablonou. |
 | K70-I4 | info | ne | DT: SoD (realizace i PROJ) neodeslané zakázky nese v příloze č. 1 „ze dne <den tisku>“ místo data zakázky; u odeslané 9856 datum zámku. Záměr DT #745 (kolo 57). |
 
 ## A5 — nová neodeslaná nabídka (naživo na kandidátovi, nic se nezamklo)
@@ -182,6 +182,17 @@ CN CZ rendererem nad kódem jednotlivých commitů, stejná šablona v18 a stejn
   v „I. CENOVÁ NABÍDKA“ rozpad na řádek výtahové šachty, řádek položky a „CENA CELKEM“. **Cena celkem je stejná** (main ji má
   i s položkou, jen ji neuvádí zvlášť). Částky ze zámku se nemění. Odeslaný originál (1. 10.) měl tvar A, dotisk na kandidátovi tedy vypadá jinak
   než originál. Odpovídá to záměru RP („odeslaná nabídka se při dotisku vytiskne s ručními položkami“).
+
+## 9963 — rozbor řádku „PŘIRÁŽKA ZA ATYP – PROJEKČNÍ A KOORDINAČNÍ PRÁCE“ (pokyn koordinace 27. 11., jen čtení)
+
+- **Vzorec** (engine.js, beze změny mezi main a testem): přirážka = sazba ATYP × součet nákladů řádků REŽIE, které se počítají; sazba 10 %.
+- **Vstupy main × test** (stejná data, ceník uložený v zakázce): v režii se změnil **jen řádek VÝSTUP ZE ZAMĚŘENÍ PRO ZÁKAZNÍKA**, množství **0,5 → 1**
+  (náklad řádku +100 %). Ostatní řádky režie (zaměření, dílenská dokumentace, statika, statika opláštění, režie kanceláře, stavbyvedoucí) stejné.
+  Základ režie +3,25 %, přirážka ATYP (náklad i prodej) **+3,25 %**.
+- **Příčina:** #761 (dřív #759), commit **02d18f5** „ER #757–#759: příznak nové kalkulace kalkVerze 2 …“: `(nova || z.vystupZamereni) ? 1 : 0.5`.
+  Nová kalkulace má výstup ze zaměření vždy 1 ×. Bisekce po commitech ER v engine.js: bd775e8 = main, od 02d18f5 = test.
+- **Jen nová kalkulace:** táž data s `kalkVerze` 1 dají na kandidátovi množství 0,5 a přirážku stejnou jako main. Z 12 nových neodeslaných
+  kalkulací má ATYP jen 9963 (ostatní bez ATYP, 9961 je zamčená, cena ze zámku). Změna přirážky je tedy jen nepřímý důsledek #761, nic dalšího.
 
 ## Šablona CN v19 (TX #771 V5, V6, #815) — zveřejněno na TESTU (J. V. 27. 11. přes koordinaci; souhlas se zápisy na test dal J. V. v tomto sezení)
 
