@@ -44,6 +44,14 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 
 ## Běžící dávky
 
+### MT3 — mutace z Actions #218 (větev `claude/mt3-mutace`, nad a40abbbe, dočasná verze MT3)
+
+- Hotovo, čeká na sloučení koordinací. Jen testy: `netlify/test_vz_organizace.mjs` (E5b P2 — razítko v téže ms),
+  `netlify/test_pd_prevod.mjs` (#114 — „0,05 %“ bez slov), `src/test_sablona_obsah.js` (B142 — zpráva věrohodnosti konce).
+- Cíleně všechny tři mutace „Chycených 1 z 1“; kolo `--bez-mutaci --proti origin/test` VŠE ZELENÉ, SHODA 395/395.
+- Svěřené rozhodnutí MT3-1, roadmapa #829. Pro kolo: verze.txt 27.11.3 + dočasný oddíl CHANGELOG (necommitováno,
+  jinak `test_release_odkaz.js` „popis aktuální verze“ FAIL).
+
 ## Čeká na J. V.
 
 Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.). Od S6 je zdrojem evidence
