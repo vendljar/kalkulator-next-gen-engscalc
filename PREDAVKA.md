@@ -48,9 +48,9 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 - Nad integrací 7c2d42e (kód = test 694ddee v26.11.3). Roadmapa #823 (alias K70-N1, dočasná verze `RN70` —
   `R70N1` neprojde tvarem `^[A-Z]{1,4}\d{0,3}$`); číslo a verzi přidělí koordinace.
 - Oprava: `slovnikRazitkoShoda` + `SLOVNIK_PRIDANA_HESLA` (5 hesel main → test: dvojče K66-I1; bm/kpl/m² a ENGINEERING
-  podmíněně podle dat varianty) + `slovnikZmenaPopis` (`src/slovnik.js`), volá `tiskSlovnikUpozorni`
-  (`src/ui/zamek_ui.js`, předává `varianta.data`). Test `src/test_k70n1_slovnik_dialog.js` (55 OK) s fixturou zámků
-  z main `src/test_k70n1_zamek_main.json`; mutace `[K70N1]` 12/12 (`slovnik.js` v JADRA). Na K70-I3 nezávisí.
+  jen když se jim nerovná žádný text dat varianty mimo ceník; strop dat = „nevím“ — revize Fable S1, S2) + `slovnikZmenaPopis` (`src/slovnik.js`), volá `tiskSlovnikUpozorni`
+  (`src/ui/zamek_ui.js`, předává `varianta.data`). Test `src/test_k70n1_slovnik_dialog.js` (64 OK) s fixturou zámků
+  z main `src/test_k70n1_zamek_main.json` + `src/test_k70n1_rozdil_main.js` (git, kód 3 bez main); mutace `[K70N1]` 15/15 (`slovnik.js` v JADRA). Na K70-I3 nezávisí.
 - Kolo: kontrola verze padá i na integraci (verze 26.11.3, commit z 27.11.) — kolo s dočasnou necommitnutou 27.11.1.
 - Další krok: revize poradce Fable → integrace → test.
 

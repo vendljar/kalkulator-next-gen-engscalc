@@ -88,7 +88,7 @@ test('jiný otisk (jiný překlad, který dotisk použije) → neshoda',
 const jineDvojce = Object.assign({}, zivyTed, { [K_STARY]: ['jiné', 'anders', 'autre'] });
 test('dvojče se dnes překládá jinak → heslo se neodebere, neshoda',
   S.slovnikRazitkoShoda(S.slovnikRazitko(bez(jineDvojce, K_NOVY), 1), jineDvojce, 1) === false);
-/* zámek z main: shoda jen s daty, která přidaná hesla prokazatelně nepoužijí */
+/* zámek z main: shoda jen s daty, která přidaná hesla nenesou */
 const dM = (d) => d.varianty[0].data, rM = (d) => d.varianty[0].zamek.slovnik;
 test('zámek z main bez ruční položky × dnešní slovník → shoda', S.slovnikRazitkoShoda(rM(FM.bez), ZAB, 1, dM(FM.bez)) === true);
 test('zámek z main s ruční položkou × dnešní slovník → shoda', S.slovnikRazitkoShoda(rM(FM.rp), ZAB, 1, dM(FM.rp)) === true);
@@ -107,6 +107,22 @@ const dEng = JSON.parse(JSON.stringify(dM(FM.rp))); dEng.ock.zadani.vlastniPoloz
 test('ruční položka jménem „Engineering" → neshoda', S.slovnikRazitkoShoda(rM(FM.rp), ZAB, 1, dEng) === false);
 const dSachty = { sachty: [{ zadani: { vlastniPolozky: { rezie: [{ nazev: 'X', mnozstvi: 1, jednotka: 'kpl' }] } } }] };
 test('jednotka „kpl" v ruční položce další šachty → neshoda', S.slovnikRazitkoShoda(rM(FM.rp), ZAB, 1, dSachty) === false);
+/* revize Fable K70 S2: volné texty (vlastní řádky specifikace) jdou přes překlad celé */
+const sExtra = (label, hodnota) => { const d = JSON.parse(JSON.stringify(dM(FM.bez))); d.techspec.extra = [{ label, hodnota }]; return d; };
+test('techspec.extra s názvem „Engineering" → neshoda', S.slovnikRazitkoShoda(rM(FM.bez), ZAB, 1, sExtra('Engineering', 'ano')) === false);
+test('techspec.extra s hodnotou „kpl" → neshoda', S.slovnikRazitkoShoda(rM(FM.bez), ZAB, 1, sExtra('Rozsah', 'kpl')) === false);
+test('techspec.extra s víceřádkovou hodnotou, řádek „m²:" → neshoda', S.slovnikRazitkoShoda(rM(FM.bez), ZAB, 1, sExtra('Plocha', 'viz výkres\nm²:')) === false);
+test('techspec.extra s obyčejným textem → shoda', S.slovnikRazitkoShoda(rM(FM.bez), ZAB, 1, sExtra('Poznámka', 'Engineering dle dohody')) === true);
+const dCenik = JSON.parse(JSON.stringify(dM(FM.bez))); dCenik.cenik.jednotkaX = 'kpl';
+test('text „kpl" ve větvi ceníku se nepočítá → shoda', S.slovnikRazitkoShoda(rM(FM.bez), ZAB, 1, dCenik) === true);
+/* revize Fable K70 S1: strop velikosti dat = „nevím", heslo se neodebere */
+const dVelka = { a: Array.from({ length: 25000 }, (_, i) => i), ock: { zadani: { vlastniPolozky: { rezie: [{ nazev: 'X', mnozstvi: 1, jednotka: 'kpl' }] } } } };
+test('25 000 uzlů před větví ock s „kpl" → neshoda (strop = nevím)', S.slovnikDataVarianty(dVelka) === null
+  && S.slovnikRazitkoShoda(rM(FM.bez), ZAB, 1, dVelka) === false);
+let hluboka = {}; const vrch = hluboka; for (let i = 0; i < 13; i++) { hluboka.x = {}; hluboka = hluboka.x; }
+hluboka.t = 'nic';
+test('zanoření 13 → neshoda (strop = nevím)', S.slovnikDataVarianty(vrch) === null && S.slovnikRazitkoShoda(rM(FM.bez), ZAB, 1, vrch) === false);
+test('data fixtury z main jsou pod stropem', S.slovnikDataVarianty(dM(FM.rp)) !== null);
 test('main zámek s jinou zveřejněnou verzí → neshoda', S.slovnikRazitkoShoda(rM(FM.bez), ZAB, 2, dM(FM.bez)) === false);
 test('vadné razítko → neshoda', S.slovnikRazitkoShoda({ otisk: '<x>' }, zivyTed, 1) === false
   && S.slovnikRazitkoShoda(null, zivyTed, 1) === false);
@@ -176,6 +192,11 @@ const dotisk = async (razitko, jazyk, zivy, verze) => {
       test('dotisk ' + L.toUpperCase() + ' zámku z main (' + k + '): přidaná hesla se nečtou' + (k === 'rp' ? ', ruční položka se tiskne s „ks"' : ''),
         cteno.size === 0 && !!sd && (k !== 'rp' || /KOTEVNÍ KONZOLA ATYP/.test(txt)), [...cteno]);
     }
+    /* S2: vlastní řádek specifikace „Engineering" dotisk opravdu přeloží heslem ER */
+    { const z = JSON.parse(JSON.stringify(FM.bez)), v = z.varianty[0];
+      v.data.techspec.extra = [{ label: 'Engineering', hodnota: 'ano' }];
+      cteno.clear(); const d = N.nabidkaData(z, v, J, 'en'); NW.nwBloky(d, 'en', { foto: '' });
+      test('techspec.extra „Engineering" dotisk opravdu čte heslo ENGINEERING (proto neshoda)', cteno.has('ENGINEERING'), [...cteno]); }
     PRIDANA.forEach(k => { const n = P.prekladNorm(k); const hod = P.PREKLAD_IDX[n];
       Object.defineProperty(P.PREKLAD_IDX, n, { value: hod, writable: true, configurable: true, enumerable: true }); });
   }

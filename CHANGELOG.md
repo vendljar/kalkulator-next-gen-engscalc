@@ -15,13 +15,16 @@ Nad integrací `7c2d42e` (kód = test v26.11.3). Rychlá cesta; tisk, ceny, zám
   ukazoval dialog změněného slovníku, protože otisk razítka je z celého slovníku a nová sestavení do `PREKLAD` jen
   přidala hesla. Rozdíl main 4e69c27 → test 694ddee = 5 hesel: bm, kpl, m² (RP #736), ENGINEERING (ER #757),
   „… STUDII PROVEDITELNOSTI …“ (K66-I1). Nově `slovnikRazitkoShoda` (`slovnik.js`): při téže zveřejněné verzi se
-  zkusí otisk dnešního slovníku bez přidaných hesel ze seznamu `SLOVNIK_PRIDANA_HESLA`, ale jen těch, která dotisk
-  prokazatelně nepoužije: dvojče se stejným překladem (K66-I1), jednotky jen bez ruční položky v bm/kpl/m²,
-  ENGINEERING jen u staré kalkulace bez ruční položky toho jména (data varianty, i další šachty). Jiný otisk nebo jiná
-  zveřejněná verze dál varuje. Text dialogu při téže verzi: „změnil se slovník zabudovaný v aplikaci (nová verze
+  zkusí otisk dnešního slovníku bez přidaných hesel ze seznamu `SLOVNIK_PRIDANA_HESLA`: dvojče se stejným překladem
+  (K66-I1); bm, kpl, m² a ENGINEERING jen tehdy, když se jim nerovná žádný text dat varianty (každá textová hodnota
+  i její řádek, normalizované jako klíč slovníku, mimo větve ceníku — ruční položky, vlastní řádky specifikace, krycí
+  list, další šachty) a u ENGINEERING nejde o novou kalkulaci. Bez dat nebo nad stropem velikosti (hloubka 12,
+  20 000 uzlů) se heslo neodebere (revize Fable K70 S1, S2). Jiný otisk nebo jiná zveřejněná verze dál varuje. Text dialogu při téže verzi: „změnil se slovník zabudovaný v aplikaci (nová verze
   aplikace); zveřejněná verze N je stejná“.
 - Test `src/test_k70n1_slovnik_dialog.js` s fixturou zámků pořízených kódem main (`src/test_k70n1_zamek_main.json`,
-  s ruční položkou i bez; dotisk EN/DE/FR současným kódem přidaná hesla nečte). Mutace `[K70N1]` (12).
+  s ruční položkou i bez; dotisk EN/DE/FR současným kódem přidaná hesla nečte) a `src/test_k70n1_rozdil_main.js`
+  (rozdíl PREKLAD proti main 4e69c27 přes git = `SLOVNIK_PRIDANA_HESLA`; bez gitu přeskočeno, kód 3).
+  Mutace `[K70N1]` (15).
 - **Které kalkulace se změní:** žádné — mění se jen to, zda se před dotiskem EN/DE/FR odeslané nabídky ukáže dialog.
 
 ## v26.11.3 — UK — úklid nízkých návrhů revize G1 (#807), větev claude/uk-uklid
