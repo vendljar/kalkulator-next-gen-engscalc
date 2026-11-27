@@ -47,11 +47,11 @@ Tagy: jen verze nasazená do `main` (HEAD), mezilehlé ne (J. V. 22. 11.). Kontr
 ### Rychlá K70-N1 (`claude/rychla-K70-N1`, 27. 11. 2026)
 - Nad integrací 7c2d42e (kód = test 694ddee v26.11.3). Roadmapa #823 (alias K70-N1, dočasná verze `RN70` —
   `R70N1` neprojde tvarem `^[A-Z]{1,4}\d{0,3}$`); číslo a verzi přidělí koordinace.
-- Oprava: `slovnikRazitkoShoda` + `SLOVNIK_PRIDANA_HESLA` + `slovnikZmenaPopis` (`src/slovnik.js`), volá
-  `tiskSlovnikUpozorni` (`src/ui/zamek_ui.js`). Test `src/test_k70n1_slovnik_dialog.js` (25 OK; se starým
-  `zamek_ui.js` 4× FAIL), mutace `[K70N1]` 6/6 (`slovnik.js` přidán do JADRA).
-- Rozdíl PREKLAD test v25.11.6 → v26.11.3 = jen heslo K66-I1; main v24.11.7 → v26.11.3 navíc bm, kpl, m² (RP #736)
-  a ENGINEERING (ER #757) — ty v seznamu NEJSOU, staré nabídky z main po nasazení dialog dál uvidí (otázka koordinaci).
+- Oprava: `slovnikRazitkoShoda` + `SLOVNIK_PRIDANA_HESLA` (5 hesel main → test: dvojče K66-I1; bm/kpl/m² a ENGINEERING
+  podmíněně podle dat varianty) + `slovnikZmenaPopis` (`src/slovnik.js`), volá `tiskSlovnikUpozorni`
+  (`src/ui/zamek_ui.js`, předává `varianta.data`). Test `src/test_k70n1_slovnik_dialog.js` (55 OK) s fixturou zámků
+  z main `src/test_k70n1_zamek_main.json`; mutace `[K70N1]` 12/12 (`slovnik.js` v JADRA). Na K70-I3 nezávisí.
+- Kolo: kontrola verze padá i na integraci (verze 26.11.3, commit z 27.11.) — kolo s dočasnou necommitnutou 27.11.1.
 - Další krok: revize poradce Fable → integrace → test.
 
 ZK #755 (v24.11.8, `claude/zk-zakaznici-ze-zakazek`): předávka dávky v `podklady/predavky/2026-11.md` (nahoře).

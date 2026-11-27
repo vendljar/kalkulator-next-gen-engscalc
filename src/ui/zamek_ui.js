@@ -339,7 +339,7 @@ async function tiskSlovnikUpozorni(typ, varianta) {
   if (!ted || ted.otisk === puv.otisk) return true;
   /* K70-N1: přidaná hesla, která dotisk staré nabídky nezmění (slovnik.js). */
   if (typeof slovnikRazitkoShoda === 'function' && typeof PREKLAD !== 'undefined'
-      && slovnikRazitkoShoda(puv, PREKLAD, ted.verze)) return true;
+      && slovnikRazitkoShoda(puv, PREKLAD, ted.verze, varianta && varianta.data)) return true;
   const popis = (typeof slovnikZmenaPopis === 'function') ? slovnikZmenaPopis(puv, ted)
     : 'při odeslání: ' + (puv.verze || '—') + ', teď: ' + (ted.verze || '—');
   return await potvrd('Slovník překladů se od odeslání této nabídky změnil (' + popis + ').\n\nDotisk v jazyce ' + L.toUpperCase() + ' ponese DNEŠNÍ znění překladů, '

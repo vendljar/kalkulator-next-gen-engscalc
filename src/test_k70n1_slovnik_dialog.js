@@ -8,12 +8,16 @@
  * text dotisku ne. Test hlídá:
  *   1. rozdíl PREKLAD test v25.11.6 × v26.11.3 = právě to jedno heslo
  *      (zabudovaný slovník bez něj má 1012 hesel a otisk c3d49e6a),
- *      jeho překlad = překlad dvojčete (dotisk dá týž text);
+ *      jeho překlad = překlad dvojčete (dotisk dá týž text); rozdíl
+ *      main v24.11.7 (4e69c27) × dnes = 5 hesel SLOVNIK_PRIDANA_HESLA
+ *      (fixtura test_k70n1_zamek_main.json — zámek pořízený kódem main);
  *   2. slovnikRazitkoShoda: staré razítko (slovník bez hesla K66-I1,
  *      i se zveřejněnou verzí) → shoda; jiný otisk, jiná zveřejněná verze,
  *      změněný překlad dvojčete → neshoda;
- *   3. tiskSlovnikUpozorni ze zdroje UI: staré razítko → bez dialogu;
- *      jiný otisk / jiná verze → dialog; CZ → bez dialogu;
+ *   3. tiskSlovnikUpozorni ze zdroje UI: staré razítko (před TX i zámek
+ *      z main, s ruční položkou i bez) → bez dialogu; jiný otisk / jiná
+ *      verze / data, která přidané heslo použijí → dialog; CZ → bez dialogu;
+ *      dotisk zámku z main současným kódem přidaná hesla opravdu nečte;
  *   4. text dialogu při téže verzi neříká „verze 1 → verze 1".
  * Spuštění: node src/test_k70n1_slovnik_dialog.js
  * ============================================================ */
@@ -40,9 +44,30 @@ test('heslo K66-I1 má stejný překlad jako dvojče se starým tvarem (dotisk d
   Array.isArray(ZAB[K_NOVY]) && JSON.stringify(ZAB[K_NOVY]) === JSON.stringify(ZAB[K_STARY]));
 ['en', 'de', 'fr'].forEach(L => test('tr(' + L + ') starého i nového tvaru dá týž text',
   P.tr(K_NOVY, L) === P.tr(K_STARY, L) && P.tr(K_NOVY, L) !== K_NOVY));
-test('seznam přidaných hesel nese právě K66-I1', S.SLOVNIK_PRIDANA_HESLA.length === 1
-  && S.SLOVNIK_PRIDANA_HESLA[0].id === 'K66-I1' && S.SLOVNIK_PRIDANA_HESLA[0].hesla[0].klic === K_NOVY
-  && S.SLOVNIK_PRIDANA_HESLA[0].hesla[0].dvojce === K_STARY);
+const PRIDANA = [].concat(...S.SLOVNIK_PRIDANA_HESLA.map(g => g.hesla.map(h => h.klic)));
+test('seznam přidaných hesel: RP (bm, kpl, m²), ER (ENGINEERING), K66-I1 — v tomto pořadí',
+  JSON.stringify(PRIDANA) === JSON.stringify(['bm', 'kpl', 'm²', 'ENGINEERING', K_NOVY])
+  && S.SLOVNIK_PRIDANA_HESLA[2].hesla[0].dvojce === K_STARY, PRIDANA);
+
+/* ---------- 1b. rozdíl main v24.11.7 (4e69c27) × dnes ---------- */
+/* Fixtura test_k70n1_zamek_main.json: dvě zakázky zamčené KÓDEM MAIN 4e69c27
+ * (kryciZmrazPodminky, zamekVysledekSpocti, zamekSnimekSpocti, zamkniVariantu
+ * s razítkem slovnikRazitko(PREKLAD main, 1)) — bez ruční položky a s ruční
+ * položkou (řádek „+ přidat položku" v Hrubé OCK, tvar main bez jednotky);
+ * obě se starou režií ENGINEERING (engineeringKs 2). */
+const FM = require('./test_k70n1_zamek_main.json');
+const main = PRIDANA.reduce((o, k) => bez(o, k), ZAB);
+test('zabudovaný slovník bez 5 přidaných hesel = main v24.11.7 (1008 hesel, týž otisk jako zámek z main)',
+  Object.keys(main).length === FM.pocetHesel && S.slovnikRazitko(main, null).otisk === FM.razitkoZabudovany.otisk
+  && FM.bez.varianty[0].zamek.slovnik.otisk === FM.razitkoZabudovany.otisk && FM.bez.varianty[0].zamek.slovnik.verze === 1,
+  [Object.keys(main).length, S.slovnikRazitko(main, null).otisk, FM.razitkoZabudovany]);
+test('jinak se main a dnešek ve slovníku neliší (žádné změněné heslo)',
+  Object.keys(main).every(k => JSON.stringify(main[k]) === JSON.stringify(ZAB[k])));
+test('fixtura: stará režie nese ENGINEERING, ruční položka je bez jednotky, kalkVerze chybí',
+  /"ENGINEERING"/.test(JSON.stringify(FM.bez.varianty[0].zamek.vysledek))
+  && FM.rp.varianty[0].data.ock.zadani.vlastniPolozky.hrubaOck.length === 1
+  && FM.rp.varianty[0].data.ock.zadani.vlastniPolozky.hrubaOck[0].jednotka === undefined
+  && FM.bez.varianty[0].data.ock.zadani.kalkVerze === undefined);
 
 /* ---------- 2. slovnikRazitkoShoda ---------- */
 /* živý slovník = zabudovaný + zveřejněná verze 1 s jedním přepisem (jako na testu) */
@@ -63,6 +88,26 @@ test('jiný otisk (jiný překlad, který dotisk použije) → neshoda',
 const jineDvojce = Object.assign({}, zivyTed, { [K_STARY]: ['jiné', 'anders', 'autre'] });
 test('dvojče se dnes překládá jinak → heslo se neodebere, neshoda',
   S.slovnikRazitkoShoda(S.slovnikRazitko(bez(jineDvojce, K_NOVY), 1), jineDvojce, 1) === false);
+/* zámek z main: shoda jen s daty, která přidaná hesla prokazatelně nepoužijí */
+const dM = (d) => d.varianty[0].data, rM = (d) => d.varianty[0].zamek.slovnik;
+test('zámek z main bez ruční položky × dnešní slovník → shoda', S.slovnikRazitkoShoda(rM(FM.bez), ZAB, 1, dM(FM.bez)) === true);
+test('zámek z main s ruční položkou × dnešní slovník → shoda', S.slovnikRazitkoShoda(rM(FM.rp), ZAB, 1, dM(FM.rp)) === true);
+test('zámek z main se zveřejněným přepisem na obou stranách → shoda',
+  S.slovnikRazitkoShoda(S.slovnikRazitko(Object.assign({}, main, zverejneno), 1), zivyTed, 1, dM(FM.bez)) === true);
+test('zámek z main bez dat varianty → neshoda (nedá se doložit)', S.slovnikRazitkoShoda(rM(FM.bez), ZAB, 1, null) === false);
+test('zámek z před TX bez dat varianty → shoda (dvojče se doloží samo)',
+  S.slovnikRazitkoShoda(S.slovnikRazitko(stary, 1), ZAB, 1, null) === true);
+const sJednotkou = (j) => { const d = JSON.parse(JSON.stringify(dM(FM.rp))); d.ock.zadani.vlastniPolozky.hrubaOck[0].jednotka = j; return d; };
+['bm', 'kpl', 'm²'].forEach(j => test('ruční položka s jednotkou „' + j + '" → neshoda',
+  S.slovnikRazitkoShoda(rM(FM.rp), ZAB, 1, sJednotkou(j)) === false));
+test('ruční položka s jednotkou „ks" → shoda', S.slovnikRazitkoShoda(rM(FM.rp), ZAB, 1, sJednotkou('ks')) === true);
+const dNova = JSON.parse(JSON.stringify(dM(FM.bez))); dNova.ock.zadani.kalkVerze = 2;
+test('nová kalkulace (kalkVerze 2, příplatek ENGINEERING) → neshoda', S.slovnikRazitkoShoda(rM(FM.bez), ZAB, 1, dNova) === false);
+const dEng = JSON.parse(JSON.stringify(dM(FM.rp))); dEng.ock.zadani.vlastniPolozky.hrubaOck[0].nazev = 'Engineering';
+test('ruční položka jménem „Engineering" → neshoda', S.slovnikRazitkoShoda(rM(FM.rp), ZAB, 1, dEng) === false);
+const dSachty = { sachty: [{ zadani: { vlastniPolozky: { rezie: [{ nazev: 'X', mnozstvi: 1, jednotka: 'kpl' }] } } }] };
+test('jednotka „kpl" v ruční položce další šachty → neshoda', S.slovnikRazitkoShoda(rM(FM.rp), ZAB, 1, dSachty) === false);
+test('main zámek s jinou zveřejněnou verzí → neshoda', S.slovnikRazitkoShoda(rM(FM.bez), ZAB, 2, dM(FM.bez)) === false);
 test('vadné razítko → neshoda', S.slovnikRazitkoShoda({ otisk: '<x>' }, zivyTed, 1) === false
   && S.slovnikRazitkoShoda(null, zivyTed, 1) === false);
 
@@ -78,7 +123,7 @@ const dotisk = async (razitko, jazyk, zivy, verze) => {
     zamekInfo: v => v.zamek, tiskJazyk: () => jazyk,
     potvrd: async (t) => { dialogy.push(t); return false; }, JSON, Object, String, Array, Promise };
   vm.createContext(ctx); vm.runInContext(kod, ctx);
-  const r = await ctx.tiskSlovnikUpozorni('nabidkaTisk', { zamek: { slovnik: razitko } });
+  const r = await ctx.tiskSlovnikUpozorni('nabidkaTisk', (razitko && razitko.varianty) ? razitko.varianty[0] : { zamek: { slovnik: razitko } });
   return { r, dialogy };
 };
 (async () => {
@@ -86,6 +131,13 @@ const dotisk = async (razitko, jazyk, zivy, verze) => {
     const a = await dotisk(rTehdy, L, zivyTed, 1);
     test('dotisk ' + L.toUpperCase() + ' staré nabídky (před K66-I1) → bez dialogu', a.r === true && a.dialogy.length === 0, a.dialogy);
   }
+  for (const L of ['en', 'de', 'fr']) for (const k of ['bez', 'rp']) {
+    const m = await dotisk(FM[k], L, ZAB, 1);
+    test('dotisk ' + L.toUpperCase() + ' zámku z main (' + (k === 'rp' ? 's ruční položkou' : 'bez ruční položky') + ') → bez dialogu',
+      m.r === true && m.dialogy.length === 0, m.dialogy);
+  }
+  const mJ = await dotisk({ varianty: [{ zamek: FM.rp.varianty[0].zamek, data: sJednotkou('bm') }] }, 'en', ZAB, 1);
+  test('dotisk zámku z main s jednotkou „bm" → dialog', mJ.r === false && mJ.dialogy.length === 1);
   const b = await dotisk({ verze: 1, otisk: 'deadbeef' }, 'en', zivyTed, 1);
   test('jiný otisk → dialog', b.r === false && b.dialogy.length === 1);
   test('text při téže verzi neříká „verze 1 … verze 1"', b.dialogy.length === 1
@@ -97,6 +149,36 @@ const dotisk = async (razitko, jazyk, zivy, verze) => {
   test('CZ dotisk → bez dialogu', d.r === true && d.dialogy.length === 0);
   const e = await dotisk(rTed, 'en', zivyTed, 1);
   test('nová nabídka (stejný otisk) → bez dialogu', e.r === true && e.dialogy.length === 0);
+
+  /* ---------- 3b. dotisk zámku z main přidaná hesla opravdu nečte ----------
+   * Současný kód tiskne zámek z main (nabídka: data Wordu i online náhled,
+   * smlouva o dílo) EN/DE/FR; každé čtení 5 přidaných hesel z rejstříku
+   * PREKLAD_IDX (jediná cesta k heslu, trStav i T v preklad.js) se zapíše. */
+  {
+    const nacti = f => { const m = require('./' + f); Object.keys(m).forEach(k => { if (global[k] === undefined) global[k] = m[k]; }); return m; };
+    const ZC = require('./zkusebni_cenik.js');
+    nacti('format.js'); nacti('preklad.js'); nacti('docxgen.js'); nacti('engine.js');
+    global.DEFAULT_CENIK = ZC.zkusebniCenik(); nacti('engine_proj.js'); global.DEFAULT_CENIK_PROJ = ZC.zkusebniCenikProj();
+    ['vice_sachet.js', 'techspec.js', 'sleva.js', 'zaokrouhleni.js', 'firma.js', 'plan_plateb.js', 'zakazka.js', 'zamek.js',
+      'podminky.js', 'kryci.js', 'kryci_proj.js', 'rucni_polozky.js', 'kontroly.js'].forEach(nacti);
+    const N = nacti('nabidka.js'); nacti('nabidka_proj.js'); const NW = nacti('nahled_word.js'); const SOD = nacti('sod.js');
+    const J = require('./jekly.json');
+    global.NAST = { firma: global.firmaDefault() };
+    const cteno = new Set();
+    PRIDANA.forEach(k => { const n = P.prekladNorm(k), hod = P.PREKLAD_IDX[n];
+      Object.defineProperty(P.PREKLAD_IDX, n, { get() { cteno.add(k); return hod; }, configurable: true, enumerable: true }); });
+    test('pojistka sledování: tr("ENGINEERING") se zapíše', (cteno.clear(), P.tr('ENGINEERING', 'en') === 'TECHNICAL ENGINEERING' && cteno.has('ENGINEERING')));
+    for (const k of ['bez', 'rp']) for (const L of ['en', 'de', 'fr']) {
+      const z = JSON.parse(JSON.stringify(FM[k])), v = z.varianty[0];
+      cteno.clear();
+      const d = N.nabidkaData(z, v, J, L); const bl = NW.nwBloky(d, L, { foto: '' }); const sd = SOD.sodData(z, v, J, L, null);
+      const txt = JSON.stringify(d.placeholders) + JSON.stringify(bl);
+      test('dotisk ' + L.toUpperCase() + ' zámku z main (' + k + '): přidaná hesla se nečtou' + (k === 'rp' ? ', ruční položka se tiskne s „ks"' : ''),
+        cteno.size === 0 && !!sd && (k !== 'rp' || /KOTEVNÍ KONZOLA ATYP/.test(txt)), [...cteno]);
+    }
+    PRIDANA.forEach(k => { const n = P.prekladNorm(k); const hod = P.PREKLAD_IDX[n];
+      Object.defineProperty(P.PREKLAD_IDX, n, { value: hod, writable: true, configurable: true, enumerable: true }); });
+  }
 
   /* ---------- 4. popis změny ---------- */
   test('popis: stejná verze → zabudovaný slovník, ne „1 → 1"',
