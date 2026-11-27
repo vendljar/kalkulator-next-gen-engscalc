@@ -189,8 +189,10 @@ const dotisk = async (razitko, jazyk, zivy, verze) => {
       cteno.clear();
       const d = N.nabidkaData(z, v, J, L); const bl = NW.nwBloky(d, L, { foto: '' }); const sd = SOD.sodData(z, v, J, L, null);
       const txt = JSON.stringify(d.placeholders) + JSON.stringify(bl);
-      test('dotisk ' + L.toUpperCase() + ' zámku z main (' + k + '): přidaná hesla se nečtou' + (k === 'rp' ? ', ruční položka se tiskne s „ks"' : ''),
-        cteno.size === 0 && !!sd && (k !== 'rp' || /KOTEVNÍ KONZOLA ATYP/.test(txt)), [...cteno]);
+      /* K70-I3 (#824): zámek z main nemá značku rpTisk → ruční položka se v dotisku netiskne (jako main),
+       * takže jednotky bm / kpl / m² dotisk nepoužije ani v principu. */
+      test('dotisk ' + L.toUpperCase() + ' zámku z main (' + k + '): přidaná hesla se nečtou' + (k === 'rp' ? ', ruční položka se netiskne (K70-I3, jako main)' : ''),
+        cteno.size === 0 && !!sd && (k !== 'rp' || !/KOTEVNÍ KONZOLA ATYP/.test(txt)), [...cteno]);
     }
     /* S2: vlastní řádek specifikace „Engineering" dotisk opravdu přeloží heslem ER */
     { const z = JSON.parse(JSON.stringify(FM.bez)), v = z.varianty[0];
